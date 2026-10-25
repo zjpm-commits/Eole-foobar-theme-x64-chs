@@ -1232,7 +1232,7 @@ oBrowser = function(name) {
             // draw header
             if(properties.showHeaderBar) {
                 if(globalProperties.fontAdjustement>=globalProperties.fontAdjustement_max-2) var boxText = this.rows.length;
-				else var boxText = this.rows.length+" 个播放列表";
+				else var boxText = this.rows.length+"个";
 
                 gr.FillSolidRect(this.x, 0, this.w - this.x -1, properties.headerBarHeight, colors.headerbar_bg);
                 gr.FillSolidRect(this.x, properties.headerBarHeight, this.w - this.x -1, 1, colors.headerbar_line);

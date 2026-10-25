@@ -1495,12 +1495,12 @@ oGroup = function(index, start, handle, groupkey) {
 			totalS -= (totalH = Math.floor(totalS / 3600)) * 3600;
 			totalS -= (totalM = Math.floor(totalS / 60)) * 60;
 
-			txt_week = (totalW > 0) ? `${totalW} 周 ` : '';
-			txt_day = (totalD > 0) ? `${totalD} 天 ` : '';
-			txt_hour = (totalH > 0) ? `${totalH} 小时 ` : '';
-            txt_mins = (totalM > 0) ? `${totalM} 分钟 ` : '';
+			txt_week = (totalW > 0) ? `${totalW}周` : '';
+			txt_day = (totalD > 0) ? `${totalD}天` : '';	
+			txt_hour = (totalH > 0) ? `${totalH}小时` : '';
+            txt_mins = (totalM > 0) ? `${totalM}分钟` : '';
 
-			time_txt = `${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS} 秒`;
+			time_txt = `${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS}秒`;
 		}
 		return time_txt;
 	}
@@ -3248,7 +3248,7 @@ oBrowser = function(name) {
 
             // draw header
             if(properties.showHeaderBar) {
-                var boxText = (this.totaltracks > 1 ? this.totaltracks+" 个项目" : this.totaltracks+" 个项目");
+                var boxText = (this.totaltracks > 1 ? this.totaltracks+"张专辑" : this.totaltracks+"张专辑");
                 // draw background part above playlist (headerbar)
 				gr.FillSolidRect(0, 0, ww, properties.headerBarHeight, colors.headerbar_bg);
 

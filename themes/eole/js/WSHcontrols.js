@@ -3085,7 +3085,7 @@ function draw_settings_menu(x,y){
 
 		//_menu.AppendMenuItem(MF_STRING, 3027, "Compact controls");
 		//_menu.CheckMenuItem(3027, mini_controlbar.isActive());
-		_menu.AppendMenuItem(MF_STRING, 3027, "大控件");
+		_menu.AppendMenuItem(MF_STRING, 3027, "加宽控制栏");
 		_menu.CheckMenuItem(3027,!mini_controlbar.isActive());		
 		var custom_rows = properties.custom_firstRow!=""||properties.custom_secondRow!="";
 		_menu_track_infos.AppendMenuItem(MF_STRING, 3015, properties.showTrackInfo?"隐藏":"显示");

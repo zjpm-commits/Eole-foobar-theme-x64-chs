@@ -419,7 +419,7 @@ function draw_menu(x, y) {
 	if(metadblist_selection.Count > 0) {
 		var Context = fb.CreateContextMenuManager();
 		var Context_root = window.CreatePopupMenu();
-		Context_root.AppendTo(basemenu, MF_STRING, "选择（"+metadblist_selection.Count+" 个项目）");
+		Context_root.AppendTo(basemenu, MF_STRING, "选择（"+metadblist_selection.Count+" 张专辑）");
 		Context.InitContext(metadblist_selection);
 		Context.BuildMenu(Context_root, 2, -1);
 		Context_root.AppendMenuItem(MF_STRING, 2997, "移除");
@@ -778,14 +778,14 @@ playlistInfo = function(){
 			totalS=Math.round(r_timetodraw);
 			totalS = (totalS > 9) ? totalS : '0' + totalS;
 			
-			txt_month = (totalMth > 0) ? `${totalMth} 个月，`: '';
-			txt_week = (totalW > 0) ? `${totalW} 周 ` : '';
-			txt_day = (totalD > 0) ? `${totalD} 天 ` : '';
-			txt_hour = (totalH > 0) ? `${totalH} 小时 ` : '';
-            txt_mins = (totalM > 0) ? `${totalM} 分钟 ` : '';
+			txt_month = (totalMth > 0) ? `${totalMth}个月，`: '';
+			txt_week = (totalW > 0) ? `${totalW}周 ` : '';
+			txt_day = (totalD > 0) ? `${totalD}天 ` : '';
+			txt_hour = (totalH > 0) ? `${totalH}小时 ` : '';
+            txt_mins = (totalM > 0) ? `${totalM}分钟 ` : '';
 
-			this.time_txt = `${txt_month}${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS} 秒`;
-			this.items_txt=displayed_count+' 个项目';
+			this.time_txt = `${txt_month}${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS}秒`;
+			this.items_txt=displayed_count+'张专辑';
 
 			// Main Text, Left justified
 			var filtered_playlist = "";
@@ -806,7 +806,7 @@ playlistInfo = function(){
 			} else if(this.dates!="") {
 				this.main_txt="日期："+this.dates;
 			} else if(this.playlist_name==globalProperties.playing_playlist || this.playlist_name==globalProperties.selection_playlist){
-				this.main_txt='混合选择';
+				this.main_txt='综合选择';
 			} else {
 				this.main_txt='播放列表：'+this.playlist_name;
 			}

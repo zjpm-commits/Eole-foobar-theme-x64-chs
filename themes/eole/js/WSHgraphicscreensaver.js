@@ -2011,7 +2011,7 @@ oHeaderbar = function(name) {
 				} else if(brw.playlistName==globalProperties.selection_playlist || brw.playlistName==globalProperties.playing_playlist){
 					if(brw.date!="" && brw.date!="?") {
 						this.mainTxt='日期：'+brw.date;
-					} else this.mainTxt='混合选择';
+					} else this.mainTxt='综合选择';
 				}
 				else {
 					this.mainTxt='播放列表：'+brw.playlistName;

@@ -412,7 +412,7 @@ oFilterBox = function() {
 		icon_theme_subfolder = properties.darklayout ? "\\white" : "";
 
 		this.images.search_icon = gdi.Image(theme_img_path + "\\icons"+icon_theme_subfolder+"\\search_icon.png");
-		this.search_bt = new button(this.images.search_icon, this.images.search_icon, this.images.search_icon,"search_bt", "Filter groups"+(properties.filterBox_filter_tracks?" & tracks":''));
+		this.search_bt = new button(this.images.search_icon, this.images.search_icon, this.images.search_icon,"search_bt", "Filter groups"+(properties.filterBox_filter_tracks?" &首歌":''));
 
 		this.images.resetIcon_off = gdi.CreateImage(w, w);
 		gb = this.images.resetIcon_off.GetGraphics();
@@ -1801,7 +1801,7 @@ oShowList = function(parentPanelName) {
 			this.discnumber = Tags[2];
 			this.date = Tags[3];
 			this.genre = Tags[4];
-			this.total_tracks = pl_count+(pl_count>1?" tracks":" track");
+			this.total_tracks = pl_count+(pl_count>1?"首歌":"首歌");
 		} else {
 			//TagsString = TF.showlistReduced.EvalWithMetadb(this.pl[0]);
 			//Tags = TagsString.split(" ^^ ");
@@ -1812,7 +1812,7 @@ oShowList = function(parentPanelName) {
 			if(brw.groups[this.idx].date!="?" && !brw.custom_groupby) this.date = ' ('+brw.groups[this.idx].date+')';
 			else this.date = '';
 			this.genre = brw.groups[this.idx].genre;
-			this.total_tracks = pl_count+(pl_count>1?" tracks":" track");
+			this.total_tracks = pl_count+(pl_count>1?"首歌":"首歌");
 		}
 
 		this.firstRow = this.album+this.discnumber+this.date;
@@ -2779,10 +2779,10 @@ oHeaderBar = function(name) {
 		if(brw.finishLoading) {
 			if(brw.playlistItemCount) {
 				if(g_filterbox.isActive) {
-					this.itemsTxt=((properties.showTotalTime)?',  ':'')+g_filterbox.filtered_tracks_count+' track'+((g_filterbox.filtered_tracks_count>1)?"s":"")+',  '+brw.groups_draw.length+' group'+((brw.groups_draw.length>1)?"s":"");
+					this.itemsTxt=((properties.showTotalTime)?',  ':'')+g_filterbox.filtered_tracks_count+'首歌'+((g_filterbox.filtered_tracks_count>1)?"":"")+',  '+brw.groups_draw.length+'张专辑'+((brw.groups_draw.length>1)?"":"");
 					time_total = g_filterbox.filtered_tracks_time;
 				} else {
-					this.itemsTxt=((properties.showTotalTime)?',  ':'')+brw.playlistItemCount+' track'+((brw.playlistItemCount>1)?"s":"")+',  '+brw.groups_draw.length+' group'+((brw.groups_draw.length>1)?"s":"");
+					this.itemsTxt=((properties.showTotalTime)?',  ':'')+brw.playlistItemCount+'首歌'+((brw.playlistItemCount>1)?"":"")+',  '+brw.groups_draw.length+'张专辑'+((brw.groups_draw.length>1)?"":"");
 					time_total = brw.totalTime;
 				}
 				
@@ -2807,7 +2807,7 @@ oHeaderBar = function(name) {
 				} else if(brw.playlistName==globalProperties.selection_playlist || brw.playlistName==globalProperties.playing_playlist){
 					if(brw.date!="" && brw.date!="?") {
 						this.mainTxt='Date : '+brw.date;
-					} else this.mainTxt='混合选择';
+					} else this.mainTxt='综合选择';
 				}
 				else {
 					this.mainTxt='Playlist : '+brw.playlistName;
@@ -4318,12 +4318,12 @@ oBrowser = function(name) {
 			totalS -= (totalH = Math.floor(totalS / 3600)) * 3600;
 			totalS -= (totalM = Math.floor(totalS / 60)) * 60;
 
-			txt_week = (totalW > 0) ? `${totalW} week${totalW > 1 ? 's' : ''} ` : '';
-			txt_day = (totalD > 0) ? `${totalD} day${totalD > 1 ? 's' : ''} ` : '';
-			txt_hour = (totalH > 0) ? `${totalH} h ` : '';
-            txt_mins = (totalM > 0) ? `${totalM} min ` : '';
+			txt_week = (totalW > 0) ? `${totalW}周${totalW > 1 ? '' : ''} ` : '';
+			txt_day = (totalD > 0) ? `${totalD}天${totalD > 1 ? '' : ''} ` : '';
+			txt_hour = (totalH > 0) ? `${totalH}小时` : '';
+            txt_mins = (totalM > 0) ? `${totalM}分钟` : '';
 
-			time_txt = `${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS} s`;
+			time_txt = `${txt_week}${txt_day}${txt_hour}${txt_mins}${totalS}秒`;
 		}
 		return time_txt;
 	}
