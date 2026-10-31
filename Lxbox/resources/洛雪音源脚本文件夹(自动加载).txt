@@ -1,0 +1,12 @@
+Hei Music 重出江湖，发布全新版本v2.2.1-fix，听歌完美支持5大平台，速度秒链，但是对FLAC支持暂不理想，
+适合听歌暂不需要下载flac的用户，后续持续优化中音源详见附件，
+音源在线音源网址：https://dl.kstore.dev/download/7890/Hei+Music.js
+本音源还是可以作为手机听歌的重点推荐音源
+
+LX&澜音音乐源-Github发布页面：
+仓库所有人：guoyue2010
+运维人员名单：guoyue2010、Macrohard0001、houbowen0510、amd3600、Miao-moe、largefox
+贡献人员：Matthew Harris
+更新查看：https://github.com/guoyue2010/lxmusic-/releases
+下载链接：https://yy.guoyue2010.com
+个人博客：https://guoyue2010.com

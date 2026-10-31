@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400" role="img" aria-label="LXbox 加长横向组合标志">
+  <defs>
+    <linearGradient id="bg" x1="80" y1="40" x2="720" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B1220"/>
+      <stop offset="0.55" stop-color="#1E40AF"/>
+      <stop offset="1" stop-color="#0891B2"/>
+    </linearGradient>
+
+    <linearGradient id="letter" x1="120" y1="120" x2="340" y2="300" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#67E8F9"/>
+    </linearGradient>
+
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#22D3EE" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+
+  <!-- 加长长方形圆角底 -->
+  <rect x="20" y="20" width="760" height="360" rx="88" fill="url(#bg)"/>
+
+  <!-- 内圈细框 -->
+  <rect x="52" y="52" width="696" height="296" rx="64"
+        fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="2"/>
+
+  <!-- 左侧：异形连体 LX -->
+  <g transform="translate(228 200) scale(0.82) skewX(-10) translate(-120 -90)"
+     fill="none"
+     stroke="url(#letter)"
+     stroke-width="46"
+     stroke-linecap="butt"
+     stroke-linejoin="miter"
+     filter="url(#glow)">
+    <path d="M0 0 V180 H120"/>
+    <path d="M120 180 L240 0"/>
+    <path d="M240 180 L120 0"/>
+  </g>
+
+  <!-- 右侧：放大的 box 字标 -->
+  <g transform="translate(400 200) skewX(-10)">
+    <text x="0" y="0"
+          dominant-baseline="middle"
+          font-family="Inter, Manrope, Montserrat, 'Helvetica Neue', Arial, sans-serif"
+          font-weight="700"
+          font-size="160"
+          letter-spacing="-3"
+          fill="#FFFFFF">box</text>
+  </g>
+</svg>

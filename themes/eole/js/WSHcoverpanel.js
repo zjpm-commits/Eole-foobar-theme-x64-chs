@@ -73,10 +73,10 @@ function setButtons(){
 			if(fb.IsPaused) fb.Pause();
 		},function () {
 			fb.Pause();
-		},images.pause_img,images.pause_img),
+		},images.pause_img,images.pause_img,undefined,'pause'),
 		Random: new SimpleButton( ww/2-images.pause_img.Width/2, wh/2-images.pause_img.Height/2+global_vertical_fix, 74, 74, "随机", function () {
 			play_random(properties.random_function);
-		},null,images.random_img,images.random_img)
+		},null,images.random_img,images.random_img,undefined,'random')
 	}
 }
 function setRatingBtn(metadb,new_rating){
@@ -186,13 +186,15 @@ function setTooltipDoubleClicText(){
 		break;
 	}
 }
-function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, state) {
+function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, state, id) {
     this.state = state ? state : ButtonStates.normal;
     this.x = x;
     this.y = y;
     this.w = w;
     this.h = h;
     this.text = text;
+    /* Stable identifier: the caption is localized (暂停 / 随机) and must not decide visibility */
+    this.id = id || text;
     this.fonClick = fonClick;
     this.fonDbleClick = fonDbleClick;
     this.N_img = N_img;
@@ -207,28 +209,23 @@ function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, st
         return old;
     }
     this.draw = function (gr) {
-        b_img=this.N_img;
-        var opacity=255;
-        if(this.text=='Random'){
-            if((!Randomsetfocus) || !fb.IsPlaying){
-                this.state = ButtonStates.hide;return;
-            } else this.state = ButtonStates.normal;
-        } else if(this.text=='Pause'){
-            if(!fb.IsPaused || Randomsetfocus){
-                this.state = ButtonStates.hide;return;
-            } else {
-				if(this.state==ButtonStates.hover)
-					this.state = ButtonStates.hover;
-				else
-					this.state = ButtonStates.normal;
-				if(!fb.IsPaused){
-					opacity=0;
-                    this.state = ButtonStates.normal;
-				}
-			}
+        var id = this.id || this.text || '';
+        b_img = this.N_img;
+        var opacity = 255;
+        /* Decide visibility by id, never by the translated caption. The labels are
+           暂停 / 随机 here, so the old text=='Pause' / text=='Random' tests never matched
+           and both overlay icons were painted on every repaint - each one adding a
+           full panel FillGradRect over the artwork, which blacked out the cover and
+           left a stuck ring + pause bars sitting on top of it. */
+        if (id == 'random' || id == 'Random' || id == '随机') {
+            if (!Randomsetfocus || !fb.IsPlaying) { this.state = ButtonStates.hide; return; }
+            if (this.state != ButtonStates.hover && this.state != ButtonStates.down) this.state = ButtonStates.normal;
+        } else if (id == 'pause' || id == 'Pause' || id == '暂停') {
+            if (!fb.IsPaused || Randomsetfocus) { this.state = ButtonStates.hide; return; }
+            if (this.state == ButtonStates.down) this.state = ButtonStates.hover;
+            if (this.state != ButtonStates.hover) this.state = ButtonStates.normal;
         }
         if (this.state == ButtonStates.hide) return;
-
 
         switch (this.state)
         {
@@ -237,18 +234,22 @@ function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, st
             break;
 
         case ButtonStates.hover:
-            b_img=this.H_img;
+            b_img=this.H_img || this.N_img;
             break;
 
         case ButtonStates.down:
+            b_img=this.N_img;
             break;
         case ButtonStates.hide:
             return;
         }
 
+        if (!b_img || !b_img.Width || !b_img.Height) return;
 
 		if (this.state == ButtonStates.normal && opacity!=0) gr.FillGradRect(0,0, ww, wh, 0, colors.btn_grad_borders, colors.btn_grad_middle, 0.5);
-        gr.DrawImage(b_img, this.x+Math.round((this.w-b_img.Width)/2), this.y, b_img.Width, b_img.Height, 0, 0, b_img.Width, b_img.Height,0,opacity);
+        /* centre the icon in the panel instead of relying on the button rect */
+        gr.DrawImage(b_img, Math.round((ww-b_img.Width)/2), Math.round((wh-b_img.Height)/2),
+            b_img.Width, b_img.Height, 0, 0, b_img.Width, b_img.Height, 0, opacity);
     }
 
     this.onClick = function () {
