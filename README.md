@@ -3,6 +3,7 @@
 An unofficial **64-bit adaptation** of [Ottodix/Eole-foobar-theme](https://github.com/Ottodix/Eole-foobar-theme), preserving upstream history and credits. For **foobar2000 2.x x64**, using Columns UI and JSplitter. Tested with foobar2000 **2.26.1 x64 on Windows 11**.
 
 The bundle contains the theme, x64 layout, all seven component folders, MilkDrop shaders/textures and **552 presets**, and the Windows 11 frame helper. The player itself is downloaded separately from [foobar2000.org](https://www.foobar2000.org/download). This is a theme distribution, not a copy of a user's profile.
+<img width="1173" height="731" alt="image" src="https://github.com/user-attachments/assets/d060b73d-a4d3-451f-8689-42848860e0bb" />
 
 <img width="1161" height="665" alt="image" src="https://github.com/user-attachments/assets/d00219b7-83e4-4252-b539-e965e4478ae5" />
 
