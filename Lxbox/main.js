@@ -798,10 +798,10 @@ function uiScale() {
    落到 gdi.Font 时再乘 UI_S）。旧属性 lx.fontScale（90 / 100 / 110 的百分比）
    仍然认，老配置不用改。
    -------------------------------------------------------------------------- */
-var FONT_BASE = 12;      /* 当前生效的统一字号（逻辑像素） */
-var FONT_MIN = 9;
-var FONT_MAX = 18;
-var FONT_DEF = 12;
+var FONT_BASE = 14;      /* 当前生效的统一字号（逻辑像素） */
+var FONT_MIN = 12;
+var FONT_MAX = 20;
+var FONT_DEF = 14;
 
 /* foobar2000 的界面字体。window.DlgFont 是组件对话框字体，fb2k 改了「字体」设置
    它就跟着改：Size 在 96dpi 下是 12（= 9pt），也有版本按 pt 给 9。

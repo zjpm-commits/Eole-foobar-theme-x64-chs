@@ -552,7 +552,7 @@ function build_buttons(){
 				main_panel_state.setValue(2);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.artist_bio_img,images.artist_bio_img,2, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
-			Visualization: new JSButton(btn.left_m+btn.width+btn.width+btn.width+btn.margin*3, btn.top_m, btn.width, btn.height, "网络音乐", "Visualization", "", function () {
+			Visualization: new JSButton(btn.left_m+btn.width+btn.width+btn.width+btn.margin*3, btn.top_m, btn.width, btn.height, "洛雪音乐", "Visualization", "", function () {
 				main_panel_state.setValue(3);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.visualization_img,images.visualization_img,3, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
@@ -1056,7 +1056,7 @@ function on_mouse_rbtn_up(x, y){
 			_menu.AppendMenuItem(MF_STRING, 1, "媒体库");
 			_menu.AppendMenuItem(MF_STRING, 2, "播放列表");
 			_menu.AppendMenuItem(MF_STRING, 3, "正在播放");
-			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "网络音乐");
+			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "洛雪音乐");
 			_menu.CheckMenuRadioItem(1, 4, (parseInt(main_panel_state.value)+1));
 			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 6, "紧凑播放器");
@@ -1148,7 +1148,7 @@ function draw_settings_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 1900, "启动时恢复面板状态");
 		_menu.CheckMenuItem(1900, properties.Remember_previous_state)
 
-		_menu.AppendMenuItem(MF_STRING, 1901, "隐藏网络音乐面板");
+		_menu.AppendMenuItem(MF_STRING, 1901, "隐藏洛雪音乐面板");
 		_menu.CheckMenuItem(1901, !properties.show_visualization)
 
 		_menu.AppendMenuSeparator();
@@ -1459,7 +1459,7 @@ function draw_layout_menu(x,y){
 		wallpaper_visibility.AppendTo(basemenu,MF_STRING, "壁纸可见性");
 		wallpaper_blur.AppendTo(basemenu,MF_STRING, "壁纸模糊");
 	} else if(main_panel_state.isEqual(3)){
-		basemenu.AppendMenuItem(MF_GRAYED, 0, "网络音乐布局");
+		basemenu.AppendMenuItem(MF_GRAYED, 0, "洛雪音乐布局");
 		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 		basemenu.AppendMenuSeparator();
