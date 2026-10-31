@@ -915,33 +915,90 @@ oTooltip = function (varName) {
 };
 
 
-//UI hacks ----------------------------------------------------------------
-// OpenHacks x64 adapter for Eole's original window controls.
-// OpenHacks x64 adapter for Eole's original window controls.
-// OpenHacks x64 adapter for Eole's original window controls.
-// OpenHacks x64 adapter for Eole's original window controls.
 oUIHacks = function () {
-    this.activeXObject = new ActiveXObject("OpenHacks");
+    // 自动检测是否可以使用原生 fb.Window（JSplitter 或 新版 foobar2000）
+    this.useNative = (typeof fb !== 'undefined' && typeof fb.Window !== 'undefined');
+    this.activeXObject = null;
+    
+    // 如果不能用原生，就尝试用插件
+    if (!this.useNative) {
+        try {
+            this.activeXObject = new ActiveXObject("OpenHacks");
+        } catch (e) {
+            try { this.activeXObject = new ActiveXObject("OpenHacksMod"); } catch (e2) {}
+        }
+    }
+
     this.EnableSizing = function () {};
     this.DisableSizing = function () {};
+    
     this.SetPseudoCaption = function (x, y, w, h) {
-        var oh = this.activeXObject;
-        oh.PseudoCaptionLeftEnabled = true; oh.PseudoCaptionTopEnabled = true;
-        oh.PseudoCaptionRightEnabled = false; oh.PseudoCaptionBottomEnabled = false;
-        oh.PseudoCaptionLeft = x; oh.PseudoCaptionTop = y;
-        oh.PseudoCaptionWidth = Math.max(0, w); oh.PseudoCaptionHeight = Math.max(0, h);
+        if (this.useNative) {
+            try {
+                fb.Window.FrameStyle = 2; // NoBorder
+                // 将 maximize_on_dblclk 设为 true，启用双击最大化/还原
+                // y - 2 用于消除顶部留白
+                fb.Window.SetPseudoCaption(x, y - 2, w, h, true); 
+            } catch(e) { console.log("Native PseudoCaption Err: " + e); }
+        } else if (this.activeXObject) {
+            var oh = this.activeXObject;
+            oh.PseudoCaptionLeftEnabled = true; oh.PseudoCaptionTopEnabled = true;
+            oh.PseudoCaptionRightEnabled = false; oh.PseudoCaptionBottomEnabled = false;
+            oh.PseudoCaptionLeft = x; oh.PseudoCaptionTop = y;
+            oh.PseudoCaptionWidth = Math.max(0, w); oh.PseudoCaptionHeight = Math.max(0, h);
+        }
     };
-    this.getFullscreenState = function () { return this.activeXObject.Fullscreen; };
-    this.setFullscreenState = function (v) { this.activeXObject.Fullscreen = v; };
-    this.toggleFullscreen = function () { this.activeXObject.ToggleFullscreen(); };
-    this.getMainWindowState = function () { return this.activeXObject.WindowState; };
-    this.setMainWindowState = function (v) { this.activeXObject.WindowState = v; };
-    this.enableMinSize = this.disableMinSize = this.setMinWidth = this.setMinHeight = function () {};
-    this.enableMaxSize = this.disableMaxSize = this.setMaxWidth = this.setMaxHeight = function () {};
-    this.setAero = this.setAeroEffect = function () {};
-    this.setFrameStyle = function (v) { this.activeXObject.WindowFrameStyle = v === 3 ? 1 : 0; };
+    
+    this.getFullscreenState = function () { 
+        if (this.useNative) return fb.Window.Fullscreen;
+        return this.activeXObject ? this.activeXObject.Fullscreen : false; 
+    };
+    
+    this.setFullscreenState = function (v) { 
+        if (this.useNative) fb.Window.Fullscreen = v;
+        else if (this.activeXObject) this.activeXObject.Fullscreen = v;
+    };
+    
+    this.toggleFullscreen = function () { 
+        if (this.useNative) fb.Window.Fullscreen = !fb.Window.Fullscreen;
+        else if (this.activeXObject) this.activeXObject.ToggleFullscreen();
+    };
+    
+    this.getMainWindowState = function () { 
+        if (this.useNative) {
+            // JSplitter 原生接口没有数字型 WindowState，需通过布尔值判断
+            if (fb.Window.IsMaximized) return 2; // Maximized
+            if (fb.Window.IsMinimized) return 1; // Minimized
+            return 0; // Normal
+        }
+        return this.activeXObject ? this.activeXObject.WindowState : 0; 
+    };
+    
+    this.setMainWindowState = function (v) { 
+        if (this.useNative) {
+            // 使用 JSplitter 原生的 Maximize/Minimize/Restore 方法
+            if (v === 2) fb.Window.Maximize();
+            else if (v === 1) fb.Window.Minimize();
+            else fb.Window.Restore();
+        } else if (this.activeXObject) {
+            this.activeXObject.WindowState = v;
+        }
+    };
+
+    this.enableMinSize = function () {}; this.disableMinSize = function () {};
+    this.setMinWidth = function () {}; this.setMinHeight = function () {};
+    this.enableMaxSize = function () {}; this.disableMaxSize = function () {};
+    this.setMaxWidth = function () {}; this.setMaxHeight = function () {};
+    this.setAero = function () {}; this.setAeroEffect = function () {};
+    
+    this.setFrameStyle = function (v) { 
+        if (this.useNative) fb.Window.FrameStyle = (v === 3 ? 2 : 0);
+        else if (this.activeXObject) this.activeXObject.WindowFrameStyle = (v === 3 ? 1 : 0); 
+    };
 };
+
 var g_uihacks = new oUIHacks();
+
 function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 	this.resizing_left = typeof resizing_left !== 'undefined' ? resizing_left : false;
 	this.resizing_right = typeof resizing_right !== 'undefined' ? resizing_right : false;
