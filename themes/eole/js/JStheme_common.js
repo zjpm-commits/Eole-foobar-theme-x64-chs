@@ -2728,21 +2728,21 @@ function get_font() {
         //g_fname_light_italic = "Segoe UI Semilight Italic";
         //g_fname_italic = "Segoe UI Italic";
         //g_fname_semibold = "Segoe UI Semibold";
-		g_fname = "微软雅黑";
-        g_fname_light = "微软雅黑";
-        g_fname_light_italic = "微软雅黑";
-        g_fname_italic = "微软雅黑";
-        g_fname_semibold = "微软雅黑";
+		g_fname = "Microsoft YaHei UI";
+        g_fname_light = "Microsoft YaHei UI";
+        g_fname_light_italic = "Microsoft YaHei UI";
+        g_fname_italic = "Microsoft YaHei UI";
+        g_fname_semibold = "Microsoft YaHei UI";
         g_fsize = default_font.Size;
         g_fstyle = 0;
-        g_fstyle_light = 2;
+        g_fstyle_light = 0;
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
         g_fname_light = "arial";
         g_fsize = 12;
         g_fstyle = 0;
-        g_fstyle_light = 2;
+        g_fstyle_light = 0;
         font_error = true;
     };
     // adjust font size if extra zoom activated
@@ -2781,21 +2781,6 @@ function get_font() {
 	g_font.boldplus7 = gdi.Font(g_fname_semibold, g_fsize+7, g_fstyle);
 	g_font.boldplus8 = gdi.Font(g_fname_semibold, g_fsize+8, g_fstyle);
 
-	// g_font.italic = gdi.Font(g_fname_italic, g_fsize, 2);
-	// g_font.italicmin1 = gdi.Font(g_fname_italic, g_fsize-1, 2);
-	// g_font.italicmin2 = gdi.Font(g_fname_italic, g_fsize-2, 2);
-	// g_font.italicmin3 = gdi.Font(g_fname_italic, g_fsize-3, 2);
-	// g_font.italicmin4 = gdi.Font(g_fname_italic, g_fsize-4, 2);
-	// g_font.italicmin5 = gdi.Font(g_fname_italic, g_fsize-5, 2);
-	// g_font.italicplus1 = gdi.Font(g_fname_italic, g_fsize+1, 2);
-	// g_font.italicplus2 = gdi.Font(g_fname_italic, g_fsize+2, 2);
-	// g_font.italicplus3 = gdi.Font(g_fname_italic, g_fsize+3, 2);
-	// g_font.italicplus4 = gdi.Font(g_fname_italic, g_fsize+4, 2);
-	// g_font.italicplus5 = gdi.Font(g_fname, g_fsize+5, 2);
-	// g_font.italicplus6 = gdi.Font(g_fname_italic, g_fsize+6, 2);
-	// g_font.italicplus7 = gdi.Font(g_fname_italic, g_fsize+7, 2);
-	// g_font.italicplus8 = gdi.Font(g_fname_italic, g_fsize+8, 2);
-	// 禁用斜体，以优化汉字显示效果
 	g_font.italic = gdi.Font(g_fname_italic, g_fsize, 0);
 	g_font.italicmin1 = gdi.Font(g_fname_italic, g_fsize-1, 0);
 	g_font.italicmin2 = gdi.Font(g_fname_italic, g_fsize-2, 0);

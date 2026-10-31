@@ -4373,7 +4373,7 @@ oBrowser = function(name) {
 		}
 	}
 	this.on_font_changed = function(refreshDates) {
-		this.fontDate = gdi.Font("Segoe UI", g_fsize, 2);		
+		this.fontDate = gdi.Font("Segoe UI", g_fsize, 0);		
 		if(refreshDates) {
 			this.refresh_thumbnails();
 			this.refreshDates();
