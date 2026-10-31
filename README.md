@@ -2,7 +2,6 @@
 
 An unofficial **64-bit adaptation** of [Ottodix/Eole-foobar-theme](https://github.com/Ottodix/Eole-foobar-theme), preserving upstream history and credits. For **foobar2000 2.x x64**, using Columns UI and JSplitter. Tested with foobar2000 **2.26.1 x64 on Windows 11**.
 
-The bundle contains the theme, x64 layout, all seven component folders, MilkDrop shaders/textures and **552 presets**, and the Windows 11 frame helper. The player itself is downloaded separately from [foobar2000.org](https://www.foobar2000.org/download). This is a theme distribution, not a copy of a user's profile.
 <img width="1173" height="731" alt="image" src="https://github.com/user-attachments/assets/d060b73d-a4d3-451f-8689-42848860e0bb" />
 
 <img width="1161" height="665" alt="image" src="https://github.com/user-attachments/assets/d00219b7-83e4-4252-b539-e965e4478ae5" />
@@ -13,7 +12,6 @@ The bundle contains the theme, x64 layout, all seven component folders, MilkDrop
 |---|---|
 | Panel Stack Splitter | JSplitter with `Eole_x64_layout.js` |
 | UIHacks | OpenHacks x64 adapter; local Columns UI window-class patch |
-| Shpeck / Winamp visualization plugins | Native MilkDrop x64 panel embedded in Visualization |
 | Original ESLyric integration | ESLyric x64 and script-control marker |
 | Legacy title bar | Restored Foobar label, header buttons and mouse drag area |
 | Windows 11 window edges | Rounded corners, hidden outer border, theme-colored top strip; corrected child-panel sizing |
@@ -31,7 +29,8 @@ The bundle contains the theme, x64 layout, all seven component folders, MilkDrop
 | OpenHacks | 0.1.5, locally patched for Columns UI | [ttsping/foo_openhacks](https://github.com/ttsping/foo_openhacks) |
 | ESLyric | 1.0.7.0 | [ESLyric/release](https://github.com/ESLyric/release/releases) |
 | Playback Statistics | 3.1.10 | [Component page](https://www.foobar2000.org/components/view/foo_playcount) |
-| MilkDrop 2 Visualisation | 0.9.16 | [jecassis/foo_vis_milk2](https://github.com/jecassis/foo_vis_milk2) |
+| Lxbox | 2.0.1 | [foobar-Lxbox-for-jsplitter](https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter) |
+
 
 `components-manifest.json` records exact binary hashes and architecture. Both JavaScript engine DLLs are included next to their components.
 
