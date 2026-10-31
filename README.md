@@ -16,6 +16,7 @@ An unofficial **64-bit adaptation** of [Ottodix/Eole-foobar-theme](https://githu
 | Legacy title bar | Restored Foobar label, header buttons and mouse drag area |
 | Windows 11 window edges | Rounded corners, hidden outer border, theme-colored top strip; corrected child-panel sizing |
 | Biography lookup icon | Vector chevron and lock; no FontAwesome installation needed for these icons |
+| Lxbox | Running LX Music source in the foobar2000 **foo_uie_jsplitter** panel |
 
 **Shpeck was replaced, not ported. Old Winamp plugins are not loaded.**
 
@@ -29,7 +30,6 @@ An unofficial **64-bit adaptation** of [Ottodix/Eole-foobar-theme](https://githu
 | OpenHacks | 0.1.5, locally patched for Columns UI | [ttsping/foo_openhacks](https://github.com/ttsping/foo_openhacks) |
 | ESLyric | 1.0.7.0 | [ESLyric/release](https://github.com/ESLyric/release/releases) |
 | Playback Statistics | 3.1.10 | [Component page](https://www.foobar2000.org/components/view/foo_playcount) |
-| Lxbox | 2.0.1 | [foobar-Lxbox-for-jsplitter](https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter) |
 
 
 `components-manifest.json` records exact binary hashes and architecture. Both JavaScript engine DLLs are included next to their components.
