@@ -1,60 +1,80 @@
-# Eole foobar2000 theme  x64 chs （简体中文版）
+# Eole-foobar-theme-x64-chs
 
-An unofficial **64-bit adaptation** of [Ottodix/Eole-foobar-theme](https://github.com/Ottodix/Eole-foobar-theme), preserving upstream history and credits. For **foobar2000 2.x x64**, using Columns UI and JSplitter. Tested with foobar2000 **2.26.1 x64 on Windows 11**.
+> 基于 [Ottodix/Eole](https://github.com/Ottodix/Eole-foobar-theme) 深度定制的 foobar2000 x64 中文本地化修改版。
+> 专为 **foobar2000 x64** 与 **JSplitter** 插件适配，优化了中文显示效果，并修复了原版在现代 x64 环境下存在的诸多兼容性问题。
 
-<img width="1173" height="731" alt="image" src="https://github.com/user-attachments/assets/d060b73d-a4d3-451f-8689-42848860e0bb" />
+## 📖 项目简介
 
-<img width="1161" height="665" alt="image" src="https://github.com/user-attachments/assets/d00219b7-83e4-4252-b539-e965e4478ae5" />
+Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要基于 32 位环境和旧版 WSH Panel Mod 构建。
 
-## What changed
+随着 foobar2000 x64 和 JSplitter 的普及，原版主题在部分 API 调用上出现了不兼容现象（如窗口拖拽失效、最大化留白、字体渲染异常等）。本项目在原版基础上进行了针对性的重构与汉化，使其在 64 位环境下能够完美运行。
 
-| Original implementation | x64 edition |
-|---|---|
-| Panel Stack Splitter | JSplitter with `Eole_x64_layout.js` |
-| UIHacks | OpenHacks x64 adapter; local Columns UI window-class patch |
-| Original ESLyric integration | ESLyric x64 and script-control marker |
-| Legacy title bar | Restored Foobar label, header buttons and mouse drag area |
-| Windows 11 window edges | Rounded corners, hidden outer border, theme-colored top strip; corrected child-panel sizing |
-| Biography lookup icon | Vector chevron and lock; no FontAwesome installation needed for these icons |
-| Lxbox | Running LX Music source in the foobar2000 **foo_uie_jsplitter** panel |
+## 📖 截图展示
 
-**Shpeck was replaced, not ported. Old Winamp plugins are not loaded.**
+<img width="979" height="603" alt="image" src="https://github.com/user-attachments/assets/0ef274d2-270c-4a53-8e1f-9a015de93f26" />
 
-## Components included
-
-| Component | Version | Upstream |
-|---|---|---|
-| Columns UI | 3.7.0 | [reupen/columns_ui](https://github.com/reupen/columns_ui) |
-| JSplitter | 4.3.4 | [dima-lur/jsplitter](https://github.com/dima-lur/jsplitter) |
-| Spider Monkey Panel x64 | 1.7.26.5.1 | [dima-lur/spider-monkey-panel-x64](https://github.com/dima-lur/spider-monkey-panel-x64) |
-| OpenHacks | 0.1.5, locally patched for Columns UI | [ttsping/foo_openhacks](https://github.com/ttsping/foo_openhacks) |
-| ESLyric | 1.0.7.0 | [ESLyric/release](https://github.com/ESLyric/release/releases) |
-| Playback Statistics | 3.1.10 | [Component page](https://www.foobar2000.org/components/view/foo_playcount) |
+<img width="979" height="603" alt="image" src="https://github.com/user-attachments/assets/4e35bd77-935e-4f4f-994e-0d8a081e7aca" />
 
 
-`components-manifest.json` records exact binary hashes and architecture. Both JavaScript engine DLLs are included next to their components.
+## ✨ 主要特性
 
-## Installation
+- **原生无边框窗口 (NoBorder) 适配**：彻底摆脱了对第三方 `foo_openhacks` 的强依赖，利用 foobar2000 原生的 `fb.Window` API 实现完美的拖拽、最小化和最大化。
+- **UI 细节修复**：
+  - 移除了面板之间的 1px 分割线，视觉更统一。
+  - 修复了标题栏顶部默认多出的几像素留白。
+  - 全局禁用了斜体字体，大幅提升中文标题和标签的阅读清晰度。
+- **深度中文化**：所有右键菜单、设置项、错误提示、属性面板均已汉化。
+- **兼容性增强**：修复了因 JSplitter 异步加载导致的面板错位、状态丢失等常见 Bug。
 
-1. Install **foobar2000 x64**. Close every running foobar2000 instance and back up your profile.
-2. Extract the complete release ZIP. Your profile is normally `%APPDATA%\foobar2000-v2`; a portable installation normally uses `<foobar directory>\profile`. **Do not copy the theme into Program Files.**
-3. Copy `themes`, `user-components-x64`, `milkdrop2` and the supplied `wsh-data` into that profile, merging folders. For an existing Eole installation, retain other settings but replace any `THEMEVERSION_*` marker with the supplied `THEMEVERSION_1.2.3b24`.
-4. Start foobar2000, select **Columns UI** in Preferences → Display (restart if prompted).
-5. Preferences → Display → Columns UI → Import configuration: import `<profile>\themes\eole\columnsUI_eole_x64.fcl`.
-6. Add music folders in Preferences → Media Library. Play a track and open **Visualization** to use native MilkDrop. Its preset directory should be `%fb2k_profile_path%\milkdrop2\presets\`.
+## 🛠️ 依赖环境
 
-Alternatively run `install.ps1 -ProfilePath '<your profile>'` in PowerShell for step 3. It validates hashes, copies only the supplied folders and saves backups before replacements. It does **not** import Columns UI settings or start the player. See [the full guide](docs/INSTALLATION.md) for commands, troubleshooting and rollback.
+运行此主题需要以下组件：
+- **foobar2000** (x64 版本)
+- **Columns UI** (CUI 界面组件)
+- **JSplitter** (推荐 v4.x 及以上版本，用于替代旧版 WSH Panel Mod)
+- *注意：无需再安装 `foo_openhacks` 或 `foo_openhacks_mod`，已通过原生 API 替代。*
 
-## Limits and maintenance
+## 🚀 安装与使用
 
-- The new layout approximates the original Panel Stack Splitter layout. Mini mode works as a layout, but automatic shrinking/minimum-size constraints from UIHacks are not implemented.
-- The patched OpenHacks binary targets **Columns UI**, not Default UI. Replacing it with the upstream binary removes the custom caption drag integration.
-- Windows 11 frame integration needs .NET Framework 4.x. `EoleBorder.exe` runs briefly at startup/theme changes and exits; no resident service or global system setting is added. On older Windows, the DWM color attributes may be unavailable.
-- Lyrics, artist images and biographies depend on external services; availability varies. ESLyric sources can be configured through its preferences.
-- Do not reinstall old x86 components, UIHacks, Panel Stack Splitter or Shpeck alongside this bundle.
+1. 确保你已经安装了上述依赖组件。
+2. 将仓库中的 `themes` 文件夹完整复制到你的 foobar2000 配置目录下（通常是 `%AppData%\foobar2000-v2\`）。
+3. 在 foobar2000 中导入 `columnsUI_eole_x64.fcl` 配置文件（位于 `themes/eole/` 目录下）。
+4. 重启 foobar2000。
+5. *(可选)* 如果默认字体偏小，可在 foobar2000 设置中调整 CUI 的默认字体大小，或者在主题面板上按住 `Ctrl + 鼠标滚轮` 进行全局缩放。
+6. 字体的行间距或者播放列表的间距可以通过 `shift+ 鼠标滚轮` 进行全局调整。
+7. 【如果你还觉得安装比较复杂，最简单的方式就是复制所有文件到profile文件夹下，然后执行第3步即可。】
 
-## Build and attribution
+## 🔧 核心修改说明（开发者参考）
 
-The frame helper source is included in `themes/eole/tools/EoleBorder.cs`; rebuild with `tools/build-border.ps1`. `tools/build-layout.py` reproduces the x64 FCL. `tools/patch-openhacks.py` reproduces the narrowly scoped binary patch with a SHA-256 guard. Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+本项目对原版 JS 脚本进行了诸多针对性修复，主要集中在以下文件：
 
-Original theme and panels: **Ottodix and Eole contributors**, **Br3tt/Falstaff**, **WilB** (Library Tree and Biography). Original JavaScript panel lineage: **TheQwertiest/Yuri Shutenko**, **marc2003**, **T.P. Wang**. x64 JS hosts: **dima-lur**. Window integration: **ttsping/OpenHacks**. Native visualization: **Jimmy Cassis and MilkDrop/Winamp contributors**. Component authors retain their copyrights and licenses; see [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), bundled license texts and [the upstream README](docs/UPSTREAM-README.md).
+### 1. `JStheme_common.js` (全局公共库)
+- **重构了 `oUIHacks` 类**：移除了对外部 ActiveX 插件的依赖，全面拥抱 `fb.Window`。
+- **修复了窗口状态判断**：通过 `fb.Window.IsMaximized` 等布尔值结合 `Maximize()` / `Minimize()` 方法，解决了 x64 环境下按钮失效的问题。
+- **强制去除了全局斜体**：将 `g_fstyle_light` 设为 `0`，并将所有 `g_font.italicxxx` 替换为正常字体。
+
+### 2. `Eole_x64_layout.js` (布局控制器)
+- **消除留白**：通过 `TITLEBAR_SHIFT` 对 TitleBar 进行负向偏移（向上提），并配合 `FrameStyle = 2` (NoBorder) 裁掉顶部系统空隙。
+- **消除分割线**：引入 `PANEL_OVERLAP` 机制，让相邻面板在坐标上产生 2px 的重叠，利用后加载的面板遮挡前者绘制的边线。
+
+### 3. `WSHsmoothplaylist_trackinfos.js` 等子面板
+- **修复 JSplitter 滚动卡顿**：优化了 `getlimits()` 的边界计算。
+- **字体硬化**：独立剥离了原本写死的斜体，保证播放列表和曲目信息完美对齐。
+
+## ❓ 常见问题 (FAQ)
+
+**Q: 为什么窗口右上角的最大化/最小化按钮点击没反应？**
+A: 请确保你使用的是 JSplitter v4.x。如果是旧版组件，请更新组件。本项目已弃用 OpenHacks 插件，依赖新版原生 API。
+
+**Q: 为什么标题栏没法拖拽了？**
+A: 请检查是否安装了原版的 `foo_openhacks.dll`。如果存在，请将其移除，因为新旧 API 冲突会导致伪标题栏（Pseudo Caption）失效。
+
+**Q: 想恢复默认的斜体怎么办？**
+A: 请使用 Git 回退 `JStheme_common.js` 中 `get_font()` 函数相关的更改，将字体样式参数的 `0` 改回 `2`。
+
+## 🙏 致谢
+- 感谢 **Ottodix** 及所有贡献者开发了如此精美的 Eole 主题。
+- 感谢 foobar2000 社区提供 x64 环境下的 JS 宿主 API 支持。
+
+---
+*本项目仅作学习与个人定制分享，原主题版权归原作者所有。*
