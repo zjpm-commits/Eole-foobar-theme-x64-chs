@@ -8,7 +8,7 @@
     scrollSmoothness: 3.0,
     showHeaderBar: window.GetProperty("DISPLAY: Show Top Bar", false),
     showNewPlaylistButton: window.GetProperty("DISPLAY: Show new playlist button", true),
-    defaultHeaderBarHeight: 40,
+    defaultHeaderBarHeight: 34,
     headerBarHeight: 40,
     headerBarPaddingTop: 0,
     paddingTopDefault: 45,
@@ -89,7 +89,7 @@ cSettings = {
 cFilterBox = {
     enabled: window.GetProperty("PROPERTY: Enable Filter Box", true),
     default_w: 120,
-    default_h: 20,
+    default_h: 18,
     x: 10,
     y: 2,
     w: 120,

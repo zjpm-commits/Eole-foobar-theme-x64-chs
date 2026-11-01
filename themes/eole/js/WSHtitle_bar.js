@@ -258,8 +258,8 @@ function get_colors(){
 	setDarkLayout();
 	get_colors_global();
 	if (properties.darklayout) {
-		colors.wallpaper_overlay = GetGrey(0,203);
-		colors.wallpaper_overlay_blurred = GetGrey(0,140);
+		colors.wallpaper_overlay = GetGrey(0,180);
+		colors.wallpaper_overlay_blurred = GetGrey(0,132);
 		colors.albumartbg_overlay = GetGrey(0,80);
 
 		colors.btn_inactive_opacity = 110;
@@ -286,8 +286,8 @@ function get_colors(){
 		cSearchBox.marginBottom = 3;
 	}
 	else {
-		colors.wallpaper_overlay = GetGrey(255,232);
-		colors.wallpaper_overlay_blurred = GetGrey(255,232);
+		colors.wallpaper_overlay = GetGrey(255,212);
+		colors.wallpaper_overlay_blurred = GetGrey(255,212);
 		colors.albumartbg_overlay = GetGrey(0,80);
 
 		colors.btn_inactive_opacity = 255;

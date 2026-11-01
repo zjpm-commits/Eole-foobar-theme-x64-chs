@@ -4284,7 +4284,7 @@ oBrowser = function(name) {
 	this.searched_track_rawpath = "";
 	this.repaint_rect = false;
 	if(properties.showheaderbar)
-		this.headerBarHeight = (properties.CoverGridNoText?39:43);
+		this.headerBarHeight = (properties.CoverGridNoText?33:37);
 	else
 		this.headerBarHeight = (properties.CoverGridNoText?0:0);
 
@@ -4329,7 +4329,7 @@ oBrowser = function(name) {
 	}
 	this.showheaderbar = function(){
 		if(properties.showheaderbar)
-			this.headerBarHeight = (properties.CoverGridNoText?39:43);
+			this.headerBarHeight = (properties.CoverGridNoText?33:37);
 		else
 			this.headerBarHeight = (properties.CoverGridNoText?0:0);
 		if(properties.showheaderbar){

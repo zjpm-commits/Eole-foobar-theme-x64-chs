@@ -11,7 +11,7 @@
     album_customGroup_label: window.GetProperty("_DISPLAY: album customGroup name", ""),
     showInLibrary_RightPlaylistOn: window.GetProperty("MAINPANEL adapt now playing to left menu righ playlist on", true),
     showInLibrary_RightPlaylistOff: window.GetProperty("MAINPANEL adapt now playing to left menu righ playlist off", true),
-    headerbar_height:39,
+    headerbar_height:33,
     TagSwitcherBarHeight: 40,
     TagSwitcherBarHeight_old: 30,		
     panelFontAdjustement: -1,

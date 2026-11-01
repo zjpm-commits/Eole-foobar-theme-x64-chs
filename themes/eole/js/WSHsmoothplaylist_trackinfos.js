@@ -126,8 +126,8 @@ var properties_common = {
 	track_gradient_size: 13,
 	drag_scroll_speed_ms: 100,
     albumArtId: 0,
-    defaultHeaderBarHeight: 40,
-    libraryHeaderBarHeight: 40,
+    defaultHeaderBarHeight: 34,
+    libraryHeaderBarHeight: 34,
     headerBarHeight: 40,
     headerBarPaddingTop: 2,
     enableFullScrollEffectOnFocusChange: false,
@@ -233,7 +233,7 @@ cSettings = {
 
 cFilterBox = {
     default_w: 120,
-    default_h: 20,
+    default_h: 18,
     x: 5,
     y: 2,
     w: 120,

@@ -3029,7 +3029,7 @@ oBrowser = function(name) {
 	this.playedCoversGradient = 4;
 	this.repaint_rect = false;	
 	if(properties.showheaderbar)
-		this.headerBarHeight = 44;
+		this.headerBarHeight = 38;
 	else
 		this.headerBarHeight = 4;
     this.totalColumns = -1;
@@ -3076,7 +3076,7 @@ oBrowser = function(name) {
 	}
 	this.showheaderbar = function(){
 		if(properties.showheaderbar)
-			this.headerBarHeight = 44;
+			this.headerBarHeight = 38;
 		else
 			this.headerBarHeight = 4;
 		g_headerbar.setDisplayedInfo();

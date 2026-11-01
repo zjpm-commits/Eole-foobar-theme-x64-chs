@@ -340,8 +340,8 @@ function get_colors(){
 	} else properties.darklayout = properties.minimode_dark_theme || (globalProperties.colorsMainPanel!=0 && globalProperties.colorsMainPanel!=1 && globalProperties.colorsMainPanel!=2);
 	get_colors_global();
 	if(properties.darklayout) {
-		colors.wallpaper_overlay = GetGrey(0,200);
-		colors.wallpaper_overlay_blurred = GetGrey(0,130);
+		colors.wallpaper_overlay = GetGrey(0,180);
+		colors.wallpaper_overlay_blurred = GetGrey(0,122);
 		colors.slidersOn=GetGrey(255);
 		colors.slidersOff=GetGrey(255,40);
 		colors.ellipse_inner=GetGrey(0,20);
@@ -352,8 +352,8 @@ function get_colors(){
 		colors.normal_txt = GetGrey(255);
         colors.normal_txt_secondary = GetGrey(192);
 	} else {
-		colors.wallpaper_overlay = GetGrey(255,235);
-		colors.wallpaper_overlay_blurred = GetGrey(255,225);
+		colors.wallpaper_overlay = GetGrey(255,212);
+		colors.wallpaper_overlay_blurred = GetGrey(255,206);
 		colors.slidersOn=GetGrey(30);
 		colors.slidersOff=GetGrey(30,32);
 		colors.ellipse_inner=GetGrey(255);

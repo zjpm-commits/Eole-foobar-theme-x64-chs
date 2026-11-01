@@ -489,6 +489,16 @@ function customTracklistDetails(title, top_msg, bottom_msg, input_default_values
 	});
 }
 //Colors ------------------------------------------------------------------------------
+// ================= 【壁纸透明度 / Wallpaper Transparency】修改说明 =================
+// 壁纸 = 图片 + 一层半透明蒙版(overlay)。蒙版颜色函数的最后一个参数 alpha 决定壁纸透出多少：
+//     0   = 蒙版全透明 -> 壁纸 100% 显示
+//     255 = 蒙版全不透明 -> 壁纸完全被盖住
+// 想调壁纸透明度，只改下面这几个数字（本文件 dark/light 两个分支各一组）：
+//     colors.wallpaper_overlay          -> 壁纸不模糊时用的蒙版
+//     colors.wallpaper_overlay_blurred  -> 壁纸模糊时用的蒙版
+// 建议区间：150(壁纸很清晰) ~ 220(壁纸很淡)；默认已改为 180 / 160 / 210。
+// 注意：标题栏 WSHtitle_bar.js、播放控制栏 WSHcontrols.js 里各有一份同名设置，如需整体统一要一起改。
+// ===================================================================================
 var colors = {};
 var darkcolors = {};
 
@@ -514,8 +524,8 @@ function get_colors_global(){
 			colors.padding_gradient = 0;
 		}
 
-		colors.wallpaper_overlay = GetGrey(25,230);
-		colors.wallpaper_overlay_blurred = GetGrey(25,200);
+		colors.wallpaper_overlay = GetGrey(25,180);
+		colors.wallpaper_overlay_blurred = GetGrey(25,160);
 
 		colors.normal_txt = darkcolors.normal_txt;
 		colors.faded_txt = GetGrey(110);
@@ -525,7 +535,7 @@ function get_colors_global(){
 		colors.selected_bg = RGBA(015,177,255,160);
 		colors.highlight = RGB(255,175,050);
 
-		colors.headerbar_bg = GetGrey(30,220);
+		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(255,38);
 
 		colors.scrollbar_normal_cursor = GetGrey(255,60);
@@ -595,8 +605,8 @@ function get_colors_global(){
 			colors.padding_gradient = 0;
 		}
 
-		colors.wallpaper_overlay = GetGrey(255,235);
-		colors.wallpaper_overlay_blurred = GetGrey(255,235);
+		colors.wallpaper_overlay = GetGrey(255,210);
+		colors.wallpaper_overlay_blurred = GetGrey(255,210);
 
 		colors.normal_txt = GetGrey(0);
 		colors.faded_txt = GetGrey(140);
@@ -605,7 +615,7 @@ function get_colors_global(){
 		colors.selected_bg = RGBA(015,177,255,100);
 		colors.highlight = RGB(255,175,050);
 
-		colors.headerbar_bg = GetGrey(255,240);
+		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(0,36);
 
 		colors.scrollbar_normal_cursor = GetGrey(0,120);

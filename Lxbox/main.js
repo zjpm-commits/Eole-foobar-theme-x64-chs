@@ -1,5 +1,5 @@
 ﻿/* ==========================================================================
-   洛雪音源 · JSplitter 面板  v2.0.1
+   洛雪音源 · JSplitter 面板  v2.1.0
      - 排行榜：QQ / 网易 / 酷我 / 酷狗 / 咪咕（与上排标签严格同列对齐）
      - 搜索：当前平台单曲搜索（面板内直接打字，on_char + 按键兜底 + Ctrl+V）
      - 不输关键词时，搜索框下面直接显示「热门推荐」曲目（网易云热歌榜）
@@ -56,10 +56,18 @@
      - 下载本身失败、且链接带 vkey 时如实报错，不再把 403 链接原样丢给 foobar2000 弹窗
      - **取链失败但有本地缓存时直接播缓存**：平台挂了 / 断网，已经下好的歌照样能听
 
-   播放时默认先缓存到 <profile>\Lxbox\cache 再播放（lx.download=0 可关闭）。
+   v2.1.0：
+     - **mp3 / flac 缓存分目录**：设置 → 音源与属性 里各自可改，默认
+       <profile>\Lxbox\mp3 与 <profile>\Lxbox\flac（属性 lx.cacheDirMp3 / lx.cacheDirFlac）
+     - **点播前先按「歌手 - 歌名 + 扩展名」查这两个目录**：命中就直接播本地文件，
+       不取链、不下载、不再写一遍标签；「洛雪音源」播放列表里已经有这个文件时
+       也不新增条目，直接播那一条
+
+   播放时默认先缓存到 <profile>\Lxbox\mp3 或 \flac 再播放（lx.download=0 可关闭）。
+   索引 / 评论 / 艺人资料 / 封面仍在 <profile>\Lxbox\cache（lx.cacheDir 可改）。
    配色跟随 foobar2000 的浅色/深色设置；背景使用正在播放曲目的专辑封面（模糊+半透明）。
    ========================================================================== */
-var APP_VERSION = '2.0.1';       /* 顶栏左下角显示的就是它，与 DefineScript 保持一致 */
+var APP_VERSION = '2.1.0';       /* 顶栏左下角显示的就是它，与 DefineScript 保持一致 */
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
 /* --------------------------------------------------------------------------
@@ -798,10 +806,10 @@ function uiScale() {
    落到 gdi.Font 时再乘 UI_S）。旧属性 lx.fontScale（90 / 100 / 110 的百分比）
    仍然认，老配置不用改。
    -------------------------------------------------------------------------- */
-var FONT_BASE = 14;      /* 当前生效的统一字号（逻辑像素） */
-var FONT_MIN = 12;
-var FONT_MAX = 20;
-var FONT_DEF = 14;
+var FONT_BASE = 12;      /* 当前生效的统一字号（逻辑像素） */
+var FONT_MIN = 9;
+var FONT_MAX = 18;
+var FONT_DEF = 12;
 
 /* foobar2000 的界面字体。window.DlgFont 是组件对话框字体，fb2k 改了「字体」设置
    它就跟着改：Size 在 96dpi 下是 12（= 9pt），也有版本按 pt 给 9。
@@ -1627,13 +1635,17 @@ function albumArtOf(handle) {
   return img || null;
 }
 
-/* 音轨是不是本面板缓存下来的（cache 目录下，含老版 music\ 结构） */
+/* 音轨是不是本面板缓存下来的（cache / mp3 / flac 目录下，含老版 music\ 结构） */
 function inCacheDir(path) {
   if (!path) return false;
-  var dir = '';
-  try { dir = String(cacheRoot() || '').toLowerCase(); } catch (e) { return false; }
-  if (!dir) return false;
-  return String(path).toLowerCase().indexOf(dir) === 0;
+  var low = String(path).toLowerCase();
+  var dirs = [];
+  try { if (cacheRoot()) dirs.push(cacheRoot()); } catch (e) {}
+  try { dirs = dirs.concat(cacheAllDirs()); } catch (e) { return false; }
+  for (var i = 0; i < dirs.length; i++) {
+    if (low.indexOf(dirs[i].toLowerCase()) === 0) return true;
+  }
+  return false;
 }
 
 /* ---------------------------------------------------------------- 封面
@@ -3165,12 +3177,14 @@ function safeUrl(url) {
    直链会过期、部分 CDN 需要特定 Referer/UA，foobar2000 直接流播常常失败；
    先落盘再播放最稳，也避免每次重播都重新取链。
 
-   目录结构（默认 = <profile>\Lxbox\cache，自定义 lx.cacheDir 时就是那个目录）：
-     cache\<歌手 - 歌名>.<ext>             音频（全部平铺在一个目录里）
-     cache\index.json                      曲目 → 文件 的索引
-     cache\review|bio|artist|covers\       评论 / 艺人介绍 / 面板背景图
+   目录结构（v2.1 起音频按格式分家；资料还在 cache）：
+     <profile>\Lxbox\mp3\<歌手 - 歌名>.mp3         MP3 缓存（lx.cacheDirMp3 可改）
+     <profile>\Lxbox\flac\<歌手 - 歌名>.flac      FLAC 缓存（lx.cacheDirFlac 可改）
+     cache\index.json                       曲目 → 文件 的索引
+     cache\review|bio|artist|covers\        评论 / 艺人介绍 / 面板背景图
    封面直接嵌在音频文件里，目录里不再另存 cover.jpg（平铺目录会互相顶掉）；
    重名（同歌手同曲名的不同录音）自动加 (2)、(3)；换音质时扩展名不同，两条并存。
+   点播前先按「歌手 - 歌名 + 扩展名」查一遍音频目录，命中就直接播，不再下载。
    -------------------------------------------------------------------------- */
 var CACHE_ROOT = '';     /* <profile>\Lxbox，或 lx.cacheDir 指定的根 */
 var CACHE_DIR = '';      /* 音频 + 索引 + 资料，全在这一个目录里 */
@@ -3212,6 +3226,68 @@ function cacheDir() {
     try { utils.CreateFolder(CACHE_DIR); } catch (e) {}
   }
   return CACHE_DIR;
+}
+
+/* --------------------------------------------------------------------------
+   音频缓存目录（v2.1）：按扩展名分家
+     mp3 / m4a / aac / ogg …  → lx.cacheDirMp3 ，默认 <profile>\Lxbox\mp3
+     flac                     → lx.cacheDirFlac，默认 <profile>\Lxbox\flac
+   索引 / 评论 / 艺人资料 / 封面图仍然在 cacheDir()。
+   -------------------------------------------------------------------------- */
+var AUDIO_DIRS = { mp3: '', flac: '' };
+
+function audioKindForExt(ext) {
+  return String(ext || '').toLowerCase() === '.flac' ? 'flac' : 'mp3';
+}
+
+function audioDirProp(kind) {
+  return (kind === 'flac') ? 'lx.cacheDirFlac' : 'lx.cacheDirMp3';
+}
+
+function audioDir(kind) {
+  kind = (kind === 'flac') ? 'flac' : 'mp3';
+  if (AUDIO_DIRS[kind]) return AUDIO_DIRS[kind];
+
+  var custom = String(window.GetProperty(audioDirProp(kind), '') || '').trim();
+  var dir = '';
+  if (custom) {
+    dir = custom.replace(/[\\\/]+$/, '');
+  } else {
+    var root = cacheRoot();
+    dir = root ? joinPath(root, kind) : '';
+  }
+
+  AUDIO_DIRS[kind] = dir;
+  if (dir) { try { utils.CreateFolder(dir); } catch (e) {} }
+  return dir;
+}
+
+function audioDirForExt(ext) {
+  return audioDir(audioKindForExt(ext));
+}
+
+/* 目录设置一改（含「恢复默认」）：整套缓冲路径作废，下次用到时重算 */
+function resetCachePaths() {
+  CACHE_ROOT = '';
+  CACHE_DIR = '';
+  AUDIO_DIRS.mp3 = '';
+  AUDIO_DIRS.flac = '';
+  CACHE_INDEX = null;
+  coverMemFile = '';
+  try { if (coverMem) coverMem._loaded = false; } catch (e) {}
+}
+
+/* 一整套「算缓存用的目录」（cache + mp3 + flac，去重） */
+function cacheAllDirs() {
+  var out = [];
+  [cacheDir(), audioDir('mp3'), audioDir('flac')].forEach(function (d) {
+    d = String(d || '').replace(/[\\\/]+$/, '');
+    if (!d) return;
+    var low = d.toLowerCase();
+    for (var i = 0; i < out.length; i++) if (out[i].toLowerCase() === low) return;
+    out.push(d);
+  });
+  return out;
 }
 
 /* cache\review、cache\bio、cache\artist —— 评论 / 艺人介绍缓存 */
@@ -3324,7 +3400,7 @@ function pruneCacheIndex() {
   Object.keys(idx).forEach(function (k) {
     var f = String((idx[k] && idx[k].f) || '');
     if (!f) { delete idx[k]; dirty++; return; }
-    var p = /^[a-zA-Z]:[\\\/]/.test(f) ? f : dir + '\\' + f;
+    var p = cacheAbsPath(f);
     var s = 0;
     try { s = utils.GetFileSize(p); } catch (e) { s = 0; }
     if (s <= 0) { delete idx[k]; dirty++; }
@@ -3353,19 +3429,19 @@ function indexPut(key, file, tagged, art) {
   saveCacheIndex();
 }
 
-/* 这个相对路径已经被哪首曲目占着。
-   索引里指向已经不存在的文件的死条目会顺手清掉，否则被删掉的歌会一直
-   占着名字，逼着同名的新歌不断加 (2)、(3)。 */
+/* 这个文件名已经被哪首曲目占着（v2.1 起索引里存「mp3\xxx.mp3」这种相对路径，
+   所以只比文件名部分）。索引里指向已经不存在的文件的死条目会顺手清掉，否则
+   被删掉的歌会一直占着名字，逼着同名的新歌不断加 (2)、(3)。 */
 function indexOwnerOf(name) {
   var idx = cacheIndex();
   var low = String(name || '').toLowerCase();
-  var dir = '';
-  try { dir = String(cacheDir() || ''); } catch (e) { dir = ''; }
+  if (!low) return '';
   var keys = Object.keys(idx);
   var dirty = false;
   for (var i = 0; i < keys.length; i++) {
-    if (String(idx[keys[i]].f || '').toLowerCase() !== low) continue;
-    if (dir && !fileReady(dir + '\\' + idx[keys[i]].f)) { delete idx[keys[i]]; dirty = true; continue; }
+    var f = String((idx[keys[i]] && idx[keys[i]].f) || '');
+    if (!f || baseName(f).toLowerCase() !== low) continue;
+    if (!fileReady(cacheAbsPath(f))) { delete idx[keys[i]]; dirty = true; continue; }
     if (dirty) saveCacheIndex();
     return keys[i];
   }
@@ -3373,27 +3449,24 @@ function indexOwnerOf(name) {
   return '';
 }
 
-/* 缓存落点：cache\<歌手 - 歌名>.<ext>（全部平铺，一首歌一个文件）
+/* 缓存落点：<mp3 目录>\<歌手 - 歌名>.<ext> 或 <flac 目录>\…（平铺，一首歌一个文件）
    封面嵌在文件里，不需要为每首歌/每张专辑单独建目录；重名时加 (2)、(3)。
-   索引里存的是相对 cacheDir 的路径。 */
+   索引里存的是相对 <profile>\Lxbox 的路径（mp3\xxx.mp3 / flac\xxx.flac），
+   自定义到别处的目录存绝对路径 —— 两种都能用 cacheAbsPath() 解析回绝对路径。 */
 function cachePathFor(track, q, url) {
-  var dir = cacheDir();
+  var ext = extFor(q, url);
+  var dir = audioDirForExt(ext);
   if (!dir) return '';
   var key = cacheKeyOf(track, q);
-  var ext = extFor(q, url);
 
-  /* 索引命中且文件还在：直接用（老结构的会顺手搬到 cache 根下） */
+  /* 索引命中且文件还在：直接用（老结构的会顺手搬到按格式分家的目录） */
   var hit = indexGet(key);
   if (hit && hit.f) {
-    var f = String(hit.f);
-    /* 搬家失败时索引里可能留下一条绝对路径，仍然是可用的 */
-    if (/^[a-zA-Z]:[\\\/]/.test(f) && fileReady(f)) return f;
-
-    var cur = dir + '\\' + f;
-    if (fileReady(cur)) {
-      /* 直接躺在 cache 根下（索引里就一个文件名）：目标结构，不用动 */
-      if (f.indexOf('\\') < 0) return cur;
-      /* 还在子目录里（v1.9.5 的 一首歌一个文件夹）：搬到根下，搬不动就原地用 */
+    var cur = cacheAbsPath(hit.f);
+    if (cur && fileReady(cur)) {
+      /* 已经躺在对应格式目录里：目标结构，不用动 */
+      if (dirOfFile(cur).toLowerCase() === dir.toLowerCase()) return cur;
+      /* 还在 cache 根 / 子目录 / 另一个格式目录里：搬过来，搬不动就原地用 */
       var moved0 = adoptOldCache(track, hit, key);
       return moved0 || cur;
     }
@@ -3402,10 +3475,29 @@ function cachePathFor(track, q, url) {
     if (moved) return moved;
   }
 
+  /* 同名同扩展名已经在缓存目录里：直接复用，不再下载、也不再排队加 (2)、(3)。
+     手工丢进 mp3\ / flac\ 的文件也走这条路。 */
+  var same = dir + '\\' + docBase(track) + ext;
+  var exists = false;
+  try { exists = utils.FileExists(same); } catch (e) { exists = false; }
+  if (exists && fileReady(same) && sniffAudio(same).ok) {
+    try { NM.lx.pushLog('info', '缓存里已有同名同扩展名的文件，直接复用：' + baseName(same)); } catch (e0) {}
+    return reuseCacheFile(track, q, same);
+  }
+
   return dir + '\\' + targetName(track, ext, key);
 }
 
-/* 这首歌在 cache 根下的文件名，避开已被别的曲目占用的名字 */
+/* 复用已有的缓存文件（同名同扩展名命中）：记进索引，tagged / art 都标完成，
+   这样 playCachedFile 走「直接播」那条快路 —— 不重下、也不再去改文件里的标签。 */
+function reuseCacheFile(track, q, path) {
+  try {
+    indexPut(cacheKeyOf(track, q), relCachePath(path), 1, EMBED_COVER ? 1 : 0);
+  } catch (e) {}
+  return path;
+}
+
+/* 这首歌在缓存目录里的文件名，避开已被别的曲目占用的名字 */
 function targetName(track, ext, key) {
   var base = docBase(track);
   var name = base + ext;
@@ -3419,19 +3511,56 @@ function targetName(track, ext, key) {
   return base + ext;
 }
 
-/* 索引里存的是「相对 cacheDir 的路径」，正常情况就是一个文件名 */
+/* 索引里的 f 存什么：能落在 <profile>\Lxbox 下的就存相对路径（mp3\xxx.mp3），
+   自定义到别处的存绝对路径。cache\ 下的老布局仍然只存文件名，老索引不用改。 */
 function relCachePath(p) {
-  var dir = '';
-  try { dir = String(cacheDir() || ''); } catch (e) { dir = ''; }
   var s = String(p || '');
-  if (dir && s.toLowerCase().indexOf(dir.toLowerCase()) === 0) s = s.slice(dir.length);
+  if (!s) return '';
+
+  var root = '', dir = '';
+  try { root = String(cacheRoot() || ''); } catch (e) { root = ''; }
+  try { dir = String(cacheDir() || ''); } catch (e) { dir = ''; }
+
+  if (root) {
+    var pre = root.replace(/[\\\/]+$/, '') + '\\';
+    if (s.toLowerCase().indexOf(pre.toLowerCase()) === 0) {
+      var rel = s.slice(pre.length);
+      /* cache\xxx → 只存文件名（与老版本索引兼容） */
+      if (/^cache[\\\/]/i.test(rel)) rel = rel.slice(6);
+      return rel;
+    }
+  }
+  if (dir) {
+    var pre2 = dir.replace(/[\\\/]+$/, '') + '\\';
+    if (s.toLowerCase().indexOf(pre2.toLowerCase()) === 0) s = s.slice(pre2.length);
+  }
   return s.replace(/^[\\\/]+/, '');
 }
 
-/* 老版本缓存搬家（不用重下，找到就挪到 cache 根下平铺）：
+/* 索引里的 f → 绝对路径。三种写法都认：
+     绝对路径              → 原样
+     mp3\xxx / flac\xxx   → <profile>\Lxbox\（v2.1 起的新布局）
+     光文件名 / 带子目录   → 老布局，挂在 cache 目录下 */
+function cacheAbsPath(f) {
+  var s = String(f || '');
+  if (!s) return '';
+  if (/^[a-zA-Z]:[\\\/]/.test(s)) return s;
+
+  if (/^(mp3|flac|cache)[\\\/]/i.test(s)) {
+    var root = '';
+    try { root = String(cacheRoot() || ''); } catch (e) { root = ''; }
+    if (root) return root.replace(/[\\\/]+$/, '') + '\\' + s;
+  }
+
+  var dir = '';
+  try { dir = String(cacheDir() || ''); } catch (e) { dir = ''; }
+  return dir ? dir + '\\' + s : s;
+}
+
+/* 老版本缓存搬家（不用重下，找到就挪到按格式分家的目录里）：
      v1.9.6 / 1.9.7 → music\<专辑>\<歌手 - 歌名>.mp3
      v1.9.5         → cache\<歌手 - 歌名>\<歌手 - 歌名>.mp3
-     v1.9.4 及更早  → cache\<歌手 - 歌名>.mp3（本来就在目标位置）
+     v1.9.4 及更早  → cache\<歌手 - 歌名>.mp3（平铺）
    搬不动（文件被占用 / 跨盘 / 没权限）就原地播放，不影响听歌。 */
 function adoptOldCache(track, hit, key) {
   var file = String((hit && hit.f) || '');
@@ -3442,7 +3571,7 @@ function adoptOldCache(track, hit, key) {
   var root = cacheRoot();
   var leaf = baseName(file);
 
-  var cands = [cdir + '\\' + file];
+  var cands = [cacheAbsPath(file), cdir + '\\' + file];
   if (leaf !== file) cands.push(cdir + '\\' + leaf);     /* 索引里带子目录、文件其实平铺 */
   if (root) {
     cands.push(root + '\\' + file);
@@ -3456,15 +3585,18 @@ function adoptOldCache(track, hit, key) {
   }
   if (!src) return '';
 
-  /* 本来就在 cache 根下（v1.9.4 的平铺缓存）：不用搬 */
-  var srcDir = dirOfFile(src);
-  if (srcDir.toLowerCase() === cdir.toLowerCase()) return src;
-
   var m = /\.[^.\\\/]+$/.exec(leaf);
   var ext = m ? m[0].toLowerCase() : '.mp3';
+  var tdir = audioDirForExt(ext);
+  if (!tdir) return src;
+
+  /* 已经躺在对应格式的目录里（v2.1 新布局）：不用搬 */
+  var srcDir = dirOfFile(src);
+  if (srcDir.toLowerCase() === tdir.toLowerCase()) return src;
+
   var name = targetName(track, ext, key);
-  var dst = cdir + '\\' + name;
-  if (!ensureFolder(cdir)) return src;
+  var dst = tdir + '\\' + name;
+  if (!ensureFolder(tdir)) return src;
 
   if (!fileReady(dst)) {
     var ok = false;
@@ -3476,7 +3608,7 @@ function adoptOldCache(track, hit, key) {
   }
 
   cleanupOldDir(srcDir);
-  try { indexPut(key, name, Number(hit.tagged || 0) === 1, hit.art); } catch (e2) {}
+  try { indexPut(key, relCachePath(dst), Number(hit.tagged || 0) === 1, hit.art); } catch (e2) {}
   return dst;
 }
 
@@ -3491,6 +3623,10 @@ function cleanupOldDir(dir) {
   var root = String(cacheRoot() || '').toLowerCase();
   if (!cdir || !root) return;
   if (low === cdir || low === root || low === root + '\\music') return;
+  /* v2.1：mp3 / flac 音频目录本身（含自定义路径）绝对不能删 */
+  var a1 = String(audioDir('mp3') || '').toLowerCase();
+  var a2 = String(audioDir('flac') || '').toLowerCase();
+  if (low === a1 || low === a2) return;
   if (low.indexOf(cdir + '\\') !== 0 && low.indexOf(root + '\\') !== 0) return;
 
   /* 目录里还有别的歌：图留给它们用（它们还没搬走，可能就靠这张图） */
@@ -3695,11 +3831,12 @@ function cachePlaylistIndex() {
 }
 
 function cleanPlaylistDeadCache() {
-  var dir = cacheDir();
+  var dirs = cacheAllDirs();
   var idx = cachePlaylistIndex();
-  if (!dir || idx < 0) return;
+  if (!dirs.length || idx < 0) return;
 
-  var prefix = (dir.replace(/[\\\/]+$/, '') + '\\').toLowerCase();
+  var prefixes = [];
+  for (var d = 0; d < dirs.length; d++) prefixes.push((dirs[d] + '\\').toLowerCase());
   var total = 0;
   try { total = plman.PlaylistItemCount(idx); } catch (e) { return; }
   if (!total) return;
@@ -3712,7 +3849,12 @@ function cleanPlaylistDeadCache() {
       p = h ? String(h.Path || '') : '';
     } catch (e) { p = ''; }
     if (!p) continue;
-    if (p.toLowerCase().indexOf(prefix) !== 0) continue;   /* 不是缓存文件，别碰 */
+    var low = p.toLowerCase();
+    var inCache = false;
+    for (var q2 = 0; q2 < prefixes.length; q2++) {
+      if (low.indexOf(prefixes[q2]) === 0) { inCache = true; break; }
+    }
+    if (!inCache) continue;   /* 不是缓存文件，别碰 */
     if (fileReady(p)) continue;
     dead.push(i);
   }
@@ -3752,10 +3894,33 @@ function cachedFileFor(track, q) {
   for (var j = 0; j < all.length; j++) {
     var f = String((idx[all[j]] && idx[all[j]].f) || '');
     if (!f) continue;
-    var p = /^[a-zA-Z]:[\\\/]/.test(f) ? f : dir + '\\' + f;
-    if (!fileReady(p)) continue;
+    var p = cacheAbsPath(f);
+    if (!p || !fileReady(p)) continue;
     if (!sniffAudio(p).ok) { dropCacheFile(p, all[j]); continue; }
     return { path: p, quality: String(all[j]).slice(head.length) || q };
+  }
+  return null;
+}
+
+/* 点播前的「同名同扩展名」快查：不看索引、不管平台，只看
+   mp3\ / flac\ 里有没有「歌手 - 歌名.mp3 / .flac」这种现成文件。
+   命中就直接播它 —— 不取链、不下载，断网 / 平台挂了一样能听。
+   音质选 FLAC 时只看 flac；其余先看 mp3 再看 flac（无损比有损好）。 */
+function cachedByName(track) {
+  if (!track) return null;
+  var base = docBase(track);
+  if (!base) return null;
+
+  var order = (String(quality) === 'flac') ? ['.flac'] : ['.mp3', '.flac'];
+  for (var i = 0; i < order.length; i++) {
+    var dir = audioDirForExt(order[i]);
+    if (!dir) continue;
+    var p = dir + '\\' + base + order[i];
+    var exists = false;
+    try { exists = utils.FileExists(p); } catch (e) { continue; }
+    if (!exists || !fileReady(p)) continue;
+    if (!sniffAudio(p).ok) continue;
+    return { path: p, ext: order[i] };
   }
   return null;
 }
@@ -3821,23 +3986,33 @@ function removeTree(p) {
 }
 
 function clearCache() {
-  var dir = cacheDir();
-  if (!dir) {
+  var mainDir = String(cacheDir() || '').replace(/[\\\/]+$/, '');
+  var dirs = cacheAllDirs();
+  if (!dirs.length) {
     setStatus('缓存目录不可用', true);
     return;
   }
 
-  var items = [];
-  try { items = utils.Glob(dir + '\\*') || []; } catch (e) { items = []; }
-
   var n = 0;
-  items.forEach(function (p) {
-    var low = String(p).toLowerCase();
-    /* review / bio / artist / covers 是资料缓存，保留；只清音频与临时文件。
-       注意 .tag 是临时目录（job.json / lyric.txt），属于该清的（v1.9.18） */
-    if (/[\\\/](review|bio|artist|covers)([\\\/]|$)/.test(low)) return;
-    if (/[\\\/]index\.json$/.test(low)) return;
-    if (removeTree(p)) n++;
+  dirs.forEach(function (dir) {
+    var inMain = !!mainDir && dir.toLowerCase() === mainDir.toLowerCase();
+    var items = [];
+    try { items = utils.Glob(dir + '\\*') || []; } catch (e) { items = []; }
+    items.forEach(function (p) {
+      var low = String(p).toLowerCase();
+      /* review / bio / artist / covers 是资料缓存，保留；只清音频与临时文件。
+         注意 .tag 是临时目录（job.json / lyric.txt），属于该清的（v1.9.18） */
+      if (/[\\\/](review|bio|artist|covers)([\\\/]|$)/.test(low)) return;
+      if (/[\\\/]index\.json$/.test(low)) return;
+      /* mp3\ / flac\ 目录是用户指定的，只删音频和半边下载，
+         别把人家自己放进去的其它文件一并清清 */
+      if (!inMain) {
+        var ext = extOfPath(low);
+        var exts = /\.(mp3|flac|m4a|aac|ogg|oga|opus|wav|ape|wv|aiff|aif|wma|part)$/;
+        if (!exts.test(ext || low)) return;
+      }
+      if (removeTree(p)) n++;
+    });
   });
 
   var idx = cacheIndexFile();
@@ -4167,6 +4342,25 @@ function attachImageAsync(handle, coverFile, why) {
   });
 }
 
+/* 「洛雪音源」播放列表里已经有这个文件？
+   有的话直接播那一条，不再 AddLocations —— 同一份缓存每次点播都加一条的话，
+   列表越攒越长，还全是重复项。返回下标，没有返回 -1。 */
+function playlistIndexOfPath(idx, path) {
+  var low = String(path || '').toLowerCase();
+  if (!low) return -1;
+  var total = 0;
+  try { total = plman.PlaylistItemCount(idx) || 0; } catch (e) { return -1; }
+  for (var i = 0; i < total; i++) {
+    var p = '';
+    try {
+      var h = plman.GetPlaylistItemHandle(idx, i);
+      p = h ? String(h.Path || '') : '';
+    } catch (e) { p = ''; }
+    if (p && p.toLowerCase() === low) return i;
+  }
+  return -1;
+}
+
 function addToFoobar(url, enqueue, track, q, local, opts) {
   opts = opts || {};
   var idx;
@@ -4176,6 +4370,30 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
     setStatus('创建播放列表失败：' + ((e && e.message) || e), true);
     finishOnce(opts, false, '创建播放列表失败');
     return;
+  }
+
+  /* 缓存文件已经在列表里：不新增项目，直接定位并播那一条 */
+  if (local) {
+    var at = playlistIndexOfPath(idx, url);
+    if (at >= 0) {
+      if (!tokenAlive(opts.token)) { finishOnce(opts, false, '已被新的播放请求取消'); return; }
+      try {
+        plman.SetPlaylistFocusItem(idx, at);
+        plman.SetPlaylistSelectionSingle(idx, at, true);
+      } catch (e) {}
+      if (!enqueue) {
+        try {
+          var rr = plman.ExecutePlaylistDefaultAction(idx, at);
+          if (rr === -1) fb.Play();
+        } catch (e2) { try { fb.Play(); } catch (e3) {} }
+        setStatus('播放（缓存）：' + track.title + ' · ' + (QUALITY_LABEL[q] || q || ''));
+        setTimeout(function () { refreshBackground(false); }, 80);
+      } else if (!opts.silentStatus) {
+        setStatus('已在「' + PLAYLIST_NAME + '」里：' + track.title);
+      }
+      finishOnce(opts, true);
+      return;
+    }
   }
 
   var before = 0;
@@ -4435,6 +4653,19 @@ function playTrack(track, enqueue, opts) {
     if (tokenAlive(token)) return false;
     finishOnce(opts, false, '已被新的请求取消');
     return true;
+  }
+
+  /* ⓪ 先查本地：mp3\ / flac\ 里已经有「同名同扩展名」的文件就直接播，
+       不取链、不下载；播放列表里已有这条也不会再添一条（见 addToFoobar）。 */
+  var pre0 = cachedByName(track);
+  if (pre0) {
+    var q0 = quality;
+    reuseCacheFile(track, q0, pre0.path);
+    if (!enqueue) rememberCover(track, pre0.path);
+    NM.lx.pushLog('info', '本地已有同名同扩展名缓存，直接播放：' + baseName(pre0.path));
+    setStatus('播放缓存：' + track.title + ' · ' + baseName(pre0.path));
+    playCachedFile(track, pre0.path, q0, enqueue, token, opts.onDone);
+    return;
   }
 
   setStatus('正在取链：' + track.title + ' …');
@@ -6582,7 +6813,9 @@ function buildDiagnosticLines(out, width) {
   out.push({ t: '【环境】', c: 'head' });
   out.push({ t: '音源脚本目录：' + (st.dir || '（没找到）'), c: st.dir ? 'text' : 'err' });
   out.push({ t: '模块目录：' + (NM.moduleDir || window.GetProperty('lx.moduleDir', '') || '（没找到）'), c: 'text' });
-  out.push({ t: '缓存目录：' + (cacheDir() || '（不可用）') + '（音频与索引都在这里）', c: 'text' });
+  out.push({ t: '缓存目录：' + (cacheDir() || '（不可用）') + '（索引 / 评论 / 封面）', c: 'text' });
+  out.push({ t: 'MP3 缓存：' + (audioDir('mp3') || '（不可用）'), c: 'text' });
+  out.push({ t: 'FLAC 缓存：' + (audioDir('flac') || '（不可用）'), c: 'text' });
   out.push({
     t: '封面：' + (EMBED_COVER ? '嵌入音频文件（MP3→APIC / FLAC→PICTURE）' : '不嵌入（lx.embedCover=0）') +
        ' ｜ 旁边同名 jpg：' + (PUSH_COVER ? '开' : '关'),
@@ -8057,10 +8290,31 @@ function settingsSections() {
         disp: function () { return cacheDir() || '（未确定）'; },
         onCommit: function (t) {
           setProp('lx.cacheDir', t);
+          resetCachePaths();
           setStatus(t ? '缓存目录：' + t : '缓存目录已恢复默认');
           repaint();
         },
         resetId: 'defCacheDir' },
+      { kind: 'text', id: 'cacheDirMp3', label: 'MP3 缓存目录',
+        value: propStr('lx.cacheDirMp3', ''),
+        disp: function () { return audioDir('mp3') || '（未确定）'; },
+        onCommit: function (t) {
+          setProp('lx.cacheDirMp3', t);
+          resetCachePaths();
+          setStatus(t ? 'MP3 缓存目录：' + t : 'MP3 缓存目录已恢复默认（' + (audioDir('mp3') || 'Lxbox\\mp3') + '）');
+          repaint();
+        },
+        resetId: 'defCacheDirMp3' },
+      { kind: 'text', id: 'cacheDirFlac', label: 'FLAC 缓存目录',
+        value: propStr('lx.cacheDirFlac', ''),
+        disp: function () { return audioDir('flac') || '（未确定）'; },
+        onCommit: function (t) {
+          setProp('lx.cacheDirFlac', t);
+          resetCachePaths();
+          setStatus(t ? 'FLAC 缓存目录：' + t : 'FLAC 缓存目录已恢复默认（' + (audioDir('flac') || 'Lxbox\\flac') + '）');
+          repaint();
+        },
+        resetId: 'defCacheDirFlac' },
       { kind: 'text', id: 'scriptDir', label: '音源目录',
         value: propStr('lx.scriptDir', ''),
         disp: function () {
@@ -8096,7 +8350,7 @@ function settingsSections() {
           setStatus(v === '1' ? '先缓存到本地再播放' : '直接播网络地址，不落盘');
           repaint();
         } },
-      { kind: 'note', text: '目录留空 = 用默认（缓存跟着 foobar2000 配置目录走，音源目录自动探测）。' },
+      { kind: 'note', text: '目录留空 = 用默认：mp3 → <profile>\\Lxbox\\mp3，flac → <profile>\\Lxbox\\flac，缓存 / 索引 / 封面 → <profile>\\Lxbox\\cache；音源目录自动探测。同名同扩展名的文件已在缓存里时直接播，不再下载。' },
       /* 条目和「诊断 / 日志」并排会更挤，单独一行更清楚 */
       { kind: 'btn', id: 'probe', label: '音源音质检测（各平台到底能出哪几档）…', close: true },
       { kind: 'note', text: function () {
@@ -8121,7 +8375,7 @@ function settingsSections() {
         { id: 'logs', label: '诊断 / 日志', close: true }
       ] },
       { kind: 'btn', id: 'clearhw', label: '清空搜索历史（关键词记录）' },
-      { kind: 'note', text: '清空缓存只删 cache 下的音频与 index.json，评论 / 艺人资料保留。' }
+      { kind: 'note', text: '清空缓存只删音频与 index.json（mp3 / flac 两个目录一起清），评论 / 艺人资料保留。' }
     ] }
   ];
 
@@ -8745,6 +8999,9 @@ function resetSettingCat() {
     bg = true;
   } else if (setCat === 'src') {
     setProp('lx.cacheDir', '');
+    setProp('lx.cacheDirMp3', '');
+    setProp('lx.cacheDirFlac', '');
+    resetCachePaths();
     setProp('lx.scriptDir', '');
     setProp('lx.embedCover', 1);
     setProp('lx.pushCover', 0);
@@ -8771,7 +9028,21 @@ function runSettingsButton(id, close) {
   else if (id === 'logs') openDiagnostics();
   else if (id === 'openScriptDir') openScriptDirAction();
   else if (id === 'probe') openProbe();
-  else if (id === 'defCacheDir') { setProp('lx.cacheDir', ''); setStatus('缓存目录已恢复默认'); }
+  else if (id === 'defCacheDir') {
+    setProp('lx.cacheDir', '');
+    resetCachePaths();
+    setStatus('缓存目录已恢复默认');
+  }
+  else if (id === 'defCacheDirMp3') {
+    setProp('lx.cacheDirMp3', '');
+    resetCachePaths();
+    setStatus('MP3 缓存目录已恢复默认');
+  }
+  else if (id === 'defCacheDirFlac') {
+    setProp('lx.cacheDirFlac', '');
+    resetCachePaths();
+    setStatus('FLAC 缓存目录已恢复默认');
+  }
   else if (id === 'defScriptDir') { setProp('lx.scriptDir', ''); setStatus('音源目录已恢复自动探测'); }
   else if (id === 'defOnlineScriptUrl') {
     setProp('lx.onlineScriptUrl', '');

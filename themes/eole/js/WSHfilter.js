@@ -113,8 +113,8 @@ var properties = {
     scrollSmoothness: 2.5,
     TagSwitcherBarHeight: 40,
     TagSwitcherBarHeight_old: 30,	
-    headerBarHeight: 40,
-    defaultHeaderBarHeight: 40,
+    headerBarHeight: 34,
+    defaultHeaderBarHeight: 34,
     headerBarPaddingTop: 0,
     enableCustomColors: window.GetProperty("_PROPERTY: Custom Colors", true),
 	darklayout: window.GetProperty("_DISPLAY: Dark layout", false),
@@ -198,7 +198,7 @@ cSettings = {
 cFilterBox = {
     enabled: window.GetProperty("_PROPERTY: Enable Filter Box", true),
     default_w: 120,
-    default_h: 20,
+    default_h: 18,
     x: 5,
     y: 2,
     w: 120,
@@ -5102,7 +5102,7 @@ function get_colors() {
 		colors.grad_bottom_color2 = GetGrey(0,0);
 		colors.fading_bottom_height = 30;
 
-		colors.headerbar_bg = GetGrey(255,240);
+		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		if(properties.showwallpaper) {
 			colors.headerbar_line = GetGrey(0,40);
 		}

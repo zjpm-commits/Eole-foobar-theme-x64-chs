@@ -6,6 +6,11 @@
     filtred_playlist_idx: window.GetProperty("_PROPERTY: filtred playlist idx", -1),		
 	panelFontAdjustement: -1,
 	TFsorting: window.GetProperty("MAINPANEL Playlist Sort TitleFormat",""),
+	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
+	wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
+	wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
+	wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
+	wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0)
 }
 
 var b_img;
@@ -14,6 +19,7 @@ var g_avoid_on_playlist_items_removed = false;
 var settings_off,settings_hover;
 var showTitleTooltip = false;
 var g_pinfo = null;
+var g_wallpaperImg = null;
 var margin_left=25;
 var rightpadding=6;
 
@@ -846,6 +852,7 @@ playlistInfo = function(){
 function on_size(w, h) {
     ww = w;
     wh = h;
+	g_wallpaperImg = null;
 	positionButtons();
 }
 
@@ -856,6 +863,14 @@ function on_paint(gr) {
 	}
 
   gr.FillSolidRect(0,0, ww, wh,colors.normal_bg);
+	// 表头也铺壁纸，和播放列表/媒体库保持一致
+	if(properties.showwallpaper && !g_wallpaperImg) {
+		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
+	}
+	if(properties.showwallpaper && g_wallpaperImg) {
+		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
+		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
+	}
 	gr.FillSolidRect(0, wh-1, ww, 1, colors.headerbar_line);
 
 	if(g_pinfo.items_width < 0) {
@@ -1021,6 +1036,16 @@ function on_mouse_lbtn_dblclk(x,y){
     plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist,0);
 }
 var returnGenre_Timer=false;
+function on_playback_new_track(metadb) {
+	g_wallpaperImg = null;
+	window.Repaint();
+}
+
+function on_playback_stop(reason) {
+	g_wallpaperImg = null;
+	window.Repaint();
+}
+
 function on_notify_data(name, info) {
     switch(name) {
 		case "use_ratings_file_tags":
