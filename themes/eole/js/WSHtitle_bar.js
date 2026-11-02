@@ -1,23 +1,26 @@
 ﻿// Restore Eole header controls hidden in the original FCL preset.
-if (!window.GetProperty("Eole x64 header controls v1", false)) {
+if (!window.GetProperty("Eole 标题栏控制项 v1", false)) {
     ["_DISPLAY: show light switch btn", "_DISPLAY: show fullscreen btn",
      "_DISPLAY: show configure layout btn", "_DISPLAY: show right sidebar btn",
      "_DISPLAY: show now playing btn"].forEach(function(key) { window.SetProperty(key, true); });
-    window.SetProperty("_DISPLAY: mini main menu button", false);
-    window.SetProperty("Eole x64 header controls v1", true);
+    window.SetProperty("显示·迷你主菜单按钮", false);
+    window.SetProperty("Eole 标题栏控制项 v1", true);
 }
 var colors = {};
 
 var properties = {
 	panelName: 'WSHtitle_bar',
-	Remember_previous_state: window.GetProperty("Resume panel state on startup, except on visualization tab", false),
-	background_color: window.GetProperty("Background color", "255-255-255"),
-	fullMode_savedwidth: window.GetProperty("Full mode saved width", 1100),
-	fullMode_pmanagerheight: window.GetProperty("Full mode pmanager saved height", 820),
-	miniMode_savedwidth: window.GetProperty("Mini mode saved width", 290),
-	miniMode_playlistheight: window.GetProperty("Mini mode playlist saved height", 380),
-	autosearch: window.GetProperty("_DISPLAY: autosearch", true),
-	miniMode_defaultwidth:290,
+	Remember_previous_state: window.GetProperty("启动时恢复面板状态(可视化页除外)", false),
+	background_color: window.GetProperty("背景颜色", "255-255-255"),
+	fullMode_savedwidth: window.GetProperty("完整模式·保存宽度", 1100),
+	fullMode_pmanagerheight: window.GetProperty("完整模式·播放列表管理器保存高度", 820),
+	// 迷你模式的窗口宽度。切到迷你布局时主窗口会被收窄到这个值，高度保持不变。
+	// 默认 300px；想让迷你条更宽/更窄就改这里的 300（改完记得删掉一次
+	// foobar2000 里标题栏面板已存的"迷你模式·保存宽度"属性，否则旧值优先）。
+	miniMode_savedwidth: window.GetProperty("迷你模式·保存宽度", 300),
+	miniMode_playlistheight: window.GetProperty("迷你模式·播放列表保存高度", 380),
+	autosearch: window.GetProperty("显示·自动搜索", true),
+	miniMode_defaultwidth:300,
 	miniMode_defaultheight:380,
 	fullMode_defaultwidth:1100,
 	fullMode_defaultheight:820,
@@ -32,36 +35,36 @@ var properties = {
 	minimode_titlebar_height:64,
 	compact_titlebar_height:36,
 	compact_titlebar_big_height:50,	
-	searchHistory_max_items: window.GetProperty("Max items in search history", 6),
-	library_dark_theme: window.GetProperty("LIBRARY dark theme", false),
-	playlists_dark_theme: window.GetProperty("PLAYLISTS dark theme", false),
-	bio_dark_theme: window.GetProperty("BIO dark theme", false),
-	bio_stick2darklayout: window.GetProperty("BIO stick to Dark layout",false),
-	visualization_dark_theme: window.GetProperty("VISUALIZATION dark theme", false),
-	minimode_dark_theme: window.GetProperty("MINIMODE dark theme", false),
-	show_visualization: window.GetProperty("_PROPERTY show visualization tab", true),
-	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
-	wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-	wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-	wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-	wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0),
-	darklayout: window.GetProperty("_DISPLAY: Dark layout", false),
-	darklayout_follow_cui: window.GetProperty("_DISPLAY: Dark layout follow CUI", false),
-	tracktitle_ontop: window.GetProperty("_DISPLAY: Track title", true),
-	tracktitle_format: window.GetProperty("_DISPLAY: Track title format", "[%artist%  -  ][%album%[  -  %tracknumber%] : ]%title%[  -  %date%]"),
-	showRightSidebarBtn: window.GetProperty("_DISPLAY: show right sidebar btn", true),
-	showConfigLayoutBtn: window.GetProperty("_DISPLAY: show configure layout btn", true),	
-	showLightswitchBtn: window.GetProperty("_DISPLAY: show light switch btn", true),
-	showPanelBtnText: window.GetProperty("_DISPLAY: show panels btn text", true),
-	showNowPlayingBtn: window.GetProperty("_DISPLAY: show now playing btn", true),
-	showFullscreenBtn: window.GetProperty("_DISPLAY: show fullscreen btn", true),
-	LightswitchBtnGlobal: window.GetProperty("_DISPLAY: light switch btn global", true),
-	savedFilterState: window.GetProperty("_PROPERTY: Saved filter state", -1),
-	SuperCompact_titlebar: window.GetProperty("_PROPERTY: Compactify panels buttons", false),
+	searchHistory_max_items: window.GetProperty("搜索历史最大条数", 6),
+	library_dark_theme: window.GetProperty("媒体库·深色主题", false),
+	playlists_dark_theme: window.GetProperty("播放列表·深色主题", false),
+	bio_dark_theme: window.GetProperty("艺术家简介·深色主题", false),
+	bio_stick2darklayout: window.GetProperty("艺术家简介·跟随深色布局",false),
+	visualization_dark_theme: window.GetProperty("可视化·深色主题", false),
+	minimode_dark_theme: window.GetProperty("迷你模式·深色主题", false),
+	show_visualization: window.GetProperty("属性·显示可视化标签页", true),
+	showwallpaper: window.GetProperty("显示·显示壁纸", false),
+	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+	wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+	wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
+	darklayout: window.GetProperty("显示·深色布局", false),
+	darklayout_follow_cui: window.GetProperty("显示·深色布局跟随CUI", false),
+	tracktitle_ontop: window.GetProperty("显示·曲目标题", true),
+	tracktitle_format: window.GetProperty("显示·曲目标题格式", "[%artist%  -  ][%album%[  -  %tracknumber%] : ]%title%[  -  %date%]"),
+	showRightSidebarBtn: window.GetProperty("显示·显示右侧栏按钮", true),
+	showConfigLayoutBtn: window.GetProperty("显示·显示布局配置按钮", true),	
+	showLightswitchBtn: window.GetProperty("显示·显示明暗切换按钮", true),
+	showPanelBtnText: window.GetProperty("显示·显示面板按钮文字", true),
+	showNowPlayingBtn: window.GetProperty("显示·显示正在播放按钮", true),
+	showFullscreenBtn: window.GetProperty("显示·显示全屏按钮", true),
+	LightswitchBtnGlobal: window.GetProperty("显示·全局明暗切换按钮", true),
+	savedFilterState: window.GetProperty("属性·已保存的筛选状态", -1),
+	SuperCompact_titlebar: window.GetProperty("属性·精简面板按钮", false),
 	panelFontAdjustement: 0,
-	toUpperCase: window.GetProperty("_DISPLAY: panels btn text to uppercase", false),
-	alwaysShowSearch: window.GetProperty("_DISPLAY: always show search box", true),
-	mini_mainmenu_button: window.GetProperty("_DISPLAY: mini main menu button", false),
+	toUpperCase: window.GetProperty("显示·面板按钮文字大写", false),
+	alwaysShowSearch: window.GetProperty("显示·始终显示搜索框", true),
+	mini_mainmenu_button: window.GetProperty("显示·迷你主菜单按钮", false),
 }
 if(globalProperties.deleteDiskCache) {
 	delete_full_cache();
@@ -241,7 +244,6 @@ function setDarkLayout(){
 
 var eoleBorderTimer = null;
 function updateEoleBorderColor() {
-    // Apply after OpenHacks has finished removing the native caption.
     if (eoleBorderTimer !== null) window.ClearTimeout(eoleBorderTimer);
     eoleBorderTimer = window.SetTimeout(function () {
         eoleBorderTimer = null;
@@ -266,7 +268,7 @@ function get_colors(){
 		colors.active_tab = GetGrey(255);
 		colors.active_tab_line_height = 1;
 
-		colors.inactive_txt = GetGrey(110);
+		colors.inactive_txt = GetGrey(175);
 		colors.faded_txt = GetGrey(240);
 
 		colors.search_txt = GetGrey(240);
@@ -318,8 +320,6 @@ function get_colors(){
 	updateEoleBorderColor();
 }
 
-//get_colors();
-
 function Lightswitch(switch_all,new_state){
 	switch_all = typeof switch_all !== 'undefined' ? switch_all : false;
 	new_state = typeof new_state !== 'undefined' ? new_state : !properties.darklayout;
@@ -328,16 +328,15 @@ function Lightswitch(switch_all,new_state){
 		if(switch_all) properties.minimode_dark_theme=new_state;
 		else properties.minimode_dark_theme=!properties.minimode_dark_theme;
         window.NotifyOthers("minimode_dark_theme",properties.minimode_dark_theme);
-		window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+		window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 		on_notify_data("minimode_dark_theme",properties.minimode_dark_theme);
-		get_colors();g_searchbox.adapt_look_to_layout();
-        if(!switch_all) window.Repaint();
+        if(!switch_all){get_colors();g_searchbox.adapt_look_to_layout();window.Repaint();}
 	}
 	if((main_panel_state.isEqual(0) && layout_state.isEqual(0)) || switch_all){
 		if(switch_all) properties.library_dark_theme=new_state;
 		else properties.library_dark_theme=!properties.library_dark_theme;
         window.NotifyOthers("library_dark_theme",properties.library_dark_theme);
-		window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+		window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 		on_notify_data("library_dark_theme",properties.library_dark_theme);
         if(!switch_all) window.Repaint();
 	}
@@ -345,16 +344,16 @@ function Lightswitch(switch_all,new_state){
 		if(switch_all) properties.playlists_dark_theme=new_state;
 		else properties.playlists_dark_theme=!properties.playlists_dark_theme;
         window.NotifyOthers("playlists_dark_theme",properties.playlists_dark_theme);
-		window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+		window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 		on_notify_data("playlists_dark_theme",properties.playlists_dark_theme);
-		fb.RunMainMenuCommand("View/ElPlaylist/Refresh");
+		runMainMenuCommand("View/ElPlaylist/Refresh");
         if(!switch_all) window.Repaint();
 	}
 	if((main_panel_state.isEqual(2) && layout_state.isEqual(0)) || switch_all){
 		if(switch_all) properties.bio_dark_theme=new_state;
 		else properties.bio_dark_theme=!properties.bio_dark_theme;
         window.NotifyOthers("bio_dark_theme",properties.bio_dark_theme);
-		window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+		window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 		on_notify_data("bio_dark_theme",properties.bio_dark_theme);
         if(!switch_all) window.Repaint();
 	}
@@ -362,10 +361,15 @@ function Lightswitch(switch_all,new_state){
 		if(switch_all) properties.visualization_dark_theme=new_state;
 		else properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
 	}
-	if(switch_all) window.Repaint();
+	if(switch_all){
+		get_colors();
+		g_searchbox.adapt_look_to_layout();
+		window.NotifyOthers("global_dark_theme", new_state);
+		window.Repaint();
+	}
 }
 function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 	switch_all = typeof switch_all !== 'undefined' ? switch_all : false;
@@ -411,8 +415,6 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 	new_state = typeof new_state !== 'undefined' ? new_state : false;
 	refresh_panel = typeof refresh_panel !== 'undefined' ? refresh_panel : true;
 
-	//if(getNowPlayingState()==0) toggleNowPlayingState();
-
 	if(switch_all){
 		if(new_state===false) {
 			trackinfoslib_state.cycleIncrement(1,refresh_panel);
@@ -450,7 +452,7 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 }
 function saveFilterState(){
 	properties.savedFilterState = filters_panel_state.value;
-	window.SetProperty("_PROPERTY: Saved filter state", properties.savedFilterState);
+	window.SetProperty("属性·已保存的筛选状态", properties.savedFilterState);
 	window.NotifyOthers("save_filter_state",properties.savedFilterState);
 }
 function setMaxButton(){
@@ -491,14 +493,11 @@ function build_buttons(){
 		buttons.ConfigLayout.N_img = images.config_layout_img;
 		buttons.ConfigLayout.D_img = buttons.ConfigLayout.H_img;
 
-		if(getTrackInfosState()>=1) {
-			buttons.RightSidebar.H_img = images.trackinfos_off;
-			buttons.RightSidebar.N_img = images.trackinfos_off;
-		} else {
-			buttons.RightSidebar.H_img = images.trackinfos_on;
-			buttons.RightSidebar.N_img = images.trackinfos_on;
-		}
-		buttons.RightSidebar.D_img = buttons.RightSidebar.H_img;
+		var tinfo_img = (getTrackInfosState()>=1) ? images.trackinfos_off : images.trackinfos_on;
+		if(!tinfo_img) tinfo_img = images.nowplaying_off_icon;
+		buttons.RightSidebar.H_img = tinfo_img;
+		buttons.RightSidebar.N_img = tinfo_img;
+		buttons.RightSidebar.D_img = tinfo_img;
 
 		buttons.ShowSearch.H_img = images.search_toggle_img;
 		buttons.ShowSearch.N_img = images.search_toggle_img;
@@ -568,11 +567,6 @@ function build_buttons(){
 				} else {
 					if(getTrackInfosState()==0) toggleTrackInfosState(false,1,false);
 					toggleNowPlayingState();
-					/*trigger_refresh_PSS = setTimeout(function(){
-						RefreshPSS();
-						clearTimeout(trigger_refresh_PSS);
-						trigger_refresh_PSS = false;
-					}, 100);*/
 				}
 			}, false, false,images.nowplaying_off_icon,images.nowplaying_off_icon,-1, false, false, true),
 			Lightswitch: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "lightswitch", "深色/浅色切换"+"\n"+"（双击全局切换）", false, function () {
@@ -614,6 +608,12 @@ function build_buttons(){
 			},false,images.reduce_icon,images.reduce_icon,-1,false,colors.titlebar_btn_hover_bg,true)
 		}
 
+		var tinfo_img_first = (getTrackInfosState()>=1) ? images.trackinfos_off : images.trackinfos_on;
+		if(!tinfo_img_first) tinfo_img_first = images.nowplaying_off_icon;
+		buttons.RightSidebar.H_img = tinfo_img_first;
+		buttons.RightSidebar.N_img = tinfo_img_first;
+		buttons.RightSidebar.D_img = tinfo_img_first;
+
 		all_btns = new JSButtonGroup("top-left", 0, 0, 'all_btns', false);
 		all_btns.addButtons(buttons, [0,0,0,0]);
 
@@ -641,6 +641,40 @@ function toggleSearch(new_search_state){
 	g_searchbox.toggleVisibility();
 	if(!g_searchbox.hide) g_searchbox.inputbox.activate(0,0);
 }
+// ---------------------------------------------------------------------------
+// 迷你模式的窗口宽度
+// ---------------------------------------------------------------------------
+// MINI_MODE_WIDTH 只是兜底默认值，实际用的是 properties.miniMode_savedwidth。
+// 需要兜底的原因：旧代码在"窗口最大化时切回完整模式"的分支里，会把主窗口宽度
+// 误存进"迷你模式·保存宽度"（那会儿 window.Width 是 1200 之类），之后进迷你
+// 模式的上限就是那个值，窗口一点都不会收窄——表现出来就是这次说的
+// "迷你播放器和主播放器一样大"。
+var MINI_MODE_WIDTH = 300;
+
+// 设置 foobar2000 主窗口的宽度，高度不动。
+// 原版这里全靠 g_uihacks.setMaxWidth()/setMinWidth()，但那套接口属于
+// foo_ui_hacks；JSplitter 原生模式下 oUIHacks 的这些方法都是空函数
+// （见 JStheme_common.js），所以窗口尺寸从来没被改过。
+// JSplitter 自己提供了 window.FoobarWindowWidth（只赋值宽度即可，高度保持），
+// 老版本还能用 window.MoveFoobarWindow(x, y, w, h)。
+function setFoobarWindowWidth(newWidth) {
+	newWidth = Math.round(newWidth);
+	if (!(newWidth > 0)) return false;
+	try {
+		window.FoobarWindowWidth = newWidth;
+		return true;
+	} catch (e) {}
+	try {
+		if (typeof window.MoveFoobarWindow === 'function') {
+			window.MoveFoobarWindow(window.FoobarWindowX, window.FoobarWindowY,
+				newWidth, window.FoobarWindowHeight);
+			return true;
+		}
+	} catch (e) {}
+	console.log("迷你模式：当前 JSplitter 不支持修改窗口宽度，请在 CUI 里手动调整");
+	return false;
+}
+
 function toggleLayoutMode(new_layout_state, main_window_state){
 	new_layout_state = typeof new_layout_state !== 'undefined' ? new_layout_state : 1-layout_state.value;
 	main_window_state = typeof main_window_state !== 'undefined' ? main_window_state : 0;
@@ -648,7 +682,7 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 	if(new_layout_state == 1) {
 		if(!g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
 			properties.fullMode_savedwidth=window.Width;
-			window.SetProperty("Full mode saved width", properties.fullMode_savedwidth);
+			window.SetProperty("完整模式·保存宽度", properties.fullMode_savedwidth);
 		} else {
 			g_uihacks.setFullscreenState(false);
 			g_uihacks.setMainWindowState(main_window_state);
@@ -658,22 +692,44 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 		g_uihacks.setMinHeight(globalProperties.miniMode_minwidth);
 		g_uihacks.setMaxWidth(properties.miniMode_savedwidth);
 
-		try{
-			g_uihacks.setMaxHeight(properties.miniMode_playlistheight+(showtrackinfo_small.isActive()?properties.minicontrolsHeight:properties.miniNoTrackcontrolsHeight)+properties.minimode_titlebar_height + 1);
-		} catch (e) {
-			g_uihacks.setMaxHeight(window.Height);
+		// 上面三行是 foo_ui_hacks 的接口，JSplitter 原生模式下是空实现，
+		// 真正把窗口收窄靠下面这几句：只改宽度，高度不动（与主播放器一致）。
+		var miniWidth = properties.miniMode_savedwidth;
+		// 值不在合理区间（典型情况是被主窗口宽度污染过）就用默认 300
+		if (!(miniWidth >= globalProperties.miniMode_minwidth) || miniWidth > 600) {
+			miniWidth = MINI_MODE_WIDTH;
 		}
+		properties.miniMode_savedwidth = miniWidth;
+		window.SetProperty("迷你模式·保存宽度", miniWidth);
+		setFoobarWindowWidth(miniWidth);
+
+		// 原来这里还有一段 setMaxHeight(...) 把高度也限制成"标题栏+列表+控制栏"，
+		// 那是给 ui_hacks 用的；既然要求高度与主播放器一致，这里不再限制高度。
 		g_uihacks.enableMaxSize();
 		maxsize_disabling = setTimeout(function(){
 			clearTimeout(maxsize_disabling);
 			maxsize_disabling = false;
 			g_uihacks.disableMaxSize();
+			// 从最大化/全屏还原需要一点时间，等窗口状态稳定后再设一次宽度
+			setFoobarWindowWidth(miniWidth);
 		}, 100);
 		adapt_buttons_to_layout();
 	} else {
-		if(!g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
+		// 先记下要恢复的主窗口宽度。此时窗口还是迷你宽度，不能用 window.Width。
+		var restoreWidth = properties.fullMode_savedwidth;
+		if (!(restoreWidth >= globalProperties.fullMode_minwidth)) restoreWidth = properties.fullMode_defaultwidth;
+
+		if(layout_state.isEqual(1) && !g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
+			// 只有当前确实在迷你布局里，才把宽度记成"迷你模式·保存宽度"。
+			// 旧代码少了 layout_state 这个条件，在最大化状态下调用这里时
+			// 会把主窗口宽度写进迷你宽度，于是下次进迷你模式窗口收不窄。
 			properties.miniMode_savedwidth=window.Width;
-			window.SetProperty("Mini mode saved width", properties.miniMode_savedwidth);
+			window.SetProperty("迷你模式·保存宽度", properties.miniMode_savedwidth);
+		} else if(!g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
+			// 已经在完整模式下被调用（例如从最大化还原）：当前宽度就是主窗口宽度
+			properties.fullMode_savedwidth=window.Width;
+			window.SetProperty("完整模式·保存宽度", properties.fullMode_savedwidth);
+			restoreWidth = window.Width;
 		} else {
 			g_uihacks.setFullscreenState(false);
 			g_uihacks.setMainWindowState(main_window_state);
@@ -691,7 +747,10 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 			minsize_disabling = false;
 			g_uihacks.setMinWidth(650);
 			g_uihacks.setMinHeight(300);
+			setFoobarWindowWidth(restoreWidth);   // 同上，状态稳定后补一刀
 		}, 100);
+		// 把窗口宽度恢复到进迷你模式之前的值（高度一直没动过）
+		setFoobarWindowWidth(restoreWidth);
 		adapt_buttons_to_layout();
 		set_main_btns_visibility();
 	}
@@ -780,7 +839,6 @@ function adapt_buttons_to_layout(){
 			buttons.Settings.displayLabel(true);
 		}
 		if(compact_titlebar.isActive()) {
-			//properties.showPanelBtnText = false;
 			compact_btns.setBtnsHeight(btn.height+4);
 			if(compact_titlebar.isEqual(1)){
 				topleft_btns.setPadding([0,8,0,4]);
@@ -800,7 +858,6 @@ function adapt_buttons_to_layout(){
 			}
 			
 		} else {
-			//properties.showPanelBtnText = true;
 			topleft_btns.setBtnsHeight(btn.height-3);
 			topleft_btns.setPadding([0,7,0,2]);
 			main_panel_btns.x = 17;
@@ -898,24 +955,88 @@ function on_size(w, h) {
 	g_panel.on_size_changed();
     // set wallpaper
     if(fb.IsPlaying && properties.showwallpaper) {
-        //g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
     }
 }
+// ---------------------------------------------------------------------------
+// 伪标题栏（Pseudo Caption）：鼠标在这块矩形里按下 = 拖窗口，双击 = 最大化。
+// 它由 fb.Window.SetPseudoCaption(左, 上, 宽, 高) 一次性划出一块矩形，划进去的
+// 地方**鼠标消息不再交给脚本**（相当于系统标题栏），所以：
+//
+//   1) 这块矩形绝对不能和按钮重叠，否则按钮点了没反应（变成拖窗口）；
+//   2) 一次只能设一块矩形，没法"第一行整条"和"第二行中间空档"各来一块。
+//
+// 标准两行模式（面板高 64）的实际内容分布：
+//     y 0 ~ 30   第一行：设置按钮（左）、歌名文字、窗口按钮（右）
+//     y 31 ~ 63  第二行：主面板按钮（媒体库/播放列表/正在播放/洛雪音乐，x 从 17 起）、
+//                        右侧小图标按钮、搜索框（marginTop = 35）
+//
+// 于是有两种划法，二选一（受第 2 条限制）：
+//
+//   A. 第一行整条（PSEUDO_CAPTION_USE_GAP = false）
+//      y 4 ~ 31，从设置按钮右沿到窗口按钮左沿。最宽，但只有 27px 高。
+//
+//   B. 第二行中间的空档（PSEUDO_CAPTION_USE_GAP = true，默认）
+//      横向让开左边的主面板按钮、右边的小图标按钮 / 搜索框，纵向从 y 4 一直
+//      到面板底部 —— 也就是截图里红框那一条，上下贯通。面积和 A 差不多，但
+//      它是"整条高度"，鼠标随手一放就能拖。
+//      代价：第一行左侧（歌名文字那一块）不再是拖动区，想拖窗口得把鼠标挪到
+//      空档里。空档宽度不足 80px（窗口很窄）时会自动退回 A。
+// ---------------------------------------------------------------------------
+var PSEUDO_CAPTION_TOP = 4;              // 上边让 4px 给窗口上边缘的缩放热区，别设 0
+var PSEUDO_CAPTION_ROW1_H = 27;          // A 方案的高度（4 + 27 = 31，正好到第二行上沿）
+var PSEUDO_CAPTION_USE_GAP = true;       // true = 用红框那条上下贯通的空档
+var PSEUDO_CAPTION_GAP_MIN_WIDTH = 80;   // 空档窄于这个值就退回 A 方案
+
+// 算出"第二行中间的空档"：左边让开主面板按钮，右边让开小图标按钮 / 搜索框。
+// 返回 {x, w}；算不出来（面板还没初始化）或左右撞上了就返回 null。
+function pseudoCaptionGap(){
+	var l, r;
+	try {
+		// 主面板按钮是 top-left 组，x 是左边距，宽度按当前可见按钮重算
+		l = main_panel_btns.x + main_panel_btns.getWidth(true);
+	} catch (e) { return null; }
+	try {
+		// 右边三样东西谁最靠左就以谁为界：窗口按钮、小图标按钮、搜索框
+		r = ww - window_btns.getWidth();
+		if(additional_btns && additional_btns.getWidth(true) > 0)
+			r = Math.min(r, ww - additional_btns.x - additional_btns.getWidth(true));
+		if(g_searchbox && !g_searchbox.hide)
+			r = Math.min(r, ww - g_searchbox.w - cSearchBox.marginRight);
+	} catch (e) { return null; }
+	if(!(r > l)) return null;
+	return {x: l, w: r - l};
+}
+
 function SetPseudoCaption(){
 	if(layout_state.isEqual(0)) {
 		if(!compact_titlebar.isActive()){
-			var topleft_btns_w = topleft_btns.getWidth();
-			g_uihacks.SetPseudoCaption(topleft_btns_w, 5, Math.max(0, ww - window_btns.getWidth() - topleft_btns_w), 24);
+			// 标准两行模式：默认用"空档竖条"，太窄或关掉时用第一行整条
+			var x = topleft_btns.getWidth();
+			var w = Math.max(0, ww - window_btns.getWidth() - x);
+			var y = PSEUDO_CAPTION_TOP, h = PSEUDO_CAPTION_ROW1_H;
+			if(PSEUDO_CAPTION_USE_GAP){
+				var gap = pseudoCaptionGap();
+				if(gap && gap.w >= PSEUDO_CAPTION_GAP_MIN_WIDTH){
+					x = gap.x;
+					w = gap.w;
+					h = Math.max(h, wh - y);          // 一直下到面板底部
+				}
+			}
+			g_uihacks.SetPseudoCaption(x, y, Math.max(0, w), h);
 		} else {
+			// 单行紧凑模式：让开左边按钮组和右边窗口按钮
+			// （42 = 50px 大紧凑模式留 8px 下边，28 = 36px 紧凑模式整条）
 			if(g_searchbox.hide) {
 				var compact_btns_w = compact_btns.getWidth();
 				var window_btns_w = window_btns.getWidth();
-				g_uihacks.SetPseudoCaption(compact_btns_w, 8, ww - compact_btns_w - window_btns_w, (compact_titlebar.isEqual(2)?42:28));
+				g_uihacks.SetPseudoCaption(compact_btns_w, 8, ww - compact_btns_w - window_btns_w,
+					(compact_titlebar.isEqual(2)?42:28));
 			} else {
 				g_uihacks.SetPseudoCaption(0, 8, 0, 28);
 			}
 		}
 	} else {
+		// 迷你模式：单行，28 已经等于该行高度
 		var window_btns_w = window_btns.getWidth();
 		var topleft_btns_w = topleft_btns.getWidth();
 		g_uihacks.SetPseudoCaption(topleft_btns_w, 8, ww - window_btns_w - topleft_btns_w, 28);
@@ -960,7 +1081,6 @@ function on_paint(gr) {
 
 }
 function on_playback_new_track(metadb){
-	//setPlaybackPlaylist();
 	eval_caption_title(metadb);
 	if(properties.showwallpaper && properties.wallpapermode == 0) {
 		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
@@ -1005,7 +1125,6 @@ function on_mouse_leave() {
 }
 
 function on_mouse_lbtn_down(x,y){
-	//if(g_cursor.x!=x || g_cursor.y!=y) on_mouse_move(x,y);
 	g_searchbox.on_mouse("lbtn_down", x, y);
 	all_btns.on_mouse("lbtn_down",x, y);
 }
@@ -1127,10 +1246,12 @@ function draw_settings_menu(x,y){
 		var _menu_button = window.CreatePopupMenu();
         var idx;
 
-		_menu.AppendMenuItem(MF_STRING, 1811, "普通标题栏");
-		_menu.AppendMenuItem(MF_STRING, 1812, "紧凑标题栏 - 小");
-		_menu.AppendMenuItem(MF_STRING, 1813, "紧凑标题栏 - 大");		
+		_menu.AppendMenuItem(MF_STRING, 1811, "标准两行标题栏");
+		_menu.AppendMenuItem(MF_STRING, 1812, "常规紧凑标题栏");
+		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");		
 		_menu.CheckMenuRadioItem(1811, 1813, (parseInt(compact_titlebar.getValue())+1811));
+		_menu.AppendMenuSeparator();
+		_menu.AppendMenuItem(MF_STRING, 1814, "高分屏自动适配：" + ((g_hires_mode==1) ? "强制开启" : (g_hires_mode==2) ? "强制关闭" : "自动（当前" + (g_hires_display ? "已启用" : "未启用") + "）"));
 		
 		_menu.AppendMenuSeparator();
 		
@@ -1183,32 +1304,32 @@ function draw_settings_menu(x,y){
         switch(true) {
 			case (idx == 1800):
 				properties.tracktitle_ontop = !properties.tracktitle_ontop;
-				window.SetProperty("_DISPLAY: Track title", properties.tracktitle_ontop);
+				window.SetProperty("显示·曲目标题", properties.tracktitle_ontop);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1801):
 				properties.alwaysShowSearch = !properties.alwaysShowSearch;
-				window.SetProperty("_DISPLAY: always show search box", properties.alwaysShowSearch);
+				window.SetProperty("显示·始终显示搜索框", properties.alwaysShowSearch);
 				g_searchbox.toggleVisibility(true);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1803):
 				properties.showLightswitchBtn = !properties.showLightswitchBtn;
-				window.SetProperty("_DISPLAY: show light switch btn", properties.showLightswitchBtn);
+				window.SetProperty("显示·显示明暗切换按钮", properties.showLightswitchBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1804):
 				properties.showFullscreenBtn = !properties.showFullscreenBtn;
-				window.SetProperty("_DISPLAY: show fullscreen btn", properties.showFullscreenBtn);
+				window.SetProperty("显示·显示全屏按钮", properties.showFullscreenBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1805):
 				properties.toUpperCase = !properties.toUpperCase;
-				window.SetProperty("_DISPLAY: panels btn text to uppercase", properties.toUpperCase);
+				window.SetProperty("显示·面板按钮文字大写", properties.toUpperCase);
 				on_font_changed();
 				main_panel_btns.toUpperCase(properties.toUpperCase);
 				adapt_buttons_to_layout();
@@ -1216,19 +1337,19 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 1806):
 				properties.showNowPlayingBtn = !properties.showNowPlayingBtn;
-				window.SetProperty("_DISPLAY: show now playing btn", properties.showNowPlayingBtn);
+				window.SetProperty("显示·显示正在播放按钮", properties.showNowPlayingBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1807):
 				properties.showRightSidebarBtn = !properties.showRightSidebarBtn;
-				window.SetProperty("_DISPLAY: show right sidebar btn", properties.showRightSidebarBtn);
+				window.SetProperty("显示·显示右侧栏按钮", properties.showRightSidebarBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;
 			case (idx == 1808):
 				properties.showConfigLayoutBtn = !properties.showConfigLayoutBtn;
-				window.SetProperty("_DISPLAY: show configure layout btn", properties.showConfigLayoutBtn);
+				window.SetProperty("显示·显示布局配置按钮", properties.showConfigLayoutBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;				
@@ -1237,7 +1358,7 @@ function draw_settings_menu(x,y){
 					new_caption_format = utils.InputBox(window.ID, "请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f", "自定义窗口标题", properties.tracktitle_format, true);
 					if (!(new_caption_format == "" || typeof new_caption_format == 'undefined')) {
 						properties.tracktitle_format = new_caption_format;
-						window.SetProperty("_DISPLAY: Track title format", properties.tracktitle_format);
+						window.SetProperty("显示·曲目标题格式", properties.tracktitle_format);
 						eval_caption_title(fb.GetNowPlaying());
 					}
 				} catch(e) {
@@ -1246,7 +1367,7 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 1810):
 				properties.mini_mainmenu_button = !properties.mini_mainmenu_button;
-				window.SetProperty("_DISPLAY: mini main menu button", properties.mini_mainmenu_button);
+				window.SetProperty("显示·迷你主菜单按钮", properties.mini_mainmenu_button);
 				adapt_buttons_to_layout();
 				g_searchbox.on_size();
 				window.Repaint();
@@ -1272,15 +1393,22 @@ function draw_settings_menu(x,y){
 				adapt_buttons_to_layout();
 				window.Repaint();
 				break;				
+			case (idx == 1814):
+				// 自动 -> 强制开启 -> 强制关闭 循环，切换后重载全部面板让新设置生效
+				g_hires_mode = (g_hires_mode + 1) % 3;
+				window.SetProperty("全局·高分屏适配模式", g_hires_mode);
+				window.NotifyOthers("WSH_panels_reload", true);
+				window.Reload();
+				break;
 			case (idx == 1809):
 			case (idx == 1900):
 				properties.Remember_previous_state = !properties.Remember_previous_state;
-				window.SetProperty("Resume panel state on startup, except on visualization tab", properties.Remember_previous_state);
+				window.SetProperty("启动时恢复面板状态(可视化页除外)", properties.Remember_previous_state);
 				window.Repaint();
 				break;
 			case (idx == 1901):
 				properties.show_visualization = !properties.show_visualization;
-				window.SetProperty("_PROPERTY show visualization tab", properties.show_visualization);
+				window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
 				if(main_panel_state.isEqual(3)) main_panel_state.setValue(0);
 				get_colors();
 				adapt_buttons_to_layout();
@@ -1288,7 +1416,7 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 2000):
 				properties.showwallpaper = !properties.showwallpaper;
-				window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+				window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				get_colors();
 				if(properties.showwallpaper) {
 					g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
@@ -1297,37 +1425,37 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 2100):
 				properties.wallpapermode = 99;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 2110):
 				properties.wallpapermode = 0;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 2200):
 				properties.wallpaperblurred = !properties.wallpaperblurred;
-				window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 2210):
 				properties.wallpaperdisplay = 0;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 2220):
 				properties.wallpaperdisplay = 1;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 2230):
 				properties.wallpaperdisplay = 2;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
@@ -1499,45 +1627,43 @@ function draw_layout_menu(x,y){
    case (idx == 3990):
 		properties.minimode_dark_theme=!properties.minimode_dark_theme;
         window.NotifyOthers("minimode_dark_theme",properties.minimode_dark_theme);
-		window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+		window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 		get_colors();g_searchbox.adapt_look_to_layout();
         window.Repaint();
         break;
    case (idx == 4000):
 		properties.library_dark_theme=!properties.library_dark_theme;
         window.NotifyOthers("library_dark_theme",properties.library_dark_theme);
-		window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+		window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 		on_notify_data("library_dark_theme",properties.library_dark_theme);
         window.Repaint();
         break;
    case (idx == 4001):
 		properties.playlists_dark_theme=!properties.playlists_dark_theme;
         window.NotifyOthers("playlists_dark_theme",properties.playlists_dark_theme);
-		window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+		window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 		on_notify_data("playlists_dark_theme",properties.playlists_dark_theme);
-		fb.RunMainMenuCommand("View/ElPlaylist/Refresh");
+		runMainMenuCommand("View/ElPlaylist/Refresh");
         window.Repaint();
         break;
    case (idx == 4002):
 		properties.bio_dark_theme=!properties.bio_dark_theme;
         window.NotifyOthers("bio_dark_theme",properties.bio_dark_theme);
-		window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+		window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 		on_notify_data("bio_dark_theme",properties.bio_dark_theme);
         window.Repaint();
         break;
    case (idx == 4003):
 		properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
         break;
    case (idx == 4005):
         window.NotifyOthers("wallpaperVisibility",true);
-		//on_notify_data("wallpaperVisibility",true);
         break;
    case (idx == 4006):
         window.NotifyOthers("wallpaperVisibility",false);
-		//on_notify_data("wallpaperVisibility",false);
         break;
    case (idx == 4007):
         window.NotifyOthers("wallpaperBlur",true);
@@ -1549,19 +1675,19 @@ function draw_layout_menu(x,y){
         break;
 	case (idx == 4012):
 		globalProperties.fontAdjustement++;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
 	case (idx == 4013):
 		globalProperties.fontAdjustement--;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
 	case (idx == 4014):
 		globalProperties.fontAdjustement = 0;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
@@ -1894,23 +2020,7 @@ function draw_main_menu(x,y){
 	colors_menu.AppendMenuItem(MF_STRING, 5301, "跟随 CUI 深色/浅色模式");
 	colors_menu.CheckMenuItem(5301, properties.darklayout_follow_cui);
 
-	/*appearance_menu.AppendMenuItem(MF_STRING, 4025, "Enable disk cover cache");
-	appearance_menu.CheckMenuItem(4025, globalProperties.enableDiskCache);
-	appearance_menu.AppendMenuItem((globalProperties.enableDiskCache)?MF_STRING:MF_GRAYED, 4023, "Load all covers at startup");
-	appearance_menu.CheckMenuItem(4023, globalProperties.load_covers_at_startup);
-	appearance_menu.AppendMenuItem((globalProperties.enableDiskCache)?MF_STRING:MF_GRAYED, 4024, "Load all artist thumbnails at startup");
-	appearance_menu.CheckMenuItem(4024, globalProperties.load_artist_img_at_startup);	*/
-
 	skin_settings_menu.AppendMenuSeparator();
-	/*mem_solicitation = window.CreatePopupMenu();
-	mem_solicitation.AppendMenuItem(MF_STRING, 4042, "0 - Minimum");
-	mem_solicitation.AppendMenuItem(MF_STRING, 4043, "1 - Keep loaded covers in memory");
-	mem_solicitation.AppendMenuItem(MF_STRING, 4044, "2 - Load all covers at startup");
-	mem_solicitation.AppendMenuItem(MF_STRING, 4045, "3 - Load all covers && artist thumbnails at startup");
-	mem_solicitation.AppendMenuSeparator();
-	mem_solicitation.CheckMenuRadioItem(4042, 4045, 4042+globalProperties.mem_solicitation);
-	mem_solicitation.AppendMenuItem(MF_STRING, 4026, "Reset images cache");
-	mem_solicitation.AppendTo(skin_settings_menu, MF_STRING, "Covers && Memory usage");*/
 
 	skin_settings_menu.AppendMenuItem(MF_STRING, 4029, "封面与内存占用");
 	skin_settings_menu.AppendMenuItem(MF_STRING, 4026, "重置图像缓存");
@@ -2043,45 +2153,43 @@ function draw_main_menu(x,y){
    case (idx == 3990):
 		properties.minimode_dark_theme=!properties.minimode_dark_theme;
         window.NotifyOthers("minimode_dark_theme",properties.minimode_dark_theme);
-		window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+		window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 		get_colors();g_searchbox.adapt_look_to_layout();
         window.Repaint();
         break;
    case (idx == 4000):
 		properties.library_dark_theme=!properties.library_dark_theme;
         window.NotifyOthers("library_dark_theme",properties.library_dark_theme);
-		window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+		window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 		on_notify_data("library_dark_theme",properties.library_dark_theme);
         window.Repaint();
         break;
    case (idx == 4001):
 		properties.playlists_dark_theme=!properties.playlists_dark_theme;
         window.NotifyOthers("playlists_dark_theme",properties.playlists_dark_theme);
-		window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+		window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 		on_notify_data("playlists_dark_theme",properties.playlists_dark_theme);
-		fb.RunMainMenuCommand("View/ElPlaylist/Refresh");
+		runMainMenuCommand("View/ElPlaylist/Refresh");
         window.Repaint();
         break;
    case (idx == 4002):
 		properties.bio_dark_theme=!properties.bio_dark_theme;
         window.NotifyOthers("bio_dark_theme",properties.bio_dark_theme);
-		window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+		window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 		on_notify_data("bio_dark_theme",properties.bio_dark_theme);
         window.Repaint();
         break;
    case (idx == 4003):
 		properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
         break;
    case (idx == 4005):
         window.NotifyOthers("wallpaperVisibility",true);
-		//on_notify_data("wallpaperVisibility",true);
         break;
    case (idx == 4006):
         window.NotifyOthers("wallpaperVisibility",false);
-		//on_notify_data("wallpaperVisibility",false);
         break;
    case (idx == 4007):
         window.NotifyOthers("wallpaperBlur",true);
@@ -2093,11 +2201,9 @@ function draw_main_menu(x,y){
         break;
    case (idx == 40051):
         window.NotifyOthers("wallpaperVisibilityGlobal",true);
-		//on_notify_data("wallpaperVisibility",true);
         break;
    case (idx == 40061):
         window.NotifyOthers("wallpaperVisibilityGlobal",false);
-		//on_notify_data("wallpaperVisibility",false);
         break;
    case (idx == 40071):
         window.NotifyOthers("wallpaperBlurGlobal",true);
@@ -2124,19 +2230,19 @@ function draw_main_menu(x,y){
 		break;
 	case (idx == 4012):
 		globalProperties.fontAdjustement++;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
 	case (idx == 4013):
 		globalProperties.fontAdjustement--;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
 	case (idx == 4014):
 		globalProperties.fontAdjustement = 0;
-		window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
 		on_font_changed();
 		break;
@@ -2224,12 +2330,12 @@ function draw_main_menu(x,y){
 		break;
 	case (idx == 4047):
 		globalProperties.use_ratings_file_tags = true;
-		window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+		window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 		window.NotifyOthers("use_ratings_file_tags",globalProperties.use_ratings_file_tags);
 		break;
 	case (idx == 4048):
 		globalProperties.use_ratings_file_tags = false;
-		window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+		window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 		window.NotifyOthers("use_ratings_file_tags",globalProperties.use_ratings_file_tags);
 		break;
     case (idx == 4988):
@@ -2276,21 +2382,24 @@ function draw_main_menu(x,y){
 		lyrics_state.setValue(0);
         break;
     case (idx >= 5001 && idx < 5010):
-		Lightswitch(true,false);
 		globalProperties.colorsMainPanel = idx-5001;
-		window.SetProperty("GLOBAL colorsMainPanel",globalProperties.colorsMainPanel);
+		window.SetProperty("全局·主面板配色",globalProperties.colorsMainPanel);
 		window.NotifyOthers("colors",globalProperties.colorsMainPanel);
+		// 先落配色值再切深浅，Lightswitch 内部重算颜色时才会用到新值
+		Lightswitch(true,false);
         break;
     case (idx >= 5011 && idx < 5020):
-		Lightswitch(true,true);
 		globalProperties.colorsMainPanel = idx-5011;
-		window.SetProperty("GLOBAL colorsMainPanel",globalProperties.colorsMainPanel);
+		window.SetProperty("全局·主面板配色",globalProperties.colorsMainPanel);
 		window.NotifyOthers("colors",globalProperties.colorsMainPanel);
+		Lightswitch(true,true);
         break;
     case (idx >= 5101 && idx <= 5105):
 		globalProperties.colorsControls = idx-5101;
-		window.SetProperty("GLOBAL colorsControls",globalProperties.colorsControls);
+		window.SetProperty("全局·控制栏配色",globalProperties.colorsControls);
 		window.NotifyOthers("colorsControls",globalProperties.colorsControls);
+		get_colors();g_searchbox.adapt_look_to_layout();
+		window.Repaint();
         break;
     case (idx >= 5201 && idx < 5205):
 		globalProperties.colorsMiniPlayer = idx-5201;
@@ -2298,14 +2407,14 @@ function draw_main_menu(x,y){
         window.NotifyOthers("minimode_dark_theme",globalProperties.colorsMiniPlayer);
 		globalProperties.colorsMiniPlayer = globalProperties.colorsMiniPlayer-(properties.minimode_dark_theme?2:0);
 
-		window.SetProperty("GLOBAL colorsMiniPlayer",globalProperties.colorsMiniPlayer);
-		window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+		window.SetProperty("全局·迷你播放器配色",globalProperties.colorsMiniPlayer);
+		window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 		get_colors();g_searchbox.adapt_look_to_layout();
 		window.Repaint();
         break;
 	case (idx == 5301):
 		properties.darklayout_follow_cui = !properties.darklayout_follow_cui;
-		window.SetProperty("_DISPLAY: Dark layout follow CUI", properties.darklayout_follow_cui);
+		window.SetProperty("显示·深色布局跟随CUI", properties.darklayout_follow_cui);
 		on_colours_changed();
 		break;
     }
@@ -2321,7 +2430,6 @@ function draw_main_menu(x,y){
 	minimode_menu = undefined;
 	font_size = undefined;
 	if(FiltersMenu) FiltersMenu = undefined;
-	//schedulerMenu = undefined;
     library_menu = undefined;
     playlists_menu = undefined;
     bio_menu = undefined;
@@ -2375,7 +2483,7 @@ function on_notify_data(name, info) {
     switch(name) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 		break;
 		case "toggleLayoutMode":
@@ -2383,19 +2491,19 @@ function on_notify_data(name, info) {
 		break;
 		case "enableResizableBorders":
 			globalProperties.enableResizableBorders = info;
-			window.SetProperty("GLOBAL enableResizableBorders", globalProperties.enableResizableBorders);
+			window.SetProperty("全局·启用可调整边框", globalProperties.enableResizableBorders);
 		break;
 		case "MemSolicitation":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "history_previous":
 			g_searchbox.clearInputbox(false);
@@ -2447,13 +2555,13 @@ function on_notify_data(name, info) {
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement),
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			on_font_changed();
 			window.Repaint();
 		break;
 		case "library_dark_theme":
 			properties.library_dark_theme=info;
-			window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+			window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 			darklib_state.setValue((properties.library_dark_theme)?1:0);
 			get_colors()
 			g_searchbox.adapt_look_to_layout();
@@ -2461,7 +2569,7 @@ function on_notify_data(name, info) {
 		break;
 		case "bio_stick_to_dark_theme":
 			properties.bio_stick2darklayout=info;
-			window.SetProperty("BIO stick to Dark layout", properties.bio_stick2darklayout);
+			window.SetProperty("艺术家简介·跟随深色布局", properties.bio_stick2darklayout);
 			darkbiostick_state.setValue((properties.bio_stick2darklayout)?1:0);
 			window.Repaint();
 		break;
@@ -2470,7 +2578,7 @@ function on_notify_data(name, info) {
 		break;
 		case "playlists_dark_theme":
 			properties.playlists_dark_theme=info;
-			window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+			window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 			darkplaylist_state.setValue((properties.playlists_dark_theme)?1:0);
 			get_colors()
 			g_searchbox.adapt_look_to_layout();
@@ -2478,7 +2586,7 @@ function on_notify_data(name, info) {
 		break;
 		case "bio_dark_theme":
 			properties.bio_dark_theme=info;
-			window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+			window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 			darkbio_state.setValue((properties.bio_dark_theme)?1:0);
 			get_colors();
 			g_searchbox.adapt_look_to_layout();
@@ -2486,7 +2594,7 @@ function on_notify_data(name, info) {
 		break;	
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme=info;
-			window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 			darkvisu_state.setValue((properties.visualization_dark_theme)?1:0);
 			get_colors();
 			g_searchbox.adapt_look_to_layout();
@@ -2504,7 +2612,7 @@ function on_notify_data(name, info) {
 		break;
 		case "save_filter_state":
 			properties.savedFilterState = info;
-			window.SetProperty("_PROPERTY: Saved filter state", properties.savedFilterState);
+			window.SetProperty("属性·已保存的筛选状态", properties.savedFilterState);
 		break;
 		case "filter1_state":
 			filter1_state.value=info;
@@ -2517,20 +2625,20 @@ function on_notify_data(name, info) {
 		break;
 		case"DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 		break;
 		case"LoadAllCoversState":
 			globalProperties.load_covers_at_startup = info;
-			window.SetProperty("COVER Load all at startup", globalProperties.load_covers_at_startup);
+			window.SetProperty("封面·启动时全部加载", globalProperties.load_covers_at_startup);
 		break;
 		case"LoadAllArtistImgState":
 			globalProperties.load_artist_img_at_startup = info;
-			window.SetProperty("ARTIST IMG Load all at startup", globalProperties.load_artist_img_at_startup);
+			window.SetProperty("艺术家图片·启动时全部加载", globalProperties.load_artist_img_at_startup);
 		break;
 		case "pmanager_height":
 			if(!g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
 				properties.fullMode_pmanagerheight=info;
-				window.SetProperty("Full mode pmanager saved height", properties.fullMode_pmanagerheight);
+				window.SetProperty("完整模式·播放列表管理器保存高度", properties.fullMode_pmanagerheight);
 			}
 		break;
 		case "schedulerState":
@@ -2539,13 +2647,13 @@ function on_notify_data(name, info) {
 		case "playlist_height":
 			if(!g_uihacks.getFullscreenState() && g_uihacks.getMainWindowState()==0){
 				properties.miniMode_playlistheight=info;
-				window.SetProperty("Mini mode playlist saved height", properties.miniMode_playlistheight);
+				window.SetProperty("迷你模式·播放列表保存高度", properties.miniMode_playlistheight);
 			}
 		break;
 		case "minimode_dark_theme":
 			if(layout_state.isEqual(1)){
 				properties.minimode_dark_theme=info;
-				window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+				window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 				darkmini_state.setValue((properties.minimode_dark_theme)?1:0);
 				get_colors()
 				window.Repaint();
@@ -2707,11 +2815,6 @@ oSearch = function() {
 		this.y = y;
 		if(this.hide) return;
 
-		/*if(this.isHoverHistory){
-			gr.DrawImage(this.images.search_history_hover_icon, this.x+this.w-Math.round(cSearchBox.paddingRight/2 + this.images.search_history_icon.Width/2), this.y+Math.round(this.h/2 - this.images.search_history_icon.Height/2), this.images.search_history_hover_icon.Width, this.images.search_history_hover_icon.Height, 0, 0, this.images.search_history_hover_icon.Width, this.images.search_history_hover_icon.Height,0,255);
-		} else {
-			gr.DrawImage(this.images.search_history_icon, this.x+this.w-Math.round(cSearchBox.paddingRight/2 + this.images.search_history_icon.Width/2), this.y+Math.round(this.h/2 - this.images.search_history_icon.Height/2), this.images.search_history_icon.Width, this.images.search_history_icon.Height, 0, 0, this.images.search_history_icon.Width, this.images.search_history_hover_icon.Height,0,255);
-		}*/
 		this.search_history_bt.draw(gr, this.x+this.w-Math.round(cSearchBox.paddingRight/2 + this.images.search_history_icon.Width/2), this.y+Math.round(this.h/2 - this.images.search_history_icon.Height/2)-2, 255);
 
         if(this.inputbox.text.length > 0 || (!(properties.alwaysShowSearch && !compact_titlebar.isActive()) && layout_state.isEqual(0))) {
@@ -2792,10 +2895,6 @@ oSearch = function() {
                 break;
             case "leave":
 				this.search_history_bt.changeState(ButtonStates.normal);
-				/*if(this.isHoverHistory) {
-					this.isHoverHistory = false;
-					this.repaint();
-				}*/
                 break;
         };
     };
@@ -2867,7 +2966,6 @@ function g_launchSearch(play_results) {
 	catch {
 		var search_results = fb.GetQueryItems(library_list, g_searchbox.inputbox.text.toLowerCase());
 	}
-	//window.NotifyOthers("search_launched",0);
 	apply_playlist(search_results,play_results,true,false);
 	search_results = undefined;
 	window.NotifyOthers("refresh_filters",0);
@@ -2901,7 +2999,6 @@ searchHistory = function () {
 		this.sort();
 	}
 	this.sort = function () {
-		//this.historyList.sort();
 	}
 	this.reset = function () {
 		this.historyList = Array();
@@ -2930,7 +3027,6 @@ searchHistory = function () {
     this.writeSearchHistoryIni = function () {
 		if(this.historyList.length>0){
 			try {
-				//if(g_files.FileExists(SettingsPath + "SearchHistory.ini")) g_files.DeleteFile(SettingsPath + "SearchHistory.ini");
 				var MyFile = g_files.CreateTextFile(SettingsPath+"SearchHistory.ini", true);
 				for (var i = 0; i <this.historyList.length; i++) {
 					MyFile.WriteLine(this.historyList[i][0]+" ## "+this.historyList[i][1]);
@@ -2968,7 +3064,7 @@ function draw_searchHistory_menu(x, y) {
     switch (true) {
 		case (idx==1000):
 			properties.autosearch = !properties.autosearch;
-			window.SetProperty("_DISPLAY: autosearch", properties.autosearch);
+			window.SetProperty("显示·自动搜索", properties.autosearch);
 			g_searchbox.on_init();
 		break;
 		case (idx > 0 && idx <= properties.searchHistory_max_items+1):
@@ -2987,7 +3083,7 @@ function draw_searchHistory_menu(x, y) {
 function toggleWallpaper(wallpaper_state){
 	wallpaper_state = typeof wallpaper_state !== 'undefined' ? wallpaper_state : !properties.showwallpaper;
 	properties.showwallpaper = wallpaper_state;
-	window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	if(properties.showwallpaper) {
 		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 	};
@@ -2997,7 +3093,7 @@ function toggleWallpaper(wallpaper_state){
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = !properties.wallpaperblurred;
-	window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 	g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	window.Repaint();
 }
@@ -3035,14 +3131,21 @@ function on_init(){
 			welcome_msg_timer=false;
 		}, 200);
 		RefreshPSS();
-	} else if(versionCompare(theme_version.getValue(),globalProperties.lastest_breaking_version)<0) {
+	} else if(versionCompare(theme_version.getValue(),globalProperties.lastest_breaking_version)<0
+		&& window.GetProperty("全局·已确认配置版本")!==globalProperties.theme_version) {
+		window.SetProperty("全局·已确认配置版本", globalProperties.theme_version);
+		theme_version.setValue(globalProperties.theme_version, false);
 		var welcome_msg_timer = setTimeout(function(){
-			NoticeBox(" ","<div class='titleBig'>导入 fcl 文件，Eole v"+(globalProperties.lastest_breaking_version)+" 及更高版本</div><div class='separator'></div><br/>看起来您的 Columns UI 配置文件已过时，需要导入新的配置文件。您可能会丢失对此主题所做的一些自定义，但之后可以快速恢复。<br/><br/>在首选项页面（Foobar > 文件 > 首选项）中，前往<br/>显示 > Columns UI > 主选项卡 > 导入配置...<br/><br/>然后导入此文件：[YOUR_FOOBAR_DIRECTORY]/themes/eole/columnsUI_eole.fcl", "知道了，打开首选项","以后再说",'fb.RunMainMenuCommand("File/Preferences")');
+			NoticeBox(" ","<div class='titleBig'>导入 fcl 文件，Eole v"+(globalProperties.lastest_breaking_version)+" 及更高版本</div><div class='separator'></div><br/>看起来您的 Columns UI 配置文件已过时，需要导入新的配置文件。您可能会丢失对此主题所做的一些自定义，但之后可以快速恢复。<br/><br/>在首选项页面（Foobar > 文件 > 首选项）中，前往<br/>显示 > Columns UI > 主选项卡 > 导入配置...<br/><br/>然后导入此文件：[YOUR_FOOBAR_DIRECTORY]/themes/eole/columnsUI_eole.fcl", "知道了，打开首选项","以后再说",'runMainMenuCommand("File/Preferences")');
 			clearTimeout(welcome_msg_timer);
 			welcome_msg_timer=false;
 		}, 200);
 	}
 	setTimeout(on_colours_changed, 100);
+	setTimeout(function () {
+		window.NotifyOthers("library_dark_theme", properties.library_dark_theme);
+		window.NotifyOthers("playlists_dark_theme", properties.playlists_dark_theme);
+	}, 800);
 }
 on_init();
 

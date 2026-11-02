@@ -1,113 +1,113 @@
 ﻿var properties_big = {
-    ParentName:  window.GetProperty("BIG:ParentName", "MainPanel"),
-    lockOnNowPlaying: window.GetProperty("BIG:lockOnNowPlaying", true),
-    lockOnPlaylistNamed: window.GetProperty("BIG:lockOnPlaylistNamed", ""),
-    FollowNowPlaying: window.GetProperty("BIG:FollowNowPlaying", true),
-    defaultRowHeight: window.GetProperty("BIG:defaultRowHeight", 30),
-    drawAlternateBG: window.GetProperty("BIG:drawAlternateBG", false),
-    extraRowsNumber: window.GetProperty("BIG:extraRowsNumber", 1),
-    minimumRowsNumberPerGroup: window.GetProperty("BIG:minimumRowsNumberPerGroup", 0),
-    groupHeaderRowsNumber: window.GetProperty("BIG:groupHeaderRowsNumber", 2),
-    groupHeaderRowsNumberDouble: window.GetProperty("BIG:groupHeaderRowsNumberDouble", 1),
-    showHeaderBar: window.GetProperty("BIG:showHeaderBar", true),
-    showHeaderBarTrackInfosOn: window.GetProperty("BIG:showHeaderBarTrackInfosOn", true),
-    showHeaderBarTrackInfosOff: window.GetProperty("BIG:showHeaderBarTrackInfosOff", true),
-	showToolTip: window.GetProperty("BIG:showToolTip", true),
-	darklayout: window.GetProperty("BIG:darklayout", false),
-    expandBySingleClick: window.GetProperty("BIG:expandBySingleClick", true),
-    minimode_dark_theme: window.GetProperty("BIG:minimode_dark_theme", true),
-    library_dark_theme: window.GetProperty("BIG:library_dark_theme", false),
-    playlists_dark_theme: window.GetProperty("BIG:playlists_dark_theme", false),
-    bio_dark_theme: window.GetProperty("BIG:bio_dark_theme", false),
-	bio_stick2darklayout: window.GetProperty("BIG:bio_stick2darklayout",true),
-    visualization_dark_theme: window.GetProperty("BIG:visualization_dark_theme", false),
-    showwallpaper: window.GetProperty("BIG:showwallpaper", false),
-    wallpaperblurred: window.GetProperty("BIG:wallpaperblurred", true),
-    wallpaperblurvalue: window.GetProperty("BIG:wallpaperblurvalue", 1.05),
-    wallpapermode: window.GetProperty("BIG:wallpapermode", 0),
-    wallpaperdisplay: window.GetProperty("BIG:wallpaperdisplay", 0),
-    defaultPlaylistItemAction: window.GetProperty("BIG:defaultPlaylistItemAction", "Play"), //"Add to playback queue"
-    showFilterBox: window.GetProperty("BIG:showFilterBox", true),
-    doubleRowText: window.GetProperty("BIG:doubleRowText", true),
-    doubleRowShowCover: window.GetProperty("BIG:doubleRowShowCover", true),
-    showArtistAlways: window.GetProperty("BIG:showArtistAlways", true),
-    showPlaycount: window.GetProperty("BIG:showPlaycount", false),
-    showBitrate: window.GetProperty("BIG:showBitrate", false),
-    showCodec: window.GetProperty("BIG:showCodec", false),
-    showRating: window.GetProperty("BIG:showRating", true),
-    showRatingSelected: window.GetProperty("BIG:showRatingSelected", true),
-    showRatingRated: window.GetProperty("BIG:showRatingRated", true),
-    drawUpAndDownScrollbar: window.GetProperty("BIG:drawUpAndDownScrollbar", false),
-    showMood: window.GetProperty("BIG:showMood", false),
-    drawProgressBar: window.GetProperty("BIG:drawProgressBar", true),
-    AlbumArtProgressbar: window.GetProperty("BIG:AlbumArtProgressbar", true),
-    enableTouchControl: window.GetProperty("BIG:enableTouchControl", false),
-    DropInplaylist: window.GetProperty("BIG:DropInplaylist", false),
-    thumbnailWidthMin: window.GetProperty("BIG:thumbnailWidthMin", 50),
-    thumbnailWidth: window.GetProperty("BIG:thumbnailWidth", 75),
-	circleMode: window.GetProperty("BIG:circleMode", false),
-	showSettingsMenu: window.GetProperty("BIG:showSettingsMenu", true),
-	enableAutoSwitchPlaylistMode: window.GetProperty("BIG:enableAutoSwitchPlaylistMode", true),
-	displayActiveOnPlaybackStopped: window.GetProperty("BIG:displayActiveOnPlaybackStopped", false),
-    showGroupHeaders: window.GetProperty("BIG:showGroupHeaders", true),
-    autocollapse: window.GetProperty("BIG:autocollapse", false),
-    addedRows_end_default: window.GetProperty("BIG:addedRows_end_default", 1),
+    ParentName:  window.GetProperty("大面板·父面板名称", "MainPanel"),
+    lockOnNowPlaying: window.GetProperty("大面板·锁定正在播放", true),
+    lockOnPlaylistNamed: window.GetProperty("大面板·锁定指定播放列表", ""),
+    FollowNowPlaying: window.GetProperty("大面板·跟随正在播放", true),
+    defaultRowHeight: window.GetProperty("大面板·默认行高", 30),
+    drawAlternateBG: window.GetProperty("大面板·交替行背景", false),
+    extraRowsNumber: window.GetProperty("大面板·额外行数", 1),
+    minimumRowsNumberPerGroup: window.GetProperty("大面板·每组最少行数", 0),
+    groupHeaderRowsNumber: window.GetProperty("大面板·分组标题行数", 2),
+    groupHeaderRowsNumberDouble: window.GetProperty("大面板·分组标题行数(双行)", 1),
+    showHeaderBar: window.GetProperty("大面板·显示标题栏", true),
+    showHeaderBarTrackInfosOn: window.GetProperty("大面板·显示标题栏(曲目信息开)", true),
+    showHeaderBarTrackInfosOff: window.GetProperty("大面板·显示标题栏(曲目信息关)", true),
+	showToolTip: window.GetProperty("大面板·显示工具提示", true),
+	darklayout: window.GetProperty("大面板·深色布局", false),
+    expandBySingleClick: window.GetProperty("大面板·单击展开", true),
+    minimode_dark_theme: window.GetProperty("大面板·迷你模式深色主题", true),
+    library_dark_theme: window.GetProperty("大面板·媒体库深色主题", false),
+    playlists_dark_theme: window.GetProperty("大面板·播放列表深色主题", false),
+    bio_dark_theme: window.GetProperty("大面板·艺术家简介深色主题", false),
+	bio_stick2darklayout: window.GetProperty("大面板·艺术家简介跟随深色布局",true),
+    visualization_dark_theme: window.GetProperty("大面板·可视化深色主题", false),
+    showwallpaper: window.GetProperty("大面板·显示壁纸", false),
+    wallpaperblurred: window.GetProperty("大面板·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("大面板·壁纸模糊强度", 1.05),
+    wallpapermode: window.GetProperty("大面板·壁纸模式", 0),
+    wallpaperdisplay: window.GetProperty("大面板·壁纸显示方式", 0),
+    defaultPlaylistItemAction: window.GetProperty("大面板·播放列表默认点击动作", "Play"), //"Add to playback queue"
+    showFilterBox: window.GetProperty("大面板·显示筛选框", true),
+    doubleRowText: window.GetProperty("大面板·双行文本", true),
+    doubleRowShowCover: window.GetProperty("大面板·双行显示封面", true),
+    showArtistAlways: window.GetProperty("大面板·始终显示艺术家", true),
+    showPlaycount: window.GetProperty("大面板·显示播放次数", false),
+    showBitrate: window.GetProperty("大面板·显示比特率", false),
+    showCodec: window.GetProperty("大面板·显示编码", false),
+    showRating: window.GetProperty("大面板·显示评级", true),
+    showRatingSelected: window.GetProperty("大面板·显示评级(选中行)", true),
+    showRatingRated: window.GetProperty("大面板·显示评级(已评级行)", true),
+    drawUpAndDownScrollbar: window.GetProperty("大面板·显示上下滚动按钮", false),
+    showMood: window.GetProperty("大面板·显示情绪", false),
+    drawProgressBar: window.GetProperty("大面板·绘制进度条", true),
+    AlbumArtProgressbar: window.GetProperty("大面板·专辑封面进度条", true),
+    enableTouchControl: window.GetProperty("大面板·启用触摸控制", false),
+    DropInplaylist: window.GetProperty("大面板·可拖入播放列表", false),
+    thumbnailWidthMin: window.GetProperty("大面板·缩略图最小宽度", 50),
+    thumbnailWidth: window.GetProperty("大面板·缩略图宽度", 75),
+	circleMode: window.GetProperty("大面板·圆形模式", false),
+	showSettingsMenu: window.GetProperty("大面板·显示设置菜单", true),
+	enableAutoSwitchPlaylistMode: window.GetProperty("大面板·自动切换播放列表模式", true),
+	displayActiveOnPlaybackStopped: window.GetProperty("大面板·停止播放时仍显示活动项", false),
+    showGroupHeaders: window.GetProperty("大面板·显示分组标题", true),
+    autocollapse: window.GetProperty("大面板·自动折叠", false),
+    addedRows_end_default: window.GetProperty("大面板·末尾空行数", 1),
 };
 
 var properties_mini = {
-    ParentName:  window.GetProperty("MINI:ParentName", "MiniPanel"),
-    lockOnNowPlaying: window.GetProperty("MINI:lockOnNowPlaying", false),
-    lockOnPlaylistNamed: window.GetProperty("MINI:lockOnPlaylistNamed", ""),
-    FollowNowPlaying: window.GetProperty("MINI:FollowNowPlaying", true),
-    defaultRowHeight: window.GetProperty("MINI:defaultRowHeight", 26),
-    drawAlternateBG: window.GetProperty("MINI:drawAlternateBG", false),
-    extraRowsNumber: window.GetProperty("MINI:extraRowsNumber", 1),
-    minimumRowsNumberPerGroup: window.GetProperty("MINI:minimumRowsNumberPerGroup", 0),
-    groupHeaderRowsNumber: window.GetProperty("MINI:groupHeaderRowsNumber", 2),
-    groupHeaderRowsNumberDouble: window.GetProperty("MINI:groupHeaderRowsNumberDouble", 1),
-    showHeaderBar: window.GetProperty("MINI:showHeaderBar", false),
-    showHeaderBarTrackInfosOn: window.GetProperty("MINI:showHeaderBarTrackInfosOn", true),
-    showHeaderBarTrackInfosOff: window.GetProperty("MINI:showHeaderBarTrackInfosOff", true),
-	showToolTip: window.GetProperty("MINI:showToolTip", true),
-    expandBySingleClick: window.GetProperty("MINI:expandBySingleClick", true),
-	darklayout: window.GetProperty("MINI:darklayout", true),
-    minimode_dark_theme: window.GetProperty("MINI:minimode_dark_theme", true),
-    library_dark_theme: window.GetProperty("MINI:library_dark_theme", false),
-    playlists_dark_theme: window.GetProperty("MINI:playlists_dark_theme", false),
-    bio_dark_theme: window.GetProperty("MINI:bio_dark_theme", false),
-	bio_stick2darklayout: window.GetProperty("MINI:bio_stick2darklayout",false),
-    visualization_dark_theme: window.GetProperty("MINI:visualization_dark_theme", false),
-    showwallpaper: window.GetProperty("MINI:showwallpaper", false),
-    wallpaperblurred: window.GetProperty("MINI:wallpaperblurred", true),
-    wallpaperblurvalue: window.GetProperty("MINI:wallpaperblurvalue", 1.05),
-    wallpapermode: window.GetProperty("MINI:wallpapermode", 0),
-    wallpaperdisplay: window.GetProperty("MINI:wallpaperdisplay", 0),
-    defaultPlaylistItemAction: window.GetProperty("MINI:defaultPlaylistItemAction", "Play"), //"Add to playback queue"
-    showFilterBox: window.GetProperty("MINI:showFilterBox", true),
-    doubleRowText: window.GetProperty("MINI:doubleRowText", true),
-    doubleRowShowCover: window.GetProperty("MINI:doubleRowShowCover", true),
-    showArtistAlways: window.GetProperty("MINI:showArtistAlways", true),
-    showPlaycount: window.GetProperty("BIG:showPlaycount", false),
-    showBitrate: window.GetProperty("BIG:showBitrate", false),
-    showCodec: window.GetProperty("BIG:showCodec", false),
-    showRating: window.GetProperty("MINI:showRating", true),
-    showRatingSelected: window.GetProperty("MINI:showRatingSelected", true),
-    showRatingRated: window.GetProperty("MINI:showRatingRated", true),
-    drawUpAndDownScrollbar: window.GetProperty("MINI:drawUpAndDownScrollbar", false),
-    showMood: window.GetProperty("MINI:showMood", false),
-    drawProgressBar: window.GetProperty("MINI:drawProgressBar", true),
-    AlbumArtProgressbar: window.GetProperty("MINI:AlbumArtProgressbar", true),
-    enableTouchControl: window.GetProperty("MINI:enableTouchControl", false),
-    DropInplaylist: window.GetProperty("MINI:DropInplaylist", true),
-    thumbnailWidthMin: window.GetProperty("MINI:thumbnailWidthMin", 50),
-    thumbnailWidth: window.GetProperty("MINI:thumbnailWidth", 75),
-	circleMode: window.GetProperty("MINI:circleMode", false),
-	showSettingsMenu: window.GetProperty("MINI:showSettingsMenu", true),
-	enableAutoSwitchPlaylistMode: window.GetProperty("MINI:enableAutoSwitchPlaylistMode", false),
-	displayActiveOnPlaybackStopped: window.GetProperty("MINI:displayActiveOnPlaybackStopped", true),
-    showGroupHeaders: window.GetProperty("MINI:showGroupHeaders", false),
-    autocollapse: window.GetProperty("MINI:autocollapse", false),
-    addedRows_end_default: window.GetProperty("MINI:addedRows_end_default", 2),
+    ParentName:  window.GetProperty("迷你·父面板名称", "MiniPanel"),
+    lockOnNowPlaying: window.GetProperty("迷你·锁定正在播放", false),
+    lockOnPlaylistNamed: window.GetProperty("迷你·锁定指定播放列表", ""),
+    FollowNowPlaying: window.GetProperty("迷你·跟随正在播放", true),
+    defaultRowHeight: window.GetProperty("迷你·默认行高", 26),
+    drawAlternateBG: window.GetProperty("迷你·交替行背景", false),
+    extraRowsNumber: window.GetProperty("迷你·额外行数", 1),
+    minimumRowsNumberPerGroup: window.GetProperty("迷你·每组最少行数", 0),
+    groupHeaderRowsNumber: window.GetProperty("迷你·分组标题行数", 2),
+    groupHeaderRowsNumberDouble: window.GetProperty("迷你·分组标题行数(双行)", 1),
+    showHeaderBar: window.GetProperty("迷你·显示标题栏", false),
+    showHeaderBarTrackInfosOn: window.GetProperty("迷你·显示标题栏(曲目信息开)", true),
+    showHeaderBarTrackInfosOff: window.GetProperty("迷你·显示标题栏(曲目信息关)", true),
+	showToolTip: window.GetProperty("迷你·显示工具提示", true),
+    expandBySingleClick: window.GetProperty("迷你·单击展开", true),
+	darklayout: window.GetProperty("迷你·深色布局", true),
+    minimode_dark_theme: window.GetProperty("迷你·迷你模式深色主题", true),
+    library_dark_theme: window.GetProperty("迷你·媒体库深色主题", false),
+    playlists_dark_theme: window.GetProperty("迷你·播放列表深色主题", false),
+    bio_dark_theme: window.GetProperty("迷你·艺术家简介深色主题", false),
+	bio_stick2darklayout: window.GetProperty("迷你·艺术家简介跟随深色布局",false),
+    visualization_dark_theme: window.GetProperty("迷你·可视化深色主题", false),
+    showwallpaper: window.GetProperty("迷你·显示壁纸", false),
+    wallpaperblurred: window.GetProperty("迷你·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("迷你·壁纸模糊强度", 1.05),
+    wallpapermode: window.GetProperty("迷你·壁纸模式", 0),
+    wallpaperdisplay: window.GetProperty("迷你·壁纸显示方式", 0),
+    defaultPlaylistItemAction: window.GetProperty("迷你·播放列表默认点击动作", "Play"), //"Add to playback queue"
+    showFilterBox: window.GetProperty("迷你·显示筛选框", true),
+    doubleRowText: window.GetProperty("迷你·双行文本", true),
+    doubleRowShowCover: window.GetProperty("迷你·双行显示封面", true),
+    showArtistAlways: window.GetProperty("迷你·始终显示艺术家", true),
+    showPlaycount: window.GetProperty("大面板·显示播放次数", false),
+    showBitrate: window.GetProperty("大面板·显示比特率", false),
+    showCodec: window.GetProperty("大面板·显示编码", false),
+    showRating: window.GetProperty("迷你·显示评级", true),
+    showRatingSelected: window.GetProperty("迷你·显示评级(选中行)", true),
+    showRatingRated: window.GetProperty("迷你·显示评级(已评级行)", true),
+    drawUpAndDownScrollbar: window.GetProperty("迷你·显示上下滚动按钮", false),
+    showMood: window.GetProperty("迷你·显示情绪", false),
+    drawProgressBar: window.GetProperty("迷你·绘制进度条", true),
+    AlbumArtProgressbar: window.GetProperty("迷你·专辑封面进度条", true),
+    enableTouchControl: window.GetProperty("迷你·启用触摸控制", false),
+    DropInplaylist: window.GetProperty("迷你·可拖入播放列表", true),
+    thumbnailWidthMin: window.GetProperty("迷你·缩略图最小宽度", 50),
+    thumbnailWidth: window.GetProperty("迷你·缩略图宽度", 75),
+	circleMode: window.GetProperty("迷你·圆形模式", false),
+	showSettingsMenu: window.GetProperty("迷你·显示设置菜单", true),
+	enableAutoSwitchPlaylistMode: window.GetProperty("迷你·自动切换播放列表模式", false),
+	displayActiveOnPlaybackStopped: window.GetProperty("迷你·停止播放时仍显示活动项", true),
+    showGroupHeaders: window.GetProperty("迷你·显示分组标题", false),
+    autocollapse: window.GetProperty("迷你·自动折叠", false),
+    addedRows_end_default: window.GetProperty("迷你·末尾空行数", 2),
 };
 var properties_common = {
 	panelName: 'WSHsmoothplaylist',
@@ -135,7 +135,7 @@ var properties_common = {
 	panelFontAdjustement: 0,
 	extraBottomRows: 1,
 	load_image_from_cache_direct:true,
-	TFsorting: window.GetProperty("MAINPANEL Playlist Sort TitleFormat",""),
+	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
 
 };
 var properties = {}
@@ -152,6 +152,84 @@ function setAllProperties(){
 }
 setAllProperties();
 
+// ── 属性名 → 真实存储键 ──────────────────────────────────────────────
+// properties_big / properties_mini 用的是中文键（如 "大面板·双行文本"），但 setOneProperty()
+// 以前按 "大面板·通用" + 属性名 拼键，拼出来是 "大面板·通用doubleRowText" —— 跟定义里的键
+// 不是同一个。结果是：菜单改了值写进 A 键，重启后从 B 键读，所有用菜单改的设置都不会保存
+// （双行显示、行高、评级、进度条……全部）。这里把定义里的键抄成表，读写都按表走。
+var PROP_KEY_BIG = {
+		"ParentName": "大面板·父面板名称", 	"lockOnNowPlaying": "大面板·锁定正在播放", 	"lockOnPlaylistNamed": "大面板·锁定指定播放列表",
+		"FollowNowPlaying": "大面板·跟随正在播放", 	"defaultRowHeight": "大面板·默认行高", 	"drawAlternateBG": "大面板·交替行背景",
+		"extraRowsNumber": "大面板·额外行数", 	"minimumRowsNumberPerGroup": "大面板·每组最少行数", 	"groupHeaderRowsNumber": "大面板·分组标题行数",
+		"groupHeaderRowsNumberDouble": "大面板·分组标题行数(双行)", 	"showHeaderBar": "大面板·显示标题栏", 	"showHeaderBarTrackInfosOn": "大面板·显示标题栏(曲目信息开)",
+		"showHeaderBarTrackInfosOff": "大面板·显示标题栏(曲目信息关)", 	"showToolTip": "大面板·显示工具提示", 	"darklayout": "大面板·深色布局",
+		"expandBySingleClick": "大面板·单击展开", 	"minimode_dark_theme": "大面板·迷你模式深色主题", 	"library_dark_theme": "大面板·媒体库深色主题",
+		"playlists_dark_theme": "大面板·播放列表深色主题", 	"bio_dark_theme": "大面板·艺术家简介深色主题", 	"bio_stick2darklayout": "大面板·艺术家简介跟随深色布局",
+		"visualization_dark_theme": "大面板·可视化深色主题", 	"showwallpaper": "大面板·显示壁纸", 	"wallpaperblurred": "大面板·壁纸模糊",
+		"wallpaperblurvalue": "大面板·壁纸模糊强度", 	"wallpapermode": "大面板·壁纸模式", 	"wallpaperdisplay": "大面板·壁纸显示方式",
+		"defaultPlaylistItemAction": "大面板·播放列表默认点击动作", 	"showFilterBox": "大面板·显示筛选框", 	"doubleRowText": "大面板·双行文本",
+		"doubleRowShowCover": "大面板·双行显示封面", 	"showArtistAlways": "大面板·始终显示艺术家", 	"showPlaycount": "大面板·显示播放次数",
+		"showBitrate": "大面板·显示比特率", 	"showCodec": "大面板·显示编码", 	"showRating": "大面板·显示评级",
+		"showRatingSelected": "大面板·显示评级(选中行)", 	"showRatingRated": "大面板·显示评级(已评级行)", 	"drawUpAndDownScrollbar": "大面板·显示上下滚动按钮",
+		"showMood": "大面板·显示情绪", 	"drawProgressBar": "大面板·绘制进度条", 	"AlbumArtProgressbar": "大面板·专辑封面进度条",
+		"enableTouchControl": "大面板·启用触摸控制", 	"DropInplaylist": "大面板·可拖入播放列表", 	"thumbnailWidthMin": "大面板·缩略图最小宽度",
+		"thumbnailWidth": "大面板·缩略图宽度", 	"circleMode": "大面板·圆形模式", 	"showSettingsMenu": "大面板·显示设置菜单",
+		"enableAutoSwitchPlaylistMode": "大面板·自动切换播放列表模式", 	"displayActiveOnPlaybackStopped": "大面板·停止播放时仍显示活动项", 	"showGroupHeaders": "大面板·显示分组标题",
+		"autocollapse": "大面板·自动折叠", 	"addedRows_end_default": "大面板·末尾空行数"
+};
+
+var PROP_KEY_MINI = {
+		"ParentName": "迷你·父面板名称", 	"lockOnNowPlaying": "迷你·锁定正在播放", 	"lockOnPlaylistNamed": "迷你·锁定指定播放列表",
+		"FollowNowPlaying": "迷你·跟随正在播放", 	"defaultRowHeight": "迷你·默认行高", 	"drawAlternateBG": "迷你·交替行背景",
+		"extraRowsNumber": "迷你·额外行数", 	"minimumRowsNumberPerGroup": "迷你·每组最少行数", 	"groupHeaderRowsNumber": "迷你·分组标题行数",
+		"groupHeaderRowsNumberDouble": "迷你·分组标题行数(双行)", 	"showHeaderBar": "迷你·显示标题栏", 	"showHeaderBarTrackInfosOn": "迷你·显示标题栏(曲目信息开)",
+		"showHeaderBarTrackInfosOff": "迷你·显示标题栏(曲目信息关)", 	"showToolTip": "迷你·显示工具提示", 	"darklayout": "迷你·深色布局",
+		"expandBySingleClick": "迷你·单击展开", 	"minimode_dark_theme": "迷你·迷你模式深色主题", 	"library_dark_theme": "迷你·媒体库深色主题",
+		"playlists_dark_theme": "迷你·播放列表深色主题", 	"bio_dark_theme": "迷你·艺术家简介深色主题", 	"bio_stick2darklayout": "迷你·艺术家简介跟随深色布局",
+		"visualization_dark_theme": "迷你·可视化深色主题", 	"showwallpaper": "迷你·显示壁纸", 	"wallpaperblurred": "迷你·壁纸模糊",
+		"wallpaperblurvalue": "迷你·壁纸模糊强度", 	"wallpapermode": "迷你·壁纸模式", 	"wallpaperdisplay": "迷你·壁纸显示方式",
+		"defaultPlaylistItemAction": "迷你·播放列表默认点击动作", 	"showFilterBox": "迷你·显示筛选框", 	"doubleRowText": "迷你·双行文本",
+		"doubleRowShowCover": "迷你·双行显示封面", 	"showArtistAlways": "迷你·始终显示艺术家", 	"showPlaycount": "大面板·显示播放次数",
+		"showBitrate": "大面板·显示比特率", 	"showCodec": "大面板·显示编码", 	"showRating": "迷你·显示评级",
+		"showRatingSelected": "迷你·显示评级(选中行)", 	"showRatingRated": "迷你·显示评级(已评级行)", 	"drawUpAndDownScrollbar": "迷你·显示上下滚动按钮",
+		"showMood": "迷你·显示情绪", 	"drawProgressBar": "迷你·绘制进度条", 	"AlbumArtProgressbar": "迷你·专辑封面进度条",
+		"enableTouchControl": "迷你·启用触摸控制", 	"DropInplaylist": "迷你·可拖入播放列表", 	"thumbnailWidthMin": "迷你·缩略图最小宽度",
+		"thumbnailWidth": "迷你·缩略图宽度", 	"circleMode": "迷你·圆形模式", 	"showSettingsMenu": "迷你·显示设置菜单",
+		"enableAutoSwitchPlaylistMode": "迷你·自动切换播放列表模式", 	"displayActiveOnPlaybackStopped": "迷你·停止播放时仍显示活动项", 	"showGroupHeaders": "迷你·显示分组标题",
+		"autocollapse": "迷你·自动折叠", 	"addedRows_end_default": "迷你·末尾空行数"
+};
+
+// 一次性迁移：旧版本菜单把值写进了 "大面板·通用xxx" / "迷你·通用xxx" 这类错误键，
+// 这里把它们搬回 properties 真正读取的键，省得升级后所有菜单设置还得重设一遍。
+// 只执行一次；正确键上已经有值时以已有的为准，不覆盖。
+(function migrateMiskeyedProperties() {
+	try {
+	if (window.GetProperty("_属性键已修正迁移", false)) return;
+	var scopes = [["大面板·通用", PROP_KEY_BIG], ["迷你·通用", PROP_KEY_MINI]];
+	for (var s = 0; s < scopes.length; s++) {
+		var prefix = scopes[s][0], tbl = scopes[s][1];
+		for (var k in tbl) {
+			var bad = prefix + k, good = tbl[k];
+			var v = window.GetProperty(bad, null);
+			if (v !== null && typeof v !== "undefined") {
+				if (window.GetProperty(good, null) === null) window.SetProperty(good, v);
+				window.SetProperty(bad, null);
+			}
+		}
+	}
+	window.SetProperty("_属性键已修正迁移", true);
+	} catch (e) {
+		// 迁移失败不能拖垮面板，下次启动再来
+	}
+})();
+
+// 查表取键；表里没有的（如 groupHeaderRowsNumberSimple 这种运行时镜像变量）保持原来的拼法，
+// 与原版行为一致，写进去也不会被读，无害。
+function propKey(scope, name) {
+	var tbl = (scope == 'mini') ? PROP_KEY_MINI : PROP_KEY_BIG;
+	return tbl[name] || ((scope == 'mini' ? '迷你·通用' : '大面板·通用') + name);
+}
+
 function setOneProperty(properties_name,value,update_both,layout_state_2_update) {
 	var update_both = typeof update_both !== 'undefined' ? update_both : false;
 	if(typeof layout_state_2_update !== 'undefined'){
@@ -165,19 +243,19 @@ function setOneProperty(properties_name,value,update_both,layout_state_2_update)
 	if(update_both || layout_state_2_update==1){
         if(update_current_layout_state) properties[properties_name] = value;
         properties_mini[properties_name] = value;
-		window.SetProperty("MINI:"+properties_name, value);
+		window.SetProperty(propKey('mini', properties_name), value);
 	}
 	if(update_both || layout_state_2_update==0){
         properties[properties_name] = value;
         properties_big[properties_name] = value;
-		window.SetProperty("BIG:"+properties_name, value);
+		window.SetProperty(propKey('big', properties_name), value);
 	}
 }
 function getProperty(properties_name, value) {
 	if(layout_state.isEqual(1)){
-		return window.GetProperty("MINI:"+properties_name, value);
+		return window.GetProperty(propKey('mini', properties_name), value);
 	} else {
-		return window.GetProperty("BIG:"+properties_name, value);
+		return window.GetProperty(propKey('big', properties_name), value);
 	}
 }
 var TF = {
@@ -352,22 +430,14 @@ function on_load_image_done(tid, image){
             if(brw.groups[k].tid == tid && brw.groups[k].load_requested == 1) {
                 brw.groups[k].load_requested = 2;
                 brw.groups[k].cover_img = g_image_cache.getit(brw.groups[k].metadb, k, image);
-                //if(!isScrolling && !cScrollBar.timerID) {
                     if(k < brw.groups.length && brw.groups[k].rowId >= g_start_ && brw.groups[k].rowId <= g_end_) {
-                        //if(!timers.coverDone) {
-                          //  timers.coverDone = setTimeout(function() {
                                 g_1x1 = false;
                                 brw.cover_repaint();
-                              //  timers.coverDone && clearTimeout(timers.coverDone);
-                                //timers.coverDone = false;
-                           // }, 5);
-                        //};
                     } else {
                         g_1x1 = true;
                         window.RepaintRect(0, 0, 1, 1);
                         g_1x1 = false;
                     };
-                //};
                 break;
             };
         };
@@ -382,7 +452,6 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
                 if(brw.groups[i].metadb.Compare(metadb)) {
 					brw.groups[i].load_requested = 2;
                     brw.groups[i].cover_img = g_image_cache.getit(metadb, i, image);
-                    //if(!isScrolling && !cScrollBar.timerID) {
                         if(i < brw.groups.length && brw.groups[i].rowId >= g_start_ && brw.groups[i].rowId <= g_end_) {
                             if(!timers.coverDone) {
                                 timers.coverDone = setTimeout(function() {
@@ -397,7 +466,6 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
                             window.RepaintRect(0, 0, 1, 1);
                             g_1x1 = false;
                         };
-                    //};
                     break;
                 };
             };
@@ -408,7 +476,6 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
         if(i < tot) {
             if(brw.groups[i].metadb) {
                 brw.groups[i].cover_img = g_image_cache.getit(metadb, i, image);
-                //if(!isScrolling && !cScrollBar.timerID) {
                     if(i < brw.groups.length && brw.groups[i].rowId >= g_start_ && brw.groups[i].rowId <= g_end_) {
 						brw.groups[i].load_requested = 2;
                         if(!timers.coverDone) {
@@ -424,7 +491,6 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
                         window.RepaintRect(0, 0, 1, 1);
                         g_1x1 = false;
                     };
-                //};
             };
         };
     };
@@ -556,7 +622,6 @@ oPlaylistManager = function(name) {
         };
     };
 
-
     this.draw = function(gr) {
 		if(!this.firstPopulateDone){
 			this.populate(exclude_active = false, reset_scroll = true);
@@ -595,7 +660,6 @@ oPlaylistManager = function(name) {
 			gr.FillSolidRect(cx, this.y, this.w, this.h + cPlaylistManager.botbarHeight + 1, colors.pm_bg);
 			gr.FillSolidRect(cx, this.y, ww-(draw_right_line?1:0), 1, colors.pm_border);
 			gr.FillSolidRect(cx, this.y + this.h + cPlaylistManager.botbarHeight, ww-(draw_right_line?1:0), 1, colors.pm_border);
-           // gr.FillSolidRect(cx + bg_margin_left, this.y + cPlaylistManager.topbarHeight - 2, this.w - bg_margin_left*2, 1, colors.pm_bg4);
 
             // ** items **
             var rowIdx = 0;
@@ -633,7 +697,6 @@ oPlaylistManager = function(name) {
                 } else {
                     gr.GdiDrawText(this.playlists[i].name , g_font.normal, blendColors(txt_color, bg_color, 0.2), cx + playlistname_padding_left + bg_margin_left + txt_margin, cy-1, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
                 };
-
 
                 // draw flashing item on lbtn_up after a drag'n drop
                 if(cPlaylistManager.blink_counter > -1) {
@@ -706,7 +769,6 @@ oPlaylistManager = function(name) {
         return (x >= this.x - this.offset && x <= this.x - this.offset + this.w && y >= this.y && y <= this.y + this.h - 1);
     };
 
-
     this.on_mouse = function(event, x, y, delta) {
         this.ishover = this._isHover(x, y);
 
@@ -771,7 +833,7 @@ oPlaylistManager = function(name) {
                             // send to a new playlist
                             this.drop_done = true;
                             window.NotifyOthers("JSSmoothPlaylist->JSSmoothBrowser:avoid_on_playlist_switch_callbacks_on_sendItemToPlaylist", true);
-                            fb.RunMainMenuCommand("File/New playlist");
+                            runMainMenuCommand("File/New playlist");
                             plman.InsertPlaylistItems(plman.PlaylistCount-1, 0, brw.metadblist_selection, false);
                         } else {
                             // send to selected (hover) playlist
@@ -946,7 +1008,6 @@ oFilterBox = function() {
             this.reset_bt.draw(gr, bx+3, by, 255);
         } else {
 			this.search_bt.draw(gr, bx, by-2, 255);
-			//gr.DrawImage(this.images.search_icon, bx, by+Math.round(this.inputbox.h/2-this.images.search_icon.Height/2), this.images.search_icon.Width, this.images.search_icon.Height, 0, 0, this.images.search_icon.Width, this.images.search_icon.Height, 0, 255);
         };
 		this.inputbox.draw(gr, bx+30, by, 0, 0);
     };
@@ -1154,8 +1215,6 @@ oScrollbar = function(themed) {
         // normal cursor Image
         this.cursorImage_normal = gdi.CreateImage(this.cursorw, this.cursorh);
         var gb = this.cursorImage_normal.GetGraphics();
-		//gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.5) & 0x88ffffff);
-		//gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 		gb.FillSolidRect(this.cursorw-cScrollBar.normalWidth, cScrollBar.marginTop, cScrollBar.normalWidth-2, this.cursorh-cScrollBar.marginTop-cScrollBar.marginBottom, colors.scrollbar_normal_cursor);
         this.cursorImage_normal.ReleaseGraphics(gb);
 
@@ -1175,8 +1234,6 @@ oScrollbar = function(themed) {
                 gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.3));
             };
         } else {
-            //gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.3) & 0x88ffffff);
-            //gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 			gb.FillSolidRect(this.cursorw-cScrollBar.hoverWidth, 0, cScrollBar.hoverWidth, this.cursorh,colors.scrollbar_hover_cursor);
         };
         this.cursorImage_hover.ReleaseGraphics(gb);
@@ -1197,8 +1254,6 @@ oScrollbar = function(themed) {
                 gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.05));
             };
         } else {
-            //gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.05) & 0x88ffffff);
-            //gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 			gb.FillSolidRect(this.cursorw-cScrollBar.downWidth, 0, cScrollBar.downWidth, this.cursorh,colors.scrollbar_down_cursor);
         };
         this.cursorImage_down.ReleaseGraphics(gb);
@@ -1673,15 +1728,11 @@ oBrowser = function(name) {
 						g_focus_row = this.getOffsetFocusItem(g_focus_id);
 
 						g = this.rows[g_focus_row].albumId;
-						//plman.ClearPlaylistSelection(g_active_playlist);
 						if(this.groups[g].collapsed && properties.showGroupHeaders) {
 							this.expand_group(g);
 							this.setList();
 							this.scrollbar.updateScrollbar();
-							//if(this.rowsCount > 0) this.gettags(true);
-							//this.selectGroupTracks(g);
 						} else {
-							//plman.SetPlaylistSelectionSingle(g_active_playlist, g_focus_id, true);
 						};
 						plman.SetPlaylistFocusItem(g_active_playlist, g_focus_id);
 						this.showFocusedItem();
@@ -1699,7 +1750,6 @@ oBrowser = function(name) {
 
     this.showFocusedItem = function(g_focus_row) {
 		g_focus_row = typeof g_focus_row !== 'undefined' ? g_focus_row : this.getOffsetFocusItem(g_focus_id);
-       // if(g_focus_row < scroll / properties.rowHeight || g_focus_row > scroll / properties.rowHeight + this.totalRowsVis) {
 		   if(properties.showGroupHeaders) {
 				scroll_to_track = (g_focus_row - Math.floor(this.totalRowsVis/4)) * properties.rowHeight;
 				scroll_to_header = this.groups[this.rows[g_focus_row].albumId].rowId * properties.rowHeight //- properties.rowHeight*(properties.extraRowsNumber+1)
@@ -1710,12 +1760,7 @@ oBrowser = function(name) {
 
 			scroll = check_scroll(scroll);
 
-            //if(!properties.enableFullScrollEffectOnFocusChange) {
-             //   scroll_ = scroll + properties.rowHeight * 5 * (g_focus_id_prev <= g_focus_id ? -1 : 1);
-           //     scroll_ = check_scroll(scroll_);
-          //  };
             this.scrollbar.updateScrollbar();
-       // };
     };
 
     this.selectAtoB = function(start_id, end_id) {
@@ -1724,8 +1769,6 @@ oBrowser = function(name) {
         if(this.SHIFT_start_id == null) {
             this.SHIFT_start_id = start_id;
         };
-
-        //plman.ClearPlaylistSelection(g_active_playlist);
 
         var previous_focus_id = g_focus_id;
 
@@ -1798,13 +1841,10 @@ oBrowser = function(name) {
         if(fid > -1) {
 			if(!(properties.autocollapse && properties.showGroupHeaders)) return this.playlistId2row[fid];
 			
-			//return this.getRowIdfromPlaylistTrackId(fid);
             if(properties.showGroupHeaders) {
-                // fid = no item dans la playlist (focus id)
                 // this.rows[] => albumId
                 // 1 . rech album id contenant le focus_id
                 g_focus_album_id = this.getAlbumIdfromTrackId(fid);
-				//g_focus_album_id = this.rows[fid].albumId;
                 // 2. rech row id
 				var tot = this.rows.length;
                 for(i = 0; i < tot; i++) {
@@ -1971,8 +2011,6 @@ oBrowser = function(name) {
 							this.rows[r].groupkeysplit = this.groups[g].groupkeysplit;
 							this.rows[r].tracktype = TrackType(this.rows[r].metadb);
 							this.rows[r].selected = plman.IsPlaylistItemSelected(g_active_playlist, this.rows[r].playlistTrackId_original);
-							//if(this.rows[r].selected)
-								//this.groups[g-1].selected = true;
 							this.rows[r].rating = -1;
 							r++;
 						}
@@ -1998,8 +2036,6 @@ oBrowser = function(name) {
 						this.rows[r].groupkeysplit = this.groups[g-1].groupkeysplit;
 						this.rows[r].tracktype = TrackType(this.rows[r].metadb);
 						this.rows[r].selected = plman.IsPlaylistItemSelected(g_active_playlist, this.rows[r].playlistTrackId_original);
-						//if(this.rows[r].selected)
-							//this.groups[g-1].selected = true;
 						this.rows[r].rating = -1;
 						j++;
 						r++;
@@ -2162,7 +2198,6 @@ oBrowser = function(name) {
             start_ = start_ > 0 ? start_ - 1 : start_;
             if(start_ < 0) start_ = 0;
             if(end_ >= this.rows.length) end_ = this.rows.length - 1;
-            //end_ = end_ < this.rows.length - 1  ? end_ + 1 : this.rows.length - 1;
         };
         g_start_ = start_;
         g_end_ = end_;
@@ -2361,6 +2396,9 @@ oBrowser = function(name) {
                     this.nowplaying = null;
                 };
 
+                // 行只允许画在顶栏以下：滚动到非整行位置时，首行会越过
+                // this.y 画进搜索框区域，这里直接裁掉（顶栏绘制前解除）。
+                clipListArea(gr, this.y);
                 for(var i = g_start_;i <= g_end_;i++){
                     ay = Math.floor(this.y + (i * ah) - scroll_);
                     this.rows[i].x = ax;
@@ -2513,7 +2551,6 @@ oBrowser = function(name) {
                             // text
                             // =====
                             
-
                             arr_e[2]=arr_e[2].replace(/\s+/g, " ");
 							if(!isDefined(this.groups[g].row1_Width)) this.groups[g].row1_Width = gr.CalcTextWidth(this.groups[g].group_header_row_1, g_font.italicplus3);
 							if(!isDefined(this.groups[g].row2_Width)) this.groups[g].row2_Width = gr.CalcTextWidth(this.groups[g].group_header_row_2, g_font.normal);
@@ -2587,7 +2624,6 @@ oBrowser = function(name) {
                                 if(nbc == 1) nbc++;
 
                                 // fields
-                                //var track_num = arr_t[0] == "?" ? this.rows[i].albumTrackId+1 : arr_t[0];
 								var track_num = arr_t[0] == "?" ? "" : arr_t[0];
                                 var track_num_part = arr_t[0] == "?" ? "-    " : parseInt(track_num,10)+"    ";
 								var add_infos = this.getAdditionalFields(arr_t);
@@ -2674,7 +2710,6 @@ oBrowser = function(name) {
 										if(!g_var_cache.isdefined("track_time_part")) g_var_cache.set("track_time_part",gr.CalcTextWidth("00:00:00", g_font.normal));
                                         cColumns.track_time_part = track_time_part.length*g_var_cache.get("track_time_part")/8+20;
 										
-
 										if(properties.doubleRowShowCover)
 											var left_margin = TrackText_x;
 										else
@@ -2785,12 +2820,10 @@ oBrowser = function(name) {
 												this.groups[g].cover_img = globalProperties.nocover_img;
 												var image = FormatCover(globalProperties.nocover_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 												g_image_cache.addToCache(image,this.groups[g].cachekey);
-												//g_image_cache.cachelist[this.groups[g].cachekey] = FormatCover(globalProperties.nocover_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 											} else if(this.groups[g].cover_type == 3) {
 												this.groups[g].cover_img = globalProperties.stream_img;
 												var image = FormatCover(globalProperties.stream_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 												g_image_cache.addToCache(image,this.groups[g].cachekey);
-												//g_image_cache.cachelist[this.groups[g].cachekey] = FormatCover(globalProperties.stream_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 											};
 											if(this.groups[g].cover_img != null && typeof this.groups[g].cover_img != "string") {
 												if(!this.groups[g].cover_formated && !properties.showGroupHeaders){
@@ -2857,12 +2890,10 @@ oBrowser = function(name) {
 												this.groups[g].cover_img = globalProperties.nocover_img;
 												var image = FormatCover(globalProperties.nocover_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 												g_image_cache.addToCache(image,this.groups[g].cachekey);
-												//g_image_cache.cachelist[this.groups[g].cachekey] = FormatCover(globalProperties.nocover_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 											} else if(this.groups[g].cover_type == 3) {
 												this.groups[g].cover_img = globalProperties.stream_img;
 												var image = FormatCover(globalProperties.stream_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 												g_image_cache.addToCache(image,this.groups[g].cachekey);
-												//g_image_cache.cachelist[this.groups[g].cachekey] = FormatCover(globalProperties.stream_img, globalProperties.thumbnailWidthMax, globalProperties.thumbnailWidthMax, false);
 											};
 											if(this.groups[g].cover_img != null && typeof this.groups[g].cover_img != "string") {
 												if(!this.groups[g].cover_formated && !properties.showGroupHeaders){
@@ -2894,7 +2925,6 @@ oBrowser = function(name) {
 													gr.DrawEllipse(TrackCover_x+9, ay+cover.trackMargin+1+TrackCover_y, TrackCover_w-2, TrackCover_h-2, 1.0, colors.cover_rectline);
 													gr.SetSmoothingMode(0);
 												}
-												//gr.DrawRect(TrackCover_x+8, ay+cover.trackMargin+TrackCover_y, TrackCover_w-1, TrackCover_h-1, 1.0, colors.cover_rectline);
 											};
 											var text_left_margin = TrackText_x;
 										}
@@ -2975,7 +3005,6 @@ oBrowser = function(name) {
 											recalculate_time = false;
 										}
                                         track_time_part = g_time_remaining;
-
 
 										if(cNowPlaying.flashEnable && cNowPlaying.flash){
 											gr.DrawRect(-1, ay, ww+2, ah-1, 1.0, colors.flash_rectline);
@@ -3080,7 +3109,6 @@ oBrowser = function(name) {
 
 												if(track_time_part == "ON AIR") {
 														gr.GdiDrawText(g_radio_title, g_font.normal, colors.albumartprogressbar_txt, tx+13, ay, Math.min(current_size-35,tw-cColumns.track_time_part-15-this.rows[i].rating_length), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
-														//gr.GdiDrawText(g_radio_artist, g_font_light, colors.albumartprogressbar_txt, tx+this.rows[i].artist_part_w+18, ay, Math.min(current_size-this.rows[i].artist_part_w-22,tw-this.rows[i].artist_part_w-cColumns.track_time_part-5-this.rows[i].rating_length), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 												} else {
 														var margin_left = tx+13 - progress_x;
 
@@ -3247,10 +3275,15 @@ oBrowser = function(name) {
 			this.drawLeftLine = layout_state.isEqual(0) && !(main_panel_state.isEqual(1) && window.Name=='BottomPlaylist');
 
             // draw header
+            unclipListArea(gr);
             if(properties.showHeaderBar) {
                 var boxText = (this.totaltracks > 1 ? this.totaltracks+"张专辑" : this.totaltracks+"张专辑");
                 // draw background part above playlist (headerbar)
-				gr.FillSolidRect(0, 0, ww, properties.headerBarHeight, colors.headerbar_bg);
+				// 顶栏底色原本是全透明（透出面板底色/壁纸）。这里把这块背景重画一遍，
+				// 视觉不变，但能挡住任何没被裁剪干净的滚动内容（GDI 文字不受 SetClip 约束）。
+				paintHeaderBarBackdrop(gr, 0, 0, ww, properties.headerBarHeight, colors.normal_bg,
+					properties.showwallpaper ? g_wallpaperImg : null, wh,
+					(properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
 
 				gr.FillGradRect(this.x+(this.drawLeftLine?1:0), properties.headerBarHeight, ww, 1, 0, colors.headerbar_line, colors.headerbar_line, 1.0);
 
@@ -3395,7 +3428,6 @@ oBrowser = function(name) {
 							if(g_focus_id!=playlistTrackId || this.sentAlbumId!=groupId) {
 								this.sentAlbumId = groupId;
 								this.sentTrackId = -1;
-								//window.NotifyOthers("trigger_on_focus_change",Array(g_active_playlist,playlistTrackId));
 								notify_array = {
 									playlist:g_active_playlist,
 									trackIndex:playlistTrackId,
@@ -3453,10 +3485,6 @@ oBrowser = function(name) {
                                 } else {
                                     if(plman.IsPlaylistItemSelected(g_active_playlist, playlistTrackId)) {
                                         if(this.metadblist_selection.Count > 1) {
-                                            //plman.ClearPlaylistSelection(g_active_playlist);
-                                            //plman.SetPlaylistSelectionSingle(g_active_playlist, playlistTrackId, true);
-                                            //plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
-											//focus_changes.collapse = true;
                                         } else {
                                             // nothing, single track already selected
                                         };
@@ -3725,13 +3753,11 @@ oBrowser = function(name) {
                     switch(true) {
                         case (rowType > 0 && rowType < 99):     // ----------------> group header row
                             var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
-                            //if(!plman.IsPlaylistItemSelected(g_active_playlist, playlistTrackId)) {
                                 plman.ClearPlaylistSelection(g_active_playlist);
                                 this.selectGroupTracks(this.rows[this.activeRow].albumId);
                                 plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
 								focus_changes.collapse = true;
                                 this.SHIFT_start_id = null;
-                            //};
                             if(!utils.IsKeyPressed(VK_SHIFT)) {
                                 this.context_menu(x, y, this.track_index, this.row_index);
                             };
@@ -3787,7 +3813,6 @@ oBrowser = function(name) {
                     else if(y > limit || g_dragndrop_trackId==-1) {
                         g_dragndrop_bottom = true;
                         g_dragndrop_trackId = this.rows[rowId].playlistTrackId;
-                        //g_dragndrop_rowId = rowId;
                     }
 
                 } else {
@@ -3903,7 +3928,6 @@ oBrowser = function(name) {
 			if(isScrolling && brw.rows.length > 0) brw.gettags(false);
 			repaintforced = true;
 			repaint_main = true;
-			//images.loading_angle = (images.loading_angle+30) % 360;
 			window.Repaint();
 		};
 
@@ -4175,7 +4199,7 @@ oBrowser = function(name) {
 						new_TFsorting = utils.InputBox(window.ID, "请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f", "自定义排序顺序", properties.TFsorting, true);
 						if (!(new_TFsorting == "" || typeof new_TFsorting == 'undefined')) {
 							properties.TFsorting = new_TFsorting;
-							window.SetProperty("MAINPANEL Playlist Sort TitleFormat", properties.TFsorting);
+							window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 							window.NotifyOthers("playlist_titleformat", properties.TFsorting);
 							plman.SortByFormat(plman.ActivePlaylist, properties.TFsorting);
 						}
@@ -4183,7 +4207,7 @@ oBrowser = function(name) {
 					catch(e) {}
 					break;					
                 case 2000:
-                    fb.RunMainMenuCommand("File/New playlist");
+                    runMainMenuCommand("File/New playlist");
                     plman.InsertPlaylistItems(plman.PlaylistCount-1, 0, this.metadblist_selection, false);
                     break;
                 default:
@@ -4246,7 +4270,6 @@ oBrowser = function(name) {
 				lockOnMenu.CheckMenuItem(3299, !properties.lockOnNowPlaying);
 				lockOnMenu.CheckMenuItem(3300, properties.lockOnNowPlaying);
 			}
-
 
             _menu.AppendMenuItem(MF_STRING, 899, "跟随正在播放");
 			_menu.CheckMenuItem(899, properties.FollowNowPlaying);
@@ -4594,7 +4617,11 @@ oBrowser = function(name) {
                         window.ShowConfigure();
                         break;
                     case 993:
-                        set_nowplaying_state(0);
+                        // 原版调用了一个全工程都不存在的 set_nowplaying_state()，点下去直接抛
+                        // ReferenceError，菜单毫无反应。这个分支只在「主面板=播放列表」时出现，
+                        // 语义就是收起右侧的「正在播放」区，等同标题栏的 toggleNowPlayingState(true,0)。
+                        if (typeof set_nowplaying_state === 'function') set_nowplaying_state(0);
+                        else if (typeof nowplayingplaylist_state !== 'undefined') nowplayingplaylist_state.setValue(0);
                         break;
                     case 1000:
                         this.setRowHeight(-2);
@@ -5028,9 +5055,6 @@ function on_mouse_lbtn_up(x, y, m) {
 				g_avoid_on_item_focus_change = true;
 				g_avoid_on_playlist_items_reordered = true;
 				drop_on_selected_row = (plman.IsPlaylistItemSelected(g_active_playlist, brw.rows[g_dragndrop_rowId].playlistTrackId));
-				//if(drop_on_selected_row){
-					//plman.SetPlaylistSelectionSingle(g_active_playlist, brw.rows[g_dragndrop_rowId].playlistTrackId, false);
-				//}
 				if(nb_selected_items > 1 && !drop_on_selected_row)	{
 					// 1st: move selected item at the full end of the playlist to make then contigus
 
@@ -5082,7 +5106,6 @@ function on_mouse_lbtn_up(x, y, m) {
         cTouch.down = false;
         cTouch.y_end = y;
         cTouch.scroll_delta = scroll - scroll_;
-        //cTouch.y_delta = cTouch.y_start - cTouch.y_end;
         if(Math.abs(cTouch.scroll_delta) > 030 ) {
             cTouch.multiplier = ((1000 - cTouch.t1.Time) / 20);
             cTouch.delta = Math.round((cTouch.scroll_delta) / 030);
@@ -5192,7 +5215,6 @@ function on_mouse_move(x, y, m) {
 			pman.on_mouse("move", x, y);
 		} else if(brw.drag_tracks){
 			on_drag_over(null, x, y, null);
-			//brw.on_mouse("drag_over", x, y);
 		} else {
 			if(cTouch.down) {
 				cTouch.y_current = y;
@@ -5282,8 +5304,6 @@ function get_metrics(finalize_groups) {
     cPlaylistManager.scrollbarWidth = Math.floor(cPlaylistManager.default_scrollbarWidth * g_zoom_percent / 100);
 
     if(properties.showHeaderBar) {
-        //properties.headerBarHeight = Math.round(properties.defaultHeaderBarHeight * g_zoom_percent / 100);
-        //properties.headerBarHeight = Math.floor(properties.headerBarHeight / 2) != properties.headerBarHeight / 2 ? properties.headerBarHeight : properties.headerBarHeight - 1;
 		if(main_panel_state.isEqual(0) && properties.ParentName=="MainPanel") properties.headerBarHeight = properties.libraryHeaderBarHeight-1;
 		else properties.headerBarHeight = properties.defaultHeaderBarHeight-1;
     } else {
@@ -5315,7 +5335,6 @@ function get_metrics(finalize_groups) {
 
     if(brw) {
         if(cScrollBar.enabled)  {
-            //brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww - cScrollBar.width, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
 			brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
         } else {
             brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
@@ -5370,12 +5389,10 @@ function get_images() {
     images.loading_cover_group_resized = false;
 };
 
-
-
 function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
-		if(window.Name!="BottomPlaylist") colors.normal_txt = GetGrey(180);		
+		if(window.Name!="BottomPlaylist") colors.normal_txt = GetGrey(210);		
 		colors.fadedsmall_txt = GetGrey(200);
 		colors.tracknumber_txt = GetGrey(230);
 		colors.flash_bg = GetGrey(255,30),
@@ -5457,7 +5474,6 @@ function setDarkLayout(){
 	else if(main_panel_state.isEqual(1)) new_darklayout_state = properties.playlists_dark_theme;
 	else if(main_panel_state.isEqual(2)) {
 		new_darklayout_state = properties.bio_dark_theme;
-		//if(properties.bio_stick2darklayout)	new_darklayout_state = true;
 	} else if(main_panel_state.isEqual(3)) {
 		new_darklayout_state = properties.visualization_dark_theme;
 	}
@@ -5481,12 +5497,10 @@ function on_colours_changed(force) {
 };
 
 function on_script_unload() {
-    //brw.resetTimer();
 };
 
 //=================================================// Keyboard Callbacks
 function on_key_up(vkey) {
-	//console.log("g_focus_row"+g_focus_row+"  getRowIdfromPlaylistTrackId"+brw.getRowIdfromPlaylistTrackId(g_focus_id)); 
     if(cSettings.visible) {
 
     } else {
@@ -5512,7 +5526,6 @@ function vk_up() {
     var scrollstep = 1;
     var new_focus_id = 0, new_row = 0;
 
-    //new_row = g_focus_row - scrollstep;
 	new_row = brw.getOffsetFocusItem(g_focus_id) - scrollstep; //brw.getRowIdfromPlaylistTrackId(g_focus_id) - scrollstep;
     if(new_row < 0) {
         if(brw.groups[0].collapsed) {
@@ -5567,7 +5580,6 @@ function vk_up() {
 
 function vk_down() {
     var new_focus_id = 0, new_row = 0;	
-    //new_row = g_focus_row + scrollstep;
 	new_row = brw.getOffsetFocusItem(g_focus_id) + 1; //new_row = brw.getRowIdfromPlaylistTrackId(g_focus_id) + 1;
     if(new_row > brw.rowsCount - 1) {
         new_row = brw.rowsCount - 1;
@@ -5579,7 +5591,6 @@ function vk_down() {
         cScrollBar.timerID && clearTimeout(cScrollBar.timerID);
         cScrollBar.timerID = false;
     } else {
-		//console.log("new_row"+new_row+" g_focus_id"+g_focus_id+" brw.row lenght"+brw.rows.length+" brw.rows[new_row].albumId"+brw.rows[new_row].albumId+" brw.rows[new_row].type"+brw.rows[new_row].type+"brw.groups[brw.rows[new_row]"+brw.groups[brw.rows[new_row]]+"brw.groups length"+brw.groups.length+" brw.groups[new_row]"+brw.groups[new_row].collapsed)		
 		if(typeof brw.rows[new_row] == 'undefined') return;
         switch(brw.rows[new_row].type) {
             case 0: // track row
@@ -5698,9 +5709,6 @@ function vk_pgdn() {
 		while(brw.rows[new_row].type == 99 && new_row>0) {
 			new_row -= 1;
 		};
-        //if(brw.groups[brw.rows[new_row].albumId].collapsed) {
-          //  new_row -= (properties.groupHeaderRowsNumber - 1);
-        //};
     } else {
         switch(brw.rows[new_row].type) {
             case 0: // track row
@@ -5747,7 +5755,6 @@ function on_key_down(vkey) {
     if(cSettings.visible) {
 
     } else {
-        //if(dragndrop.drag_in) return true;
 
         // inputBox
         if(properties.showHeaderBar && properties.showFilterBox && g_filterbox.inputbox.visible) {
@@ -5862,15 +5869,12 @@ function on_key_down(vkey) {
                 break;
             case VK_RETURN:
                 // play/enqueue focused item
-                //if(!isQueuePlaylistActive()) {
                     var cmd = properties.defaultPlaylistItemAction;
                     if(cmd == "Play") {
                         plman.ExecutePlaylistDefaultAction(act_pls, g_focus_id);
-						//fb.Stop();fb.Play();
                     } else {
-                        fb.RunContextCommandWithMetadb(cmd, brw.list[g_focus_id], 0);
+                        runContextCommand(cmd, brw.list[g_focus_id], 0);
                     };
-                //};
                 break;
             case VK_END:
                 if(brw.rowsCount > 0) {
@@ -6011,22 +6015,22 @@ function on_key_down(vkey) {
                         };
                     };
                     if(vkey==70) { // CTRL+F
-                        fb.RunMainMenuCommand("Edit/Search");
+                        runMainMenuCommand("Edit/Search");
                     };
                     if(vkey==73) { // CTRL+I
 
                     };
                     if(vkey==78) { // CTRL+N
-                        fb.RunMainMenuCommand("File/New playlist");
+                        runMainMenuCommand("File/New playlist");
                     };
                     if(vkey==79) { // CTRL+O
-                        fb.RunMainMenuCommand("File/Open...");
+                        runMainMenuCommand("File/Open...");
                     };
                     if(vkey==80) { // CTRL+P
-                        fb.RunMainMenuCommand("File/Preferences");
+                        runMainMenuCommand("File/Preferences");
                     };
                     if(vkey==83) { // CTRL+S
-                        fb.RunMainMenuCommand("File/Save playlist...");
+                        runMainMenuCommand("File/Save playlist...");
                     };
                     if(vkey==84) { // CTRL+T
 						setOneProperty("showHeaderBar",!properties.showHeaderBar);
@@ -6052,7 +6056,7 @@ function on_key_down(vkey) {
                 case KMask.alt:
                     switch(vkey) {
                     case 65: // ALT+A
-                        fb.RunMainMenuCommand("View/Always on Top");
+                        runMainMenuCommand("View/Always on Top");
                         break;
                     case VK_ALT: // ALT key alone
                         break;
@@ -6074,7 +6078,6 @@ function on_char(code) {
 
     } else {
         if(g_filterbox.inputbox.edit) {
-            //g_filterbox.on_char(code);
         } else {
             if(brw.list.Count > 0) {
                 brw.tt_x = ((brw.w) / 2) - (((cList.search_string.length*13)+(10*2)) / 2);
@@ -6152,9 +6155,6 @@ function on_playback_new_track(metadb) {
 		g_radio_artist = "";
 		
 		//Move expanded group
-		/*if(properties.autocollapse && brw.isPlayingIdx>=0 && brw.isPlayingIdx<brw.groups.length && !brw.groups[brw.isPlayingIdx].collapsed){
-			focus_changes.collapse = true;
-		}*/
 			
 		if((properties.lockOnNowPlaying && plman.PlayingPlaylist!=g_active_playlist) || repopulate) {
 			brw.populate(is_first_populate = true,6);
@@ -6273,7 +6273,6 @@ var callback_avoid_populate = false;
 
 function on_playlist_items_added(playlist_idx) {
 	if(!callback_avoid_populate){
-	//	if(window.IsVisible) brw.setActivePlaylist(4);
 		if(playlist_idx == g_active_playlist) {// && !pman.drop_done) {
 			g_focus_id = getFocusId(g_active_playlist);
 			callback_avoid_populate=true;
@@ -6289,7 +6288,6 @@ function on_playlist_items_added(playlist_idx) {
 
 function on_playlist_items_removed(playlist_idx, new_count) {
 	if(!callback_avoid_populate){
-	//	if(window.IsVisible) brw.setActivePlaylist(5);
 		if(playlist_idx == g_active_playlist && new_count == 0) scroll = scroll_ = 0;
 		if(playlist_idx == g_active_playlist) {
 			g_focus_id = getFocusId(g_active_playlist);
@@ -6456,37 +6454,6 @@ function on_focus(is_focused) {
     };
 };
 
-//=================================================// Custom functions
-function checkMediaLibrayPlaylist() {
-    g_avoid_on_playlists_changed = true;
-
-    // check if library playlist is present
-    var isMediaLibraryFound = false;
-    var total = plman.PlaylistCount;
-    for (var i = 0; i < total; i++) {
-        if(plman.GetPlaylistName(i) == globalProperties.media_library) {
-            var mediaLibraryIndex = i;
-            isMediaLibraryFound = true;
-            break;
-        };
-    };
-    if(!isMediaLibraryFound) {
-        // create Media Library playlist (sort forced)
-        // > sort: sort string expression.
-        // > flags: 1 - always sort.
-        // > boolean CreateAutoPlaylist(idx, name, query, sort = "", flags = 0);
-        plman.CreateAutoPlaylist(total, globalProperties.media_library, "%path% PRESENT", "%album artist% | $if(%album%,%date%,'9999') | %album% | %discnumber% | %tracknumber% | %title%", 1);
-        //plman.CreateAutoPlaylist(total, globalProperties.media_library, "%album% PRESENT", "%album artist% | %date% | %album% | %discnumber% | %tracknumber% | %title%", 1);
-        // Move it to the top
-        plman.MovePlaylist(total, 0);
-    } else if(mediaLibraryIndex > 0) {
-        // Always move it to the top
-        plman.MovePlaylist(mediaLibraryIndex, 0);
-    };
-
-    g_avoid_on_playlists_changed = false;
-};
-
 function check_scroll(scroll___){
     scroll___ < 0 && (scroll___ = 0);
     let g1 = brw.h - (brw.totalRowsVis * properties.rowHeight);
@@ -6527,7 +6494,7 @@ function on_notify_data(name, info) {
 		break;			
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
-            window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+            window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
             window.Reload();
 		break;
 		case "resetCache":
@@ -6535,7 +6502,7 @@ function on_notify_data(name, info) {
 		break;		
 		case "colors":
 			globalProperties.colorsMainPanel = info;
-			window.SetProperty("GLOBAL colorsMainPanel", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
 			setOneProperty("AlbumArtProgressbar",(globalProperties.colorsMainPanel!=0));
 			get_images();
 			brw.repaint();
@@ -6546,24 +6513,24 @@ function on_notify_data(name, info) {
 			break;
 		case "enableResizableBorders":
 			globalProperties.enableResizableBorders = info;
-			window.SetProperty("GLOBAL enableResizableBorders", globalProperties.enableResizableBorders);
+			window.SetProperty("全局·启用可调整边框", globalProperties.enableResizableBorders);
 		break;
 		case "MemSolicitation":
 			globalProperties.mem_solicitation = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 			window.Reload();
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 			on_font_changed();
 		break;
 		case "g_avoid_on_metadb_changed":
@@ -6577,7 +6544,7 @@ function on_notify_data(name, info) {
 			break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 			on_font_changed();
 		break;
         case "FocusOnNowPlayingForce":
@@ -6629,7 +6596,7 @@ function on_notify_data(name, info) {
 		break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 			brw.repaint();
 		break;
 		case "RefreshImageCover":
@@ -6658,7 +6625,7 @@ function on_notify_data(name, info) {
 				} else {
 					setOneProperty("minimode_dark_theme",(info==2 || info==3), true);
 					globalProperties.colorsMiniPlayer = info;
-					window.SetProperty("GLOBAL colorsMiniPlayer", globalProperties.colorsMiniPlayer);
+					window.SetProperty("全局·迷你播放器配色", globalProperties.colorsMiniPlayer);
 					setOneProperty("AlbumArtProgressbar",(globalProperties.colorsMiniPlayer==1 || globalProperties.colorsMiniPlayer==3),false,1);
 					toggleWallpaper((globalProperties.colorsMiniPlayer==1 || globalProperties.colorsMiniPlayer==3),1);
 					get_images();on_colours_changed();
@@ -6835,12 +6802,10 @@ function on_notify_data(name, info) {
 			brw.showFocusedItem();
 			break;
 		case "cover_cache_finalized":
-			//g_image_cache.cachelist = cloneImgs(info);
-			//window.Repaint();
 		break;
 		case "playlist_titleformat":
 			properties.TFsorting = info;
-			window.SetProperty("MAINPANEL Playlist Sort TitleFormat", properties.TFsorting);
+			window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 		break;
 		case "WSH_panels_reload":
 			window.Reload();
@@ -6867,7 +6832,6 @@ function on_drag_leave() {
 	cScrollBar.timerID1 && window.ClearInterval(cScrollBar.timerID1);
 	cScrollBar.timerID1 = false;
     if(g_dragndrop_drop_forbidden) {
-		//fb.ShowPopupMessage("The current playlist is an autoplaylist: you can't reorder tracks in an autoplaylist.", "Error");
         g_dragndrop_drop_forbidden = false;
         window.Repaint();
     };
@@ -6898,8 +6862,6 @@ function on_drag_over(action, x, y, mask) {
     g_dragndrop_bottom = false;
     brw.on_mouse("drag_over", x, y);
 	try{
-		//if(brw.drag_tracks) action.Text = "Move";
-		//else action.Text = "Insert";
 	} catch(e){}
 	if(scroll > 0 && y < brw.y + ((properties.doubleRowText)?properties.rowHeight:properties.rowHeight*2)) {
 		if(!brw.buttonclicked) {
@@ -6940,7 +6902,6 @@ function on_drag_over(action, x, y, mask) {
 						if(!dragndrop.timerID) {
 							dragndrop.timerID = setTimeout(function() {
 								brw.on_mouse("drag_over", g_dragndrop_x, g_dragndrop_y);
-								//window.Repaint();
 								window.Repaint();
 								dragndrop.timerID && clearTimeout(dragndrop.timerID);
 								dragndrop.timerID = false;
@@ -7069,8 +7030,6 @@ function on_drag_drop(action, x, y, mask) {
             g_dragndrop_timer = setTimeout(function(){
                 plman.SetPlaylistFocusItem(g_active_playlist, g_dragndrop_total_before);
 				focus_changes.collapse = true;
-                //brw.showFocusedItem();
-                //full_repaint();
                 clearTimeout(g_dragndrop_timer);
                 g_dragndrop_timer = false;
 				window.Repaint();
@@ -7093,9 +7052,6 @@ function on_drag_drop(action, x, y, mask) {
 				g_dragndrop_timer && clearTimeout(g_dragndrop_timer);
 				g_dragndrop_timer = setTimeout(function(){
 					var delta = (g_dragndrop_total_before - g_dragndrop_trackId) * -1;
-					//plman.MovePlaylistSelection(g_active_playlist, delta);
-					//plman.SetPlaylistFocusItem(g_active_playlist, g_dragndrop_trackId);
-					//brw.showFocusedItem();
 					g_avoid_on_playlist_items_added = false;
 					g_avoid_on_playlist_items_reordered = false;
 					clearTimeout(g_dragndrop_timer);

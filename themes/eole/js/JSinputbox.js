@@ -547,8 +547,6 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
     			}
     			break;
 			default:
-				//autovalidate = false;
-				//this.on_char(vkey,mask,autovalidate);
 				return;
 				break;
     		}

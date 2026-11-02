@@ -1,41 +1,41 @@
 ﻿var colors = {};
 var properties = {
 	panelName: 'WSHcontrols',
-    enableDiskCache: window.GetProperty("COVER Disk Cache", true),
-    random_function: window.GetProperty("Random function", "default"),
-	remaining_time: window.GetProperty("Show remaining time",false),
-	maindarklayout: window.GetProperty("_DISPLAY: Main layout:Dark", true),
-	minidarklayout: window.GetProperty("_DISPLAY: Mini layout:Dark", true),
-	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
-    wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-    wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-    wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-    wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0),
-    library_dark_theme: window.GetProperty("LIBRARY dark theme", false),
-    playlists_dark_theme: window.GetProperty("PLAYLISTS dark theme", false),
-    displayDevice: window.GetProperty("_DISPLAY device", false),	
-    displayEqualizer: window.GetProperty("_DISPLAY equalizer", false),
-    displayScheduler: window.GetProperty("_DISPLAY scheduler", false),
-    displayRating: window.GetProperty("_DISPLAY rating", true),
-    displayPlayRandom: window.GetProperty("_DISPLAY play random btn", true),
-    displayShuffle: window.GetProperty("_DISPLAY shuffle btn", true),
-    displayRepeat: window.GetProperty("_DISPLAY repeat btn", true),
-    displayOpen: window.GetProperty("_DISPLAY open btn", true),
-    displayStop: window.GetProperty("_DISPLAY stop btn", false),
-    showTrackPrefix: window.GetProperty("_DISPLAY show track title prefix", false),
-	custom_firstRow: window.GetProperty("_DISPLAY: custom first row", ""),
-	custom_secondRow: window.GetProperty("_DISPLAY: custom second row", ""),
+    enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
+    random_function: window.GetProperty("随机函数", "default"),
+	remaining_time: window.GetProperty("显示剩余时间",false),
+	maindarklayout: window.GetProperty("显示·主布局深色", true),
+	minidarklayout: window.GetProperty("显示·迷你布局深色", true),
+	showwallpaper: window.GetProperty("显示·显示壁纸", false),
+    wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+    wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+    wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
+    library_dark_theme: window.GetProperty("媒体库·深色主题", false),
+    playlists_dark_theme: window.GetProperty("播放列表·深色主题", false),
+    displayDevice: window.GetProperty("显示·输出设备", false),	
+    displayEqualizer: window.GetProperty("显示·均衡器", false),
+    displayScheduler: window.GetProperty("显示·定时关机", false),
+    displayRating: window.GetProperty("显示·评级", true),
+    displayPlayRandom: window.GetProperty("显示·随机播放按钮", true),
+    displayShuffle: window.GetProperty("显示·随机切换按钮", true),
+    displayRepeat: window.GetProperty("显示·重复按钮", true),
+    displayOpen: window.GetProperty("显示·打开按钮", true),
+    displayStop: window.GetProperty("显示·停止按钮", false),
+    showTrackPrefix: window.GetProperty("显示·曲目标题前缀", false),
+	custom_firstRow: window.GetProperty("显示·自定义第一行", ""),
+	custom_secondRow: window.GetProperty("显示·自定义第二行", ""),
 	default_firstRow: fb.TitleFormat("$if2(%discnumber%.,)$num(%tracknumber%,1) ^^ %title% ^^ $if3($meta(artist,0),$meta(album artist,0),$meta(composer,0),$meta(performer,0))"),
 	default_secondRow: fb.TitleFormat("%album%[' ('%date%')']"),
-    minimode_dark_theme: window.GetProperty("MINIMODE dark theme", false),
-    bio_dark_theme: window.GetProperty("BIO dark theme", false),
-    bio_stick_to_dark_theme: window.GetProperty("BIO stick to dark theme", false),
-    visualization_dark_theme: window.GetProperty("VISUALIZATION dark theme", false),
-	playandrandom: window.GetProperty("GLOBAL play and random",false),
-    cursor_style: window.GetProperty("_DISPLAY slider cursor style", 0),	//0 circle, 1 full disk, 2 full disk on hover
+    minimode_dark_theme: window.GetProperty("迷你模式·深色主题", false),
+    bio_dark_theme: window.GetProperty("艺术家简介·深色主题", false),
+    bio_stick_to_dark_theme: window.GetProperty("艺术家简介·跟随深色主题", false),
+    visualization_dark_theme: window.GetProperty("可视化·深色主题", false),
+	playandrandom: window.GetProperty("全局·播放与随机",false),
+    cursor_style: window.GetProperty("显示·滑块样式", 0),	//0 circle, 1 full disk, 2 full disk on hover
 	panelFontAdjustement: -1,
-	volumeA1waysVisible: window.GetProperty("_DISPLAY always show volume bar", false),
-	twoLinesDetails: window.GetProperty("_DISPLAY details on two lines", false),	
+	volumeA1waysVisible: window.GetProperty("显示·始终显示音量条", false),
+	twoLinesDetails: window.GetProperty("显示·信息显示两行", false),	
 	repeatRandom: true,
 }
 properties.tf_custom_firstRow = fb.TitleFormat(properties.custom_firstRow);
@@ -112,10 +112,9 @@ var g_text_title="";
 var g_text_second_line="";
 var g_text_title_prefix="";
 var time_e = fb.TitleFormat("%playback_time%");
-var time_t = fb.TitleFormat("$if(%length_seconds%,%length_seconds%,'ON AIR')");
+var time_t = fb.TitleFormat("$if(%length_seconds%,%length_seconds%,'直播中')");
 var time_r = fb.TitleFormat("$if(%length%,-%playback_time_remaining%,%playback_time%)");
-var tf_elapsed_seconds = fb.TitleFormat("$if2(%playback_time_seconds%,'ON AIR')");
-//var tf_radio_artist = fb.TitleFormat("$if2(%artist%,$if(%bitrate%,%bitrate%K',''))");
+var tf_elapsed_seconds = fb.TitleFormat("$if2(%playback_time_seconds%,'直播中')");
 var tf_radio_artist = fb.TitleFormat("$if3($meta(artist,0),$meta(album artist,0),$meta(composer,0),$meta(performer,0))");
 var tf_title = fb.TitleFormat("%title%");
 var tf_rating = fb.TitleFormat("$if2(" + (globalProperties.use_ratings_file_tags ? "$meta(rating)" : "%rating%") + ",0)");
@@ -145,7 +144,6 @@ progress_vars = {
 }
 progress_vars.ellipse_diameter_start = progress_vars.ellipse_diameter;
 progress_vars.ellipse_margin_top=-Math.ceil(progress_vars.ellipse_diameter/2);
-//if(properties.cursor_style==0) progress_vars.ellipse_diameter_start = progress_vars.ellipse_diameter = progress_vars.ellipse_diameter-1;
 mini_btns = {
 	button_width:20,
 	button_left_m:20,
@@ -313,7 +311,6 @@ function build_images(){
 		}
 		gb.SetSmoothingMode(0);
 	slider_cursor_hover.ReleaseGraphics(gb);
-
 
 	build_buttons();
 	setSchedulerText();
@@ -596,7 +593,6 @@ function build_buttons(){
 		Rating: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "评级", "为当前歌曲评级", false, function () {
 			g_tooltip.Deactivate();
 			if(fb.IsPlaying) {
-				//draw_rating_menu(window.Width-button_right_m-(button_width+button_padding)*2+9, 15);
 				g_rating = Number(g_rating);
 				old_g_rating = g_rating;
 				if(g_rating<5) {
@@ -632,7 +628,7 @@ function build_buttons(){
 		},rating0_img,rating0_img_hover),
 		Equalizer: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "均衡器", "显示均衡器",false, function () {
 			g_tooltip.Deactivate();
-			fb.RunMainMenuCommand("查看/DSP/均衡器");
+			runMainMenuCommand("查看/DSP/均衡器");
 		},false,equalizer_img,equalizer_img_hover),
 		Device: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "设备", "输出设备和 DSP 预设", function () {
 			g_tooltip.Deactivate();
@@ -669,11 +665,11 @@ function build_buttons(){
 			g_tooltip.Deactivate();
 			if(plman.PlaybackOrder==0 && !properties.playandrandom && properties.repeatRandom) {
 				properties.playandrandom = true;
-				window.SetProperty("GLOBAL play and random",properties.playandrandom);
+				window.SetProperty("全局·播放与随机",properties.playandrandom);
 			} else if(plman.PlaybackOrder==0) {
 				plman.PlaybackOrder=1;
 				properties.playandrandom = false;
-				window.SetProperty("GLOBAL play and random",properties.playandrandom);
+				window.SetProperty("全局·播放与随机",properties.playandrandom);
 			} else if(plman.PlaybackOrder==1) {
 				plman.PlaybackOrder=2;
 			} else if(plman.PlaybackOrder==2 || plman.PlaybackOrder==4) {
@@ -753,7 +749,7 @@ function get_text(metadb) {
 			g_text_artist =  "";
 			if(!mini_controlbar.isActive() && properties.twoLinesDetails) g_text_second_line = properties.tf_custom_secondRow.Eval();
 		}
-		if(TimeTotal=="ON AIR") {
+		if(TimeTotal=="直播中") {
 			if(!mini_controlbar.isActive() && properties.twoLinesDetails) g_text_second_line = metadb.RawPath;
 			else if(g_text_artist == "") g_text_artist = " -  "+metadb.RawPath;
 			g_text_title_prefix = "";
@@ -1039,8 +1035,8 @@ function on_mouse_lbtn_down(x,y,m){
 	g_resizing.on_mouse("lbtn_down", x, y, m);
 
 	//Time Display
-    if (is_hover_time_elapsed(x,y) && TimeTotalSeconds!="ON AIR") {
-        window.SetProperty("Show remaining time",!properties.remaining_time);
+    if (is_hover_time_elapsed(x,y) && TimeTotalSeconds!="直播中") {
+        window.SetProperty("显示剩余时间",!properties.remaining_time);
         window.NotifyOthers("remaingingToggle",properties.remaining_time);
 		properties.remaining_time=!properties.remaining_time;
 		evalTimeDisplayed('',true);
@@ -1078,7 +1074,6 @@ function on_mouse_lbtn_up(x,y,m){
     if (g_length_progress > 0 && progress_vars.drag) {
         fb.PlaybackTime = g_length_progress * g_pos_progress / ww_progress;
 		if(!is_hover_progress(x,y)) g_tooltip.Deactivate();
-        //on_mouse_move(x, y);
     }
     progress_vars.drag = false;
 	on_mouse_move(x,y);
@@ -1151,7 +1146,7 @@ function on_mouse_move(x,y,m){
 			setVolume(x);	
 		}
 	}
-	if(is_hover_time_elapsed(x,y) && TimeTotalSeconds!="ON AIR"){
+	if(is_hover_time_elapsed(x,y) && TimeTotalSeconds!="直播中"){
 		if(g_cursor.getCursor!=IDC_HAND){
 			g_cursor.setCursor(IDC_HAND,"time");
 		}
@@ -1172,7 +1167,7 @@ function on_mouse_move(x,y,m){
 	}
 	//Progress
 	m_pos_progress = clamp(x-progress_margin_left, 0, ww_progress);
-	if(is_hover_progress(x,y) && TimeTotalSeconds!="ON AIR"){
+	if(is_hover_progress(x,y) && TimeTotalSeconds!="直播中"){
 		g_cursor.setCursor(IDC_HAND,"progress");
 		hooverprogress=true;
 		if(!repaint_progress) {
@@ -1628,7 +1623,7 @@ function evalTimeDisplayed(time,first_eval){
 	}
 	if(typeof time !== 'undefined' && time!=''){
 		TimeElapsed = time.toHHMMSS();
-		if(TimeTotalSeconds=="ON AIR") {
+		if(TimeTotalSeconds=="直播中") {
 			TimeRemaining = TimeElapsed;
 		} else {
 			TimeRemaining = TimeTotalSeconds - time;
@@ -1656,7 +1651,6 @@ function evalTimeDisplayed(time,first_eval){
 }
 function ResetProgress(){
 	repaint_progress=false;
-    //g_tooltip.Deactivate();
     hooverprogress=false;
     progress_vars.height=progress_vars.height_start;
 	progress_vars.hover_slider = false;
@@ -1681,53 +1675,53 @@ function on_notify_data(name, info) {
     switch(name) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 			break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
-			window.SetProperty("GLOBAL colorsMainPanel", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
 			if(globalProperties.colorsControls==4){
 				properties.showwallpaper = (globalProperties.colorsControls!=2 && globalProperties.colorsControls!=0 && !(globalProperties.colorsControls==4 && (globalProperties.colorsMainPanel==0 || globalProperties.colorsMainPanel==3)));
-				window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+				window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				get_colors();
 			}
 		break;
 		case "colorsControls":
 			globalProperties.colorsControls = info;
-			window.SetProperty("GLOBAL colorsControls", globalProperties.colorsControls);
+			window.SetProperty("全局·控制栏配色", globalProperties.colorsControls);
 			if(layout_state.isEqual(0)) {
 				if(info!=4) {
 					properties.maindarklayout=(globalProperties.colorsControls!=0);
-					window.SetProperty("_DISPLAY: Main layout:Dark", properties.maindarklayout);
+					window.SetProperty("显示·主布局深色", properties.maindarklayout);
 					window.NotifyOthers("controls_main_dark_layout", properties.maindarklayout);
 				}
 			} else {
 				properties.minidarklayout=(globalProperties.colorsControls!=0);
-				window.SetProperty("_DISPLAY: Mini layout:Dark", properties.minidarklayout);
+				window.SetProperty("显示·迷你布局深色", properties.minidarklayout);
 				window.NotifyOthers("controls_mini_dark_layout", properties.minidarklayout);
 			}
 			properties.showwallpaper = (globalProperties.colorsControls!=2 && globalProperties.colorsControls!=0 && !(globalProperties.colorsControls==4 && (globalProperties.colorsMainPanel==3 || globalProperties.colorsMainPanel==0)));
-			window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+			window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 			get_colors();
 			window.Repaint();
 		break;
 		case "minimode_dark_theme":
 			if(info===true || info===false) {
 				properties.minimode_dark_theme=info;
-				window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+				window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 				if(layout_state.isEqual(1)) {
 					get_colors();window.Repaint();
 				}
 			} else {
 				properties.minimode_dark_theme=(info==2 || info==3);
-				window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+				window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 				globalProperties.colorsMiniPlayer = info;
-				window.SetProperty("GLOBAL colorsMiniPlayer", globalProperties.colorsMiniPlayer);
+				window.SetProperty("全局·迷你播放器配色", globalProperties.colorsMiniPlayer);
 				if(layout_state.isEqual(1)) {
 					if(globalProperties.colorsControls==4) {
 						properties.showwallpaper=(info==1 || info==3);
-						window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+						window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 					}
 					get_colors(); window.Repaint();
 				}
@@ -1735,20 +1729,20 @@ function on_notify_data(name, info) {
 		break;
 		case "MemSolicitation":
 			globalProperties.mem_solicitation = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 			window.Reload();
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 			window.Repaint();
 		break;
 		case "RefreshImageCover":
@@ -1767,23 +1761,22 @@ function on_notify_data(name, info) {
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement),
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			get_font();on_font_changed();adapt_display_to_layout(true);
 			window.Repaint();
 		break;
 		case "cover_cache_finalized":
-			//g_image_cache.cachelist = cloneImgs(info);
 			window.Repaint();
 		break;
 		case "SetRandom":
 			properties.random_function = info;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 		break;
 	   case "Randomsetfocus":
 			Randomsetfocus = info;
 			if (!Randomsetfocus && properties.random_function >= 1000 && properties.random_function < 2001){
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 			}
 			if(Randomsetfocus) showNowPlaying();
 		break;
@@ -1793,14 +1786,14 @@ function on_notify_data(name, info) {
 				properties.showTrackInfo = showtrackinfo_small.isActive();
 				if(globalProperties.colorsControls==4) {
 					properties.showwallpaper=(globalProperties.colorsMiniPlayer==1 || globalProperties.colorsMiniPlayer==3);
-					window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+					window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				}
 				VolumeSliderActive = false;
 			} else {
 				properties.showTrackInfo = showtrackinfo_big.isActive();
 				if(globalProperties.colorsControls==4) {
 					properties.showwallpaper=(globalProperties.colorsMainPanel==1 || globalProperties.colorsMainPanel==3);
-					window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+					window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				}
 				VolumeSliderActive = properties.volumeA1waysVisible;
 			}
@@ -1830,31 +1823,31 @@ function on_notify_data(name, info) {
 		break;
 		case "bio_dark_theme":
 			properties.bio_dark_theme = info;
-			window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+			window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 			get_colors();
 			window.Repaint();
 		break;
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme = info;
-			window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 			get_colors();
 			window.Repaint();
 		break;
 		case "bio_stick_to_dark_theme":
 			properties.bio_stick_to_dark_theme = info;
-			window.SetProperty("BIO stick to dark theme", properties.bio_stick_to_dark_theme);
+			window.SetProperty("艺术家简介·跟随深色主题", properties.bio_stick_to_dark_theme);
 			get_colors();
 			window.Repaint();
 		break;
 		case "library_dark_theme":
 			properties.library_dark_theme = info;
-			window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+			window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 			get_colors();
 			window.Repaint();
 		break;
 		case "playlists_dark_theme":
 			properties.playlists_dark_theme = info;
-			window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+			window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 			get_colors();
 			window.Repaint();
 		break;
@@ -2205,26 +2198,26 @@ function draw_menu() {
    case (idx == 4000):
 		properties.library_dark_theme=!properties.library_dark_theme;
         window.NotifyOthers("library_dark_theme",properties.library_dark_theme);
-		window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+		window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
         window.Repaint();
         break;
    case (idx == 4001):
 		properties.playlists_dark_theme=!properties.playlists_dark_theme;
         window.NotifyOthers("playlists_dark_theme",properties.playlists_dark_theme);
-		window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
-		fb.RunMainMenuCommand("查看/ElPlaylist/刷新");
+		window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
+		runMainMenuCommand("查看/ElPlaylist/刷新");
         window.Repaint();
         break;
    case (idx == 4002):
 		properties.bio_dark_theme=!properties.bio_dark_theme;
         window.NotifyOthers("bio_dark_theme",properties.bio_dark_theme);
-		window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+		window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
         window.Repaint();
         break;
    case (idx == 4003):
 		properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
         break;
    case (idx == 4005):
         window.NotifyOthers("wallpaperVisibility",true);
@@ -2285,32 +2278,32 @@ function randomPlayMenu(x, y){
         switch(true) {
             case (idx == 2):
                 properties.random_function = '20_albums';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("playRandom", properties.random_function);
                 break;
             case (idx == 3):
                 properties.random_function = '200_tracks';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("playRandom", properties.random_function);
                 break;
             case (idx == 4):
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("playRandom", properties.random_function);
                 break;
             case (idx == 5):
                 properties.random_function = '1_artist';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("playRandom", properties.random_function);
                 break;
 			case (idx >= 1000 && idx < 2001):
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("playRandom", idx);
 				break;
             case (idx == 6):
                 properties.random_function = 'default';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("playRandom", properties.random_function);
                 break;
             default:
@@ -2351,7 +2344,7 @@ function menuOutputAndDSP(x, y){
 		menu.AppendMenuItem(MF_GRAYED, 0, "Foobar > 文件 > 偏好设置 > 播放 > DSP 管理器");
 	}
 	var idx = menu.TrackPopupMenu(x, y, 0x0020);
-	if (idx > 0 && idx < 999) fb.RunMainMenuCommand(outputs[idx - 1].name); 
+	if (idx > 0 && idx < 999) runMainMenuCommand(outputs[idx - 1].name); 
 	else if (idx > 999) fb.SetDSPPreset(idx-1000); 
 }
 function moreMenu(x, y){
@@ -2384,8 +2377,6 @@ function moreMenu(x, y){
 			quickSearchMenu.AppendTo(_moreMenu, MF_STRING, "快速搜索...");
 			_moreMenu.AppendMenuSeparator();
 		}
-
-
 
 		var _controlsMenu = window.CreatePopupMenu();
 		_controlsMenu.AppendMenuItem(MF_STRING, 3000, "停止");
@@ -2444,8 +2435,6 @@ function moreMenu(x, y){
 			var genreValue=parseInt(properties.random_function);
 				_playRandom.AppendMenuItem(MF_STRING, 504, "流派");
 			if((genreValue >= 1000 && genreValue < 2001) || properties.random_function=='1_genre')	checked_item_menu=504;
-
-			//_playRandom.CheckMenuRadioItem(502, 505, checked_item_menu);
 
 			var genrePopupMenu = window.CreatePopupMenu();
 			createGenrePopupMenu(false, -1, genrePopupMenu);
@@ -2555,37 +2544,37 @@ function moreMenu(x, y){
                 break;
             case (idx == 502):
                 properties.random_function = '20_albums';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(properties.random_function);
                 break;
             case (idx == 503):
                 properties.random_function = '200_tracks';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(properties.random_function);
                 break;
             case (idx == 504):
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(properties.random_function);
                 break;
             case (idx == 505):
                 properties.random_function = '1_artist';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 				window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(properties.random_function);
                 break;
 			case (idx >= 1000 && idx < 2001):
                 properties.random_function = idx;
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(idx);
 				break;
             case (idx == 507):
                 properties.random_function = 'default';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
                 window.NotifyOthers("SetRandom", properties.random_function);
 				play_random(properties.random_function);
                 break;
@@ -2636,7 +2625,7 @@ function moreMenu(x, y){
                 break;
 
 			case (idx == 3017):
-				fb.RunMainMenuCommand("查看/DSP/均衡器");
+				runMainMenuCommand("查看/DSP/均衡器");
 				break;
 			case (idx == 3018):
 				setScheduler(0);
@@ -2660,23 +2649,23 @@ function moreMenu(x, y){
 				plman.SortByFormat(plman.ActivePlaylist,"");
                 break;
             case (idx == 3025):
-				fb.RunMainMenuCommand("文件/打开...");
+				runMainMenuCommand("文件/打开...");
                 break;
             case (idx == 3026):
-				fb.RunMainMenuCommand("文件/打开音频CD...");
+				runMainMenuCommand("文件/打开音频CD...");
                 break;
             case (idx == 3027):
-				fb.RunMainMenuCommand("文件/添加文件...");
+				runMainMenuCommand("文件/添加文件...");
                 break;
             case (idx == 3028):
-				fb.RunMainMenuCommand("文件/添加文件夹...");
+				runMainMenuCommand("文件/添加文件夹...");
                 break;
             case (idx == 3029):
-				fb.RunMainMenuCommand("文件/添加位置...");
+				runMainMenuCommand("文件/添加位置...");
                 break;
             case (idx == 4017):
 				properties.displayEqualizer = !properties.displayEqualizer;
-				window.SetProperty("_DISPLAY equalizer", properties.displayEqualizer);
+				window.SetProperty("显示·均衡器", properties.displayEqualizer);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2684,7 +2673,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4018):
 				properties.displayRating = !properties.displayRating;
-				window.SetProperty("_DISPLAY rating", properties.displayRating);
+				window.SetProperty("显示·评级", properties.displayRating);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2692,7 +2681,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4019):
 				properties.displayScheduler = !properties.displayScheduler;
-				window.SetProperty("_DISPLAY scheduler", properties.displayScheduler);
+				window.SetProperty("显示·定时关机", properties.displayScheduler);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2700,7 +2689,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4020):
 				properties.displayPlayRandom = !properties.displayPlayRandom;
-				window.SetProperty("_DISPLAY play random btn", properties.displayPlayRandom);
+				window.SetProperty("显示·随机播放按钮", properties.displayPlayRandom);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2708,7 +2697,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4021):
 				properties.displayShuffle = !properties.displayShuffle;
-				window.SetProperty("_DISPLAY shuffle btn", properties.displayShuffle);
+				window.SetProperty("显示·随机切换按钮", properties.displayShuffle);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2716,7 +2705,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4022):
 				properties.displayRepeat = !properties.displayRepeat;
-				window.SetProperty("_DISPLAY repeat btn", properties.displayRepeat);
+				window.SetProperty("显示·重复按钮", properties.displayRepeat);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2724,7 +2713,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4023):
 				properties.displayOpen = !properties.displayOpen;
-				window.SetProperty("_DISPLAY open btn", properties.displayOpen);
+				window.SetProperty("显示·打开按钮", properties.displayOpen);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2732,7 +2721,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4024):
 				properties.displayDevice = !properties.displayDevice;
-				window.SetProperty("_DISPLAY device", properties.displayDevice);
+				window.SetProperty("显示·输出设备", properties.displayDevice);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2740,7 +2729,7 @@ function moreMenu(x, y){
                 break;		
             case (idx == 4016):
 				properties.displayStop = !properties.displayStop;
-				window.SetProperty("_DISPLAY stop btn", properties.displayStop);
+				window.SetProperty("显示·停止按钮", properties.displayStop);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2840,53 +2829,6 @@ function schedulerMenu(x, y){
         _schedulerMenu = undefined;
         return true;
 }
-function draw_rating_menu(x,y){
-        var _menu = window.CreatePopupMenu();
-        var idx;
-		_menu.AppendMenuItem(MF_DISABLED, 0, "评级：");
-		_menu.AppendMenuSeparator();
-
-		_menu.AppendMenuItem(MF_STRING, 1, "0 / 未设置");
-		_menu.AppendMenuItem(MF_STRING, 2, "1");
-		_menu.AppendMenuItem(MF_STRING, 3, "2");
-		_menu.AppendMenuItem(MF_STRING, 4, "3");
-		_menu.AppendMenuItem(MF_STRING, 5, "4");
-		_menu.AppendMenuItem(MF_STRING, 6, "5");
-		_menu.CheckMenuRadioItem(1, 6, Number(g_rating)+1);
-
-        idx = _menu.TrackPopupMenu(x,y,0x0020);
-        switch(true) {
-            case (idx == 1):
-				if(g_rating!=0)
-                g_rating = rateSong(0, g_rating, current_played_track);
-                break;
-            case (idx == 2):
-				if(g_rating!=1)
-                g_rating = rateSong(1, g_rating, current_played_track);
-                break;
-            case (idx == 3):
-				if(g_rating!=2)
-                g_rating = rateSong(2, g_rating, current_played_track);
-                break;
-            case (idx == 4):
-				if(g_rating!=3)
-                g_rating = rateSong(3, g_rating, current_played_track);
-                break;
-            case (idx == 5):
-				if(g_rating!=4)
-                g_rating = rateSong(4, g_rating, current_played_track);
-                break;
-            case (idx == 6):
-				if(g_rating!=5)
-                g_rating = rateSong(5, g_rating, current_played_track);
-                break;
-            default:
-				return true;
-                break;
-        }
-        _menu = undefined;
-        return true;
-}
 function draw_controls_menu(x,y){
         var _menu = window.CreatePopupMenu();
 		var _menu3 = window.CreatePopupMenu();
@@ -2984,7 +2926,7 @@ function draw_controls_menu(x,y){
 				draw_settings_menu(x,y);
                 break;
 			case (idx == 2):
-				fb.RunContextCommandWithMetadb("属性", fb.GetNowPlaying());
+				runContextCommand("属性", fb.GetNowPlaying());
 			break;		
 		case (idx == 30):
 			if(!main_panel_state.isEqual(0) && !main_panel_state.isEqual(1)) {
@@ -3083,8 +3025,6 @@ function draw_settings_menu(x,y){
 		var _menu_track_infos = window.CreatePopupMenu();		
         var idx;
 
-		//_menu.AppendMenuItem(MF_STRING, 3027, "Compact controls");
-		//_menu.CheckMenuItem(3027, mini_controlbar.isActive());
 		_menu.AppendMenuItem(MF_STRING, 3027, "加宽控制栏");
 		_menu.CheckMenuItem(3027,!mini_controlbar.isActive());		
 		var custom_rows = properties.custom_firstRow!=""||properties.custom_secondRow!="";
@@ -3154,7 +3094,7 @@ function draw_settings_menu(x,y){
         switch(true) {
 			case (idx == 200):
 				properties.showwallpaper = !properties.showwallpaper;
-				window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+				window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				get_colors();
 				if(properties.showwallpaper) {
 					g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
@@ -3163,37 +3103,37 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 210):
 				properties.wallpapermode = 99;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalglobalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 211):
 				properties.wallpapermode = 0;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 220):
 				properties.wallpaperblurred = !properties.wallpaperblurred;
-				window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 221):
 				properties.wallpaperdisplay = 0;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 222):
 				properties.wallpaperdisplay = 1;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 223):
 				properties.wallpaperdisplay = 2;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
@@ -3216,7 +3156,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3017):
 				properties.displayEqualizer = !properties.displayEqualizer;
-				window.SetProperty("_DISPLAY equalizer", properties.displayEqualizer);
+				window.SetProperty("显示·均衡器", properties.displayEqualizer);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3224,7 +3164,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3029):
 				properties.displayDevice = !properties.displayDevice;
-				window.SetProperty("_DISPLAY device", properties.displayDevice);
+				window.SetProperty("显示·输出设备", properties.displayDevice);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3232,7 +3172,7 @@ function draw_settings_menu(x,y){
                 break;					
             case (idx == 3018):
 				properties.displayRating = !properties.displayRating;
-				window.SetProperty("_DISPLAY rating", properties.displayRating);
+				window.SetProperty("显示·评级", properties.displayRating);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3240,7 +3180,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3019):
 				properties.displayScheduler = !properties.displayScheduler;
-				window.SetProperty("_DISPLAY scheduler", properties.displayScheduler);
+				window.SetProperty("显示·定时关机", properties.displayScheduler);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3248,7 +3188,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3020):
 				properties.displayPlayRandom = !properties.displayPlayRandom;
-				window.SetProperty("_DISPLAY play random btn", properties.displayPlayRandom);
+				window.SetProperty("显示·随机播放按钮", properties.displayPlayRandom);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3256,7 +3196,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3021):
 				properties.displayShuffle = !properties.displayShuffle;
-				window.SetProperty("_DISPLAY shuffle btn", properties.displayShuffle);
+				window.SetProperty("显示·随机切换按钮", properties.displayShuffle);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3264,7 +3204,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3022):
 				properties.displayRepeat = !properties.displayRepeat;
-				window.SetProperty("_DISPLAY repeat btn", properties.displayRepeat);
+				window.SetProperty("显示·重复按钮", properties.displayRepeat);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3272,7 +3212,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3023):
 				properties.displayOpen = !properties.displayOpen;
-				window.SetProperty("_DISPLAY open btn", properties.displayOpen);
+				window.SetProperty("显示·打开按钮", properties.displayOpen);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3280,21 +3220,21 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3024):
 				properties.cursor_style = 0;
-				window.SetProperty("_DISPLAY slider cursor style", properties.cursor_style);
+				window.SetProperty("显示·滑块样式", properties.cursor_style);
 				build_images();
 				adapt_display_to_layout();
 				window.Repaint();
                 break;
             case (idx == 3025):
 				properties.cursor_style = 1;
-				window.SetProperty("_DISPLAY slider cursor style", properties.cursor_style);
+				window.SetProperty("显示·滑块样式", properties.cursor_style);
 				build_images();
 				adapt_display_to_layout();
 				window.Repaint();
                 break;
             case (idx == 3026):
 				properties.cursor_style = 2;
-				window.SetProperty("_DISPLAY slider cursor style", properties.cursor_style);
+				window.SetProperty("显示·滑块样式", properties.cursor_style);
 				build_images();
 				adapt_display_to_layout();
 				window.Repaint();
@@ -3314,7 +3254,7 @@ function draw_settings_menu(x,y){
 				} else {
 					properties.twoLinesDetails = !properties.twoLinesDetails;
 				}
-				window.SetProperty("_DISPLAY details on two lines", properties.twoLinesDetails);
+				window.SetProperty("显示·信息显示两行", properties.twoLinesDetails);
 				build_buttons();
 				get_text();
 				adapt_display_to_layout();
@@ -3323,7 +3263,7 @@ function draw_settings_menu(x,y){
                 break;				
             case (idx == 3028):
 				properties.displayStop = !properties.displayStop;
-				window.SetProperty("_DISPLAY stop btn", properties.displayStop);
+				window.SetProperty("显示·停止按钮", properties.displayStop);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3332,7 +3272,7 @@ function draw_settings_menu(x,y){
             case (idx == 3030):
 				properties.volumeA1waysVisible = !properties.volumeA1waysVisible;
 				VolumeSliderActive = properties.volumeA1waysVisible;
-				window.SetProperty("_DISPLAY always show volume bar", properties.volumeA1waysVisible);
+				window.SetProperty("显示·始终显示音量条", properties.volumeA1waysVisible);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3341,9 +3281,9 @@ function draw_settings_menu(x,y){
 			case (idx == 3031):
 				try {
 					customControlDetails("自定义显示字段"
-										,"<div class='titleBig'>Customize displayed fields</div><div class='separator'></div><br/>Enter a title formatting script for each line displayed.\nYou can use the full foobar2000 title formatting syntax here.<br/><a href=\"http://tinyurl.com/lwhay6f\" target=\"_blank\">Click here</a> for informations about foobar title formatting. (http://tinyurl.com/lwhay6f)<br/>"
+										,"<div class='titleBig'>自定义显示字段</div><div class='separator'></div><br/>为每一行显示内容输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。<br/><a href=\"http://tinyurl.com/lwhay6f\" target=\"_blank\">点击此处</a> 了解 foobar 标题格式化。 (http://tinyurl.com/lwhay6f)<br/>"
 										,''
-										,'First line (default is %title% - %artist%):##Second line, displayed when the option is enabled (default is %album% (%date%)):'
+										,'第一行（默认 %title% - %artist%）：##第二行，启用该选项时显示（默认 %album% (%date%)）：'
 										,properties.custom_firstRow+'##'+properties.custom_secondRow);
 					properties.tf_custom_firstRow = fb.TitleFormat(properties.custom_firstRow);
 					properties.tf_custom_secondRow = fb.TitleFormat(properties.custom_secondRow);
@@ -3355,8 +3295,8 @@ function draw_settings_menu(x,y){
             case (idx == 3032):
 				properties.custom_firstRow = "";
 				properties.custom_secondRow = "";				
-				window.SetProperty("_DISPLAY: custom first row", "");
-				window.SetProperty("_DISPLAY: custom second row", "");			
+				window.SetProperty("显示·自定义第一行", "");
+				window.SetProperty("显示·自定义第二行", "");			
 				properties.tf_custom_firstRow = fb.TitleFormat(properties.custom_firstRow);
 				properties.tf_custom_secondRow = fb.TitleFormat(properties.custom_secondRow);
 				get_text();
@@ -3364,7 +3304,7 @@ function draw_settings_menu(x,y){
                 break;						
             case (idx == 9001):
                 properties.showTrackPrefix = !properties.showTrackPrefix;
-                window.SetProperty("_DISPLAY show track title prefix", properties.showTrackPrefix);
+                window.SetProperty("显示·曲目标题前缀", properties.showTrackPrefix);
                 build_buttons();
 				adapt_display_to_layout();
 				get_text();
@@ -3717,7 +3657,6 @@ oSlider = function(parentObjectName, min, max) {
         this.setButtons();
     }
 
-
     this.cursorCheck = function(event, x, y) {
 
         this.ishover = (x >= this.x && x <= this.x + this.w && y >= this.cursorPos && y <= (this.cursorPos + this.cursorHeight));
@@ -3837,7 +3776,6 @@ oSlider = function(parentObjectName, min, max) {
 }
 //=================================================// Cover Tools
 
-
 function on_init(){
 	g_cursor = new oCursor();
 	g_panel = new oPanel();
@@ -3853,4 +3791,3 @@ function on_init(){
 	setSchedulerText();
 }
 on_init();
-

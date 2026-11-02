@@ -77,58 +77,60 @@ var already_saved=false;
 
 //=================================================// Properties
 var properties = {
+	// 封面下方文字是否居中；原版直接读了未定义字段，实际永远左对齐，这里补上定义并沿用原效果
+	centerText: window.GetProperty("封面·文字居中", false),
 	panelName: 'WSHgraphicbrowser',
-    load_covers_at_startup: window.GetProperty("COVER Load all at startup", true),
-    thumbnailWidthMin: window.GetProperty("COVER Width Minimal", 50),
-    thumbnailWidth: window.GetProperty("COVER Width", 100),
-    default_CoverShadowOpacity: window.GetProperty("COVER Shadow Opacity", 0),
-    showdateOverCover: window.GetProperty("COVER Show Date over album art", false),
-	circleMode: window.GetProperty("COVER Circle artwork", false),
-    DragToPlaylist: window.GetProperty("MAINPANEL Enable dragging to a playlist", false),
-    showscrollbar: window.GetProperty("MAINPANEL Scrollbar - Visible", true),
-    showheaderbar: window.GetProperty("MAINPANEL Show Header Bar", false),
-    showFilterBox: window.GetProperty("MAINPANEL Show filter box", false),
-    followNowPlaying: window.GetProperty("TRACKLIST Always Follow Now Playing", true),
-    expandInPlace: window.GetProperty("TRACKLIST Expand in place", true),
-    followActivePlaylist: window.GetProperty("MAINPANEL Follow active playlist", true),
-    followPlayingPlaylist: window.GetProperty("MAINPANEL Follow playing playlist", false),
-    showListColoredOneColor: window.GetProperty("TRACKLIST Color according to albumart (main color)", false),
-    showListColoredBlurred: window.GetProperty("TRACKLIST Color according to albumart (blurred)", false),
-    showListColoredMixedColor: window.GetProperty("TRACKLIST Color according to albumart (mix of both)", false),
-    drawProgressBar: window.GetProperty("TRACKLIST Draw a progress bar under song title", true),
-    AlbumArtProgressbar: window.GetProperty("TRACKLIST Blurred album art progress bar", false),
-    showPlaycount: window.GetProperty("TRACKLIST Show playcount", true),
-    showArtistName: window.GetProperty("TRACKLIST Show artist name", false),
-    showRating: window.GetProperty("TRACKLIST Show rating in Track Row", false),
-    showRatingSelected: window.GetProperty("TRACKLIST Show rating in Selected Track Row", false),
-    showRatingRated: window.GetProperty("TRACKLIST Show rating in Rated Track Row", false),
-	showlistShowCover: window.GetProperty("TRACKLIST Show cover", true),
-    SortBy: window.GetProperty("MAINPANEL Sort albums by", "standard"),
-    SortDescending: window.GetProperty("MAINPANEL sort descending", false),
-    TFgrouping: window.GetProperty("MAINPANEL Library Group TitleFormat", ""),
+    load_covers_at_startup: window.GetProperty("封面·启动时全部加载", true),
+    thumbnailWidthMin: window.GetProperty("封面·最小宽度", 50),
+    thumbnailWidth: window.GetProperty("封面·宽度", 100),
+    default_CoverShadowOpacity: window.GetProperty("封面·阴影不透明度", 0),
+    showdateOverCover: window.GetProperty("封面·封面上显示日期", false),
+	circleMode: window.GetProperty("封面·圆形封面", false),
+    DragToPlaylist: window.GetProperty("主面板·允许拖拽到播放列表", false),
+    showscrollbar: window.GetProperty("主面板·滚动条可见", true),
+    showheaderbar: window.GetProperty("主面板·显示标题栏", false),
+    showFilterBox: window.GetProperty("主面板·显示筛选框", false),
+    followNowPlaying: window.GetProperty("曲目列表·始终跟随正在播放", true),
+    expandInPlace: window.GetProperty("曲目列表·原地展开", true),
+    followActivePlaylist: window.GetProperty("主面板·跟随活动播放列表", true),
+    followPlayingPlaylist: window.GetProperty("主面板·跟随正在播放的播放列表", false),
+    showListColoredOneColor: window.GetProperty("曲目列表·按封面取色(主色)", false),
+    showListColoredBlurred: window.GetProperty("曲目列表·按封面取色(模糊)", false),
+    showListColoredMixedColor: window.GetProperty("曲目列表·按封面取色(混合)", false),
+    drawProgressBar: window.GetProperty("曲目列表·标题下绘制进度条", true),
+    AlbumArtProgressbar: window.GetProperty("曲目列表·模糊封面进度条", false),
+    showPlaycount: window.GetProperty("曲目列表·显示播放次数", true),
+    showArtistName: window.GetProperty("曲目列表·显示艺术家", false),
+    showRating: window.GetProperty("曲目列表·行内显示评级", false),
+    showRatingSelected: window.GetProperty("曲目列表·选中行显示评级", false),
+    showRatingRated: window.GetProperty("曲目列表·已评级行显示评级", false),
+	showlistShowCover: window.GetProperty("曲目列表·显示封面", true),
+    SortBy: window.GetProperty("主面板·专辑排序依据", "standard"),
+    SortDescending: window.GetProperty("主面板·降序排列", false),
+    TFgrouping: window.GetProperty("主面板·媒体库分组标题格式", ""),
     TFgrouping_default_filterbox: "%album artist% ^^ %album%[' - Disc '%discnumber%] ^^ %genre% ^^ %date% ^^ %title%",
     TFgrouping_default: "%title% ^^ %album artist% ^^ %album%[' - Disc '%discnumber%]",
-    TFsorting: window.GetProperty("MAINPANEL Library Sort TitleFormat", ""),
-    TFsorting_default: window.GetProperty("MAINPANEL Library Default Sort TitleFormat", ""),
+    TFsorting: window.GetProperty("主面板·媒体库排序格式", ""),
+    TFsorting_default: window.GetProperty("主面板·媒体库默认排序格式(备用)", ""),
     TFtitle: "%artist% ^^ [%discnumber%.] ^^ %tracknumber% ^^ %title% ^^ $if2(" + (globalProperties.use_ratings_file_tags ? "$meta(rating)" : "%rating%") + ",0) ^^ $if(%length%,%length_seconds%,'ON AIR') ^^ $if2(%play_counter%,$if2(%play_count%,0))",
     TFshowlist: "%album artist% ^^ %album% ^^ [' - Disc '%discnumber%] ^^ %date% ^^ %genre%",
 	TFshowlistReduced: "[%discnumber%]",
     TFgroupinfos: "%genre% ^^ %date%",
-    smooth_scroll_value: window.GetProperty("MAINPANEL Smooth Scroll value (0 to disable)", 0.5),
-    smooth_expand_value: window.GetProperty("TRACKLIST Smooth Expand value (0 to disable)", 0.3),
+    smooth_scroll_value: window.GetProperty("主面板·平滑滚动强度(0=关闭)", 0.5),
+    smooth_expand_value: window.GetProperty("曲目列表·平滑展开强度(0=关闭)", 0.3),
 	smooth_expand_default_value:0.3,
 	panelFontAdjustement: -1,
-    enableDiskCache: window.GetProperty("COVER Disk Cache", true),
-    deleteDiskCache: window.GetProperty("COVER delete cover cache on next startup", false),
-	deleteSpecificImageCache : window.GetProperty("COVER cachekey of covers to delete on next startup", ""),
-	darklayout: window.GetProperty("_DISPLAY: Dark layout", true),
-	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", true),
-    wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-    wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-    wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-    wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0),
-	show_covers_progress: window.GetProperty("COVER Show loading progress", true),
-	showToolTip: window.GetProperty("MAINPANEL Show tooltips", true),
+    enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
+    deleteDiskCache: window.GetProperty("封面·下次启动时删除缓存", false),
+	deleteSpecificImageCache : window.GetProperty("封面·待删除缓存的键(下次启动)", ""),
+	darklayout: window.GetProperty("显示·深色布局", true),
+	showwallpaper: window.GetProperty("显示·显示壁纸", true),
+    wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+    wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+    wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
+	show_covers_progress: window.GetProperty("封面·显示加载进度", true),
+	showToolTip: window.GetProperty("主面板·显示工具提示", true),
 	marginLR: 25,
 	showlistWidthMax:1300,
 	CoverHoverExtendRect:2,
@@ -227,7 +229,7 @@ if(properties.deleteDiskCache) {
 		timers.CreateFolder = false;
 	},150);
 	properties.deleteDiskCache=false;
-	window.SetProperty("COVER delete cover cache on next startup", false);
+	window.SetProperty("封面·下次启动时删除缓存", false);
 }
 if(properties.deleteSpecificImageCache!="") {
 	crc_array = properties.deleteSpecificImageCache.split("|");
@@ -235,7 +237,7 @@ if(properties.deleteSpecificImageCache!="") {
 		delete_file_cache(null, -1, crc_array[i],true);
 	}
 	properties.deleteSpecificImageCache = "";
-	window.SetProperty("COVER cachekey of covers to delete on next startup", "");
+	window.SetProperty("封面·待删除缓存的键(下次启动)", "");
 }
 
 var cover = {
@@ -253,7 +255,7 @@ var cover = {
     stream_img: gdi.Image(theme_img_path+"\\stream_icon.png"),
 	marginSide:5,
 	marginBottom:30,
-    masks: window.GetProperty("COVER album art masks (for disk cache)","*front*.*;*cover*.*;*folder*.*;*.*"),
+    masks: window.GetProperty("封面·封面蒙版(磁盘缓存用)","*front*.*;*cover*.*;*folder*.*;*.*"),
 };
 var cover_path = new RegExp("(artwork)|(cover)|(scan)|(image)");
 var cover_img = cover.masks.split(";");
@@ -336,22 +338,13 @@ oFilterBox = function() {
 		var by = y;
         var bw = this.w;
         var bh = this.h;
-        //gr.FillSolidRect(bx, by, bw, bh, RGB(255,255,255));
-        //gr.FillSolidRect(bx-2, by, bw+2, 20, blendColors(brw.bgColor, brw.fgColor, 0.2));
 
-        /*if(this.inputbox.edit) {
-            gr.DrawRect(bx, by, bw, bh, 1.0, GetGrey(0));
-        } else {
-            gr.DrawRect(bx, by, bw, bh, 1.0, colors.border);
-        }*/
         if(this.inputbox.text.length > 0) {
             this.reset_bt.draw(gr, bx+2, by+11, 255);
         } else {
 			gr.DrawImage(this.images.search_icon, bx, by+Math.round(this.h/2-this.images.search_icon.Height/2), this.images.search_icon.Width, this.images.search_icon.Height, 0, 0, this.images.search_icon.Width, this.images.search_icon.Height, 0, 255);
 		}
-        //gr.DrawImage(this.images.search_icon, bx+1, by+2, 16, 16, 0, 0, 16, 16, 0, 255);
 		this.inputbox.draw(gr, bx+this.paddingLeft, by+this.paddingTop, 0, 0);
-       // if(this.inputbox.text.length > 0) this.reset_bt.draw(gr, bx+this.inputbox.w+3+20, by+1, 255);
     }
     this.clearInputbox = function(){
 		if(this.inputbox.text.length > 0) {
@@ -429,7 +422,6 @@ function search(string){
     str = process_string(filter_text);
     brw.groups_draw.splice(0, brw.groups_draw.length);
     var back_s = -1.5;
-    //var row_count = brw.totalColumns;
     var row_count = brw.totalRows;
     for(var i in brw.groups){
         for(var j in brw.groups[i].tr){
@@ -492,7 +484,6 @@ oPlaylistManager = function (parentObjName) {
         } else {
             gr.DrawLine(this.x+this.w, 0, this.x+0+this.w, this.y + this.h, 1.0, colors.pm_border);
         }
-		//gr.FillGradRect(this.x, 0, this.w, colors.fading_bottom_height-30, 90,colors.pm_bgtopstart,  colors.pm_bgtopend,1);
 
         gr.DrawLine(this.x+20, this.y + this.headerHeight-6, this.x+this.w-25, this.y+this.headerHeight-6, 1.0, colors.pm_item_separator_line);
 
@@ -600,7 +591,6 @@ oPlaylistItem = function (id, name, parentObjName) {
     this.w = 260;
     this.h = g_fsize*3;
     this.flash = false;
-    // type (start at 0 : library, work, normal, autoplaylist)
     switch(name) {
         case globalProperties.selection_playlist:
             this.type = 0;
@@ -830,7 +820,6 @@ oRow = function(metadb,itemIndex) {
         gr.GdiDrawText(this.title_text, g_font.normal, g_showlist.colorSchemeText, (this.x + this.tracknumber_w + 10), this.y, this.w - this.tracknumber_w - length_w - 10-this.rating_length, this.h, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 		if(this.title_length==0) this.title_length = gr.CalcTextWidth(this.title_text, g_font.normal);
 
-
 		if(properties.showPlaycount){
 			this.playcount_text = "  ("+this.playcount+")";
 			if(this.playcount_length==0) this.playcount_length = gr.CalcTextWidth(this.playcount_text, g_font.min2);
@@ -981,7 +970,7 @@ oRow = function(metadb,itemIndex) {
 					var a = g_showlist.idx;
 					plman.SetPlaylistFocusItemByHandle(plman.ActivePlaylist, this.metadb);
 					if(fb.IsPaused) fb.Stop();
-                    fb.RunContextCommandWithMetadb("Add to playback queue", this.metadb);
+                    runContextCommand("Add to playback queue", this.metadb);
                     fb.Play();
                 }
                 break;
@@ -1340,7 +1329,6 @@ oShowList = function(parentPanelName) {
                 break;
             case "down":
 				if(this.ishover) changed = this.clearSelection();
-				//if(changed) window.Repaint();
                 break;
             case "up":
                 break;
@@ -1477,8 +1465,6 @@ oShowList = function(parentPanelName) {
 		if(nbRows!=-1) this.nbRows = nbRows;
 		if(nbRows!=-1) this.delta = nbRows;
 		this.hscr_visible = false;
-
-		//this.clearSelection();
 
 		this.w = brw.w;
 		this.x = brw.x;
@@ -1806,7 +1792,6 @@ oShowList = function(parentPanelName) {
 						this.hscr_cursor_vpadding = 9;
 						this.hscr_cursor_pos = this.columnsOffset * this.hscr_step_width;
 
-
 						this.hscr_y = this.y + slh - this.areaBot -3;
 						this.hscr_x = this.x+12+(this.prev_bt.w)+this.hscr_cursor_pos;
 
@@ -1890,7 +1875,6 @@ oShowList = function(parentPanelName) {
                 if(this.idx > -1) {
                     var k = 0;
                     var cx = 0, cy = this.y + this.areaTop;
-
 
                     for(var c = this.columnsOffset; c < this.columnsOffset + this.totalColsVis; c++) {
                         if(this.columns[c]) {
@@ -2157,44 +2141,44 @@ oHeaderbar = function(name) {
                 brw.populate(0);
                 break;
             case (idx == 35):
-				fb.RunContextCommandWithMetadb("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
+				runContextCommand("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
                 break;
 			case (idx >= 1000 && idx < 2001):
 				SetGenre(idx-1000,plman.GetPlaylistItems(plman.ActivePlaylist));
 				break;
 			case (idx == 3000):
 				properties.TFsorting = "";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(4,true);
 				break;
 			case (idx == 3001):
 				properties.TFsorting = sort_by_album_artist+"#1";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(5,true);
 				break;
 			case (idx == 3002):
 				properties.TFsorting = sort_by_title+"#1";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(6,true);
 				break;
 			case (idx == 3003):
 				properties.TFsorting = sort_by_tracknumber+"#1";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(7,true);
 				break;
 			case (idx == 3004):
 				properties.TFsorting = sort_by_date+"#1";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(8,true);
 				break;
 			case (idx == 3005):
 				properties.TFsorting = sort_by_date_added+"#-1";
-				window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 				g_showlist.idx=-1;
 				brw.populate(9,true);
 				break;
@@ -2203,7 +2187,7 @@ oHeaderbar = function(name) {
 					new_TFsorting = utils.InputBox(window.ID, "请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f", "自定义排序顺序", brw.currentSorting, true);
 					if (!(new_TFsorting == "" || typeof new_TFsorting == 'undefined')) {
 						properties.TFsorting = new_TFsorting;
-						window.SetProperty("MAINPANEL Library Sort TitleFormat", properties.TFsorting);
+						window.SetProperty("主面板·媒体库排序格式", properties.TFsorting);
 						g_showlist.idx=-1;
 						brw.populate(5,true);
 					}
@@ -2216,23 +2200,23 @@ oHeaderbar = function(name) {
 				break;
 			case (idx == 3008):
                 properties.SortDescending = !properties.SortDescending;
-                window.SetProperty("MAINPANEL sort descending", properties.SortDescending);
+                window.SetProperty("主面板·降序排列", properties.SortDescending);
 				g_showlist.idx=-1;
 				brw.populate(11,true);
 				break;
 			case (idx == 3009):
 				if(properties.TFsorting_default != properties.TFsorting){
 					properties.TFsorting_default = properties.TFsorting;
-					window.SetProperty("MAINPANEL Library Default Sort TitleFormat", properties.TFsorting_default);
+					window.SetProperty("主面板·媒体库默认排序格式(备用)", properties.TFsorting_default);
 				} else {
 					properties.TFsorting_default = "";
-					window.SetProperty("MAINPANEL Default library Sort TitleFormat", "");
+					window.SetProperty("主面板·媒体库默认排序格式(备用)", "");
 				}
 				break;
 			case (idx == 4000):
 				properties.TFgrouping = ""
 				TF.grouping = fb.TitleFormat("");
-				window.SetProperty("MAINPANEL Library Group TitleFormat", properties.TFgrouping);
+				window.SetProperty("主面板·媒体库分组标题格式", properties.TFgrouping);
 				g_showlist.idx=-1;
 				brw.populate(5,true);
 				break;
@@ -2242,7 +2226,7 @@ oHeaderbar = function(name) {
 					if (!(new_TFgrouping == "" || typeof new_TFgrouping == 'undefined')) {
 						properties.TFgrouping = new_TFgrouping;
 						TF.grouping = fb.TitleFormat(properties.TFgrouping);
-						window.SetProperty("MAINPANEL Library Group TitleFormat", properties.TFgrouping);
+						window.SetProperty("主面板·媒体库分组标题格式", properties.TFgrouping);
 						g_showlist.idx=-1;
 						brw.populate(5,false);
 					}
@@ -2376,19 +2360,18 @@ function draw_settings_menu(x,y){
 		case (idx == 8):
 			scroll = scroll_ = 0;
 			brw.populate(0);
-			//g_sendResponse();
 			break;
 		case (idx == 9):
-			window.SetProperty("COVER delete cover cache on next startup", true);
+			window.SetProperty("封面·下次启动时删除缓存", true);
 			fb.ShowPopupMessage("图像缓存将在下次启动时刷新。请关闭并重新启动 foobar。", "无法删除此文件");
 			break;
 		case (idx == 10):
 			properties.followNowPlaying = !properties.followNowPlaying;
-			window.SetProperty("TRACKLIST Always Follow Now Playing", properties.followNowPlaying);
+			window.SetProperty("曲目列表·始终跟随正在播放", properties.followNowPlaying);
 			break;
 		case (idx == 11):
 			properties.expandInPlace = !properties.expandInPlace;
-			window.SetProperty("TRACKLIST expand in place", properties.expandInPlace);
+			window.SetProperty("曲目列表·原地展开", properties.expandInPlace);
 			if(!properties.expandInPlace){
 				g_showlist.idx = -1;
 				g_showlist.h = 0;}
@@ -2399,7 +2382,7 @@ function draw_settings_menu(x,y){
 			break;
 		case (idx == 13):
 			properties.smooth_expand_value = properties.smooth_expand_value > 0 ? 0 : properties.smooth_expand_default_value;
-			window.SetProperty("TRACKLIST Smooth Expand value (0 to disable)", properties.smooth_expand_value);
+			window.SetProperty("曲目列表·平滑展开强度(0=关闭)", properties.smooth_expand_value);
 			break;
 		case (idx == 14):
 			enableDiskCacheGlobally();
@@ -2410,9 +2393,9 @@ function draw_settings_menu(x,y){
 			properties.showListColoredOneColor = true;
 			properties.showListColoredMixedColor = false;
 			get_colors();
-			window.SetProperty("TRACKLIST Color according to albumart (main color)", properties.showListColoredOneColor);
-			window.SetProperty("TRACKLIST Color according to albumart (blurred)", properties.showListColoredBlurred);
-			window.SetProperty("TRACKLIST Color according to albumart (mix of both)", properties.showListColoredMixedColor);
+			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
+			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
+			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
 			g_showlist.reset();
 			brw.repaint();
 			break;
@@ -2421,9 +2404,9 @@ function draw_settings_menu(x,y){
 			properties.showListColoredOneColor = false;
 			properties.showListColoredMixedColor = false;
 			get_colors();
-			window.SetProperty("TRACKLIST Color according to albumart (main color)", properties.showListColoredOneColor);
-			window.SetProperty("TRACKLIST Color according to albumart (blurred)", properties.showListColoredBlurred);
-			window.SetProperty("TRACKLIST Color according to albumart (mix of both)", properties.showListColoredMixedColor);
+			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
+			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
+			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
 			g_showlist.g_wallpaperImg = null;
 			g_showlist.reset();
 			brw.repaint();
@@ -2433,9 +2416,9 @@ function draw_settings_menu(x,y){
 			properties.showListColoredOneColor = false;
 			properties.showListColoredMixedColor = true;
 			get_colors();
-			window.SetProperty("TRACKLIST Color according to albumart (main color)", properties.showListColoredOneColor);
-			window.SetProperty("TRACKLIST Color according to albumart (blurred)", properties.showListColoredBlurred);
-			window.SetProperty("TRACKLIST Color according to albumart (mix of both)", properties.showListColoredMixedColor);
+			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
+			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
+			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
 			g_showlist.g_wallpaperImg = null;
 			g_showlist.reset();
 			brw.repaint();
@@ -2445,78 +2428,78 @@ function draw_settings_menu(x,y){
 			properties.showListColoredOneColor = false;
 			properties.showListColoredMixedColor = false;
 			get_colors();
-			window.SetProperty("TRACKLIST Color according to albumart (main color)", properties.showListColoredOneColor);
-			window.SetProperty("TRACKLIST Color according to albumart (blurred)", properties.showListColoredBlurred);
-			window.SetProperty("TRACKLIST Color according to albumart (mix of both)", properties.showListColoredMixedColor);
+			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
+			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
+			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
 			g_showlist.reset();
 			brw.repaint();
 			break;
 		case (idx == 29):
 			properties.showlistShowCover = !properties.showlistShowCover;
-			window.SetProperty("TRACKLIST Show cover", properties.showlistShowCover);
+			window.SetProperty("曲目列表·显示封面", properties.showlistShowCover);
 			g_showlist.refresh();
 			brw.refresh_browser_thumbnails();
 			brw.repaint();
 			break;
 		case (idx == 26):
 			properties.show_covers_progress = !properties.show_covers_progress;
-			window.SetProperty("COVER Show loading progress", properties.show_covers_progress);
+			window.SetProperty("封面·显示加载进度", properties.show_covers_progress);
 			break;
 		case (idx == 27):
 			properties.showheaderbar = !properties.showheaderbar;
-			window.SetProperty("MAINPANEL Show Header Bar", properties.showheaderbar);
+			window.SetProperty("主面板·显示标题栏", properties.showheaderbar);
 			brw.showheaderbar();
 			break;
 		case (idx == 30):
 			properties.showFilterBox = !properties.showFilterBox;
-			window.SetProperty("MAINPANEL Show filter box", properties.showFilterBox);
+			window.SetProperty("主面板·显示筛选框", properties.showFilterBox);
 			g_headerbar.RightTextLength = -1;
 			g_filterbox.on_init();
 			brw.repaint();
 			break;
 		case (idx == 21):
 			properties.drawProgressBar = false;
-			window.SetProperty("TRACKLIST Draw a progress bar under song title", properties.drawProgressBar);
+			window.SetProperty("曲目列表·标题下绘制进度条", properties.drawProgressBar);
 			brw.repaint();
 			break;
 		case (idx == 23):
 			properties.AlbumArtProgressbar = true;
 			properties.drawProgressBar = true;
-			window.SetProperty("TRACKLIST Draw a progress bar under song title", properties.drawProgressBar);
-			window.SetProperty("TRACKLIST Blurred album art progress bar", properties.AlbumArtProgressbar);
+			window.SetProperty("曲目列表·标题下绘制进度条", properties.drawProgressBar);
+			window.SetProperty("曲目列表·模糊封面进度条", properties.AlbumArtProgressbar);
 			brw.repaint();
 			break;
 		case (idx == 24):
 			properties.AlbumArtProgressbar = false;
 			properties.drawProgressBar = true;
-			window.SetProperty("TRACKLIST Draw a progress bar under song title", properties.drawProgressBar);
-			window.SetProperty("TRACKLIST Blurred album art progress bar", properties.AlbumArtProgressbar);
+			window.SetProperty("曲目列表·标题下绘制进度条", properties.drawProgressBar);
+			window.SetProperty("曲目列表·模糊封面进度条", properties.AlbumArtProgressbar);
 			brw.repaint();
 			break;
 		case (idx == 25):
 			properties.showdateOverCover = !properties.showdateOverCover;
-			window.SetProperty("COVER Show Date over album art", properties.showdateOverCover);
+			window.SetProperty("封面·封面上显示日期", properties.showdateOverCover);
 			brw.repaint();
 			break;
 		case (idx == 28):
 			properties.showArtistName = !properties.showArtistName;
-			window.SetProperty("TRACKLIST Show artist name", properties.showArtistName);
+			window.SetProperty("曲目列表·显示艺术家", properties.showArtistName);
 			g_showlist.refresh();
 			brw.repaint();
 			break;
 
 		case (idx == 31):
 			properties.showToolTip = !properties.showToolTip;
-			window.SetProperty("MAINPANEL Show tooltips", properties.showToolTip);
+			window.SetProperty("主面板·显示工具提示", properties.showToolTip);
 			brw.repaint();
 			break;
 		case (idx == 32):
 			properties.showRating = true;
 			properties.showRatingSelected = false;
 			properties.showRatingRated = false;
-			window.SetProperty("TRACKLIST Show rating in Track Row", properties.showRating);
-			window.SetProperty("TRACKLIST Show rating in Selected Track Row", properties.showRatingSelected);
-			window.SetProperty("TRACKLIST Show rating in Rated Track Row", properties.showRatingRated);
+			window.SetProperty("曲目列表·行内显示评级", properties.showRating);
+			window.SetProperty("曲目列表·选中行显示评级", properties.showRatingSelected);
+			window.SetProperty("曲目列表·已评级行显示评级", properties.showRatingRated);
 			g_showlist.refresh();
 			brw.repaint();
 			break;
@@ -2524,9 +2507,9 @@ function draw_settings_menu(x,y){
 			properties.showRating = true;
 			properties.showRatingSelected = true;
 			properties.showRatingRated = false;
-			window.SetProperty("TRACKLIST Show rating in Track Row", properties.showRating);
-			window.SetProperty("TRACKLIST Show rating in Selected Track Row", properties.showRatingSelected);
-			window.SetProperty("TRACKLIST Show rating in Rated Track Row", properties.showRatingRated);
+			window.SetProperty("曲目列表·行内显示评级", properties.showRating);
+			window.SetProperty("曲目列表·选中行显示评级", properties.showRatingSelected);
+			window.SetProperty("曲目列表·已评级行显示评级", properties.showRatingRated);
 			g_showlist.refresh();
 			brw.repaint();
 			break;
@@ -2534,9 +2517,9 @@ function draw_settings_menu(x,y){
 			properties.showRating = true;
 			properties.showRatingSelected = true;
 			properties.showRatingRated = true;
-			window.SetProperty("TRACKLIST Show rating in Track Row", properties.showRating);
-			window.SetProperty("TRACKLIST Show rating in Selected Track Row", properties.showRatingSelected);
-			window.SetProperty("TRACKLIST Show rating in Rated Track Row", properties.showRatingRated);
+			window.SetProperty("曲目列表·行内显示评级", properties.showRating);
+			window.SetProperty("曲目列表·选中行显示评级", properties.showRatingSelected);
+			window.SetProperty("曲目列表·已评级行显示评级", properties.showRatingRated);
 			g_showlist.refresh();
 			brw.repaint();
 			break;
@@ -2544,15 +2527,15 @@ function draw_settings_menu(x,y){
 			properties.showRating = false;
 			properties.showRatingSelected = false;
 			properties.showRatingRated = false;
-			window.SetProperty("TRACKLIST Show rating in Track Row", properties.showRating);
-			window.SetProperty("TRACKLIST Show rating in Selected Track Row", properties.showRatingSelected);
-			window.SetProperty("TRACKLIST Show rating in Rated Track Row", properties.showRatingRated);
+			window.SetProperty("曲目列表·行内显示评级", properties.showRating);
+			window.SetProperty("曲目列表·选中行显示评级", properties.showRatingSelected);
+			window.SetProperty("曲目列表·已评级行显示评级", properties.showRatingRated);
 			g_showlist.refresh();
 			brw.repaint();
 			break;
 		case (idx == 37):
 			properties.circleMode = !properties.circleMode;
-			window.SetProperty("COVER Circle artwork", properties.circleMode);
+			window.SetProperty("封面·圆形封面", properties.circleMode);
 			brw.refresh_browser_thumbnails();
 			brw.repaint();
 			break;
@@ -2562,45 +2545,45 @@ function draw_settings_menu(x,y){
 		case (idx == 210):
 			properties.wallpapermode = 99;
 			on_colours_changed();
-			window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+			window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 			if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 211):
 			properties.wallpapermode = 0;
 			on_colours_changed();
-			window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+			window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 			if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 220):
 			properties.wallpaperblurred = !properties.wallpaperblurred;
 			on_colours_changed();
-			window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+			window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 221):
 			properties.wallpaperdisplay = 0;
-			window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 222):
 			properties.wallpaperdisplay = 1;
-			window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 223):
 			properties.wallpaperdisplay = 2;
-			window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 224):
 			properties.darklayout = false;
-			window.SetProperty("_DISPLAY: Dark layout", properties.darklayout);
+			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
@@ -2608,7 +2591,7 @@ function draw_settings_menu(x,y){
 			break;
 		case (idx == 225):
 			properties.darklayout = true;
-			window.SetProperty("_DISPLAY: Dark layout", properties.darklayout);
+			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
 			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
@@ -2632,8 +2615,6 @@ oScrollbar = function(parentObjectName) {
         // draw background and buttons up & down
 
         // draw up & down buttons
-		//this.buttons[cScrollBar.ButtonType.up].draw(gr, this.x, this.y, 255);
-		//this.buttons[cScrollBar.ButtonType.down].draw(gr, this.x, this.y + this.h - this.w, 255);
 
         // draw cursor
         this.buttons[cScrollBar.ButtonType.cursor].draw(gr, this.x, this.cursorPos, 255);
@@ -2658,7 +2639,6 @@ oScrollbar = function(parentObjectName) {
 	}
 	this.get_h_vis = function(){
 		return brw.totalRowsVis*brw.rowHeight;
-		//return window.Height-brw.headerBarHeight -brw.y;
 	}
 	this.check_scroll = function(scroll_to_check){
 		h_vis = this.get_h_vis();
@@ -2706,11 +2686,6 @@ oScrollbar = function(parentObjectName) {
 				} else {
 					return g_showlist.h + (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight
 				}
-				/*if(((brw.y + brw.marginTop +g_showlist.h)%brw.rowHeight)<colors.fading_bottom_height*0.66) {
-					return g_showlist.h + brw.rowHeight - g_showlist.h%brw.rowHeight+(brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight;
-				} else {
-					return g_showlist.h - g_showlist.h%brw.rowHeight+(brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight;
-				}*/
 			} else {
 				if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.66){
 					return (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight+brw.rowHeight;
@@ -2868,20 +2843,8 @@ oScrollbar = function(parentObjectName) {
             }
             break;
         case "up":
-			/*this.buttons[0].checkstate(event, x, y);
-            if(this.cursorDrag) {
-                scroll = this.setOffsetFromCursorPos() * brw.rowHeight;
-                this.repaint();
-            }
-            this.cursorClickX = 0;
-            this.cursorClickY = 0;
-            this.cursorDrag = false;
-            break;*/
 			this.buttons[0].checkstate(event, x, y);
             if(this.cursorDrag) {
-				/*if(((scroll+g_showlist.h)%brw.rowHeight)/brw.rowHeight<0.5)
-					scroll = scroll - scroll%brw.rowHeight;
-				else scroll = scroll + (brw.rowHeight-scroll%brw.rowHeight);*/
 
 				if(g_showlist.y<0 && g_showlist.idx>-1) {
 					if(((scroll-g_showlist.h)%brw.rowHeight)/brw.rowHeight<0.5)
@@ -3039,7 +3002,6 @@ oBrowser = function(name) {
         timers.firstPopulate = false;
     }, 10);
 
-
     this.repaint = function() {
         repaint_main1 = repaint_main2;
     }
@@ -3095,7 +3057,6 @@ oBrowser = function(name) {
         this.marginBot = 12;
 		this.CoverMarginTop = 15;
         // Collapse Album List even if open
-        //g_showlist.idx = -1;
 
         if(properties.showFilterBox) g_filterbox.setSize(cFilterBox.w, cFilterBox.h, g_fsize+1);
 		this.setSizeFirstCall = true;
@@ -3114,7 +3075,6 @@ oBrowser = function(name) {
 			if(properties.showFilterBox) g_filterbox.setSize(ww-120-g_headerbar.rightpadding-g_headerbar.RightTextLength-g_headerbar.MarginRight, cFilterBox.h, g_fsize+1);
 		}
         // calc size of the cover art
-        //this.coverRealWith = (this.thumbnailWidth - (this.marginSide * 2));
 		this.coverRealWith = (this.thumbnailWidth - deltaToAdd)-Math.round(properties.thumbnailWidth*0.25);
 		this.coverHalfWidth = Math.round(this.coverRealWith/2);
         // Adjust Row & showList bloc Height
@@ -3836,7 +3796,6 @@ oBrowser = function(name) {
 							if(typeof this.groups_draw[i].firstRowLength == 'undefined') this.groups_draw[i].firstRowLength = gr.CalcTextWidth(this.groups_draw[i].firstRow,g_font.plus2);
 							if(typeof this.groups_draw[i].secondRowLength == 'undefined') this.groups_draw[i].secondRowLength = gr.CalcTextWidth(this.groups_draw[i].secondRow,g_font.normal);
 
-
 						} catch(e) {}
 
 					} else if (this.groups_draw[i].cover_img_thumb=="no_cover") {
@@ -4003,7 +3962,7 @@ oBrowser = function(name) {
                 }
 
                 if(this.ishover && this.rowsCount == 0 && LibraryItems_counter==0) {
-                    fb.RunMainMenuCommand("Library/Configure");
+                    runMainMenuCommand("Library/Configure");
                 } else {
 					this.sourceX = x;
 					this.sourceY = y;
@@ -4023,7 +3982,7 @@ oBrowser = function(name) {
 						}
 						plman.SetPlaylistFocusItemByHandle(plman.ActivePlaylist, this.groups_draw[this.activeIndex].pl[0]);
 						if(fb.IsPaused) fb.Stop();
-						fb.RunContextCommandWithMetadb("Add to playback queue", this.groups_draw[this.activeIndex].pl[0]);
+						runContextCommand("Add to playback queue", this.groups_draw[this.activeIndex].pl[0]);
 						fb.Play();
 					}
 
@@ -4062,13 +4021,13 @@ oBrowser = function(name) {
 					}
 					plman.SetPlaylistFocusItemByHandle(plman.ActivePlaylist, this.groups_draw[a].pl[0]);
 					if(fb.IsPaused) fb.Stop();
-                    fb.RunContextCommandWithMetadb("Add to playback queue", this.groups_draw[a].pl[0]);
+                    runContextCommand("Add to playback queue", this.groups_draw[a].pl[0]);
                     fb.Play();
                 }
                 break;
             case "mbtn_down":
                 if(this.activeIndex > -1){
-					fb.RunContextCommandWithMetadb("Properties",this.groups_draw[this.activeIndex].pl);
+					runContextCommand("Properties",this.groups_draw[this.activeIndex].pl);
                 }
                 break;
             case "move":
@@ -4370,7 +4329,7 @@ oBrowser = function(name) {
 		properties.thumbnailWidth = Math.round((globalProperties.thumbnailWidthMax-properties.thumbnailWidthMin)*(Math.max(x-this.resize_bt.x,0)/(this.resize_bt.w))+properties.thumbnailWidthMin);
 		if(properties.thumbnailWidth>globalProperties.thumbnailWidthMax) properties.thumbnailWidth=globalProperties.thumbnailWidthMax;
 		else if(properties.thumbnailWidth<properties.thumbnailWidthMin) properties.thumbnailWidth=properties.thumbnailWidthMin;
-		window.SetProperty("COVER Width", properties.thumbnailWidth);
+		window.SetProperty("封面·宽度", properties.thumbnailWidth);
 		this.refresh_browser_thumbnails();
 		if(properties.CoverShadowOpacity>0 && cover_shadow != null){
 			cover_shadow = undefined;
@@ -4698,7 +4657,6 @@ function on_load_image_done(tid, image){
 	}
 };
 
-
 function ClearCoversTimers(){
 	for(var i=0; i < cover_load_timer.length; i++) {
 		window.ClearInterval(cover_load_timer[i]);
@@ -4729,7 +4687,7 @@ function createCoverShadow(cover_size, color){
 function toggleWallpaper(wallpaper_state){
 	wallpaper_state = typeof wallpaper_state !== 'undefined' ? wallpaper_state : !properties.showwallpaper;
 	properties.showwallpaper = wallpaper_state;
-	window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	on_colours_changed();
 	if(properties.showwallpaper || properties.darklayout) {
 		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
@@ -4739,11 +4697,10 @@ function toggleWallpaper(wallpaper_state){
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = wallpaper_blur_state; on_colours_changed();
-	window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 	if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	brw.repaint();
 }
-
 
 // ============================================= JScript Callbacks ===========================================================
 function SetPseudoCaption() {
@@ -4820,7 +4777,6 @@ function on_paint(gr) {
     if(paint_scrollbar && g_scrollbar.isVisible) {
         g_scrollbar.draw(gr);
     }
-
 
 }
 //=================================================// Mouse Callbacks =================================================
@@ -5023,7 +4979,6 @@ function on_mouse_lbtn_up(x, y) {
 			}
 		}
 	}
-
 
 	// check scrollbar scroll on click above or below the cursor
 	if(g_scrollbar.hover && !g_scrollbar.cursorDrag && !g_showlist_click_on_next && !g_showlist.drag_showlist_hscrollbar) {
@@ -5257,7 +5212,7 @@ function on_mouse_rbtn_down(x, y){
                 brw.populate(14);
                 break;
             case (idx == 9):
-				window.SetProperty("COVER delete cover cache on next startup", true);
+				window.SetProperty("封面·下次启动时删除缓存", true);
 				fb.ShowPopupMessage("图像缓存将在下次启动时刷新。请关闭并重新启动 foobar。", "无法删除此文件");
                 break;
             case (idx == 16):
@@ -5284,7 +5239,7 @@ function on_mouse_rbtn_down(x, y){
 				window.NotifyOthers("RefreshImageCover",brw.groups_draw[check__].metadb)
                 break;
             case (idx == 35):
-				fb.RunContextCommandWithMetadb("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
+				runContextCommand("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
                 break;
             case (idx == 30):
 				quickSearch(track_clicked_metadb,"artist");
@@ -5309,7 +5264,7 @@ function on_mouse_rbtn_down(x, y){
                 Context.ExecuteByID(idx - 100);
                 break;
 			case (idx == 3000):
-				fb.RunMainMenuCommand("File/New playlist");
+				runMainMenuCommand("File/New playlist");
 				plman.InsertPlaylistItems(plman.PlaylistCount-1, 0, metadblist_selection, false);
 				break;
 			case (idx == 10000):
@@ -5452,7 +5407,7 @@ function on_mouse_wheel(step, stepstrait, delta){
 			properties.thumbnailWidth += (intern_step)*4;
 			if(properties.thumbnailWidth < properties.thumbnailWidthMin) properties.thumbnailWidth = properties.thumbnailWidthMin;
 			if(properties.thumbnailWidth > globalProperties.thumbnailWidthMax) properties.thumbnailWidth = globalProperties.thumbnailWidthMax;
-			window.SetProperty("COVER Width", properties.thumbnailWidth);
+			window.SetProperty("封面·宽度", properties.thumbnailWidth);
 			brw.refresh_browser_thumbnails();
 			if(properties.CoverShadowOpacity>0 && cover_shadow != null){
 				cover_shadow = undefined;
@@ -5578,7 +5533,7 @@ function get_colors() {
 		colors.fading_bottom_height = 65;
 
 		colors.faded_txt = GetGrey(230);
-		colors.not_played_txt = GetGrey(100);
+		colors.not_played_txt = GetGrey(155);
 
 		colors.flash_bg = GetGrey(255,40);
 		colors.flash_rectline = GetGrey(255,71);
@@ -5759,9 +5714,7 @@ function on_colours_changed() {
     window.Repaint();
 }
 
-
 function on_script_unload() {
-    //brw.resetTimer();
 }
 
 //=================================================// Playback Callbacks =================================================
@@ -5993,41 +5946,46 @@ function on_metadb_changed(metadbs, fromhook) {
 
 function on_notify_data(name, info) {
     switch(name) {
+		case "colors":
+			globalProperties.colorsMainPanel = info;
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
+			on_colours_changed();
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;			
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 		break;
 		case "MemSolicitation":
 			globalProperties.mem_solicitation = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 			window.Reload();
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "Randomsetfocus":
 			randomStartTime = Date.now();
 		break;
 		case "enable_screensaver":
 			globalProperties.enable_screensaver = info;
-			window.SetProperty("GLOBAL enable screensaver", globalProperties.enable_screensaver);
+			window.SetProperty("全局·启用屏保", globalProperties.enable_screensaver);
 		break;
 		case "escape_on_mouse_move":
 			globalProperties.escape_on_mouse_move = info;
-			window.SetProperty("GLOBAL screensaver escape on mouse move", globalProperties.escape_on_mouse_move);
+			window.SetProperty("全局·移动鼠标退出屏保", globalProperties.escape_on_mouse_move);
 		break;
 		case "mseconds_before_screensaver":
 			globalProperties.mseconds_before_screensaver = info;
-			window.SetProperty("GLOBAL screensaver mseconds before activation", globalProperties.mseconds_before_screensaver);
+			window.SetProperty("全局·屏保激活等待毫秒", globalProperties.mseconds_before_screensaver);
 		break;
 		case "titlebar_search":
 		break;
@@ -6055,7 +6013,7 @@ function on_notify_data(name, info) {
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement),
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			on_font_changed();
 			if(g_showlist.idx>=0){
 				playlist = brw.groups_draw[g_showlist.idx].pl;
@@ -6085,8 +6043,9 @@ function on_notify_data(name, info) {
 			brw.repaint();
 		break;
 		case "screensaver_dark_theme":
+		case "global_dark_theme":
 			properties.darklayout = info;
-			window.SetProperty("_DISPLAY: Dark layout", properties.darklayout);
+			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
 			if(properties.darklayout) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
@@ -6099,16 +6058,16 @@ function on_notify_data(name, info) {
 		break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 			brw.repaint();
 		break;
 		case"LoadAllCoversState":
 			globalProperties.load_covers_at_startup = info;
-			window.SetProperty("COVER Load all at startup", globalProperties.load_covers_at_startup);
+			window.SetProperty("封面·启动时全部加载", globalProperties.load_covers_at_startup);
 		break;
 		case"LoadAllArtistImgState":
 			globalProperties.load_artist_img_at_startup = info;
-			window.SetProperty("ARTIST IMG Load all at startup", globalProperties.load_artist_img_at_startup);
+			window.SetProperty("艺术家图片·启动时全部加载", globalProperties.load_artist_img_at_startup);
 		break;
 		case"RefreshImageCover":
 			if(window.IsVisible) brw.refresh_browser_images();
@@ -6249,22 +6208,22 @@ function on_key_down(vkey) {
 
 				};
 				if(vkey==70) { // CTRL+F
-					fb.RunMainMenuCommand("Edit/Search");
+					runMainMenuCommand("Edit/Search");
 				};
 				if(vkey==73) { // CTRL+I
 
 				};
 				if(vkey==78) { // CTRL+N
-					fb.RunMainMenuCommand("File/New playlist");
+					runMainMenuCommand("File/New playlist");
 				};
 				if(vkey==79) { // CTRL+O
-					fb.RunMainMenuCommand("File/Open...");
+					runMainMenuCommand("File/Open...");
 				};
 				if(vkey==80) { // CTRL+P
-					fb.RunMainMenuCommand("File/Preferences");
+					runMainMenuCommand("File/Preferences");
 				};
 				if(vkey==83) { // CTRL+S
-					fb.RunMainMenuCommand("File/Save playlist...");
+					runMainMenuCommand("File/Save playlist...");
 				};
 				if(vkey==84) { // CTRL+T
 				};
@@ -6274,7 +6233,7 @@ function on_key_down(vkey) {
 			case KMask.alt:
 				switch(vkey) {
 				case 65: // ALT+A
-					fb.RunMainMenuCommand("View/Always on Top");
+					runMainMenuCommand("View/Always on Top");
 					break;
 				case VK_ALT: // ALT key alone
 					break;

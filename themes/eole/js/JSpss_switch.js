@@ -95,28 +95,6 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 	this.getFileValue();
 }
 function RefreshPSS() { window.NotifyOthers("eole_x64_layout", true); }
-function RefreshPSS_old() {
-	if (fb.IsPaused) {
-		fb.Play();
-		fb.Pause();
-	}
-	else if (fb.IsPlaying) {
-		fb.Pause();
-		fb.Play();
-	}	
-	else {
-		fb.Play();fb.Stop();
-	}
-}
-function RefreshPSS_old2() {
-	if (fb.IsPlaying || fb.IsPaused) {
-		fb.PlayOrPause();
-		fb.PlayOrPause();
-	}
-	else {
-		fb.Play();fb.Stop();
-	}
-}
 
 var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 3);
 var layout_state = new oPanelSetting("layout_state", "LAYOUT_", 0, 0, 1);
@@ -139,6 +117,12 @@ var lyrics_state = new oPanelSetting("lyrics_state", "LYRICS_", 1, 0, 11);
 var librarytree = new oPanelSetting("librarytree", "LIBRARYTREE_", 0, 0, 1);
 var mini_controlbar = new oPanelSetting("mini_controlbar", "MINICONTROLBAR_", 1, 0, 1);
 var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 2);
+
+// ---- 4K 高分屏自动适配 ----
+// 主题的两个样式对象刚定义好，让 JStheme_common.js 的判定结果立即生效：
+// 4K 时标题栏固定为「紧凑标题栏 - 大」（value 2），控制栏固定为「加宽控制栏」（value 0）。
+// 若 JStheme_common.js 尚未载入，这里会自动跳过，由它的顶层调用补上，两个载入顺序都成立。
+if (typeof InitHiResDisplay === "function") InitHiResDisplay();
 
 //Individual Filter state
 var filter1_state = new oPanelSetting("filter1_state", "FILTER1_", 1, 0, 1);
@@ -218,10 +202,7 @@ function getTrackInfosVisibility(){
 }
 function getRightPlaylistState(){
 	return (nowplayinglib_state.isActive());
-	//return (!trackinfoslib_state.isActive() && nowplayinglib_state.isActive());
 }
 
 // Example of use in a PSS :
 // The first line set a panel stack global variable according to the panel current state, the second line switch the visibility of a panel named library, it show the panel when the current state is 3
-// $set_ps_global(MAIN_PANEL_SWITCH,$right($findfile(themes/eole/Settings/MAINPANEL_*),1))
-// $showpanel_c(library,$ifequal(%MAIN_PANEL_SWITCH%,3,1,0))

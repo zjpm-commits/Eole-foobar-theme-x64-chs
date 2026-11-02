@@ -21,12 +21,170 @@ var randomBtnTimer = false;
 
 var last_mouse_move_notified = (new Date).getTime();
 var foo_playcount = utils.CheckComponent("foo_playcount", true);
-var timers = []
+var timers = [];
+// ================= 属性键名汉化：一次性迁移 =================
+// 旧版本用英文属性键（如 "COVER Width"），新版本全部改成中文（如 "封面·宽度"）。
+// 下面这段在首次运行时把旧键的值搬到新键上，避免升级后所有皮肤设置被重置。
+// 迁移完成后写入标记，之后不再执行；用户在新键上已有的值优先，不会被覆盖。
+(function MigrateLegacyProperties() {
+    var KEYPAIRS = [
+    "Eole 标题栏控制项 v1\u0001Eole x64 header controls v1", "主面板·专辑排序依据\u0001MAINPANEL Sort albums by", "主面板·允许拖拽到播放列表\u0001MAINPANEL Enable dragging to a playlist", "主面板·右侧面板跟随光标\u0001_MAINPANEL: right_panel_follow_cursor",
+    "主面板·始终显示整个媒体库\u0001MAINPANEL Always display full library", "主面板·媒体库分组标题格式\u0001MAINPANEL Library Group TitleFormat", "主面板·媒体库排序格式\u0001MAINPANEL Library Sort TitleFormat", "主面板·媒体库自定义分组第一行\u0001MAINPANEL Library Custom Group First Row",
+    "主面板·媒体库自定义分组第一行格式\u0001MAINPANEL Library Custom Group First Row TitleFormat", "主面板·媒体库自定义分组第二行\u0001MAINPANEL Library Custom Group Second Row", "主面板·媒体库自定义分组第二行格式\u0001MAINPANEL Library Custom Group Second Row TitleFormat", "主面板·媒体库默认排序格式\u0001MAINPANEL Default library Sort TitleFormat",
+    "主面板·媒体库默认排序格式(备用)\u0001MAINPANEL Library Default Sort TitleFormat", "主面板·左侧筛选面板状态\u0001MAINPANEL Left filter state", "主面板·平滑滚动强度(0=关闭)\u0001MAINPANEL Smooth Scroll value (0 to disable)", "主面板·播放列表排序格式\u0001MAINPANEL Playlist Sort TitleFormat",
+    "主面板·显示工具提示\u0001MAINPANEL Show tooltips", "主面板·显示标题栏\u0001MAINPANEL Show Header Bar", "主面板·显示筛选框\u0001MAINPANEL Show filter box", "主面板·显示筛选框(筛选停用时)\u0001MAINPANEL Show filter box (filter inactive)",
+    "主面板·显示筛选框(筛选启用时)\u0001MAINPANEL Show filter box (filter active)", "主面板·正在播放适配(右播放列表关)\u0001MAINPANEL adapt now playing to left menu righ playlist off", "主面板·正在播放适配(右播放列表开)\u0001MAINPANEL adapt now playing to left menu righ playlist on", "主面板·滚动条可见\u0001MAINPANEL Scrollbar - Visible",
+    "主面板·禁用媒体库分组标题\u0001MAINPANEL Library Group Header Disable", "主面板·筛选曲目\u0001MAINPANEL filter tracks", "主面板·自动切换显示的播放列表\u0001MAINPANEL Automatically change displayed playlist", "主面板·跟随正在播放的播放列表\u0001MAINPANEL Follow playing playlist",
+    "主面板·跟随活动播放列表\u0001MAINPANEL Follow active playlist", "主面板·锁定指定播放列表名称\u0001MAINPANEL lock on specific playlist name", "主面板·降序排列\u0001MAINPANEL sort descending", "主面板·面板字体调整\u0001MAINPANEL: Panel font Adjustement",
+    "信息·圆形倒计时(3000-60000毫秒)\u0001Info: Circle time, 3000~60000ms", "全局·主面板配色\u0001GLOBAL colorsMainPanel", "全局·保持比例\u0001GLOBAL keepProportion", "全局·内存占用策略\u0001GLOBAL memory solicitation",
+    "全局·启用可调整边框\u0001GLOBAL enableResizableBorders", "全局·启用屏保\u0001GLOBAL enable screensaver", "全局·字体调整\u0001GLOBAL Font Adjustement", "全局·封面缓存最大宽度\u0001GLOBAL cover cache width max",
+    "全局·屏保激活等待毫秒\u0001GLOBAL screensaver mseconds before activation", "全局·控制栏配色\u0001GLOBAL colorsControls", "全局·播放与随机\u0001GLOBAL play and random", "全局·移动鼠标退出屏保\u0001GLOBAL screensaver escape on mouse move",
+    "全局·缩略图最大宽度\u0001GLOBAL thumbnail width max", "全局·评级存入文件标签\u0001GLOBAL use ratings in file tags", "全局·迷你播放器配色\u0001GLOBAL colorsMiniPlayer", "全局·通用\u0001GLOBAL ",
+    "全局·高分屏适配模式\u0001GLOBAL HiRes display mode", "双击动作(0=资源管理器 1=播放)\u0001Double-Click Action: ExplorerStyle-0 Play-1", "可视化·深色主题\u0001VISUALIZATION dark theme", "启动时恢复面板状态(可视化页除外)\u0001Resume panel state on startup, except on visualization tab",
+    "壁纸(0=填充 1=适应 2=拉伸)\u0001Wallpaper 0=Filling 1=Adjust 2=Stretch", "大面板·专辑封面进度条\u0001BIG:AlbumArtProgressbar", "大面板·交替行背景\u0001BIG:drawAlternateBG", "大面板·停止播放时仍显示活动项\u0001BIG:displayActiveOnPlaybackStopped",
+    "大面板·分组标题行数\u0001BIG:groupHeaderRowsNumber", "大面板·分组标题行数(双行)\u0001BIG:groupHeaderRowsNumberDouble", "大面板·单击展开\u0001BIG:expandBySingleClick", "大面板·双行文本\u0001BIG:doubleRowText",
+    "大面板·双行显示封面\u0001BIG:doubleRowShowCover", "大面板·可拖入播放列表\u0001BIG:DropInplaylist", "大面板·可视化深色主题\u0001BIG:visualization_dark_theme", "大面板·启用触摸控制\u0001BIG:enableTouchControl",
+    "大面板·圆形模式\u0001BIG:circleMode", "大面板·壁纸显示方式\u0001BIG:wallpaperdisplay", "大面板·壁纸模式\u0001BIG:wallpapermode", "大面板·壁纸模糊\u0001BIG:wallpaperblurred",
+    "大面板·壁纸模糊强度\u0001BIG:wallpaperblurvalue", "大面板·始终显示艺术家\u0001BIG:showArtistAlways", "大面板·媒体库深色主题\u0001BIG:library_dark_theme", "大面板·播放列表深色主题\u0001BIG:playlists_dark_theme",
+    "大面板·播放列表默认点击动作\u0001BIG:defaultPlaylistItemAction", "大面板·显示上下滚动按钮\u0001BIG:drawUpAndDownScrollbar", "大面板·显示分组标题\u0001BIG:showGroupHeaders", "大面板·显示壁纸\u0001BIG:showwallpaper",
+    "大面板·显示工具提示\u0001BIG:showToolTip", "大面板·显示情绪\u0001BIG:showMood", "大面板·显示播放次数\u0001BIG:showPlaycount", "大面板·显示标题栏\u0001BIG:showHeaderBar",
+    "大面板·显示标题栏(曲目信息关)\u0001BIG:showHeaderBarTrackInfosOff", "大面板·显示标题栏(曲目信息开)\u0001BIG:showHeaderBarTrackInfosOn", "大面板·显示比特率\u0001BIG:showBitrate", "大面板·显示筛选框\u0001BIG:showFilterBox",
+    "大面板·显示编码\u0001BIG:showCodec", "大面板·显示设置菜单\u0001BIG:showSettingsMenu", "大面板·显示评级\u0001BIG:showRating", "大面板·显示评级(已评级行)\u0001BIG:showRatingRated",
+    "大面板·显示评级(选中行)\u0001BIG:showRatingSelected", "大面板·末尾空行数\u0001BIG:addedRows_end_default", "大面板·每组最少行数\u0001BIG:minimumRowsNumberPerGroup", "大面板·深色布局\u0001BIG:darklayout",
+    "大面板·父面板名称\u0001BIG:ParentName", "大面板·绘制进度条\u0001BIG:drawProgressBar", "大面板·缩略图宽度\u0001BIG:thumbnailWidth", "大面板·缩略图最小宽度\u0001BIG:thumbnailWidthMin",
+    "大面板·自动切换播放列表模式\u0001BIG:enableAutoSwitchPlaylistMode", "大面板·自动折叠\u0001BIG:autocollapse", "大面板·艺术家简介深色主题\u0001BIG:bio_dark_theme", "大面板·艺术家简介跟随深色布局\u0001BIG:bio_stick2darklayout",
+    "大面板·跟随正在播放\u0001BIG:FollowNowPlaying", "大面板·迷你模式深色主题\u0001BIG:minimode_dark_theme", "大面板·通用\u0001BIG:", "大面板·锁定指定播放列表\u0001BIG:lockOnPlaylistNamed",
+    "大面板·锁定正在播放\u0001BIG:lockOnNowPlaying", "大面板·额外行数\u0001BIG:extraRowsNumber", "大面板·默认行高\u0001BIG:defaultRowHeight", "媒体库·深色主题\u0001LIBRARY dark theme",
+    "媒体库同步(0=自动 1=仅初始化)\u0001Library Sync: Auto-0, Initialisation Only-1", "完整模式·保存宽度\u0001Full mode saved width", "完整模式·播放列表管理器保存高度\u0001Full mode pmanager saved height", "封面·下次启动时删除缓存\u0001COVER delete cover cache on next startup",
+    "封面·从日期提取年份\u0001COVER extract year from date", "封面·切到正在播放时动画\u0001COVER animate on show now playing", "封面·启动时全部加载\u0001COVER Load all at startup", "封面·回退到专辑封面\u0001COVER Fallback to album art",
+    "封面·回退到专辑封面(标签模式1)\u0001COVER Fallback to album art for tag mode 1", "封面·回退到专辑封面(标签模式2)\u0001COVER Fallback to album art for tag mode 2", "封面·回退到专辑封面(标签模式3)\u0001COVER Fallback to album art for tag mode 3", "封面·回退到专辑封面(标签模式全选)\u0001COVER Fallback to album art for tag mode ",
+    "封面·圆形封面\u0001COVER Circle artwork", "封面·外边距\u0001Margin", "封面·宽度\u0001COVER Width", "封面·宽度(标签模式1)\u0001COVER Width for tag mode 1",
+    "封面·宽度(标签模式2)\u0001COVER Width for tag mode 2", "封面·宽度(标签模式3)\u0001COVER Width for tag mode 3", "封面·宽度(标签模式全选)\u0001COVER Width for tag mode ", "封面·封面上显示日期\u0001COVER Show Date over album art",
+    "封面·封面上显示碟号\u0001COVER Show Disc number over album art", "封面·封面蒙版(磁盘缓存用)\u0001COVER album art masks (for disk cache)", "封面·小激活区域\u0001COVER Small active zone", "封面·已加载封面保留在内存\u0001COVER keep loaded covers in memory",
+    "封面·待删除缓存的键(下次启动)\u0001COVER cachekey of covers to delete on next startup", "封面·文字居中\u0001COVER Center text", "封面·无留白无文字\u0001COVER no padding, no texts", "封面·显示加载进度\u0001COVER Show loading progress",
+    "封面·显示阴影\u0001COVER show shadow", "封面·最小侧边距\u0001COVER Side margin min", "封面·最小宽度\u0001COVER Width Minimal", "封面·最少列数\u0001COVER Minimum number of columns",
+    "封面·磁盘缓存\u0001COVER Disk Cache", "封面·自动适应\u0001Auto Fit", "封面·阴影不透明度\u0001COVER Shadow Opacity", "属性·专辑格式\u0001_PROPERTY Album TitleFormat",
+    "属性·交替行背景\u0001PROPERTY: Alternate row background", "属性·交替行背景(备用)\u0001_PROPERTY: Alternate row background", "属性·从活动播放列表填充\u0001_PROPERTY: populate from active playlist", "属性·分组内显示条目数量\u0001_PROPERTY: Show numbers of items in group",
+    "属性·单击动作\u0001PROPERTY single_click_action", "属性·双击动作\u0001PROPERTY double click action", "属性·右侧绘制分隔线\u0001_PROPERTY: Draw a line on the right side", "属性·启用滚动触摸控制\u0001_PROPERTY: Enable Scroll Touch Control",
+    "属性·启用筛选框\u0001PROPERTY: Enable Filter Box", "属性·启用筛选框(备用)\u0001_PROPERTY: Enable Filter Box", "属性·圆形模式\u0001_PROPERTY: Circle Mode", "属性·圆形模式(标签1)\u0001_PROPERTY: Circle Mode for tag mode 1",
+    "属性·圆形模式(标签2)\u0001_PROPERTY: Circle Mode for tag mode 2", "属性·圆形模式(标签3)\u0001_PROPERTY: Circle Mode for tag mode 3", "属性·圆形模式(标签全选)\u0001_PROPERTY: Circle Mode for tag mode ", "属性·封面蒙版(磁盘缓存用)\u0001_PROPERTY: Cover art masks (for disk cache)",
+    "属性·已保存的筛选状态\u0001_PROPERTY: Saved filter state", "属性·忽略前缀\u0001_PROPERTY: ignore prefix", "属性·忽略前缀(标签1)\u0001_PROPERTY: ignore prefix for tag mode 1", "属性·忽略前缀(标签2)\u0001_PROPERTY: ignore prefix for tag mode 2",
+    "属性·忽略前缀(标签3)\u0001_PROPERTY: ignore prefix for tag mode 3", "属性·忽略前缀(标签全选)\u0001_PROPERTY: ignore prefix for tag mode ", "属性·播放列表名前显示图标\u0001_PROPERTY: show an icon before the playlist name", "属性·播放列表按字母排序\u0001_PROPERTY: sort playlist alphabetically",
+    "属性·播放列表管理器显示总数\u0001_PROPERTY.PlaylistManager.ShowTotalItems", "属性·显示上下滚动按钮\u0001PROPERTY: Draw Up and Down Scrollbar Buttons", "属性·显示上下滚动按钮(备用)\u0001_PROPERTY: Draw Up and Down Scrollbar Buttons", "属性·显示全部项\u0001_PROPERTY: Show ALL item",
+    "属性·显示全部项(标签1)\u0001_PROPERTY: Show ALL item for tag mode 1", "属性·显示全部项(标签2)\u0001_PROPERTY: Show ALL item for tag mode 2", "属性·显示全部项(标签3)\u0001_PROPERTY: Show ALL item for tag mode 3", "属性·显示全部项(标签全选)\u0001_PROPERTY: Show ALL item for tag mode ",
+    "属性·显示可视化标签页\u0001_PROPERTY show visualization tab", "属性·显示媒体库树切换\u0001_PROPERTY: Show library tree switch", "属性·显示工具提示\u0001_PROPERTY: Show tooltips", "属性·显示条目数量\u0001PROPERTY: Show numbers of items",
+    "属性·显示条目数量(标签1)\u0001_PROPERTY: Show numbers of items for tag mode 1", "属性·显示条目数量(标签2)\u0001_PROPERTY: Show numbers of items for tag mode 2", "属性·显示条目数量(标签3)\u0001_PROPERTY: Show numbers of items for tag mode 3", "属性·显示条目数量(标签全选)\u0001_PROPERTY: Show numbers of items for tag mode ",
+    "属性·显示模式\u0001_PROPERTY: Display Mode", "属性·显示模式(标签1)\u0001_PROPERTY: Display Mode for tag mode 1", "属性·显示模式(标签2)\u0001_PROPERTY: Display Mode for tag mode 2", "属性·显示模式(标签3)\u0001_PROPERTY: Display Mode for tag mode 3",
+    "属性·显示模式(标签全选)\u0001_PROPERTY: Display Mode for tag mode ", "属性·显示模式(网格无文字)\u0001_PROPERTY: Display Mode Grid No Text", "属性·显示筛选切换按钮\u0001_PROPERTY: show filters toggler btn", "属性·显示面板切换按钮\u0001_PROPERTY: showPanelToggleButtons",
+    "属性·显示顶栏(标签1)\u0001_PROPERTY: Show Top Bar for tag mode 1", "属性·显示顶栏(标签2)\u0001_PROPERTY: Show Top Bar for tag mode 2", "属性·显示顶栏(标签3)\u0001_PROPERTY: Show Top Bar for tag mode 3", "属性·显示顶栏(标签全选)\u0001_PROPERTY: Show Top Bar for tag mode ",
+    "属性·末尾空行\u0001_PROPERTY: empty rows at the end", "属性·来源播放列表\u0001_PROPERTY: Source Playlist", "属性·来源模式\u0001_PROPERTY: Source Mode", "属性·标签模式\u0001_PROPERTY: Tag Mode",
+    "属性·流派格式\u0001_PROPERTY Genre TitleFormat", "属性·父面板\u0001_PROPERTY: Parent Panel", "属性·筛选结果播放列表索引\u0001_PROPERTY: filtred playlist idx", "属性·筛选顺序\u0001_PROPERTY: filter Order",
+    "属性·精简面板按钮\u0001_PROPERTY: Compactify panels buttons", "属性·自定义颜色\u0001_PROPERTY: Custom Colors", "属性·艺术家格式\u0001_PROPERTY Artist TitleFormat", "属性·行高\u0001PROPERTY: Row Height",
+    "属性·触摸控制\u0001PROPERTY: Touch control", "属性·跟随焦点变化\u0001_PROPERTY: Follow focus change", "属性·选择的播放列表\u0001_PROPERTY: Selection Playlist", "属性·顶栏启用播放列表筛选框\u0001PROPERTY: Enable Playlist Filterbox in Top Bar",
+    "属性·顶部显示来源标签按钮\u0001_PROPERTY: show buttons on top to change the source tag", "工具提示\u0001Tooltips", "按文件夹结构视图·名称 // 规则\u0001View by Folder Structure: Name // Pattern", "排序·专辑格式\u0001Sort Order - Album TitleFormat",
+    "排序·流派格式\u0001Sort Order - Genre TitleFormat", "排序·艺术家格式\u0001Sort Order - Artist TitleFormat", "搜索历史最大条数\u0001Max items in search history", "搜索栏(0=隐藏 1=仅搜索 2=搜索+筛选)\u0001Search: Hide-0, SearchOnly-1, Search+Filter-2",
+    "搜索栏·线条颜色(0=灰 1=混合 2=文字)\u0001Search: Line Colour: Grey-0 Blend-1 Text-2", "搜索样式(0=渐隐 1=混合 2=常规 3=高亮)\u0001Search Style: Fade-0 Blend-1 Norm-2 Highlight-3", "播放列表·从菜单发送时播放\u0001Playlist: Play On Send From Menu", "播放列表·深色主题\u0001PLAYLISTS dark theme",
+    "播放列表·自定义排序\u0001Playlist: Custom Sort", "播放列表使用(0 或 1)\u0001Playlist Use: 0 or 1", "显示·专辑自定义分组名称\u0001_DISPLAY: album customGroup name", "显示·主布局深色\u0001_DISPLAY: Main layout:Dark",
+    "显示·信息显示两行\u0001_DISPLAY details on two lines", "显示·信息格式化\u0001_DISPLAY: infos titleformat", "显示·停止按钮\u0001_DISPLAY stop btn", "显示·全局明暗切换按钮\u0001_DISPLAY: light switch btn global",
+    "显示·切换按钮\u0001_DISPLAY: Toggle buttons", "显示·双行文本\u0001_DISPLAY: doubleRowText", "显示·固定深色布局\u0001_DISPLAY: stick to Dark layout", "显示·圆形模式\u0001_DISPLAY: circle mode",
+    "显示·均衡器\u0001_DISPLAY equalizer", "显示·壁纸(0=填充 1=适应 2=拉伸)\u0001_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", "显示·壁纸模糊\u0001_DISPLAY: Wallpaper Blurred", "显示·壁纸模糊强度\u0001_DISPLAY: Wallpaper Blur Value",
+    "显示·始终显示搜索框\u0001_DISPLAY: always show search box", "显示·始终显示音量条\u0001_DISPLAY always show volume bar", "显示·定时关机\u0001_DISPLAY scheduler", "显示·封面无留白\u0001_DISPLAY: cover no padding",
+    "显示·封面调整器\u0001_DISPLAY: Cover resizer", "显示·封面跟随光标\u0001_DISPLAY: cover follow cursor", "显示·强制深色布局\u0001_DISPLAY: force dark layout", "显示·总时长\u0001_DISPLAY: Total time",
+    "显示·打开按钮\u0001_DISPLAY open btn", "显示·显示全屏按钮\u0001_DISPLAY: show fullscreen btn", "显示·显示右侧栏按钮\u0001_DISPLAY: show right sidebar btn", "显示·显示壁纸\u0001_DISPLAY: Show Wallpaper",
+    "显示·显示布局配置按钮\u0001_DISPLAY: show configure layout btn", "显示·显示明暗切换按钮\u0001_DISPLAY: show light switch btn", "显示·显示正在播放按钮\u0001_DISPLAY: show now playing btn", "显示·显示滚动条\u0001_DISPLAY: Show Scrollbar",
+    "显示·显示评级\u0001_DISPLAY: showRating", "显示·显示面板按钮文字\u0001_DISPLAY: show panels btn text", "显示·显示顶栏\u0001_DISPLAY: Show Top Bar", "显示·曲目标题\u0001_DISPLAY: Track title",
+    "显示·曲目标题前缀\u0001_DISPLAY show track title prefix", "显示·曲目标题格式\u0001_DISPLAY: Track title format", "显示·流派自定义分组名称\u0001_DISPLAY: genre customGroup name", "显示·深色布局\u0001_DISPLAY: Dark layout",
+    "显示·深色布局跟随CUI\u0001_DISPLAY: Dark layout follow CUI", "显示·滑块样式\u0001_DISPLAY slider cursor style", "显示·禁用封面缓存\u0001_DISPLAY: disable cover cache", "显示·网格模式按钮\u0001_DISPLAY: grid mode button",
+    "显示·自动搜索\u0001_DISPLAY: autosearch", "显示·自定义第一行\u0001_DISPLAY: custom first row", "显示·自定义第二行\u0001_DISPLAY: custom second row", "显示·艺术家自定义分组名称\u0001_DISPLAY: artist customGroup name",
+    "显示·评级\u0001_DISPLAY rating", "显示·输出设备\u0001_DISPLAY device", "显示·迷你主菜单按钮\u0001_DISPLAY: mini main menu button", "显示·迷你布局深色\u0001_DISPLAY: Mini layout:Dark",
+    "显示·重复按钮\u0001_DISPLAY repeat btn", "显示·随机切换按钮\u0001_DISPLAY shuffle btn", "显示·随机播放按钮\u0001_DISPLAY play random btn", "显示·面板按钮文字大写\u0001_DISPLAY: panels btn text to uppercase",
+    "显示·首项顶部边距\u0001_DISPLAY first item top margin", "显示内圈\u0001Show Inner Cirle", "显示剩余时间\u0001Show remaining time", "显示可视化\u0001Show Visualization",
+    "显示曲目信息\u0001Show track info", "显示项·显示新建播放列表按钮\u0001DISPLAY: Show new playlist button", "显示项·显示滚动条\u0001DISPLAY: Show Scrollbar", "显示项·显示顶栏\u0001DISPLAY: Show Top Bar",
+    "曲目列表·两行曲目信息(自定义标签)\u0001TRACKLIST track details on 2 rows - custom tag", "曲目列表·单列\u0001TRACKLIST one column", "曲目列表·原地展开\u0001TRACKLIST Expand in place", "曲目列表·原地展开(旧)\u0001TRACKLIST expand in place",
+    "曲目列表·始终跟随正在播放\u0001TRACKLIST Always Follow Now Playing", "曲目列表·已评级行显示评级\u0001TRACKLIST Show rating in Rated Track Row", "曲目列表·平滑展开强度(0=关闭)\u0001TRACKLIST Smooth Expand value (0 to disable)", "曲目列表·悬停展开\u0001TRACKLIST Expand on hover",
+    "曲目列表·悬停展开(旧)\u0001TRACKLIST expand on hover", "曲目列表·按封面取色\u0001TRACKLIST Color according to albumart", "曲目列表·按封面取色(主色)\u0001TRACKLIST Color according to albumart (main color)", "曲目列表·按封面取色(模糊)\u0001TRACKLIST Color according to albumart (blurred)",
+    "曲目列表·按封面取色(混合)\u0001TRACKLIST Color according to albumart (mix of both)", "曲目列表·显示封面\u0001TRACKLIST Show cover", "曲目列表·显示播放次数\u0001TRACKLIST Show playcount", "曲目列表·显示比特率\u0001TRACKLIST Show bitrate",
+    "曲目列表·显示编码\u0001TRACKLIST Show codec", "曲目列表·显示艺术家\u0001TRACKLIST Show artist name", "曲目列表·曲目信息显示两行\u0001TRACKLIST Show track details on 2 rows", "曲目列表·标题下绘制进度条\u0001TRACKLIST Draw a progress bar under song title",
+    "曲目列表·模糊封面进度条\u0001TRACKLIST Blurred album art progress bar", "曲目列表·水平滚动条\u0001TRACKLIST horizontal scrollbar", "曲目列表·行内显示评级\u0001TRACKLIST Show rating in Track Row", "曲目列表·选中行显示评级\u0001TRACKLIST Show rating in Selected Track Row",
+    "标签切换条\u0001Tag switcher bar", "树缩进\u0001Tree Indent", "树节点·字号\u0001Node: Size", "树节点·显示全部音乐项\u0001Node: Show All Music",
+    "树节点·显示曲目\u0001Node: Show Tracks", "树节点·显示条目数量\u0001Node: Show Item Counts", "树节点·显示汇总项\u0001Node: Show Aggregate Item", "树节点·自动展开唯一子项\u0001Node: Auto Expand Single Childs",
+    "树节点·自动折叠\u0001Node: Auto Collapse", "树节点·自定义符号(0=细 1=粗 2=其它)\u0001Node: Custom Symbols-0 Soft-1 Bold-2", "树节点·自定义符号(折叠|展开)\u0001Node: Custom Symbols: Collapse|Expand", "树节点·跟随主题配色\u0001Node: Themed nodes",
+    "树节点·连接线(0=隐藏 1=灰线 2=混合 3=文字)\u0001Node: Lines: Hide-0 Grey-1 Blend-2 Text-3", "滚动·平滑滚动\u0001Scroll: Smooth Scroll", "滚动·平滑滚动级别(0-1)\u0001Scroll: Smooth Scroll Level 0-1", "滚动·滚轮翻页\u0001Scroll - Mouse Wheel: Page Scroll",
+    "滚动条·宽度\u0001Scrollbar Width", "滚动条·显示\u0001Scrollbar Show", "系统·允许拖入播放列表\u0001_SYSTEM: Allow to drag items into a playlist", "系统·壁纸模式\u0001_SYSTEM: Wallpaper Mode",
+    "系统·多碟合用一个缩略图\u0001_SYSTEM: Display one thumbnail for multi discs", "系统·字号\u0001SYSTEM.Font Size", "系统·播放列表已勾选\u0001SYSTEM.Playlist Checked", "系统·显示专辑评论\u0001_SYSTEM: Display album review",
+    "系统·最小行高\u0001SYSTEM Minimal Line Height", "系统·最小行高(标签模式1)\u0001SYSTEM Minimal Line Height for tag mode 1", "系统·最小行高(标签模式2)\u0001SYSTEM Minimal Line Height for tag mode 2", "系统·最小行高(标签模式3)\u0001SYSTEM Minimal Line Height for tag mode 3",
+    "系统·最小行高(标签模式全选)\u0001SYSTEM Minimal Line Height for tag mode ", "系统·查看依据\u0001SYSTEM.View By", "系统·滚动行分隔线\u0001SYSTEM Scroll Row Divider", "系统·筛选依据\u0001SYSTEM.Filter By",
+    "系统·重置树\u0001SYSTEM.Reset Tree", "背景颜色\u0001Background color", "自定义颜色·使用自定义\u0001_CUSTOM COLOURS: USE", "自定义颜色·启用\u0001CUSTOM COLOR: enable",
+    "自定义颜色·搜索名称\u0001_Custom.Colour Search Name", "自定义颜色·普通文字\u0001CUSTOM COLOR: text normal", "自定义颜色·普通背景\u0001CUSTOM COLOR: background normal", "自定义颜色·树连接线\u0001_Custom.Colour Node Lines",
+    "自定义颜色·留空即默认\u0001_CUSTOM COLOURS: EMPTY = DEFAULT", "自定义颜色·选中文字\u0001CUSTOM COLOR: text selected", "自定义颜色·选中背景\u0001CUSTOM COLOR: background selected", "自定义颜色·透明填充\u0001_Custom.Colour Transparent Fill",
+    "自定义颜色·高亮\u0001CUSTOM COLOR: highlight", "艺术家图片·启动时全部加载\u0001ARTIST IMG Load all at startup", "艺术家简介·深色主题\u0001BIO dark theme", "艺术家简介·跟随深色主题\u0001BIO stick to dark theme",
+    "艺术家简介·跟随深色布局\u0001BIO stick to Dark layout", "行内垂直留白\u0001Row Vertical Item Padding", "行条纹\u0001Row Stripes", "视图\u0001View ",
+    "视图01·名称 // 规则\u0001View 01: Name // Pattern", "视图02·名称 // 规则\u0001View 02: Name // Pattern", "视图03·名称 // 规则\u0001View 03: Name // Pattern", "视图04·名称 // 规则\u0001View 04: Name // Pattern",
+    "视图05·名称 // 规则\u0001View 05: Name // Pattern", "视图06·名称 // 规则\u0001View 06: Name // Pattern", "视图·已初始化\u0001View: View Is Inited", "视图筛选\u0001View Filter ",
+    "视图筛选01·名称 // 查询\u0001View Filter 01: Name // Query", "视图筛选02·名称 // 查询\u0001View Filter 02: Name // Query", "视图筛选03·名称 // 查询\u0001View Filter 03: Name // Query", "视图筛选04·名称 // 查询\u0001View Filter 04: Name // Query",
+    "视图筛选05·名称 // 查询\u0001View Filter 05: Name // Query", "视图筛选06·名称 // 查询\u0001View Filter 06: Name // Query", "视图筛选07·名称 // 查询\u0001View Filter 07: Name // Query", "视图筛选08·名称 // 查询\u0001View Filter 08: Name // Query",
+    "视图筛选09·名称 // 查询\u0001View Filter 09: Name // Query", "迷你·专辑封面进度条\u0001MINI:AlbumArtProgressbar", "迷你·交替行背景\u0001MINI:drawAlternateBG", "迷你·停止播放时仍显示活动项\u0001MINI:displayActiveOnPlaybackStopped",
+    "迷你·分组标题行数\u0001MINI:groupHeaderRowsNumber", "迷你·分组标题行数(双行)\u0001MINI:groupHeaderRowsNumberDouble", "迷你·单击展开\u0001MINI:expandBySingleClick", "迷你·双行文本\u0001MINI:doubleRowText",
+    "迷你·双行显示封面\u0001MINI:doubleRowShowCover", "迷你·可拖入播放列表\u0001MINI:DropInplaylist", "迷你·可视化深色主题\u0001MINI:visualization_dark_theme", "迷你·启用触摸控制\u0001MINI:enableTouchControl",
+    "迷你·圆形模式\u0001MINI:circleMode", "迷你·壁纸显示方式\u0001MINI:wallpaperdisplay", "迷你·壁纸模式\u0001MINI:wallpapermode", "迷你·壁纸模糊\u0001MINI:wallpaperblurred",
+    "迷你·壁纸模糊强度\u0001MINI:wallpaperblurvalue", "迷你·始终显示艺术家\u0001MINI:showArtistAlways", "迷你·媒体库深色主题\u0001MINI:library_dark_theme", "迷你·播放列表深色主题\u0001MINI:playlists_dark_theme",
+    "迷你·播放列表默认点击动作\u0001MINI:defaultPlaylistItemAction", "迷你·显示上下滚动按钮\u0001MINI:drawUpAndDownScrollbar", "迷你·显示分组标题\u0001MINI:showGroupHeaders", "迷你·显示壁纸\u0001MINI:showwallpaper",
+    "迷你·显示工具提示\u0001MINI:showToolTip", "迷你·显示情绪\u0001MINI:showMood", "迷你·显示播放次数\u0001MINI:showPlaycount", "迷你·显示标题栏\u0001MINI:showHeaderBar",
+    "迷你·显示标题栏(曲目信息关)\u0001MINI:showHeaderBarTrackInfosOff", "迷你·显示标题栏(曲目信息开)\u0001MINI:showHeaderBarTrackInfosOn", "迷你·显示比特率\u0001MINI:showBitrate", "迷你·显示筛选框\u0001MINI:showFilterBox",
+    "迷你·显示编码\u0001MINI:showCodec", "迷你·显示设置菜单\u0001MINI:showSettingsMenu", "迷你·显示评级\u0001MINI:showRating", "迷你·显示评级(已评级行)\u0001MINI:showRatingRated",
+    "迷你·显示评级(选中行)\u0001MINI:showRatingSelected", "迷你·末尾空行数\u0001MINI:addedRows_end_default", "迷你·每组最少行数\u0001MINI:minimumRowsNumberPerGroup", "迷你·深色布局\u0001MINI:darklayout",
+    "迷你·父面板名称\u0001MINI:ParentName", "迷你·绘制进度条\u0001MINI:drawProgressBar", "迷你·缩略图宽度\u0001MINI:thumbnailWidth", "迷你·缩略图最小宽度\u0001MINI:thumbnailWidthMin",
+    "迷你·自动切换播放列表模式\u0001MINI:enableAutoSwitchPlaylistMode", "迷你·自动折叠\u0001MINI:autocollapse", "迷你·艺术家简介深色主题\u0001MINI:bio_dark_theme", "迷你·艺术家简介跟随深色布局\u0001MINI:bio_stick2darklayout",
+    "迷你·跟随正在播放\u0001MINI:FollowNowPlaying", "迷你·迷你模式深色主题\u0001MINI:minimode_dark_theme", "迷你·通用\u0001MINI:", "迷你·锁定指定播放列表\u0001MINI:lockOnPlaylistNamed",
+    "迷你·锁定正在播放\u0001MINI:lockOnNowPlaying", "迷你·额外行数\u0001MINI:extraRowsNumber", "迷你·默认行高\u0001MINI:defaultRowHeight", "迷你模式·保存宽度\u0001Mini mode saved width",
+    "迷你模式·播放列表保存高度\u0001Mini mode playlist saved height", "迷你模式·深色主题\u0001MINIMODE dark theme", "随机函数\u0001Random function",
+    ];
+    // 关键：GetProperty(name, 默认值) 在属性不存在时会把默认值写进属性表，
+    // 所以这里一律用单参数的 GetProperty(name)，不存在时返回 undefined 且不创建。
+    // 故意不吞异常：读取失败时整段中止、不写标记，下次启动重试，避免"标记了却没清理"。
+    function readProp(k) {
+        return window.GetProperty(k);
+    }
+    function isJunk(v) {
+        return v !== undefined && v !== null && String(v).indexOf("eole_none") >= 0;
+    }
+    try {
+        // ---------- 1. 清理上一版迁移误建的哨兵属性 ----------
+        // 旧写法用 "\u0001__eole_none__" 当探测默认值，导致 439 个英文键被创建成该值。
+        // 这里把值仍然是哨兵的新旧键统统删掉（SetProperty 传 null 即删除）。
+        if (!readProp("_哨兵属性已清理")) {
+            for (var c = 0; c < KEYPAIRS.length; c++) {
+                var cp = KEYPAIRS[c].split("\u0001");
+                if (isJunk(readProp(cp[0]))) window.SetProperty(cp[0], null);
+                if (isJunk(readProp(cp[1]))) window.SetProperty(cp[1], null);
+            }
+            window.SetProperty("_哨兵属性已清理", true);
+        }
+
+        // ---------- 2. 旧英文键 -> 新中文键 迁移 ----------
+        if (!readProp("_属性名已汉化迁移")) {
+            for (var i = 0; i < KEYPAIRS.length; i++) {
+                var p = KEYPAIRS[i].split("\u0001");
+                var nk = p[0], ok = p[1];
+                var old_val = readProp(ok);
+                if (old_val === undefined || old_val === null) continue;   // 旧键不存在
+                var cur = readProp(nk);
+                if (cur !== undefined && cur !== null) continue;            // 新键已有值，以新键为准
+                window.SetProperty(nk, old_val);
+                window.SetProperty(ok, null);                               // 旧键删除，面板保持全中文
+            }
+            window.SetProperty("_属性名已汉化迁移", true);
+        }
+    } catch (e) {
+        // 任何异常都不应阻断主题加载，下次启动会重试
+    }
+})();
+
 var globalProperties = {
 	theme_version: '1.2.3b25',
 	lastest_breaking_version: '1.2.3b24',
-    thumbnailWidthMax: window.GetProperty("GLOBAL thumbnail width max", 200),
-    coverCacheWidthMax: window.GetProperty("GLOBAL cover cache width max", 400),
+    thumbnailWidthMax: window.GetProperty("全局·缩略图最大宽度", 200),
+    coverCacheWidthMax: window.GetProperty("全局·封面缓存最大宽度", 400),
 	TextRendering: 4,
     ImageCacheExt: "jpg",
     ImageCacheFileType: "image/jpeg",
@@ -38,18 +196,18 @@ var globalProperties = {
 	tooltip_button_delay:500,
 	fontAdjustement_min:-5,
 	fontAdjustement_max:5,
-    fontAdjustement: window.GetProperty("GLOBAL Font Adjustement", 0),
-	mem_solicitation:window.GetProperty("GLOBAL memory solicitation", 0),
-	loaded_covers2memory:window.GetProperty("COVER keep loaded covers in memory", false),
-    load_covers_at_startup: window.GetProperty("COVER Load all at startup", true),
-    load_artist_img_at_startup: window.GetProperty("ARTIST IMG Load all at startup", true),
-	enableDiskCache: window.GetProperty("COVER Disk Cache",true),
-	deleteDiskCache: window.GetProperty("COVER delete cover cache on next startup",false),
-	enableResizableBorders: window.GetProperty("GLOBAL enableResizableBorders",true),
-	colorsMainPanel: window.GetProperty("GLOBAL colorsMainPanel",0),
-	colorsControls: window.GetProperty("GLOBAL colorsControls",0),
-	colorsMiniPlayer: window.GetProperty("GLOBAL colorsMiniPlayer",0),
-	keepProportion: window.GetProperty("GLOBAL keepProportion", false),	
+    fontAdjustement: window.GetProperty("全局·字体调整", 0),
+	mem_solicitation:window.GetProperty("全局·内存占用策略", 0),
+	loaded_covers2memory:window.GetProperty("封面·已加载封面保留在内存", false),
+    load_covers_at_startup: window.GetProperty("封面·启动时全部加载", true),
+    load_artist_img_at_startup: window.GetProperty("艺术家图片·启动时全部加载", true),
+	enableDiskCache: window.GetProperty("封面·磁盘缓存",true),
+	deleteDiskCache: window.GetProperty("封面·下次启动时删除缓存",false),
+	enableResizableBorders: window.GetProperty("全局·启用可调整边框",true),
+	colorsMainPanel: window.GetProperty("全局·主面板配色",0),
+	colorsControls: window.GetProperty("全局·控制栏配色",0),
+	colorsMiniPlayer: window.GetProperty("全局·迷你播放器配色",0),
+	keepProportion: window.GetProperty("全局·保持比例", false),	
 	record_move_every_x_ms:3000,
 	refreshRate:40,
 	crc: "$if(%album artist%,$if(%album%,$crc32(%album artist%##%album%),undefined),undefined)",
@@ -64,7 +222,12 @@ var globalProperties = {
     nocover_img: gdi.Image(theme_img_path+"\\no_cover.png"),
     stream_img: gdi.Image(theme_img_path+"\\stream_icon.png"),
 	ResizeQLY: 0,
-	use_ratings_file_tags: window.GetProperty("GLOBAL use ratings in file tags", false),
+	use_ratings_file_tags: window.GetProperty("全局·评级存入文件标签", false),
+	// 屏保面板收到这几个通知时会写属性，但全工程没有任何地方读回来，
+	// 于是「启用屏保 / 鼠标移动退出 / 激活等待毫秒」重启后一律回到默认。默认值沿用原版的实际效果。
+	enable_screensaver: window.GetProperty("全局·启用屏保", false),
+	escape_on_mouse_move: window.GetProperty("全局·移动鼠标退出屏保", false),
+	mseconds_before_screensaver: window.GetProperty("全局·屏保激活等待毫秒", 60000),
 }
 var PlaylistExclude = Array(globalProperties.whole_library,globalProperties.filter_playlist);
 globalProperties.tf_crc = fb.TitleFormat(globalProperties.crc);
@@ -132,9 +295,27 @@ function setMemoryParameters(){
 	}
 }
 setMemoryParameters();
+// 属性键汉化后不能再按 "全局·通用" + 参数名 拼键：拼出来是 "全局·通用keepProportion"，
+// 而读取用的是 "全局·保持比例"，写了也读不回来（原版键是 "GLOBAL " + 参数名）。
+var GLOBAL_PARAM_KEY = {
+	"keepProportion": "全局·保持比例",
+	"Font Adjustement": "全局·字体调整",
+	"colorsMainPanel": "全局·主面板配色",
+	"colorsControls": "全局·控制栏配色",
+	"colorsMiniPlayer": "全局·迷你播放器配色",
+	"mem_solicitation": "全局·内存占用策略",
+	"thumbnailWidthMax": "全局·缩略图最大宽度",
+	"coverCacheWidthMax": "全局·封面缓存最大宽度",
+	"use_ratings_file_tags": "全局·评级存入文件标签",
+	"enableResizableBorders": "全局·启用可调整边框",
+	"enableDiskCache": "封面·磁盘缓存",
+	"loaded_covers2memory": "封面·已加载封面保留在内存",
+	"load_covers_at_startup": "封面·启动时全部加载",
+	"load_artist_img_at_startup": "艺术家图片·启动时全部加载"
+};
 function setGlobalParameter(parameter_name, parameter_value, notify_others){
 	var notify_others = typeof notify_others !== 'undefined' ? notify_others : false;	
-	window.SetProperty("GLOBAL "+parameter_name, parameter_value);
+	window.SetProperty(GLOBAL_PARAM_KEY[parameter_name] || ("全局·通用" + parameter_name), parameter_value);
 	eval("globalProperties."+parameter_name+" = "+parameter_value);
 	if(notify_others) window.NotifyOthers("setGlobalParameter",Array(parameter_name,parameter_value));
 	if(parameter_name=="keepProportion") {
@@ -143,7 +324,7 @@ function setGlobalParameter(parameter_name, parameter_value, notify_others){
 	}
 }
 var cScrollBar = {
-    enabled: window.GetProperty("_DISPLAY: Show Scrollbar", true),
+    enabled: window.GetProperty("显示·显示滚动条", true),
     visible: true,
     themed: false,
     defaultWidth: 10,
@@ -245,10 +426,6 @@ var oCursor = function () {
 		return this.active_zone;
 	}
 }
-function setFocusOnIndex(playlist_id,item_index){
-	plman.ActivePlaylist = playlist_id;
-	plman.SetPlaylistFocusItem(playlist_id, item_index);
-}
 function SetPlaylistFocusItemByHandle(playlist_id,metadb){
 	plman.ActivePlaylist = playlist_id;
 	plman.SetPlaylistFocusItem(playlist_id, metadb);
@@ -276,11 +453,6 @@ function get_windows_version() {
     }
 
     return '6.1';
-}
-function window_ok_callback(status, clicked) {
-    text = `Dialog was closed with ${status} and checkbox ${clicked}\n`
-        + '>> Click Me To Open Dialog <<';
-    window.Repaint();
 }
 function htmlCode(directory,filename) {
     let htmlCode = utils.ReadTextFile(directory+"\\"+filename);
@@ -340,7 +512,7 @@ function chooseMemorySettings(title, top_msg, bottom_msg, dialog_name, inter_tex
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html",dialog_name+".html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,'0 - Minimum##1 - Keep loaded covers in memory##2 - Load all covers at startup##3 - Load all covers & artist thumbnails at startup',globalProperties.mem_solicitation,bottom_msg,globalProperties.coverCacheWidthMax,inter_text],
+		data: [title, top_msg, '取消', ok_callback,'0 - 最小占用##1 - 已加载封面保留在内存##2 - 启动时加载所有封面##3 - 启动时加载所有封面及艺术家缩略图',globalProperties.mem_solicitation,bottom_msg,globalProperties.coverCacheWidthMax,inter_text],
 	});
 }
 
@@ -353,57 +525,57 @@ function customFilterGrouping(title, top_msg, bottom_msg, input_default_values, 
 				case 1:
 					if (!(typeof input_values[0] == 'undefined' || g_tagswitcherbar.items_txt[1]==input_values[0])) {
 						properties.album_customGroup_label = input_values[0].substring(0, 20);
-						window.SetProperty("_DISPLAY: album customGroup name", properties.album_customGroup_label);
+						window.SetProperty("显示·专辑自定义分组名称", properties.album_customGroup_label);
 						window.NotifyOthers("album_customGroup_label",properties.album_customGroup_label);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[1] == 'undefined' || properties.tf_groupkey_album==input_values[1])) {
 						if(input_values[1] == "") properties.tf_groupkey_album = properties.tf_groupkey_album_default;
 						else properties.tf_groupkey_album = input_values[1];
-						window.SetProperty("_PROPERTY Album TitleFormat", properties.tf_groupkey_album);
+						window.SetProperty("属性·专辑格式", properties.tf_groupkey_album);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[2] == 'undefined' || properties.tf_sort_album==input_values[2])) {
 						properties.tf_sort_album = input_values[2];
-						window.SetProperty("Sort Order - Album TitleFormat", properties.tf_sort_album);
+						window.SetProperty("排序·专辑格式", properties.tf_sort_album);
 						refresh_filters = true;
 					}					
 				break;
 				case 2:
 					if (!(typeof input_values[0] == 'undefined' || g_tagswitcherbar.items_txt[2]==input_values[0])) {
 						properties.artist_customGroup_label = input_values[0].substring(0, 20);
-						window.SetProperty("_DISPLAY: artist customGroup name", properties.artist_customGroup_label);
+						window.SetProperty("显示·艺术家自定义分组名称", properties.artist_customGroup_label);
 						window.NotifyOthers("artist_customGroup_label",properties.artist_customGroup_label);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[1] == 'undefined' || properties.tf_groupkey_artist==input_values[1])) {
 						if(input_values[1] == "") properties.tf_groupkey_artist = properties.tf_groupkey_artist_default;
 						else properties.tf_groupkey_artist = input_values[1];
-						window.SetProperty("_PROPERTY Artist TitleFormat", properties.tf_groupkey_artist);
+						window.SetProperty("属性·艺术家格式", properties.tf_groupkey_artist);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[2] == 'undefined' || properties.tf_sort_artist==input_values[2])) {
 						properties.tf_sort_artist = input_values[2];
-						window.SetProperty("Sort Order - Artist TitleFormat", properties.tf_sort_artist);
+						window.SetProperty("排序·艺术家格式", properties.tf_sort_artist);
 						refresh_filters = true;
 					}					
 				break;
 				case 3:
 					if (!(typeof input_values[0] == 'undefined' || g_tagswitcherbar.items_txt[3]==input_values[0])) {
 						properties.genre_customGroup_label = input_values[0].substring(0, 20);
-						window.SetProperty("_DISPLAY: genre customGroup name", properties.genre_customGroup_label);
+						window.SetProperty("显示·流派自定义分组名称", properties.genre_customGroup_label);
 						window.NotifyOthers("genre_customGroup_label",properties.genre_customGroup_label);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[1] == 'undefined' || properties.tf_groupkey_genre==input_values[1])) {
 						if(input_values[1] == "") properties.tf_groupkey_genre = properties.tf_groupkey_genre_default;
 						else properties.tf_groupkey_genre = input_values[1];
-						window.SetProperty("_PROPERTY Genre TitleFormat", properties.tf_groupkey_genre);
+						window.SetProperty("属性·流派格式", properties.tf_groupkey_genre);
 						refresh_filters = true;
 					}
 					if (!(typeof input_values[2] == 'undefined' || properties.tf_sort_genre==input_values[2])) {
 						properties.tf_sort_genre = input_values[2];
-						window.SetProperty("Sort Order - Genre TitleFormat", properties.tf_sort_genre);
+						window.SetProperty("排序·流派格式", properties.tf_sort_genre);
 						refresh_filters = true;
 					}
 				break;
@@ -417,7 +589,7 @@ function customFilterGrouping(title, top_msg, bottom_msg, input_default_values, 
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html","InputDialog.html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,bottom_msg,input_default_values,input_labels],
+		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
 function customGraphicBrowserGrouping(title, top_msg, bottom_msg, input_default_values, input_labels){
@@ -427,14 +599,14 @@ function customGraphicBrowserGrouping(title, top_msg, bottom_msg, input_default_
 			if (!(input_values[0] == "" || typeof input_values[0] == 'undefined' || properties.TFgrouping==input_values[0]+" ^^ "+input_values[1])) {						
 				properties.TFgrouping = input_values[0]+" ^^ "+input_values[1];
 				TF.grouping = fb.TitleFormat(properties.TFgrouping);
-				window.SetProperty("MAINPANEL Library Group TitleFormat", properties.TFgrouping);
+				window.SetProperty("主面板·媒体库分组标题格式", properties.TFgrouping);
 				g_showlist.close();
 				brw.populate(5,false);
 			}
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html","InputDialog.html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,bottom_msg,input_default_values,input_labels],
+		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
 function customNowPlayingInfos(title, top_msg, bottom_msg, input_default_values, input_labels){
@@ -445,13 +617,13 @@ function customNowPlayingInfos(title, top_msg, bottom_msg, input_default_values,
 				if((input_values[0] == "" || typeof input_values[0] == 'undefined') && (input_values[1] == "" || typeof input_values[1] == 'undefined')) properties.customInfos = "";				
 				else properties.customInfos = input_values[0]+" ^^ "+input_values[1];
 				setCustominfos();
-				window.SetProperty("_DISPLAY: infos titleformat", properties.customInfos);
+				window.SetProperty("显示·信息格式化", properties.customInfos);
 				g_infos.getTrackInfos();
 			}
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html","InputDialog.html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,bottom_msg,input_default_values,input_labels],
+		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
 function customControlDetails(title, top_msg, bottom_msg, input_default_values, input_labels){
@@ -460,18 +632,18 @@ function customControlDetails(title, top_msg, bottom_msg, input_default_values, 
 			var input_values = input_values.split('##');
 			if (!(typeof input_values[0] == 'undefined' || properties.custom_firstRow==input_values[0])) {
 				properties.custom_firstRow = input_values[0];
-				window.SetProperty("_DISPLAY: custom first row", properties.custom_firstRow);
+				window.SetProperty("显示·自定义第一行", properties.custom_firstRow);
 				get_text(fb.GetNowPlaying());
 			}
 			if (!(typeof input_values[1] == 'undefined' || properties.custom_secondRow==input_values[1])) {
 				properties.custom_secondRow = input_values[1];
-				window.SetProperty("_DISPLAY: custom second row", properties.custom_secondRow);
+				window.SetProperty("显示·自定义第二行", properties.custom_secondRow);
 				get_text(fb.GetNowPlaying());
 			}
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html","InputDialog.html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,bottom_msg,input_default_values,input_labels],
+		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
 function customTracklistDetails(title, top_msg, bottom_msg, input_default_values, input_labels){
@@ -480,12 +652,12 @@ function customTracklistDetails(title, top_msg, bottom_msg, input_default_values
 			var input_values = input_values.split('##');
 			if (!(typeof input_values[0] == 'undefined' || properties.show2linesCustomTag==input_values[0])) {
 				properties.show2linesCustomTag = input_values[0];
-				window.SetProperty("TRACKLIST track details on 2 rows - custom tag", properties.show2linesCustomTag);
+				window.SetProperty("曲目列表·两行曲目信息(自定义标签)", properties.show2linesCustomTag);
 			}
 		}
 	}
 	utils.ShowHtmlDialog(window.ID, htmlCode(skin_global_path+"\\html","InputDialog.html"), {
-		data: [title, top_msg, 'Cancel', ok_callback,bottom_msg,input_default_values,input_labels],
+		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
 //Colors ------------------------------------------------------------------------------
@@ -501,6 +673,57 @@ function customTracklistDetails(title, top_msg, bottom_msg, input_default_values
 // ===================================================================================
 var colors = {};
 var darkcolors = {};
+
+// ===================================================================================
+// 列表区裁剪 & 顶栏背景
+// -----------------------------------------------------------------------------------
+// Eole 每个列表面板的顶栏（搜索框那一行）底色都是 RGBA(0,0,0,0)，等于不画。
+// 列表行只判断「行是否落在可视区」，滚到非整行位置（惯性/触摸滚动）时首行会
+// 画进顶栏区域，从搜索框下面透出来，看起来就是叠字。
+//
+// 处理分两层：
+//   1. clipListArea()  —— 画列表行之前把绘制区裁到顶栏以下，行根本画不出去；
+//   2. paintHeaderBarBackdrop() —— 顶栏绘制时把面板背景（纯色或壁纸片段）重画
+//      一遍。SMP 的 GdiDrawText 走 GDI、不一定吃 GDI+ 的 clip，这层做兜底，
+//      同时外观与原来的「全透明顶栏透出底色/壁纸」完全一致。
+// ===================================================================================
+var _list_clip_state = false;
+
+function clipListArea(gr, top) {
+    _list_clip_state = false;
+    if (!(top > 0)) return;
+    try {
+        gr.SetClip(0, top, Math.max(1, ww), Math.max(1, wh - top));
+        _list_clip_state = true;
+    } catch (e) {
+        _list_clip_state = false;
+    }
+}
+
+function unclipListArea(gr) {
+    if (!_list_clip_state) return;
+    try { gr.ResetClip(); } catch (e) {}
+    _list_clip_state = false;
+}
+
+// 在 (x, y, w, h) 处重画面板背景。
+//   baseColor    —— 面板底色（透明顶栏平时透出的就是它）
+//   wallImg      —— 壁纸图（没开壁纸传 null）
+//   panelH       —— 壁纸铺满时对应的面板高度，用来把 h 换算成源图上的高度
+//   overlayColor —— 壁纸蒙版色
+function paintHeaderBarBackdrop(gr, x, y, w, h, baseColor, wallImg, panelH, overlayColor) {
+    if (!(h > 0 && w > 0)) return;
+    gr.FillSolidRect(x, y, w, h, baseColor);
+    if (!wallImg || !(panelH > 0) || !(wallImg.Height > 0)) return;
+    var sy = Math.round(wallImg.Height * y / panelH);
+    var sh = Math.round(wallImg.Height * h / panelH);
+    if (sy < 0) sy = 0;
+    if (sy >= wallImg.Height) return;
+    if (sh < 1) sh = 1;
+    if (sy + sh > wallImg.Height) sh = wallImg.Height - sy;
+    gr.DrawImage(wallImg, x, y, w, h, 0, sy, wallImg.Width, sh, 0, 255);
+    if (overlayColor) gr.FillSolidRect(x, y, w, h, overlayColor);
+}
 
 function get_colors_global(){
 	darkcolors.normal_txt = GetGrey(240);
@@ -528,13 +751,15 @@ function get_colors_global(){
 		colors.wallpaper_overlay_blurred = GetGrey(25,160);
 
 		colors.normal_txt = darkcolors.normal_txt;
-		colors.faded_txt = GetGrey(110);
-		colors.superfaded_txt = GetGrey(60);
+		colors.faded_txt = GetGrey(165);
+		colors.superfaded_txt = GetGrey(105);
 		colors.full_txt = GetGrey(255);
 
 		colors.selected_bg = RGBA(015,177,255,160);
 		colors.highlight = RGB(255,175,050);
 
+		// 顶栏（含搜索框那一行）保持透明，让壁纸/底色透出来。
+		// 列表滚动的溢出改由 clipListArea() + paintHeaderBarBackdrop() 处理，见文件上方。
 		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(255,38);
 
@@ -615,6 +840,7 @@ function get_colors_global(){
 		colors.selected_bg = RGBA(015,177,255,100);
 		colors.highlight = RGB(255,175,050);
 
+		// 同 dark 分支：顶栏保持透明，溢出由裁剪 + 顶栏背景重绘处理。
 		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(0,36);
 
@@ -682,7 +908,6 @@ oFileSystObject = function () {
     this.FileExists = function (path) {
 		try {
            return utils.FileTest(path, "e")
-			//return this.fileObject.FileExists(path);
         } catch (e) {
 			fb.ShowPopupMessage('Oupppppsssss, it look like an error\n\n'+"FileExists call, "+path, "Error");
 			console.log(e);
@@ -768,12 +993,8 @@ if(!g_files.FolderExists(keepProportion_img_cache))
 g_files.CreateFolder(keepProportion_img_cache);
 */
 function setImageCachePath(){
-	//cover_img_cache=keepProportion_img_cache;
-	//if(globalProperties.keepProportion) cover_img_cache=keepProportion_img_cache;
-	//else cover_img_cache=square_img_cache;
 }
 setImageCachePath();
-
 
 var SettingsPath = data_global_path+"\\"+theme_name+"-settings\\";
 if (!g_files.FolderExists(SettingsPath))
@@ -785,42 +1006,7 @@ let playing_item_location_old_index = false;
 let ignore_playback_queue = false;
 let timer_ignore_queue = false;
 function fb_play_from_playing(offset){
-	/*var playing_item_location_old = playing_item_location;
-	playing_item_location = plman.GetPlayingItemLocation();
-	let queue_content = plman.GetPlaybackQueueHandles();
-	if(offset>0 && offset<=queue_content.Count && !ignore_playback_queue){
-		if(fb.IsPaused || fb.IsPlaying) fb.Next();
-		else fb.Play();
-	} else if (playing_item_location.IsValid) {
-		if(playing_item_location.PlaylistItemIndex+offset<0) offset=0; //|| playing_item_location.PlaylistItemIndex+offset>=plman.PlaylistItemCount(playing_item_location.PlaylistIndex)) offset=0;
-		plman.FlushPlaybackQueue();
-		if(offset>0) offset += queue_content.Count;
-		plman.SetPlaylistFocusItem(playing_item_location.PlaylistIndex,playing_item_location.PlaylistItemIndex+offset);
-		plman.AddPlaylistItemToPlaybackQueue(playing_item_location.PlaylistIndex, playing_item_location.PlaylistItemIndex+offset);
-		playing_item_location_old_index = playing_item_location.PlaylistItemIndex + offset;
-		if(fb.IsPaused || fb.IsPlaying) fb.Next();
-		else fb.Play();
-		ignore_playback_queue = true;
-		timer_ignore_queue = setTimeout(function(){
-			ignore_playback_queue = false;
-			clearTimeout(timer_ignore_queue);
-			timer_ignore_queue = false;
-		},150);
-	} else if(playing_item_location_old.IsValid){
-		if(playing_item_location_old_index+offset<0) offset=0; //|| playing_item_location_old_index+offset>=plman.PlaylistItemCount(playing_item_location_old.PlaylistIndex)) offset=0;
-		plman.FlushPlaybackQueue();
-		playing_item_location_old.PlaylistItemIndex = Number(playing_item_location_old.PlaylistItemIndex);
-		plman.SetPlaylistFocusItem(playing_item_location_old.PlaylistIndex,playing_item_location_old_index+offset);
-		plman.AddPlaylistItemToPlaybackQueue(playing_item_location_old.PlaylistIndex, playing_item_location_old_index+offset);
-		if(fb.IsPaused || fb.IsPlaying) fb.Next();
-		else fb.Play();
-		ignore_playback_queue = true;
-		timer_ignore_queue = setTimeout(function(){
-			ignore_playback_queue = false;
-			clearTimeout(timer_ignore_queue);
-			timer_ignore_queue = false;
-		},150);
-	} else */if(offset<0){
+	if(offset<0){
 		fb.Prev();
 	} else {
 		if(fb.IsPaused || fb.IsPlaying) fb.Next();
@@ -923,7 +1109,6 @@ oTooltip = function (varName) {
 		}
     }
 };
-
 
 oUIHacks = function () {
     // 自动检测是否可以使用原生 fb.Window（JSplitter 或 新版 foobar2000）
@@ -1079,7 +1264,6 @@ function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 					}
 				}
 				return (this.resizing_left_active || this.resizing_right_active);
-				//this.enableWindowSizing(m);
 			break;
 			case "lbtn_down":
 				if(globalProperties.enableResizableBorders && resizing && this.resizing_activate_x==x){
@@ -1114,7 +1298,6 @@ function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 	this.on_drag = function(event, x, y, m){
 		switch(event){
 			case "move":
-				//this.enableWindowSizing(m);
 			break;
 			case "lbtn_down":
 				this.disableWindowSizing(m);
@@ -1135,13 +1318,6 @@ function ExcludePlaylist(name){
 	}
 	return false;
 }
-var PlaylistRename = Array();
-function PlaylistRename(name){
-	for (var i = 0; i < PlaylistRename.length; i+=2) {
-		if(PlaylistRename[i]==name) return PlaylistRename[i+1];
-	}
-	return name;
-}
 
 function check_playlist(name){
     var pl_name = "", pl_idx = -1;
@@ -1155,38 +1331,6 @@ function check_playlist(name){
     return pl_idx;
 };
 var setPlaybackPlaylist_timer=false;
-function setPlaybackPlaylist(){
-	if(fb.IsPlaying && plman.GetPlaylistName(plman.PlayingPlaylist) == globalProperties.selection_playlist) {
-		window.NotifyOthers("avoid_on_playlists_changed",true);
-		var found_playingPlaylist = false;
-		var total = plman.PlaylistCount;
-		var pidx_selection = plman.PlayingPlaylist;
-		var pidx_playing = -1;
-		for(var i = 0; i < total; i++) {
-			if(!found_playingPlaylist && plman.GetPlaylistName(i) == globalProperties.playing_playlist) {
-				pidx_playing = i;
-				found_playingPlaylist = true;
-			};
-			if(found_playingPlaylist) break;
-		};
-		plman.RenamePlaylist(pidx_selection, globalProperties.playing_playlist);
-		if(found_playingPlaylist) {
-			plman.RenamePlaylist(pidx_playing, globalProperties.selection_playlist);
-			var items = plman.GetPlaylistItems(pidx_selection);
-			plman.ClearPlaylist(pidx_playing);
-			plman.InsertPlaylistItems(pidx_playing, 0, items);
-		};
-		if(!setPlaybackPlaylist_timer) {
-			setPlaybackPlaylist_timer = setTimeout(function() {
-				window.NotifyOthers("avoid_on_playlists_changed",false);
-				window.NotifyOthers("UpdatePlaylists",true);
-				setPlaybackPlaylist_timer && clearTimeout(setPlaybackPlaylist_timer);
-				setPlaybackPlaylist_timer = false;
-			}, 125);
-		};
-
-	}
-}
 function renamePlaybackPlaylist(){
 	if(fb.IsPlaying && plman.GetPlaylistName(plman.PlayingPlaylist) == globalProperties.selection_playlist) {
 		window.NotifyOthers("avoid_on_playlists_changed",true);
@@ -1235,19 +1379,16 @@ function sendandplayPlaybackPlaylist(items, play_metadb){
 		else
 			plman.SetPlaylistFocusItem(pidx_playing, 0);
 		if(play_metadb)
-			fb.RunContextCommandWithMetadb("Add to playback queue", play_metadb);
+			runContextCommand("Add to playback queue", play_metadb);
 		else
 			plman.AddPlaylistItemToPlaybackQueue(pidx_playing, 0);
 		if(fb.IsPaused || fb.IsPlaying) fb.Next();
 		else fb.Play();
 
-		//plman.MovePlaylist(pidx_playing, pidx_selection);
-		//plman.MovePlaylist(pidx_selection-1, pidx_playing);
 	};
 	if(!setPlaybackPlaylist_timer) {
 		setPlaybackPlaylist_timer = setTimeout(function() {
 			window.NotifyOthers("avoid_on_playlists_changed",false);
-			//window.NotifyOthers("rePopulate",false);
 			setPlaybackPlaylist_timer && clearTimeout(setPlaybackPlaylist_timer);
 			setPlaybackPlaylist_timer = false;
 		}, 125);
@@ -1279,46 +1420,39 @@ function findSelectionPlaylist(){
 }
 function setMemoryUsageGlobally(mem_solicitation){
 	globalProperties.mem_solicitation = mem_solicitation;
-	window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+	window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 	window.NotifyOthers("MemSolicitation",globalProperties.mem_solicitation);
 	window.NotifyOthers("WSH_panels_reload",true);
 }
-function setThumbnailMaxWidthGlobally(thumbnail_max_width){
-	globalProperties.thumbnailWidthMax = Number(thumbnail_max_width);
-	window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
-	window.NotifyOthers("thumbnailWidthMax",globalProperties.thumbnailWidthMax);
-}
 function setCoverCacheMaxWidthGlobally(covercache_max_mwith){
 	globalProperties.coverCacheWidthMax = Number(covercache_max_mwith);
-	window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+	window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 	window.NotifyOthers("coverCacheWidthMax",globalProperties.coverCacheWidthMax);
 }
 function enableDiskCacheGlobally(){
 	globalProperties.enableDiskCache = !globalProperties.enableDiskCache;
-	window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+	window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 	window.NotifyOthers("DiskCacheState",globalProperties.enableDiskCache);
-	if(globalProperties.enableDiskCache) HtmlMsg("磁盘图像缓存说明", "The disk image cache is built little by little: when a cover is displayed, if it isn't stored yet in the cache, it will be added to the cache.\n\nThe disk image cache is based on the %album artist% & %album% tags.\n\nAfter updating a existing cover, you must manually refresh it in foobar, do a right click over the cover which need to be refreshed, and you will have a menu item for that.", "Ok")
-	else  HtmlMsg("磁盘图像缓存说明", "Warning: foobar may be slower without the disk image cache enabled.\n\nRestart foobar to fully disable it.", "Ok");
+	if(globalProperties.enableDiskCache) HtmlMsg("磁盘图像缓存说明", "磁盘图像缓存是一点一点建立的：显示封面时，如果尚未存入缓存，就会加入缓存。\n\n磁盘图像缓存基于 %album artist% 与 %album% 标签。\n\n更新已有封面后，必须在 foobar 中手动刷新：右键单击需要刷新的封面，会出现相应菜单项。", "确定")
+	else  HtmlMsg("磁盘图像缓存说明", "警告：未启用磁盘图像缓存时，foobar 可能会变慢。\n\n要完全停用，请重启 foobar。", "确定");
 }
 function enableCoversAtStartupGlobally(){
 	globalProperties.load_covers_at_startup = !globalProperties.load_covers_at_startup;
-	window.SetProperty("COVER Load all at startup", globalProperties.load_covers_at_startup);
+	window.SetProperty("封面·启动时全部加载", globalProperties.load_covers_at_startup);
 	window.NotifyOthers("LoadAllCoversState",globalProperties.load_covers_at_startup);
-	if(globalProperties.load_covers_at_startup) HtmlMsg("磁盘图像缓存说明", ((!globalProperties.enableDiskCache)?"This option will work better if the disk image cache is enabled and already built (check the option just below).\n\n":"")+"Foobar memory usage is higher when this option is enabled , because all the covers are loaded into the memory, but if your library isn't outsized, it should be okey.\n\nIf you want to update a cover, you must manually refresh it in foobar, do a right click over the cover which need to be refreshed, and you will have a menu item for that.\n\nThe disk image cache is based on the %album artist% & %album% tags.\n\nRestart foobar to start loading all the covers.", "Ok")
+	if(globalProperties.load_covers_at_startup) HtmlMsg("磁盘图像缓存说明", ((!globalProperties.enableDiskCache)?"如果磁盘图像缓存已启用并已建立完成，此选项效果更好（请检查下方选项）。\n\n":"")+"启用此选项后 foobar 的内存占用会更高，因为所有封面都会载入内存；如果您的媒体库不是特别庞大，应该没有问题。\n\n如需更新封面，必须在 foobar 中手动刷新：右键单击需要刷新的封面，会出现相应菜单项。\n\n磁盘图像缓存基于 %album artist% 与 %album% 标签。\n\n重启 foobar 后开始加载所有封面。", "确定")
 }
 function enableArtistImgAtStartupGlobally(){
 	globalProperties.load_artist_img_at_startup = !globalProperties.load_artist_img_at_startup;
-	window.SetProperty("ARTIST IMG Load all at startup", globalProperties.load_artist_img_at_startup);
+	window.SetProperty("艺术家图片·启动时全部加载", globalProperties.load_artist_img_at_startup);
 	window.NotifyOthers("LoadAllArtistImgState",globalProperties.load_artist_img_at_startup);
-	if(globalProperties.load_artist_img_at_startup) HtmlMsg("磁盘图像缓存说明",((!globalProperties.enableDiskCache)?"This option will work better if the disk image cache is enabled and already built (check the option just below).\n\n":"")+"Foobar memory usage is higher when this option is enabled , because all the artist thumbnails are loaded into the memory, but if your library isn't outsized, it should be okey.\n\nIf you want to update an artist thumbnail, you must manually refresh it in foobar, do a right click over the artist thumbnail which need to be refreshed, and you will have a menu item for that.\n\nThe disk image cache is based on the %album artist% tag.\n\nRestart foobar to start loading all the covers.", "Ok")
+	if(globalProperties.load_artist_img_at_startup) HtmlMsg("磁盘图像缓存说明",((!globalProperties.enableDiskCache)?"如果磁盘图像缓存已启用并已建立完成，此选项效果更好（请检查下方选项）。\n\n":"")+"启用此选项后 foobar 的内存占用会更高，因为所有艺术家缩略图都会载入内存；如果您的媒体库不是特别庞大，应该没有问题。\n\n如需更新艺术家图片，必须在 foobar 中手动刷新：右键单击需要刷新的艺术家缩略图，会出现相应菜单项。\n\n磁盘图像缓存基于 %album artist% 标签。\n\n重启 foobar 后开始加载所有封面。", "确定")
 }
 function hibernate_computer(){
-	//WshShell.Run("%windir%\\System32\\rundll32.exe powrprof.dll, SetSuspendState 0,1,0", 0);
 	var WshShell = new ActiveXObject("WScript.Shell");
 	WshShell.Run("shutdown.exe /h", 0);
 }
 function shutdown_computer(){
-	//WshShell.Run("%windir%\\System32\\rundll32.exe powrprof.dll, SetSuspendState 0,1,0", 0);
 	var WshShell = new ActiveXObject("WScript.Shell");
 	WshShell.Run("shutdown.exe /s /t 00", 0);
 }
@@ -1385,7 +1519,6 @@ var VK_SPACEBAR = 0x20;
 
 var SM_CXVSCROLL = 2;
 var SM_CYHSCROLL = 3;
-
 
 // Used in get_colors()
 var COLOR_WINDOW = 5;
@@ -1523,6 +1656,68 @@ function RGB(r, g, b) {
 function RGBA(r, g, b, a) {
     return ((a << 24) | (r << 16) | (g << 8) | (b));
 };
+// ================= foobar2000 菜单命令的语言适配 =================
+// 主菜单命令和右键菜单命令都是按「界面语言」匹配的字符串：
+// 中文版 fb2k 里没有 "File/New playlist" 这条路径，英文版里也没有 "文件/新建播放列表"，
+// 调用只会安静地返回 false，什么都发生。这套主题里两种写法混着用，所以在中文界面上
+// 「新建播放列表」「属性」「添加到播放队列」「首选项」这些按钮点下去毫无反应 —— 原版就有的问题。
+// 统一走下面两个函数：先按传进来的写法试一次，明确返回 false 再试另一种语言。
+var MAIN_MENU_ALIAS = {
+	"File/New playlist": "文件/新建播放列表",
+	"File/Open...": "文件/打开...",
+	"File/Preferences": "文件/首选项",
+	"File/Save playlist...": "文件/保存播放列表...",
+	"File/Save Playlist...": "文件/保存播放列表...",
+	"File/Load Playlist...": "文件/载入播放列表...",
+	"Edit/Search": "编辑/搜索",
+	"Edit/Undo": "编辑/撤销",
+	"Edit/Select all": "编辑/全选",
+	"View/Always on Top": "查看/总在最前",
+	"View/ElPlaylist/Refresh": "查看/ElPlaylist/刷新",
+	"View/ElPlaylist/Show Now Playing": "查看/ElPlaylist/显示正在播放",
+	"Library/Configure": "媒体库/配置"
+};
+var CONTEXT_CMD_ALIAS = {
+	"Properties": "属性",
+	"Add to playback queue": "添加到播放队列",
+	"Open containing folder": "打开所在文件夹"
+};
+function aliasLookup(table, cmd) {
+	for (var k in table) {
+		if (k === cmd) return table[k];
+		if (table[k] === cmd) return k;
+	}
+	return null;
+}
+function runMainMenuCommand(cmd) {
+	var ok = false;
+	try { ok = fb.RunMainMenuCommand(cmd); } catch (e) { ok = false; }
+	if (ok === false) {
+		var alt = aliasLookup(MAIN_MENU_ALIAS, cmd);
+		if (alt) { try { ok = fb.RunMainMenuCommand(alt); } catch (e) { ok = false; } }
+	}
+	return ok;
+}
+function runContextCommand(cmd, handle, flags) {
+	var ok = false;
+	try {
+		ok = (typeof flags === 'undefined')
+			? fb.RunContextCommandWithMetadb(cmd, handle)
+			: fb.RunContextCommandWithMetadb(cmd, handle, flags);
+	} catch (e) { ok = false; }
+	if (ok === false) {
+		var alt = aliasLookup(CONTEXT_CMD_ALIAS, cmd);
+		if (alt) {
+			try {
+				ok = (typeof flags === 'undefined')
+					? fb.RunContextCommandWithMetadb(alt, handle)
+					: fb.RunContextCommandWithMetadb(alt, handle, flags);
+			} catch (e) { ok = false; }
+		}
+	}
+	return ok;
+}
+
 function GetGrey(grey,alpha){
 	alpha = typeof alpha !== 'undefined' ? alpha : 255;
 	return RGBA(grey,grey,grey,alpha);
@@ -1647,7 +1842,6 @@ oGenreCache = function () {
 		return false;
     };
     this.add = function (genre) {
-		//genre = genre.replace("&","&&");
 		if(!this.genreExist(genre)) {
 			this.genreList[this.genreList.length] = Array(genre,"0");
 			return true;
@@ -1690,7 +1884,6 @@ oGenreCache = function () {
 		for(var i=0; i < total; i++) {
 			item_genre = this.tf_genre.EvalWithMetadb(metadbs[i]);
 			if(item_genre!=previous){
-				//genre_added = this.add(item_genre);
 				if(this.add(item_genre)) genre_added = true;
 				previous=item_genre;
 			}
@@ -1740,50 +1933,12 @@ var_cache = function(){
 function isDefined(variable){
 	return (typeof variable != 'undefined' && variable!=null);
 }
-function cloneImgs(imgs_array){
-	img_clone_array = imgs_array.map( (arg)=>{ return (arg ? cloneImg(arg) : null); } );
-	return img_clone_array;
-}
 function cloneImg(img){
 	try {
 		return new GdiBitmap(img);
 	} catch(e){
 		console.log(e);
 	}
-}
-function iterationCopy(src) {
-  let target = {};
-  for (let prop in src) {
-    if (src.hasOwnProperty(prop)) {
-      target[prop] = src[prop];
-    }
-  }
-  return target;
-}
-function deepImageCopy(src) {
-  let target = {};
-  for (let prop in src) {
-    if (src.hasOwnProperty(prop)) {
-      target[prop] = src[prop];
-    }
-  }
-  return target;
-}
-function jsonCopy(src) {
-  return JSON_parse(JSON_stringify(src));
-}
-function assignCopy(src) {
-  return Object.assign({}, src);
-}
-function cloneObject(obj) {
-    var clone = {};
-    for(var i in obj) {
-        if(obj[i] != null &&  typeof(obj[i])=="object")
-            clone[i] = cloneObject(obj[i]);
-        else
-            clone[i] = obj[i];
-    }
-    return clone;
 }
 function sortNumber(a,b) {
     if(a[0] < b[0]) return -1;
@@ -1795,10 +1950,8 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 	var genrePopupMenu = typeof genrePopupMenu !== 'undefined' ? genrePopupMenu : window.CreatePopupMenu();
 	if(checked_item >= 1000 && checked_item < 2001) var checked_name=g_genre_cache.genreList[checked_item-1000][0];
 	else checked_name="#";
-    //var genrePopupMenu = window.CreatePopupMenu(); //Custom Entries
 
 	//Append first song path
-	//var firstFile=g_browser.groups_draw[check__].pl[0];
 	try {
 		if(!g_genre_cache.initialized) g_genre_cache.build_from_library();
 	} catch (e) {
@@ -1807,10 +1960,7 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 	}
 	if(firstFile){
 		var firstFileGenre = globalProperties.tf_genre.EvalWithMetadb(firstFile);
-		//var firstFilePath=firstFile.Path.replace("D:\\Musique\\Tout\\","");
 		var firstFilePath = firstFile.Path.substring(0,firstFile.Path.lastIndexOf("\\")+1)
-		//var firstFilePathGenre=firstFilePath.substring(0, firstFilePath.indexOf('\\'));
-		//if(firstFilePathGenre==firstFileGenre) var showBelow=true; else var showBelow=false;
 		if(firstFilePath.indexOf(firstFileGenre)!=-1) var showBelow=true; else var showBelow=false;
 
 		var DefaultGenreIndex=0;
@@ -1821,10 +1971,6 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 			genrePopupMenu.AppendMenuItem(MF_STRING, DefaultGenreIndex+999, g_genre_cache.genreList[DefaultGenreIndex-1][0].replace("&","&&")+"（从首个文件路径推断）");
 			genrePopupMenu.AppendMenuSeparator();
 		}
-		/* else if(!showBelow) {
-			genrePopupMenu.AppendMenuItem(MF_GRAYED, DefaultGenreIndex+999,"无法从路径推断流派");
-			genrePopupMenu.AppendMenuSeparator();
-		} */
     }
 
     var genre1 = window.CreatePopupMenu(); //Main genre 1
@@ -1876,11 +2022,6 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 function showNowPlaying(force){
 	var force = typeof force !== 'undefined' ? force : false;
 	if(layout_state.isEqual(0) && (!main_panel_state.isEqual(1) || (getNowPlayingState()!=1 && !filters_panel_state.isMaximumValue()))){
-		/*if(main_panel_state.isEqual(1) && getNowPlayingState()==0)  {
-			plman.ActivePlaylist = plman.PlayingPlaylist;
-			fb.RunMainMenuCommand('View/ElPlaylist/Show Now Playing');
-		}*/
-		//window.NotifyOthers("albumView_showItem",fb.GetNowPlaying());
 		if(!force) window.NotifyOthers("FocusOnNowPlaying",fb.GetNowPlaying());
 		else window.NotifyOthers("FocusOnNowPlayingForce",fb.GetNowPlaying());
 		on_notify_data("FocusOnNowPlaying",fb.GetNowPlaying());
@@ -1891,11 +2032,9 @@ function showNowPlaying(force){
 }
 function rateAlbum(new_rating, old_rating, metadbs){
 	let arr = [];
-	//for (let i = 0; i < metadbs.Count; ++i) {
 		arr.push({
 			'rating_album' : new_rating,
 		});
-	//}
 	g_avoid_metadb_updated = true;
 	metadbs.UpdateFileInfoFromJSON(JSON.stringify(arr));
 	window.NotifyOthers('rating_album_updated',metadbs);
@@ -1909,13 +2048,13 @@ function rateSong(new_rating, old_rating, metadb){
 		if (new_rating != old_rating) {
 			if (metadb) {
 				window.NotifyOthers('rating_updated',metadb);
-				var bool = fb.RunContextCommandWithMetadb("Rating/" + ((new_rating == 0) ? "<not set>" : new_rating), metadb,8);
+				var bool = runContextCommand("Rating/" + ((new_rating == 0) ? "<not set>" : new_rating), metadb,8);
 				if(bool) return new_rating;
 				else return false;
 			};
 		} else {
 			window.NotifyOthers('rating_updated',metadb);
-			var bool = fb.RunContextCommandWithMetadb("Rating/<not set>", metadb,8);
+			var bool = runContextCommand("Rating/<not set>", metadb,8);
 			if(bool) return 0;
 			else return false;
 		};
@@ -1924,8 +2063,6 @@ function rateSong(new_rating, old_rating, metadb){
 		if (new_rating != old_rating) {
 			if (metadb) {
 				window.NotifyOthers('rating_updated',metadb);
-				//var bool = metadb.UpdateFileInfoSimple("RATING", new_rating);
-				//if(bool) return new_rating;
 				var metadbList=new FbMetadbHandleList();
 				metadbList.Add(metadb);
 
@@ -1940,8 +2077,6 @@ function rateSong(new_rating, old_rating, metadb){
 			};
 		} else {
 			window.NotifyOthers('rating_updated',metadb);
-			//var bool = metadb.UpdateFileInfoSimple("RATING", "");
-			//if(bool) return 0;
 
 			var metadbList=new FbMetadbHandleList();
 			metadbList.Add(metadb);
@@ -1961,7 +2096,7 @@ function SetGenre(GenreNumber, plist_items, max_items, clean_file){
 	var max_items = typeof max_items !== 'undefined' ? max_items : 9000;
 	var clean_file = typeof clean_file !== 'undefined' ? clean_file : false;
     if(plist_items.Count>max_items) {
-         var result = HtmlMsg("Error", "当前播放列表包含超过 "+max_items+" 个文件。请使用标准属性对话框。", "Ok");
+         var result = HtmlMsg("错误", "当前播放列表包含超过 "+max_items+" 个文件。请使用标准属性对话框。", "确定");
 		 return false;
     } else {
 		function update_confirmation(status, confirmed) {
@@ -1977,7 +2112,7 @@ function SetGenre(GenreNumber, plist_items, max_items, clean_file){
 			}
 		}
         var QuestionString = "正在更新 "+plist_items.Count+" 个文件的流派为 '"+g_genre_cache.genreList[GenreNumber][0]+"' ?";
-		HtmlDialog("请确认", QuestionString, 'Yes', 'No', update_confirmation);
+		HtmlDialog("请确认", QuestionString, '是', '否', update_confirmation);
     }
 	return false;
 }
@@ -1991,7 +2126,7 @@ function removeItems(plist_items, plist_Idx, ask_for_confirmation){
 			}
 		}
         var QuestionString = "删除所有文件（"+plman.PlaylistItemCount(plist_Idx)+"）来自播放列表（"+plman.GetPlaylistName(plist_Idx)+") ?";
-		HtmlDialog("请确认", QuestionString, 'Yes', 'No', delete_confirmation);
+		HtmlDialog("请确认", QuestionString, '是', '否', delete_confirmation);
     } else {
 		if(ask_for_confirmation){
 			function delete_confirmation(status, confirmed) {
@@ -2000,7 +2135,7 @@ function removeItems(plist_items, plist_Idx, ask_for_confirmation){
 				}
 			}
 			var QuestionString = "删除 "+plist_items.Count+" 个文件来自播放列表（"+plman.GetPlaylistName(plist_Idx)+") ?";
-			HtmlDialog("请确认", QuestionString, 'Yes', 'No', delete_confirmation);
+			HtmlDialog("请确认", QuestionString, '是', '否', delete_confirmation);
 		} else plman.RemovePlaylistSelection(plist_Idx)
     }
 	return false;
@@ -2069,9 +2204,7 @@ function quickSearch(start,search_function){
 		case 'artist':
 			var arr = globalProperties.tf_albumartist.EvalWithMetadb(start);
 			try{
-				//artist_items = fb.GetQueryItems(fb.GetLibraryItems(), "%artist% IS "+trim1(arr)+" OR %album artist% IS "+trim1(arr));
 				artist_items = fb.GetQueryItems(fb.GetLibraryItems(), '"*$meta_sep(artist,*)*" HAS *'+trim1(arr)+'*');
-				//artist_items = fb.GetQueryItems(fb.GetLibraryItems(), '"$meta(artist,0)" IS '+trim1(arr)+' OR "$meta(artist,1)" IS '+trim1(arr)+' OR "$meta(artist,2)" IS '+trim1(arr)+' OR "$meta(artist,3)" IS '+trim1(arr)+' OR "$meta(artist,4)" IS '+trim1(arr)+' OR "$meta(artist,5)" IS '+trim1(arr)+' OR "$meta(artist,6)" IS '+trim1(arr));				
 				if(artist_items.Count>0){
 					artist_items.OrderByFormat(globalProperties.tf_order, 1);
 					apply_playlist(artist_items,false,false);
@@ -2198,7 +2331,6 @@ function play_random(random_function, addAtTheEnd, current_played_track){
 	randomBtnTimer && clearTimeout(randomBtnTimer);
 	var playlist_index = getPlaybackPlaylist();
 	plman.UndoBackup(playlist_index);
-	//plman.ActivePlaylist = playlist_index;
 	if(!addAtTheEnd) {
 		plman.ClearPlaylist(playlist_index);
 		var start_index = 0;
@@ -2270,7 +2402,6 @@ function play_random(random_function, addAtTheEnd, current_played_track){
 				var artist_list = fb.GetQueryItems(library_items, "%artist% IS "+artist_name);
 				if(number_of_items>0) artist_list = pickRandom(artist_list, number_of_items)
 				else shuffleList(artist_list)
-				//artist_list.OrderByFormat(tfo, 1);
 				plman.InsertPlaylistItems(playlist_index, start_index, artist_list);
 				plman.ExecutePlaylistDefaultAction(playlist_index,start_index);
 				artist_list = undefined;
@@ -2333,29 +2464,6 @@ function delete_tags_except(track_metadb,except_array){
 			 track_metadb.UpdateFileInfoSimple(track_FileInfo.MetaName(i), "");
 	}
 }
-function TagstoRemove(track_metadb,toKeepArray,toRemoveArray){
-	var track_FileInfo = track_metadb.GetFileInfo();
-
-	for (var i = 0; i <= track_FileInfo.MetaCount; i++) {
-		if(!arrayContains(toKeepArray , track_FileInfo.MetaName(i)) && !arrayContains(toRemoveArray , track_FileInfo.MetaName(i))) {
-			toRemoveArray[toRemoveArray.length]=track_FileInfo.MetaName(i);
-			toRemoveArray[toRemoveArray.length]="";
-		}
-	}
-	return toRemoveArray;
-}
-function TagstoRemoveSimple(track_metadb,toKeepArray,toRemoveArray){
-	var track_FileInfo = track_metadb.GetFileInfo();
-
-	for (var i = 0; i <= track_FileInfo.MetaCount; i++) {
-		if(!arrayContains(toKeepArray , track_FileInfo.MetaName(i)) && !arrayContains(toRemoveArray , track_FileInfo.MetaName(i))) {
-			toRemoveArray[toRemoveArray.length]=track_FileInfo.MetaName(i);
-
-		}
-
-	}
-	return toRemoveArray;
-}
 
 // *****************************************************************************************************************************************
 // Common functions & flags by Br3tt aka Falstaff (c)2013-2015
@@ -2377,34 +2485,11 @@ function GetKeyboardMask() {
     return ret;
 };
 
-
-// Used in gr.DrawString()
-function StringFormat() {
-    var h_align = 0,
-    v_align = 0,
-    trimming = 0,
-    flags = 0;
-    switch (arguments.length) {
-        case 3:
-        trimming = arguments[2];
-        case 2:
-        v_align = arguments[1];
-        case 1:
-        h_align = arguments[0];
-        break;
-        default:
-        return 0;
-    };
-    return ((h_align << 28) | (v_align << 24) | (trimming << 20) | flags);
-};
-
-
 // Used everywhere!
 function TrackType(metadb) {
     var taggable;
     var type;
 	var trackpath = metadb.RawPath.substring(0, 4);
-	//metadb.RawPath.startsWith("Hello");
     switch (trackpath) {
         case "file":
         taggable = 1;
@@ -2598,7 +2683,6 @@ String.prototype.toHHMMSS = function () {
     var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
     var seconds = sec_num - (hours * 3600) - (minutes * 60);
 
-
     if (minutes < 10 && hours>0) {minutes = "0"+minutes;}
     if (seconds < 10) {seconds = "0"+seconds;}
     if (hours   == 0) {hours   = "";}
@@ -2719,6 +2803,55 @@ String.prototype.removeAccents = function() {
 }
 
 var g_instancetype = window.InstanceType;
+
+// ======================== 高分屏 (4K) 自动适配 ========================
+// 判定依据：window.DPI（JScript Panel / SMP 提供），>=144 即 150% 及以上缩放，
+// 这是 4K 显示器最常见的配置；1080p 常规配置为 96。
+// 4K 时：字体改用系统默认字体样式；标题栏切「紧凑标题栏 - 大」；控制栏切「加宽控制栏」。
+// 手动强制：右键 → 皮肤设置 → 4K 高分屏自动适配（属性键 GLOBAL HiRes display mode：
+//   0 = 自动，1 = 强制开启，2 = 强制关闭）。
+var g_hires_display = false;
+var g_hires_checked = false;
+var g_hires_mode = 0;
+function InitHiResDisplay() {
+    var hires_dpi = 96;
+    if (!g_hires_checked) {
+        g_hires_checked = true;
+        g_hires_mode = 0;
+        try {
+            g_hires_mode = parseInt(window.GetProperty("全局·高分屏适配模式", 0));
+            window.SetProperty("全局·高分屏适配模式", (isNaN(g_hires_mode)?0:g_hires_mode));
+        } catch(e) { g_hires_mode = 0; }
+        if (isNaN(g_hires_mode)) g_hires_mode = 0;
+        if (g_hires_mode == 1) {
+            g_hires_display = true;
+        } else if (g_hires_mode == 2) {
+            g_hires_display = false;
+        } else {
+            try { hires_dpi = Number(window.DPI); } catch(e) { hires_dpi = 96; }
+            if (!hires_dpi || isNaN(hires_dpi) || hires_dpi <= 0) hires_dpi = 96;
+            g_hires_display = (hires_dpi >= 144);
+        }
+        g_hires_dpi = hires_dpi;
+    }
+    // 直接改内存值，不走 setValue：避免写设置文件、NotifyOthers 和 RefreshPSS 引起的重载递归。
+    // 若本文件先于 JSpss_switch.js 载入，这两个对象此刻还不存在，
+    // 由 JSpss_switch.js 末尾再调用一次本函数补上。
+    if (!g_hires_display) return;
+    try {
+        if (typeof compact_titlebar !== "undefined" && compact_titlebar && compact_titlebar.value != 2) {
+            compact_titlebar.value = 2;
+        }
+    } catch(e) {}
+    try {
+        if (typeof mini_controlbar !== "undefined" && mini_controlbar && mini_controlbar.value != 0) {
+            mini_controlbar.value = 0;
+        }
+    } catch(e) {}
+}
+var g_hires_dpi = 96;
+InitHiResDisplay();
+
 var g_font = {};
 function get_font() {
     var font_error = false;
@@ -2733,26 +2866,45 @@ function get_font() {
 	};
     // tweaks to fix a problem with WSH Panel Mod on Font object Name property
     try {
-        //g_fname = "Segoe UI";
-        //g_fname_light = "Segoe UI Semilight";
-        //g_fname_light_italic = "Segoe UI Semilight Italic";
-        //g_fname_italic = "Segoe UI Italic";
-        //g_fname_semibold = "Segoe UI Semibold";
-		g_fname = "Microsoft YaHei UI";
-        g_fname_light = "Microsoft YaHei UI";
-        g_fname_light_italic = "Microsoft YaHei UI";
-        g_fname_italic = "Microsoft YaHei UI";
-        g_fname_semibold = "Microsoft YaHei UI";
-        g_fsize = default_font.Size;
-        g_fstyle = 0;
-        g_fstyle_light = 0;
+		if (g_hires_display && default_font && default_font.Name) {
+			// ---------- 4K 高分屏：使用系统默认字体样式 ----------
+			// 字体名直接取 foobar2000 的界面字体，粗细/斜体改用 GDI+ 样式位，
+			// 因为系统默认字体通常没有 Semibold / Italic 独立字形名。
+			g_fname = default_font.Name;
+			g_fname_light = default_font.Name;
+			g_fname_light_italic = default_font.Name;
+			g_fname_italic = default_font.Name;
+			g_fname_semibold = default_font.Name;
+			g_fsize = default_font.Size;
+			g_fstyle = 0;
+			g_fstyle_light = 0;
+			g_fstyle_bold = 1;
+			g_fstyle_italic = 2;
+		} else {
+			// ---------- 普通屏：脚本自定义字体 ----------
+			g_fname = "Segoe UI";
+			g_fname_light = "Segoe UI";
+			g_fname_light_italic = "Segoe UI";
+			g_fname_italic = "Segoe UI";
+			g_fname_semibold = "Segoe UI";
+			g_fsize = default_font.Size;
+			g_fstyle = 0;
+			g_fstyle_light = 0;
+			g_fstyle_bold = 0;
+			g_fstyle_italic = 0;
+		}
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
         g_fname_light = "arial";
+        g_fname_light_italic = "arial";
+        g_fname_italic = "arial";
+        g_fname_semibold = "arial";
         g_fsize = 12;
         g_fstyle = 0;
         g_fstyle_light = 0;
+        g_fstyle_bold = 0;
+        g_fstyle_italic = 0;
         font_error = true;
     };
     // adjust font size if extra zoom activated
@@ -2776,45 +2928,44 @@ function get_font() {
 	g_font.plus9 = gdi.Font(g_fname, g_fsize+9, g_fstyle);
 	g_font.plus10 = gdi.Font(g_fname, g_fsize+10, g_fstyle);
 
-	g_font.bold = gdi.Font(g_fname_semibold, g_fsize, g_fstyle);
-	g_font.boldmin1 = gdi.Font(g_fname_semibold, g_fsize-1, g_fstyle);
-	g_font.boldmin2 = gdi.Font(g_fname_semibold, g_fsize-2, g_fstyle);
-	g_font.boldmin3 = gdi.Font(g_fname_semibold, g_fsize-3, g_fstyle);
-	g_font.boldmin4 = gdi.Font(g_fname_semibold, g_fsize-4, g_fstyle);
-	g_font.boldmin5 = gdi.Font(g_fname_semibold, g_fsize-5, g_fstyle);
-	g_font.boldplus1 = gdi.Font(g_fname_semibold, g_fsize+1, g_fstyle);
-	g_font.boldplus2 = gdi.Font(g_fname_semibold, g_fsize+2, g_fstyle);
-	g_font.boldplus3 = gdi.Font(g_fname_semibold, g_fsize+3, g_fstyle);
-	g_font.boldplus4 = gdi.Font(g_fname_semibold, g_fsize+4, g_fstyle);
-	g_font.boldplus5 = gdi.Font(g_fname_semibold, g_fsize+5, g_fstyle);
-	g_font.boldplus6 = gdi.Font(g_fname_semibold, g_fsize+6, g_fstyle);
-	g_font.boldplus7 = gdi.Font(g_fname_semibold, g_fsize+7, g_fstyle);
-	g_font.boldplus8 = gdi.Font(g_fname_semibold, g_fsize+8, g_fstyle);
+	g_font.bold = gdi.Font(g_fname_semibold, g_fsize, g_fstyle_bold);
+	g_font.boldmin1 = gdi.Font(g_fname_semibold, g_fsize-1, g_fstyle_bold);
+	g_font.boldmin2 = gdi.Font(g_fname_semibold, g_fsize-2, g_fstyle_bold);
+	g_font.boldmin3 = gdi.Font(g_fname_semibold, g_fsize-3, g_fstyle_bold);
+	g_font.boldmin4 = gdi.Font(g_fname_semibold, g_fsize-4, g_fstyle_bold);
+	g_font.boldmin5 = gdi.Font(g_fname_semibold, g_fsize-5, g_fstyle_bold);
+	g_font.boldplus1 = gdi.Font(g_fname_semibold, g_fsize+1, g_fstyle_bold);
+	g_font.boldplus2 = gdi.Font(g_fname_semibold, g_fsize+2, g_fstyle_bold);
+	g_font.boldplus3 = gdi.Font(g_fname_semibold, g_fsize+3, g_fstyle_bold);
+	g_font.boldplus4 = gdi.Font(g_fname_semibold, g_fsize+4, g_fstyle_bold);
+	g_font.boldplus5 = gdi.Font(g_fname_semibold, g_fsize+5, g_fstyle_bold);
+	g_font.boldplus6 = gdi.Font(g_fname_semibold, g_fsize+6, g_fstyle_bold);
+	g_font.boldplus7 = gdi.Font(g_fname_semibold, g_fsize+7, g_fstyle_bold);
+	g_font.boldplus8 = gdi.Font(g_fname_semibold, g_fsize+8, g_fstyle_bold);
 
-	g_font.italic = gdi.Font(g_fname_italic, g_fsize, 0);
-	g_font.italicmin1 = gdi.Font(g_fname_italic, g_fsize-1, 0);
-	g_font.italicmin2 = gdi.Font(g_fname_italic, g_fsize-2, 0);
-	g_font.italicmin3 = gdi.Font(g_fname_italic, g_fsize-3, 0);
-	g_font.italicmin4 = gdi.Font(g_fname_italic, g_fsize-4, 0);
-	g_font.italicmin5 = gdi.Font(g_fname_italic, g_fsize-5, 0);
-	g_font.italicplus1 = gdi.Font(g_fname_italic, g_fsize+1, 0);
-	g_font.italicplus2 = gdi.Font(g_fname_italic, g_fsize+2, 0);
-	g_font.italicplus3 = gdi.Font(g_fname_italic, g_fsize+3, 0);
-	g_font.italicplus4 = gdi.Font(g_fname_italic, g_fsize+4, 0);
-	g_font.italicplus5 = gdi.Font(g_fname, g_fsize+5, 0);
-	g_font.italicplus6 = gdi.Font(g_fname_italic, g_fsize+6, 0);
-	g_font.italicplus7 = gdi.Font(g_fname_italic, g_fsize+7, 0);
-	g_font.italicplus8 = gdi.Font(g_fname_italic, g_fsize+8, 0);
+	g_font.italic = gdi.Font(g_fname_italic, g_fsize, g_fstyle_italic);
+	g_font.italicmin1 = gdi.Font(g_fname_italic, g_fsize-1, g_fstyle_italic);
+	g_font.italicmin2 = gdi.Font(g_fname_italic, g_fsize-2, g_fstyle_italic);
+	g_font.italicmin3 = gdi.Font(g_fname_italic, g_fsize-3, g_fstyle_italic);
+	g_font.italicmin4 = gdi.Font(g_fname_italic, g_fsize-4, g_fstyle_italic);
+	g_font.italicmin5 = gdi.Font(g_fname_italic, g_fsize-5, g_fstyle_italic);
+	g_font.italicplus1 = gdi.Font(g_fname_italic, g_fsize+1, g_fstyle_italic);
+	g_font.italicplus2 = gdi.Font(g_fname_italic, g_fsize+2, g_fstyle_italic);
+	g_font.italicplus3 = gdi.Font(g_fname_italic, g_fsize+3, g_fstyle_italic);
+	g_font.italicplus4 = gdi.Font(g_fname_italic, g_fsize+4, g_fstyle_italic);
+	g_font.italicplus5 = gdi.Font(g_fname, g_fsize+5, g_fstyle_italic);
+	g_font.italicplus6 = gdi.Font(g_fname_italic, g_fsize+6, g_fstyle_italic);
+	g_font.italicplus7 = gdi.Font(g_fname_italic, g_fsize+7, g_fstyle_italic);
+	g_font.italicplus8 = gdi.Font(g_fname_italic, g_fsize+8, g_fstyle_italic);
 
-	g_font.nowplaying_title = gdi.Font(g_fname_light_italic, g_fsize+14, 0);
-	g_font.nowplaying_subtitle = gdi.Font(g_fname_light_italic, g_fsize+14, 0);
+	g_font.nowplaying_title = gdi.Font(g_fname_light_italic, g_fsize+14, g_fstyle_italic);
+	g_font.nowplaying_subtitle = gdi.Font(g_fname_light_italic, g_fsize+14, g_fstyle_italic);
 
 	if(properties.darklayout) {
 		g_font_light = gdi.Font(g_fname_light, g_fsize, g_fstyle_light);
 		g_font_lightmin1 = gdi.Font(g_fname_light, g_fsize-1, g_fstyle_light);
 	} else {
 		g_font_light = g_font.normal;
-		//g_font_lightmin1 = g_font.min1;
 		g_font_lightmin1 = gdi.Font(g_fname, g_fsize-1, g_fstyle_light);		
     }
 };
@@ -2893,12 +3044,12 @@ function delete_file_cache(metadb, albumIndex, crc, delete_at_startup){
 			if(!already_asked_to_delete){
 				if(properties.deleteSpecificImageCache!="")	properties.deleteSpecificImageCache=properties.deleteSpecificImageCache+"|";
 				properties.deleteSpecificImageCache = properties.deleteSpecificImageCache + crc;
-				window.SetProperty("COVER cachekey of covers to delete on next startup", properties.deleteSpecificImageCache);
+				window.SetProperty("封面·待删除缓存的键(下次启动)", properties.deleteSpecificImageCache);
 			}
 			if(delete_at_startup && delete_at_startup==true)
-				HtmlMsg("无法删除此文件", "The cached cover can't be deleted.\nTry to close foobar and delete the following file manually :\n\n"+cover_img_cache + "\\" + crc, "Ok");
+				HtmlMsg("无法删除此文件", "无法删除该缓存封面。\n请关闭 foobar 后手动删除以下文件：\n\n"+cover_img_cache + "\\" + crc, "确定");
 			else
-				HtmlMsg("无法删除此文件", "The cached cover image can't be refreshed from foobar currently (file in use), but foobar will try to refresh it on next startup", "Ok");
+				HtmlMsg("无法删除此文件", "该缓存封面当前无法从 foobar 刷新（文件被占用），foobar 会在下次启动时尝试刷新", "确定");
 		};
         return true;
     };
@@ -2915,16 +3066,16 @@ function delete_full_cache(){
 			timer_create_folder = false;
 		},150);
 		globalProperties.deleteDiskCache=false;
-		window.SetProperty("COVER delete cover cache on next startup", false);
+		window.SetProperty("封面·下次启动时删除缓存", false);
 	} else {
 		function delete_confirmation(status, confirmed) {
 			if(confirmed){
-				window.SetProperty("COVER delete cover cache on next startup", true);
+				window.SetProperty("封面·下次启动时删除缓存", true);
 				fb.Exit();
 			}
 		}
-		var QuestionString = "Do you really want to fully reset the image cache ?\n\nIf you confirm, the image cache will be refreshed on next startup. Foobar will exit, please restart it manually.";
-		HtmlDialog("请确认", QuestionString, 'Yes', 'No', delete_confirmation);
+		var QuestionString = "确定要完全重置图像缓存吗？\n确认后，图像缓存将在下次启动时重新建立。foobar 将退出，请手动重新启动。";
+		HtmlDialog("请确认", QuestionString, '是', '否', delete_confirmation);
 	}
 }
 function load_image_from_cache(filename){
@@ -3006,7 +3157,6 @@ const get_albumArt_async = async(metadb, albumIndex, cachekey, need_stub, only_e
 				brw.groups[albumIndex].cover_img = get_fallbackCover(metadb,(brw.groups[albumIndex].tracktype<0?undefined:brw.groups[albumIndex].tracktype));
 				brw.groups[albumIndex].is_fallback = true;
 				if(properties.panelName=="WSHgraphicbrowser") brw.groups[albumIndex].cover_img_full = brw.groups[albumIndex].cover_img;
-				//g_image_cache.addToCache(brw.groups[albumIndex].cover_img,cachekey);
 				brw.groups[albumIndex].load_requested = 2;
 				brw.repaint();
 			}
@@ -3033,9 +3183,7 @@ function save_image_to_cache(image, albumIndex, cachekey, metadb){
     if(freeCacheMemory()) return;
 	try {
 		if(image.Width>globalProperties.coverCacheWidthMax || image.Height>globalProperties.coverCacheWidthMax) {
-			//image = FormatCover(image, globalProperties.coverCacheWidthMax, globalProperties.coverCacheWidthMax, false, "save_image_to_cache", globalProperties.keepProportion);
 			image = FormatCover(image, globalProperties.coverCacheWidthMax, globalProperties.coverCacheWidthMax, false, "save_image_to_cache", true, 3);
-			//image = image.Resize(globalProperties.coverCacheWidthMax, globalProperties.coverCacheWidthMax,2);
 		}		
 		if(!g_files.FileExists(filename) && save2cache){
 			image.SaveAs(cover_img_cache+"\\"+crc+"."+globalProperties.ImageCacheExt, globalProperties.ImageCacheFileType);
@@ -3051,7 +3199,6 @@ function save_image_to_cache(image, albumIndex, cachekey, metadb){
 		}
 	} catch(e){}
 	if (typeof brw == "object") brw.repaint();
-	//return image;
 }
 function createDragText(line1, line2, cover_size){
 	var drag_img = gdi.CreateImage(cover_size, cover_size);
@@ -3092,7 +3239,6 @@ function createDragImg(img, cover_size, count){
 	gb.GdiDrawText(count+" tracks", g_font.italicmin1,  colors.dragimage_text, left_padding, top_padding+cover_size-text_height, cover_size, text_height, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 	drag_img.ReleaseGraphics(gb);
 
-	//drag_img = drag_img.Resize(cover_size, cover_size, 2);
 	return drag_img;
 };
 function freeCacheMemory(force){
@@ -3134,7 +3280,6 @@ oImageCache = function () {
 			try {
 				if(properties.load_image_from_cache_direct) {
 					img = await gdi.LoadImageAsyncV2(window.ID, filename);
-					//img = load_image_from_cache_direct(filename);
 					this.addToCache(img,cachekey);
 					brw.groups[albumIndex].load_requested = 2;
 					brw.groups[albumIndex].cover_type = 1;
@@ -3198,7 +3343,6 @@ oImageCache = function () {
 					}
 					if(g_files.FileExists(filepath)) {
 						debugger_hint("load_artist");
-						//img = gdi.Image(filepath);
 						this.load_image_from_cache_async(albumIndex, cachekey, filepath, true, metadb);
 						return "loading";						
 					} else if(properties.AlbumArtFallback){
@@ -3280,7 +3424,6 @@ oImageCache = function () {
                 cover_type = 3;
             };
 
-            //try{this.cachelist[brw.groups[albumId].cachekey] = img;}catch(e){}
         };
 
         brw.groups[albumId].cover_type = cover_type;
@@ -3313,7 +3456,6 @@ function crc32(str) {
 // original by: Webtoolkit.info (http://www.webtoolkit.info/)
 // improved by: T0bsn
 //  depends on: utf8_encode
-//   example 1: crc32('Kevin van Zonneveld');
 //   returns 1: 1249991249
 
   str = Utf8Encode(str);
@@ -3429,7 +3571,6 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
         // 1/3 : default image is in landscape mode
         switch(display_mode) {
             case 0:     // Filling
-                //wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
                 wpp_img_info.w = ih * wpp_img_info.ratio;
                 wpp_img_info.h = ih;
                 wpp_img_info.cut = wpp_img_info.w - iw;
@@ -3457,7 +3598,6 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
         switch(display_mode) {
             case 0:     // Filling
                 wpp_img_info.w = iw;
-                //wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
                 wpp_img_info.h = iw / wpp_img_info.ratio;
                 wpp_img_info.cut = wpp_img_info.h - ih;
                 wpp_img_info.x = 0;
@@ -3527,7 +3667,6 @@ function openCoverFullscreen(metadb, displayedImage){
 }
 // Debugger functions
 function debugger_hint(string){
-	//console.log(string)	;
 }
 //JSON wrappers
 function JSON_parse(info) {
@@ -3554,7 +3693,6 @@ function CreatePlaylist(pl_place, pl_name) {
 			if (result == "") {
 				plman.CreatePlaylist(pl_place, "新播放列表");
 			} else plman.CreatePlaylist(pl_place, result);
-			//on_playlist_switch();
 			return true;
 		} else return false;
 	} catch(e) {

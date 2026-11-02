@@ -1,16 +1,16 @@
 ﻿var properties = {
 	panelName: 'WSHplaylistheader',
-	darklayout: window.GetProperty("_DISPLAY: Dark layout", false),
-	displayToggleBtns: window.GetProperty("_DISPLAY: Toggle buttons", true),
-	savedFilterState: window.GetProperty("_PROPERTY: Saved filter state", -1),
-    filtred_playlist_idx: window.GetProperty("_PROPERTY: filtred playlist idx", -1),		
+	darklayout: window.GetProperty("显示·深色布局", false),
+	displayToggleBtns: window.GetProperty("显示·切换按钮", true),
+	savedFilterState: window.GetProperty("属性·已保存的筛选状态", -1),
+    filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", -1),		
 	panelFontAdjustement: -1,
-	TFsorting: window.GetProperty("MAINPANEL Playlist Sort TitleFormat",""),
-	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
-	wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-	wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-	wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-	wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0)
+	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
+	showwallpaper: window.GetProperty("显示·显示壁纸", false),
+	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+	wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+	wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0)
 }
 
 var b_img;
@@ -46,16 +46,10 @@ var white_images = {
 	nowplaying_on_hover_icon : gdi.Image(theme_img_path + "\\icons\\white\\nowplaying_on_hover.png")
 }
 
-
-
 function setSettingsBtn() {
 	settings_off = gdi.CreateImage(23, 23);
 	gb = settings_off.GetGraphics();
 		gb.SetSmoothingMode(0);
-		/*gb.FillSolidRect(7,7,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,10,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,13,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,16,10,1,colors.normal_txt);*/
 		gb.FillSolidRect(11,6,2,2,colors.faded_txt);
 		gb.FillSolidRect(11,11,2,2,colors.faded_txt);
 		gb.FillSolidRect(11,16,2,2,colors.faded_txt);
@@ -66,10 +60,6 @@ function setSettingsBtn() {
 		gb.SetSmoothingMode(2);
 		gb.FillEllipse(0,0,23,23,colors.settings_hover_bg);
 		gb.SetSmoothingMode(0);
-		/*gb.FillSolidRect(7,7,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,10,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,13,10,1,colors.normal_txt);
-		gb.FillSolidRect(7,16,10,1,colors.normal_txt);*/
 		gb.FillSolidRect(11,6,2,2,colors.normal_txt);
 		gb.FillSolidRect(11,11,2,2,colors.normal_txt);
 		gb.FillSolidRect(11,16,2,2,colors.normal_txt);
@@ -78,11 +68,9 @@ function setSettingsBtn() {
 function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
-		//colors.normal_txt = GetGrey(180);			
 		colors.settings_hover_bg = GetGrey(255,40);
 		colors.headerbar_line = GetGrey(51);
 	} else {
-		//colors.normal_txt = GetGrey(0);			
 		colors.settings_hover_bg = GetGrey(230);
 	}
 	setSettingsBtn();
@@ -108,17 +96,9 @@ buttons = {
 
 function positionButtons(){
 	buttons.filtersToggle.x=ww-38;
-	//buttons.NowPlayingToggle.x=ww-84;
 	buttons.Settings.x=ww-40;
 
 	if(properties.darklayout){
-		/*if(nowplayingplaylist_state.isActive()){
-			buttons.NowPlayingToggle.N_img = white_images.nowplaying_on_icon
-			buttons.NowPlayingToggle.H_img = white_images.nowplaying_on_hover_icon
-		} else {
-			buttons.NowPlayingToggle.N_img = white_images.nowplaying_off_icon
-			buttons.NowPlayingToggle.H_img = white_images.nowplaying_off_hover_icon
-		}	*/
 
 		buttons.filtersToggle.N_img = white_images.playlist_decrease_icon;
 		buttons.filtersToggle.H_img = white_images.playlist_decrease_hover_icon;
@@ -126,13 +106,6 @@ function positionButtons(){
 		buttons.Settings.N_img = settings_off
 		buttons.Settings.H_img = settings_hover
 	} else {
-		/*if(nowplayingplaylist_state.isActive()){
-			buttons.NowPlayingToggle.N_img = black_images.nowplaying_on_icon
-			buttons.NowPlayingToggle.H_img = black_images.nowplaying_on_hover_icon
-		} else {
-			buttons.NowPlayingToggle.N_img = black_images.nowplaying_off_icon
-			buttons.NowPlayingToggle.H_img = black_images.nowplaying_off_hover_icon
-		}	*/
 
 		buttons.filtersToggle.N_img = black_images.playlist_decrease_icon;
 		buttons.filtersToggle.H_img = black_images.playlist_decrease_hover_icon;
@@ -142,11 +115,9 @@ function positionButtons(){
 	}
 	if(!properties.displayToggleBtns){
 		buttons.filtersToggle.changeState(ButtonStates.hide);
-		//buttons.NowPlayingToggle.changeState(ButtonStates.hide);
 		buttons.Settings.changeState(ButtonStates.normal);
 	} else {
 		buttons.filtersToggle.changeState(ButtonStates.normal);
-		//buttons.NowPlayingToggle.changeState(ButtonStates.normal);
 		buttons.Settings.changeState(ButtonStates.hide);
 	}
 }
@@ -304,7 +275,7 @@ function draw_settings_menu(x, y) {
     case (idx == 4989):
 		properties.displayToggleBtns=!properties.displayToggleBtns;
         window.NotifyOthers("display_toggle_buttons",properties.displayToggleBtns);
-		window.SetProperty("_DISPLAY: Toggle buttons", properties.displayToggleBtns);
+		window.SetProperty("显示·切换按钮", properties.displayToggleBtns);
 		positionButtons();
         window.Repaint();
         break;
@@ -432,7 +403,6 @@ function draw_menu(x, y) {
 	}
 	basemenu.AppendMenuItem(MF_STRING, 2000, "曲目属性");
 
-
 	if(utils.IsKeyPressed(VK_SHIFT)) {
 		basemenu.AppendMenuSeparator();
 		basemenu.AppendMenuItem(MF_STRING, 5100, "属性 ");
@@ -452,26 +422,18 @@ function draw_menu(x, y) {
 		draw_settings_menu(x,y);
 		break;
 	case (idx == 2000):
-		fb.RunContextCommandWithMetadb("Properties", plman.GetPlaylistItems(plman.ActivePlaylist), 0);
+		runContextCommand("Properties", plman.GetPlaylistItems(plman.ActivePlaylist), 0);
 		break;
     case (idx == 2997):
 		removeItems(metadblist_selection,plman.ActivePlaylist);
-		//plman.RemovePlaylistSelection(plman.ActivePlaylist)
         break;
     case (idx == 2998):
-		//plman.ClearPlaylist(plman.ActivePlaylist)
         removeItems(false,plman.ActivePlaylist);
         break;
-    /*case (idx >= 1 && idx < 999):
-        SetGenre(idx-1,plman.GetPlaylistItems(plman.ActivePlaylist));
-        break;
-    case (idx >= 1000 && idx < 2001):
-        SetGenre(idx-1000,plman.GetPlaylistItems(plman.ActivePlaylist));
-        break;*/
     case (idx == 2989):
 		properties.displayToggleBtns=!properties.displayToggleBtns;
         window.NotifyOthers("display_toggle_buttons",properties.displayToggleBtns);
-		window.SetProperty("_DISPLAY: Toggle buttons", properties.displayToggleBtns);
+		window.SetProperty("显示·切换按钮", properties.displayToggleBtns);
 		positionButtons();
         window.Repaint();
         break;
@@ -519,7 +481,7 @@ function draw_menu(x, y) {
 		window.Repaint();
         break;
 	case (idx == 3000):
-		fb.RunMainMenuCommand("Edit/Select all");
+		runMainMenuCommand("Edit/Select all");
 		break;
 	case (idx == 3001):
 		plman.SortByFormat(plman.ActivePlaylist,sort_by_album_artist);
@@ -553,7 +515,7 @@ function draw_menu(x, y) {
 			new_TFsorting = utils.InputBox(window.ID, "请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f", "自定义排序顺序", properties.TFsorting, true);
 			if (!(new_TFsorting == "" || typeof new_TFsorting == 'undefined')) {
 				properties.TFsorting = new_TFsorting;
-				window.SetProperty("MAINPANEL Playlist Sort TitleFormat", properties.TFsorting);
+				window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 				window.NotifyOthers("playlist_titleformat", properties.TFsorting);
 				plman.SortByFormat(plman.ActivePlaylist, properties.TFsorting);
 			}
@@ -566,7 +528,7 @@ function draw_menu(x, y) {
     case (idx == 4989):
 		properties.displayToggleBtns=!properties.displayToggleBtns;
         window.NotifyOthers("display_toggle_buttons", properties.displayToggleBtns);
-		window.SetProperty("_DISPLAY: Toggle buttons", properties.displayToggleBtns);
+		window.SetProperty("显示·切换按钮", properties.displayToggleBtns);
 		positionButtons();
         window.Repaint();
         break;
@@ -679,7 +641,7 @@ function chooseButton(x, y) {
 }
 function saveFilterState(){
 	properties.savedFilterState = filters_panel_state.value;
-	window.SetProperty("_PROPERTY: Saved filter state", properties.savedFilterState);
+	window.SetProperty("属性·已保存的筛选状态", properties.savedFilterState);
 	window.NotifyOthers("save_filter_state",properties.savedFilterState);
 }
 
@@ -1030,7 +992,7 @@ function on_mouse_lbtn_up(x, y) {
     }
 }
 function on_mouse_mbtn_down(x, y, mask) {
-    fb.RunContextCommandWithMetadb("Properties",plman.GetPlaylistItems(plman.ActivePlaylist));
+    runContextCommand("Properties",plman.GetPlaylistItems(plman.ActivePlaylist));
 }
 function on_mouse_lbtn_dblclk(x,y){
     plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist,0);
@@ -1048,9 +1010,16 @@ function on_playback_stop(reason) {
 
 function on_notify_data(name, info) {
     switch(name) {
+		case "colors":
+			globalProperties.colorsMainPanel = info;
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
+			get_colors();
+			positionButtons();
+			window.Repaint();
+		break;
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 		break;
 		case "WSH_panels_reload":
@@ -1058,7 +1027,7 @@ function on_notify_data(name, info) {
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement),
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			get_font();
 			window.Repaint();
 		break;
@@ -1086,7 +1055,7 @@ function on_notify_data(name, info) {
 		break;
 		case "save_filter_state":
 			properties.savedFilterState = info;
-			window.SetProperty("_PROPERTY: Saved filter state", properties.savedFilterState);
+			window.SetProperty("属性·已保存的筛选状态", properties.savedFilterState);
 			positionButtons();
 		break;
 		case "filter1_state":
@@ -1103,7 +1072,7 @@ function on_notify_data(name, info) {
 		break;
 		case"playlists_dark_theme":
 			properties.darklayout = info;
-			window.SetProperty("_DISPLAY: Dark layout", properties.darklayout);
+			window.SetProperty("显示·深色布局", properties.darklayout);
 			get_colors();
 			positionButtons();
 			window.Repaint();
@@ -1111,15 +1080,15 @@ function on_notify_data(name, info) {
 		case "refresh_filters":
 			if(typeof info[1] !== 'undefined') {
 				properties.filtred_playlist_idx = info[1];
-				window.SetProperty("_PROPERTY: filtred playlist idx", properties.filtred_playlist_idx);
+				window.SetProperty("属性·筛选结果播放列表索引", properties.filtred_playlist_idx);
 			} else if(properties.filtred_playlist_idx>-1 && plman.GetPlaylistName(plman.ActivePlaylist)!=globalProperties.filter_playlist) {
 				properties.filtred_playlist_idx = -1;
-				window.SetProperty("_PROPERTY: filtred playlist idx", properties.filtred_playlist_idx)
+				window.SetProperty("属性·筛选结果播放列表索引", properties.filtred_playlist_idx)
 			}
 		break;
 		case "playlist_titleformat":
 			properties.TFsorting = info;
-			window.SetProperty("MAINPANEL Playlist Sort TitleFormat", properties.TFsorting);
+			window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 		break;		
     };
 };

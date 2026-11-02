@@ -1,6 +1,6 @@
 ﻿function JSButton(x, y, w, h, label, name, tooltip_text, fonDown, fonUp, fonDbleClick, N_img, H_img, btn_index, state, hover_color, hover_bar_bottom, btn_font) {
     this.state = state ? state : ButtonStates.normal;
-    this.font = btn_font ? btn_font : g_font.normal;	
+    this.font = btn_font ? btn_font : g_font.normal;
     this.x = x;
     this.y = y;
     this.w = w; 
@@ -127,8 +127,6 @@
 
 		if((this.name == "search" || this.name == "fullscreen" || this.name == "lightswitch" || this.name == "nowplaying" || this.name == "rightsidebar") && compact_titlebar.isActive() && layout_state.isEqual(0)) {
 			if(this.state==ButtonStates.hover || this.state==ButtonStates.down){
-				//gr.FillSolidRect(this.x, -1, this.w, this.h, colors.settings_btn_hover_bg);
-				//gr.DrawRect(this.x-1, -1, this.w, this.h+1, 1.0, colors.settings_btn_line);
 				gr.FillSolidRect(this.x+this.w-1, 10, 1, this.h-20, colors.settings_btn_line);
 			} else {
 				gr.FillSolidRect(this.x+this.w-1, 10, 1, this.h-20, colors.settings_btn_line);
@@ -145,9 +143,6 @@
 				gr.FillSolidRect(this.x, -1, this.w-1, this.h, colors.settings_btn_hover_bg);
 			}	
 		}
-		
-		//if(main_panel_state.isEqual(this.btn_index) && this.state!=ButtonStates.active) this.changeState(ButtonStates.active);
-		//if(this.state==ButtonStates.active) this.changeState(ButtonStates.normal);
 		
 		if(this.hover_bar_bottom && !this.hover_color && (main_panel_state.isEqual(this.btn_index) || this.state==ButtonStates.hover || this.state==ButtonStates.down))
 			gr.FillSolidRect(this.x, wh-colors.active_tab_line_height, this.w, colors.active_tab_line_height, colors.active_tab);
@@ -327,7 +322,6 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
 				switch(alignment){
 					case "top-left":
 						this.buttons[i].obj.draw(gr,this.x + x_shift,this.y);	
-						//gr.FillSolidRect(this.x + x_shift + this.buttons[i].obj.w, 10, 1, this.buttons[i].obj.h-20, colors.settings_btn_line);
 					break;	
 					case "top-right":
 						this.buttons[i].obj.draw(gr,window.Width - this.x - this.buttons[i].obj.w - x_shift,this.y);	

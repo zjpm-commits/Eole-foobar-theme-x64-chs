@@ -1,37 +1,37 @@
 ﻿var properties = {
 	panelName: 'WSHsmoothplaylistmanager',
-    defaultRowHeight: window.GetProperty("PROPERTY: Row Height", 46),
-    enableDiskCache: window.GetProperty("COVER Disk Cache", true),
-    rowHeight: window.GetProperty("PROPERTY: Row Height", 42),
+    defaultRowHeight: window.GetProperty("属性·行高", 46),
+    enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
+    rowHeight: window.GetProperty("属性·行高", 42),
     rowScrollStep: 3,
-    drawAlternateBG: window.GetProperty("PROPERTY: Alternate row background", true),
+    drawAlternateBG: window.GetProperty("属性·交替行背景", true),
     scrollSmoothness: 3.0,
-    showHeaderBar: window.GetProperty("DISPLAY: Show Top Bar", false),
-    showNewPlaylistButton: window.GetProperty("DISPLAY: Show new playlist button", true),
+    showHeaderBar: window.GetProperty("显示项·显示顶栏", false),
+    showNewPlaylistButton: window.GetProperty("显示项·显示新建播放列表按钮", true),
     defaultHeaderBarHeight: 34,
     headerBarHeight: 40,
     headerBarPaddingTop: 0,
     paddingTopDefault: 45,
-    showFilterBox: window.GetProperty("PROPERTY: Enable Playlist Filterbox in Top Bar", true),
-    drawUpAndDownScrollbar: window.GetProperty("PROPERTY: Draw Up and Down Scrollbar Buttons", false),
-    drawItemsCounter: window.GetProperty("PROPERTY: Show numbers of items", true),
-	darklayout: window.GetProperty("_DISPLAY: Dark layout", false),
-	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
-    wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-    wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-    wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-    wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0),
-    enableTouchControl: window.GetProperty("PROPERTY: Touch control", false),
-    enableCustomColors: window.GetProperty("CUSTOM COLOR: enable", true),
-	customColorTextNormal: window.GetProperty("CUSTOM COLOR: text normal", "0-0-0"),
-	customColorTextSelected: window.GetProperty("CUSTOM COLOR: text selected", "0-0-0"),
-	customColorBgNormal: window.GetProperty("CUSTOM COLOR: background normal", "250-250-250"),
-	customColorBgSelected: window.GetProperty("CUSTOM COLOR: background selected", "015-177-255"),
-	customColorHightlight: window.GetProperty("CUSTOM COLOR: highlight", "235-235-235"),
-    addedRows_end_default: window.GetProperty("_PROPERTY: empty rows at the end", 1),
-    showPlaylistIcons: window.GetProperty("_PROPERTY: show an icon before the playlist name", true),
-    sortAlphabetically: window.GetProperty("_PROPERTY: sort playlist alphabetically", false),	
-    filtred_playlist_idx: window.GetProperty("_PROPERTY: filtred playlist idx", -1),	
+    showFilterBox: window.GetProperty("属性·顶栏启用播放列表筛选框", true),
+    drawUpAndDownScrollbar: window.GetProperty("属性·显示上下滚动按钮", false),
+    drawItemsCounter: window.GetProperty("属性·显示条目数量", true),
+	darklayout: window.GetProperty("显示·深色布局", false),
+	showwallpaper: window.GetProperty("显示·显示壁纸", false),
+    wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+    wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+    wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
+    enableTouchControl: window.GetProperty("属性·触摸控制", false),
+    enableCustomColors: window.GetProperty("自定义颜色·启用", true),
+	customColorTextNormal: window.GetProperty("自定义颜色·普通文字", "0-0-0"),
+	customColorTextSelected: window.GetProperty("自定义颜色·选中文字", "0-0-0"),
+	customColorBgNormal: window.GetProperty("自定义颜色·普通背景", "250-250-250"),
+	customColorBgSelected: window.GetProperty("自定义颜色·选中背景", "015-177-255"),
+	customColorHightlight: window.GetProperty("自定义颜色·高亮", "235-235-235"),
+    addedRows_end_default: window.GetProperty("属性·末尾空行", 1),
+    showPlaylistIcons: window.GetProperty("属性·播放列表名前显示图标", true),
+    sortAlphabetically: window.GetProperty("属性·播放列表按字母排序", false),	
+    filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", -1),	
 	panelFontAdjustement: -1,
 	emphasisOnActive: false,
 	newly_added : "最近添加",
@@ -87,7 +87,7 @@ cSettings = {
 };
 
 cFilterBox = {
-    enabled: window.GetProperty("PROPERTY: Enable Filter Box", true),
+    enabled: window.GetProperty("属性·启用筛选框", true),
     default_w: 120,
     default_h: 18,
     x: 10,
@@ -127,17 +127,6 @@ timers = {
     addPlaylistDone: false,
 	sendManagerHeight:false
 };
-
-//=================================================// Extra functions for playlist manager panel
-function renamePlaylist() {
-    if(!brw.inputbox.text || brw.inputbox.text == "" || brw.inputboxID == -1) brw.inputbox.text = brw.rows[brw.inputboxID].name;
-    if (brw.inputbox.text.length > 1 || (brw.inputbox.text.length == 1 && (brw.inputbox.text >= "a" && brw.inputbox.text <= "z") || (brw.inputbox.text >= "A" && brw.inputbox.text <= "Z") || (brw.inputbox.text >= "0" && brw.inputbox.text <= "9"))) {
-        brw.rows[brw.inputboxID].name = brw.inputbox.text;
-        plman.RenamePlaylist(brw.rows[brw.inputboxID].idx, brw.inputbox.text);
-        brw.repaint();
-    };
-    brw.inputboxID = -1;
-}
 
 function CreateAutoPlaylist(pl_place, pl_name, query) {
 	try {
@@ -325,7 +314,6 @@ oFilterBox = function() {
             this.reset_bt.draw(gr, bx+2, by+1, 255);
         } else {
 			this.search_bt.draw(gr, bx, by-2, 255);
-			//gr.DrawImage(this.images.search_icon, bx, by+Math.round(this.inputbox.h/2-this.images.search_icon.Height/2), this.images.search_icon.Width, this.images.search_icon.Height, 0, 0, this.images.search_icon.Width, this.images.search_icon.Height, 0, 255);
         };
 		this.inputbox.draw(gr, bx+Math.round(22 * g_zoom_percent / 100)+7, by, 0, 0);
     };
@@ -535,8 +523,6 @@ oScrollbar = function(themed) {
         // normal cursor Image
         this.cursorImage_normal = gdi.CreateImage(this.cursorw, this.cursorh);
         var gb = this.cursorImage_normal.GetGraphics();
-		//gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.5) & 0x88ffffff);
-		//gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 		gb.FillSolidRect(this.cursorw-cScrollBar.normalWidth-1, cScrollBar.marginTop, cScrollBar.normalWidth-2, this.cursorh-cScrollBar.marginTop-cScrollBar.marginBottom, colors.scrollbar_normal_cursor);
         this.cursorImage_normal.ReleaseGraphics(gb);
 
@@ -556,8 +542,6 @@ oScrollbar = function(themed) {
                 gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.3));
             };
         } else {
-            //gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.3) & 0x88ffffff);
-            //gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 			gb.FillSolidRect(this.cursorw-cScrollBar.hoverWidth, 0, cScrollBar.hoverWidth, this.cursorh,colors.scrollbar_hover_cursor);
         };
         this.cursorImage_hover.ReleaseGraphics(gb);
@@ -578,8 +562,6 @@ oScrollbar = function(themed) {
                 gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.05));
             };
         } else {
-            //gb.FillSolidRect(1, 0, this.cursorw-2, this.cursorh, blendColors(this.color_txt, this.color_bg, 0.05) & 0x88ffffff);
-            //gb.DrawRect(1, 0, this.cursorw-2 - 1, this.cursorh - 1, 1.0, this.color_txt & 0x44ffffff);
 			gb.FillSolidRect(this.cursorw-cScrollBar.downWidth, 0, cScrollBar.downWidth, this.cursorh,colors.scrollbar_down_cursor);
         };
         this.cursorImage_down.ReleaseGraphics(gb);
@@ -597,12 +579,8 @@ oScrollbar = function(themed) {
                 this.theme.SetPartAndStateId(6, 1);
                 this.theme.DrawThemeBackground(gr, this.x, this.y, this.w, this.h);
             } catch(e) {
-                //gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_bg & 0x25ffffff);
-                //gr.FillSolidRect(this.x, this.y, 1, this.h, this.color_txt & 0x05ffffff);
             };
         } else {
-           // gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_bg & 0x25ffffff);
-            //gr.FillSolidRect(this.x, this.y, 1, this.h, this.color_txt & 0x05ffffff);
         };
         // scrollbar buttons
         if(cScrollBar.visible) this.buttons[this.buttonType.cursor].draw(gr, this.x, this.cursory, 255);
@@ -1234,7 +1212,10 @@ oBrowser = function(name) {
                 if(globalProperties.fontAdjustement>=globalProperties.fontAdjustement_max-2) var boxText = this.rows.length;
 				else var boxText = this.rows.length+"个";
 
-                gr.FillSolidRect(this.x, 0, this.w - this.x -1, properties.headerBarHeight, colors.headerbar_bg);
+                // 顶栏底色原本全透明，列表滚动的行会透上来；重画面板背景挡住它
+                paintHeaderBarBackdrop(gr, this.x, 0, this.w - this.x -1, properties.headerBarHeight,
+                    colors.lightgrey_bg, properties.showwallpaper ? g_wallpaperImg : null, wh,
+                    (properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
                 gr.FillSolidRect(this.x, properties.headerBarHeight, this.w - this.x -1, 1, colors.headerbar_line);
 
 				if(g_filterbox.inputbox.text.length==0) {
@@ -1253,7 +1234,6 @@ oBrowser = function(name) {
 					};
 				};
             };
-
 
 			// draw scrollbar
 			if(cScrollBar.enabled)  {
@@ -1279,7 +1259,6 @@ oBrowser = function(name) {
 		this.is_hover_scrollbar = this.scrollbar._isHover(x, y);
         // get hover row index (mouse cursor hover)
         this.activeRow = -1;
-		//isHoverCreatePlaylist = (y>properties.headerBarHeight && y<properties.headerBarHeight+properties.rowHeight && properties.showNewPlaylistButton);
 		if(this.ishover && !this.is_hover_scrollbar) {
 			if(y > this.y && y < this.y + this.h) {
 				this.activeRow = Math.ceil((y + scroll_ - this.y) / properties.rowHeight - 1);
@@ -1288,7 +1267,6 @@ oBrowser = function(name) {
 		}
         if(brw.activeRow != brw.activeRowSaved){ //|| isHoverCreatePlaylistSaved != isHoverCreatePlaylist) {
             brw.activeRowSaved = brw.activeRow;
-			//isHoverCreatePlaylistSaved = isHoverCreatePlaylist;
             this.repaint();
         };
 
@@ -1331,23 +1309,9 @@ oBrowser = function(name) {
 								cPlaylistManager.drag_y = y;
 								cPlaylistManager.drag_source_id = this.selectedRow;
 							};
-							//};
 						};
 						this.repaint();
 					} else {
-						/*if(isHoverCreatePlaylist && !avoidDbleClick){
-							avoidDbleClick = true;
-							var total = plman.PlaylistCount;
-							if(CreatePlaylist(total, "")){
-								plman.MovePlaylist(total, total);
-								plman.ActivePlaylist = total;
-							}
-							g_cursor.setCursor(IDC_ARROW,41);
-							avoidDbleClickTimer = setTimeout(function() {
-								clearTimeout(avoidDbleClickTimer);
-								avoidDbleClick = false;
-							}, 200);
-						}	*/
 						if(this.inputboxID > -1) this.inputboxID = -1;
 						// scrollbar
 						if(cScrollBar.enabled && cScrollBar.visible) {
@@ -1490,14 +1454,7 @@ oBrowser = function(name) {
                             if(!utils.IsKeyPressed(VK_SHIFT)) {
                                 this.repaint();
                                 this.selectedRow = this.activeRow;
-                                //plman.ActivePlaylist = this.rows[this.activeRow].idx;
-                               // if(!timers.rightClick) {
-                                   // timers.rightClick = setTimeout(function() {
                                         this.context_menu(x, y, this.selectedRow);
-                                   //     timers.rightClick && clearTimeout(timers.rightClick);
-                                   //     timers.rightClick = false;
-                                  //  },50);
-                               // };
                             };
                             this.repaint();
                         } else {
@@ -1579,7 +1536,7 @@ oBrowser = function(name) {
 			if(properties.defaultRowHeight > 450) properties.defaultRowHeight = 450;
 			if(previous != properties.defaultRowHeight) {
 				timers.mouseWheel = setTimeout(function() {
-					window.SetProperty("PROPERTY: Row Height", properties.defaultRowHeight);
+					window.SetProperty("属性·行高", properties.defaultRowHeight);
 					get_metrics();
 					brw.repaint();
 					timers.mouseWheel && clearTimeout(timers.mouseWheel);
@@ -1619,7 +1576,6 @@ oBrowser = function(name) {
         };
         var repaint_1 = false;
 
-
         if(!window_visible){
             window_visible = true;
         };
@@ -1629,14 +1585,7 @@ oBrowser = function(name) {
             brw.launch_populate();
         };
 
-
         // get hover row index (mouse cursor hover)
-        /* if(g_cursor.y > brw.y && g_cursor.y < brw.y + brw.h) {
-            brw.activeRow = Math.ceil((g_cursor.y + scroll_ - brw.y ) / properties.rowHeight - 1);
-            if(brw.activeRow >= brw.rows.length) brw.activeRow = -1;
-        } else {
-            brw.activeRow = -1;
-        }; */
 
         if(repaint_main1 == repaint_main2){
             repaint_main2 = !repaint_main1;
@@ -1694,7 +1643,6 @@ oBrowser = function(name) {
         _newplaylist.AppendMenuItem(MF_STRING, 100, "新建播放列表");
         _newplaylist.AppendMenuItem(MF_STRING, 101, "新建自动播放列表");
         _autoplaylist.AppendTo(_newplaylist, MF_STRING, "预设播放列表");
-        //_autoplaylist.AppendMenuItem(MF_STRING, 200, "Media Library (full)");
         _autoplaylist.AppendMenuItem(MF_STRING, 205, "历史记录（最近几周播放的曲目）");
         _autoplaylist.AppendMenuItem(MF_STRING, 206, "播放最多的曲目");
         _autoplaylist.AppendMenuItem(MF_STRING, 207, "评级最高的曲目");
@@ -1703,8 +1651,6 @@ oBrowser = function(name) {
         _autoplaylist.AppendMenuItem(MF_STRING, 211, properties.radios);
         _autoplaylist.AppendMenuItem(MF_STRING, 212, properties.external_files);
         _autoplaylist.AppendMenuItem(MF_STRING, 213, properties.podcasts);
-        //_autoplaylist.AppendMenuItem(MF_SEPARATOR, 0, "");
-        //_autoplaylist.AppendMenuItem(MF_STRING, 250, "Loved Tracks");
         _menu.AppendMenuItem(MF_SEPARATOR, 0, "");
         _menu.AppendMenuItem(MF_STRING, 2, "加载播放列表");
         if(!add_mode) {
@@ -1714,7 +1660,6 @@ oBrowser = function(name) {
 
             _menu.AppendMenuItem(MF_STRING, 3, "重命名此播放列表");
             _menu.AppendMenuItem(MF_STRING, 8, "删除此播放列表");
-
 
             if(plman.IsAutoPlaylist(this.rows[id].idx)) {
                 _menu.AppendMenuItem(MF_SEPARATOR, 0, "");
@@ -1728,7 +1673,6 @@ oBrowser = function(name) {
 
         switch (true) {
 		case (idx==1):
-			//window.ShowProperties();
 			this.settings_context_menu(x, y);
 			break;
         case (idx==100):
@@ -1756,7 +1700,7 @@ oBrowser = function(name) {
             this.repaint();
             break;
         case (idx==2):
-            fb.RunMainMenuCommand("File/Load Playlist...");
+            runMainMenuCommand("File/Load Playlist...");
             break;
         case (idx==3):
 			try {
@@ -1771,7 +1715,7 @@ oBrowser = function(name) {
             this.repaint();
             break;
         case (idx==4):
-            fb.RunMainMenuCommand("File/Save Playlist...");
+            runMainMenuCommand("File/Save Playlist...");
             break;
         case (idx==5):
             plman.DuplicatePlaylist(pl_idx, "副本 - " + plman.GetPlaylistName(pl_idx));
@@ -1783,96 +1727,62 @@ oBrowser = function(name) {
         case (idx==7):
             plman.DuplicatePlaylist(pl_idx, plman.GetPlaylistName(pl_idx));
             plman.RemovePlaylistSwitch(pl_idx);
-            //plman.ActivePlaylist = pl_idx;
             break;
         case (idx==8):
             if(brw.rowsCount > 0) {
 				DeletePlaylist(pl_idx);
-                /*if(!this.delete_pending && !timers.deletePlaylist) {
-                    this.delete_pending = true;
-                    timers.deletePlaylist = setTimeout(function(){
-                        timers.deletePlaylist && clearTimeout(timers.deletePlaylist);
-                        timers.deletePlaylist = false;
-                    }, 150);
-                    //
-                    var updateActivePlaylist = (this.selectedRow == plman.ActivePlaylist);
-                    var id = this.selectedRow;
-                    var row = this.getRowIdFromIdx(id);
-                    plman.RemovePlaylistSwitch(id);
-                        if(row < this.rowsCount - 1) {
-                            this.selectedRow = id;
-                        } else if(row > 0) {
-                            this.selectedRow = id - 1;
-                        };
-                    if(updateActivePlaylist) {
-                        if(row < this.rowsCount - 1) {
-                            plman.ActivePlaylist = id;
-                        } else if(row > 0) {
-                            plman.ActivePlaylist = id - 1;
-                        };
-                    };
-                };*/
             };
             break;
         case (idx==200):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, globalProperties.media_library, "ALL", "%album artist% | $if(%album%,%date%,'9999') | %album% | %discnumber% | %tracknumber% | %title%", 0);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==205):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, properties.history, "%last_played% DURING LAST 1 WEEK SORT DESCENDING BY %last_played%", "",1);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==206):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, properties.most_played, "%play_count% GREATER 2 SORT DESCENDING BY %play_count%", "", 1);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==207):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, properties.top_rated, (globalProperties.use_ratings_file_tags ? "$meta(rating)" : "%rating%") + " GREATER 1 SORT DESCENDING BY " + (globalProperties.use_ratings_file_tags ? "$meta(rating)" : "%rating%"), "", 1);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==210):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, properties.newly_added, "%added% DURING LAST 12 WEEKS SORT DESCENDING BY %added%", "",1);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==211):
             var total = plman.PlaylistCount;
-            //brw.inputboxID = -1;
             plman.CreatePlaylist(total, properties.radios);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==212):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreatePlaylist(total, properties.external_files);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==213):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreatePlaylist(total, properties.podcasts);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
             break;
         case (idx==250):
             var total = plman.PlaylistCount;
-            //p.playlistManager.inputboxID = -1;
             plman.CreateAutoPlaylist(total, "Loved Tracks", "%mood% GREATER 0", "%album artist% | $if(%album%,%date%,'9999') | %album% | %discnumber% | %tracknumber% | %title%", 0);
             plman.MovePlaylist(total, pl_idx);
             plman.ActivePlaylist = pl_idx;
@@ -1910,9 +1820,6 @@ oBrowser = function(name) {
 		_menu.AppendMenuItem(MF_STRING, 913, "播放列表图标");
 		_menu.CheckMenuItem(913, properties.showPlaylistIcons);
 		
-		//_menu.AppendMenuItem(MF_STRING, 914, "Sort playlists alphabetically");
-		//_menu.CheckMenuItem(914, properties.sortAlphabetically);	
-		
 		_menu.AppendMenuSeparator();
 
 		_rowHeight.AppendMenuItem(MF_STRING, 1000, "增大");
@@ -1941,16 +1848,8 @@ oBrowser = function(name) {
 		_menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
 		_menu2A.CheckMenuItem(223, properties.wallpaperdisplay==2);
 		_menu2A.AppendTo(_menu2,MF_STRING, "壁纸尺寸");
-		//_menu2.AppendMenuSeparator();
-		//_menu2.AppendMenuItem((!properties.showwallpaper ? MF_GRAYED | MF_DISABLED : MF_STRING), 210, "Default");
-		//_menu2.AppendMenuItem((!properties.showwallpaper ? MF_GRAYED | MF_DISABLED : MF_STRING), 211, "Playing Album Cover");
-		//_menu2.CheckMenuRadioItem(210, 211, properties.wallpapermode == 0 ? 211 : 210);
 
 		_menu2.AppendTo(_menu,MF_STRING, "背景壁纸");
-
-        //_menu.AppendMenuSeparator();
-        //_menu.AppendMenuItem(MF_STRING, 991, "Panel Properties");
-        //_menu.AppendMenuItem(MF_STRING, 992, "Configure...");
 
         idx = _menu.TrackPopupMenu(x,y);
 
@@ -1960,71 +1859,67 @@ oBrowser = function(name) {
 				break;
 			case (idx == 210):
 				properties.wallpapermode = 99;on_colours_changed();
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
 			case (idx == 211):
 				properties.wallpapermode = 0;on_colours_changed();
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
 			case (idx == 220):
 				properties.wallpaperblurred = !properties.wallpaperblurred;on_colours_changed();
-				window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
 			case (idx == 221):
 				properties.wallpaperdisplay = 0;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
 			case (idx == 222):
 				properties.wallpaperdisplay = 1;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
 			case (idx == 223):
 				properties.wallpaperdisplay = 2;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
             case (idx == 910):
                 properties.showHeaderBar = !properties.showHeaderBar;
-                window.SetProperty("DISPLAY: Show Top Bar", properties.showHeaderBar);
+                window.SetProperty("显示项·显示顶栏", properties.showHeaderBar);
                 get_metrics();
                 brw.repaint();
                 break;
             case (idx == 911):
                 properties.showNewPlaylistButton = !properties.showNewPlaylistButton;
-                window.SetProperty("DISPLAY: Show new playlist button", properties.showNewPlaylistButton);
+                window.SetProperty("显示项·显示新建播放列表按钮", properties.showNewPlaylistButton);
 				brw.populate(true, 3);
                 get_metrics();
                 brw.repaint();
                 break;
             case (idx == 912):
                 properties.drawItemsCounter = !properties.drawItemsCounter;
-                window.SetProperty("PROPERTY: Show numbers of items", properties.drawItemsCounter);
+                window.SetProperty("属性·显示条目数量", properties.drawItemsCounter);
                 get_metrics();
                 brw.repaint();properties.showPlaylistIcons
                 break;
             case (idx == 913):
                 properties.showPlaylistIcons = !properties.showPlaylistIcons;
-                window.SetProperty("_PROPERTY: show an icon before the playlist name", properties.showPlaylistIcons);
+                window.SetProperty("属性·播放列表名前显示图标", properties.showPlaylistIcons);
                 get_metrics();
                 brw.repaint();
                 break;
             case (idx == 914):
 				brw.sort();
-                /*properties.sortAlphabetically = !properties.sortAlphabetically;
-                window.SetProperty("_PROPERTY: sort playlist alphabetically", properties.sortAlphabetically);
-				brw.populate(true, 3);
-                get_metrics();*/
                 brw.repaint();
                 break;				
             case (idx == 991):
@@ -2276,7 +2171,6 @@ function on_mouse_lbtn_up(x, y, m) {
 			cTouch.down = false;
 			cTouch.y_end = y;
 			cTouch.scroll_delta = scroll - scroll_;
-			//cTouch.y_delta = cTouch.y_start - cTouch.y_end;
 			if(Math.abs(cTouch.scroll_delta) > 030 ) {
 				cTouch.multiplier = ((1000 - cTouch.t1.Time) / 20);
 				cTouch.delta = Math.round((cTouch.scroll_delta) / 030);
@@ -2550,12 +2444,11 @@ function get_images() {
 	images_inverse = get_images_from_colors_theme(images_inverse,color_theme_inverse);
 }
 
-
 function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
 		colors.icon_opacity = 200;
-		colors.normal_txt = GetGrey(180);	
+		colors.normal_txt = GetGrey(210);	
 		colors.full_txt = GetGrey(255);		
 		colors.dragdrop_bg_selected_item = GetGrey(0,190);
 		colors.dragdrop_line_selected_item = GetGrey(255,45);
@@ -2600,7 +2493,6 @@ function on_colours_changed() {
 }
 
 function on_script_unload() {
-    //brw.resetTimer();
 }
 
 //=================================================// Keyboard Callbacks
@@ -2765,7 +2657,6 @@ function on_key_down(vkey) {
                         if(brw.selectedRow > -1 && brw.selectedRow < brw.rowsCount && brw.rowsCount > 0) {
 							var id = brw.selectedRow;
                             DeletePlaylist(brw.rows[id].idx);
-                            //brw.delete_pending = true;
 							/*
                             timers.deletePlaylist = setTimeout(function(){
                                 timers.deletePlaylist && clearTimeout(timers.deletePlaylist);
@@ -2809,7 +2700,7 @@ function on_key_down(vkey) {
                         };
                         if(vkey==66) { // CTRL+B
                             cScrollBar.enabled = !cScrollBar.enabled;
-                            window.SetProperty("DISPLAY: Show Scrollbar", cScrollBar.enabled);
+                            window.SetProperty("显示·显示滚动条", cScrollBar.enabled);
                             get_metrics();
                             brw.repaint();
                         };
@@ -2823,26 +2714,26 @@ function on_key_down(vkey) {
 
                         };
                         if(vkey==70) { // CTRL+F
-                            fb.RunMainMenuCommand("Edit/Search");
+                            runMainMenuCommand("Edit/Search");
                         };
                         if(vkey==73) { // CTRL+I
 
                         };
                         if(vkey==78) { // CTRL+N
-                            fb.RunMainMenuCommand("File/New playlist");
+                            runMainMenuCommand("File/New playlist");
                         };
                         if(vkey==79) { // CTRL+O
-                            fb.RunMainMenuCommand("File/Open...");
+                            runMainMenuCommand("File/Open...");
                         };
                         if(vkey==80) { // CTRL+P
-                            fb.RunMainMenuCommand("File/Preferences");
+                            runMainMenuCommand("File/Preferences");
                         };
                         if(vkey==83) { // CTRL+S
-                            fb.RunMainMenuCommand("File/Save playlist...");
+                            runMainMenuCommand("File/Save playlist...");
                         };
                         if(vkey==84) { // CTRL+T
                             properties.showHeaderBar = !properties.showHeaderBar;
-                            window.SetProperty("DISPLAY: Show Top Bar", properties.showHeaderBar);
+                            window.SetProperty("显示项·显示顶栏", properties.showHeaderBar);
                             get_metrics();
                             brw.repaint();
                         };
@@ -2864,7 +2755,7 @@ function on_key_down(vkey) {
                     case KMask.alt:
                         switch(vkey) {
                         case 65: // ALT+A
-                            fb.RunMainMenuCommand("View/Always on Top");
+                            runMainMenuCommand("View/Always on Top");
                             break;
                         case VK_ALT: // ALT key alone
                             break;
@@ -2970,44 +2861,12 @@ function on_playlist_items_removed(playlist_idx, new_count) {
 	}
 }
 
-
 function on_focus(is_focused) {
     g_focus = is_focused;
     if(!is_focused && g_filterbox.inputbox.edit) {
 		g_filterbox.inputbox.on_focus(is_focused)
         brw.repaint();
     };
-}
-
-//=================================================// Custom functions
-function checkMediaLibrayPlaylist() {
-    g_avoid_on_playlists_changed = true;
-
-    // check if library playlist is present
-    var isMediaLibraryFound = false;
-    var total = plman.PlaylistCount;
-    for (var i = 0; i < total; i++) {
-        if(plman.GetPlaylistName(i) == globalProperties.media_library) {
-            var mediaLibraryIndex = i;
-            isMediaLibraryFound = true;
-            break;
-        };
-    };
-    if(!isMediaLibraryFound) {
-        // create Media Library playlist (sort forced)
-        // > sort: sort string expression.
-        // > flags: 1 - always sort.
-        // > boolean CreateAutoPlaylist(idx, name, query, sort = "", flags = 0);
-        plman.CreateAutoPlaylist(total, globalProperties.media_library, "%path% PRESENT", "%album artist% | $if(%album%,%date%,'9999') | %album% | %discnumber% | %tracknumber% | %title%", 1);
-        //plman.CreateAutoPlaylist(total, globalProperties.media_library, "%album% PRESENT", "%album artist% | %date% | %album% | %discnumber% | %tracknumber% | %title%", 1);
-        // Move it to the top
-        plman.MovePlaylist(total, 0);
-    } else if(mediaLibraryIndex > 0) {
-        // Always move it to the top
-        plman.MovePlaylist(mediaLibraryIndex, 0);
-    };
-
-    g_avoid_on_playlists_changed = false;
 }
 
 function check_scroll(scroll___){
@@ -3032,21 +2891,20 @@ function on_notify_data(name, info) {
     switch(name) {
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
-            window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+            window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
             window.Reload();
 		break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
-			window.SetProperty("GLOBAL colorsMainPanel", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
 			on_colours_changed();
 		break;
 		case "enableResizableBorders":
 			globalProperties.enableResizableBorders = info;
-			window.SetProperty("GLOBAL enableResizableBorders", globalProperties.enableResizableBorders);
+			window.SetProperty("全局·启用可调整边框", globalProperties.enableResizableBorders);
 		break;
 		case "avoid_on_playlists_changed":
 			g_avoid_on_playlists_changed=info;
-			//if(!g_avoid_on_playlists_changed) on_playlists_changed();
 			break;
 		case "UpdatePlaylistsManager":			
 		case "UpdatePlaylists":
@@ -3055,7 +2913,7 @@ function on_notify_data(name, info) {
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement),
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			on_font_changed();
 		break;
 		case "rePopulate":
@@ -3080,7 +2938,7 @@ function on_notify_data(name, info) {
 		break;
 		case"playlists_dark_theme":
 			properties.darklayout = info;
-			window.SetProperty("_DISPLAY: Dark layout", properties.darklayout);
+			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
 			if(properties.darklayout) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
@@ -3091,10 +2949,10 @@ function on_notify_data(name, info) {
 		case "refresh_filters":
 			if(typeof info[1] !== 'undefined') {
 				properties.filtred_playlist_idx = info[1];
-				window.SetProperty("_PROPERTY: filtred playlist idx", properties.filtred_playlist_idx);
+				window.SetProperty("属性·筛选结果播放列表索引", properties.filtred_playlist_idx);
 			} else if(properties.filtred_playlist_idx>-1 && plman.GetPlaylistName(plman.ActivePlaylist)!=globalProperties.filter_playlist) {
 				properties.filtred_playlist_idx = -1;
-				window.SetProperty("_PROPERTY: filtred playlist idx", properties.filtred_playlist_idx)
+				window.SetProperty("属性·筛选结果播放列表索引", properties.filtred_playlist_idx)
 			}
 		break;		
     };
@@ -3132,7 +2990,6 @@ function on_drag_over(action, x, y, mask) {
 
 	try{
 		if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].isAutoPlaylist) {
-			//action.Effect = 0;
 			return;
 		} else if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].idx>-1) {
 			action.Text = "插入";
@@ -3216,7 +3073,7 @@ function on_drag_drop(action, x, y, mask) {
 function toggleWallpaper(wallpaper_state){
 	wallpaper_state = typeof wallpaper_state !== 'undefined' ? wallpaper_state : !properties.showwallpaper;
 	properties.showwallpaper = wallpaper_state;
-	window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	on_colours_changed();
 	if(properties.showwallpaper) {
 		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
@@ -3227,7 +3084,7 @@ function toggleWallpaper(wallpaper_state){
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = wallpaper_blur_state; on_colours_changed();
-	window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 	if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	brw.repaint();
 }

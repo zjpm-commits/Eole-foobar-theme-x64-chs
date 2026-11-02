@@ -1,34 +1,34 @@
 ﻿var colors = {};
 var properties = {
 	panelName: 'WSHcoverpanel',
-    enableDiskCache: window.GetProperty("COVER Disk Cache", true),
-	showVisualization: window.GetProperty("Show Visualization", true),
-	innerCircle: window.GetProperty("Show Inner Cirle", true),
-	showTrackInfo: window.GetProperty("Show track info", false),
-    random_function: window.GetProperty("Random function", "default"),
-	darklayout: window.GetProperty("_DISPLAY: Main layout:Dark", true),
-    minimode_dark_theme: window.GetProperty("MINIMODE dark theme", true),
-    library_dark_theme: window.GetProperty("LIBRARY dark theme", true),
-    visualization_dark_theme: window.GetProperty("VISUALIZATION dark theme", true),
-    playlists_dark_theme: window.GetProperty("PLAYLISTS dark theme", false),
-    bio_dark_theme: window.GetProperty("BIO dark theme", true),
-    single_click_action: window.GetProperty("PROPERTY single_click_action", 0),
-    dble_click_action: window.GetProperty("PROPERTY double click action", 0),
-	deleteSpecificImageCache : window.GetProperty("COVER cachekey of covers to delete on next startup", ""),
-	forcedarklayout: window.GetProperty("_DISPLAY: force dark layout", false),
-	follow_cursor: window.GetProperty("_DISPLAY: cover follow cursor", false),
-	circleMode: window.GetProperty("_DISPLAY: circle mode", true),
-	doubleRowText: window.GetProperty("_DISPLAY: doubleRowText", false),
-	customInfos: window.GetProperty("_DISPLAY: infos titleformat", ""),	
-    showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
-    wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
-    wallpaperblurvalue: window.GetProperty("_DISPLAY: Wallpaper Blur Value", 1.05),
-    wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
-    wallpaperdisplay: window.GetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", 0),
-	showRating: window.GetProperty("_DISPLAY: showRating", true),
+    enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
+	showVisualization: window.GetProperty("显示可视化", true),
+	innerCircle: window.GetProperty("显示内圈", true),
+	showTrackInfo: window.GetProperty("显示曲目信息", false),
+    random_function: window.GetProperty("随机函数", "default"),
+	darklayout: window.GetProperty("显示·主布局深色", true),
+    minimode_dark_theme: window.GetProperty("迷你模式·深色主题", true),
+    library_dark_theme: window.GetProperty("媒体库·深色主题", true),
+    visualization_dark_theme: window.GetProperty("可视化·深色主题", true),
+    playlists_dark_theme: window.GetProperty("播放列表·深色主题", false),
+    bio_dark_theme: window.GetProperty("艺术家简介·深色主题", true),
+    single_click_action: window.GetProperty("属性·单击动作", 0),
+    dble_click_action: window.GetProperty("属性·双击动作", 0),
+	deleteSpecificImageCache : window.GetProperty("封面·待删除缓存的键(下次启动)", ""),
+	forcedarklayout: window.GetProperty("显示·强制深色布局", false),
+	follow_cursor: window.GetProperty("显示·封面跟随光标", false),
+	circleMode: window.GetProperty("显示·圆形模式", true),
+	doubleRowText: window.GetProperty("显示·双行文本", false),
+	customInfos: window.GetProperty("显示·信息格式化", ""),	
+    showwallpaper: window.GetProperty("显示·显示壁纸", false),
+    wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
+    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
+    wallpapermode: window.GetProperty("系统·壁纸模式", 0),
+    wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
+	showRating: window.GetProperty("显示·显示评级", true),
 	tintOnHover : true,
-	coverNoPadding : window.GetProperty("_DISPLAY: cover no padding", true),
-	disableCoverCache : window.GetProperty("_DISPLAY: disable cover cache", false),
+	coverNoPadding : window.GetProperty("显示·封面无留白", true),
+	disableCoverCache : window.GetProperty("显示·禁用封面缓存", false),
 	rawBitmap: false,
 	panelFontAdjustement: 0,
 	showInfos:true,
@@ -120,7 +120,7 @@ function setButtons(){
 				plman.ActivePlaylist = g_cover.playlistIndex;		
 				if(fb.IsPaused) fb.Stop();
 				plman.FlushPlaybackQueue();
-				fb.RunContextCommandWithMetadb("Add to playback queue", g_cover.metadb);
+				runContextCommand("Add to playback queue", g_cover.metadb);
 				fb.Play();
 			}
 		},function () {},images.play_img,images.play_img),
@@ -298,10 +298,7 @@ function chooseButton(x, y) {
     return null;
 }
 function calculate_visu_margin_left(){
-	//if(properties.showVisualization && g_cover.isPlaying()) {
 		visu_margin_left = ww/2 - 2 - bar_margin;
-	//}
-	//else visu_margin_left = 0;
 }
 
 function on_paint(gr) {
@@ -344,7 +341,6 @@ function on_paint(gr) {
 		var side_padding = 10;
 		gr.FillGradRect(side_padding, wh - 1, ww - side_padding*2, 1, 0, RGBA(0, 0, 0, 0), colors.border, 0.5);
 	} else {
-		//gr.FillSolidRect(0, 1, ww, 1, colors.sidesline);
 		var side_padding = 5;
 		gr.FillGradRect(side_padding, 0, ww - side_padding*2, 1, 0, RGBA(0, 0, 0, 0), colors.border, 0.5);		
 	}
@@ -417,14 +413,14 @@ function on_mouse_lbtn_dblclk(x, y) {
 				if(!g_cover.isFiller()) openCoverFullscreen(g_cover.metadb, g_cover.artwork);
 			break;
 			case (properties.dble_click_action==3):
-				fb.RunContextCommandWithMetadb("Open containing folder", fb.GetNowPlaying(), 8);
+				runContextCommand("Open containing folder", fb.GetNowPlaying(), 8);
 			break;
 			case (properties.dble_click_action==4):
 				window.NotifyOthers('toggleLayoutMode',true);
 			break;
 			case (properties.dble_click_action==5):
 				if (g_infos.metadb && TextBtn_info.isXYInButton(x, y)) {
-					fb.RunContextCommandWithMetadb("Properties", g_infos.metadb);
+					runContextCommand("Properties", g_infos.metadb);
 				}
 			break;
 		}
@@ -489,9 +485,6 @@ function on_playback_new_track(metadb) {
 	}
 	window.Repaint();
 }
-/*function on_playlist_switch() {
-	on_item_focus_change(plman.ActivePlaylist);
-}*/
 
 function on_playback_stop(reason) {
 	switch(reason) {
@@ -641,7 +634,6 @@ oCover = function() {
 		return (this.metadb!=null && this.metadb!==false);
 	}
 	this.setPlaying = function(state, metadb) {
-		//if(state==this.is_playing) return;
 		if(state===false){
 			this.is_playing = false;
 		} else {
@@ -704,9 +696,6 @@ oCover = function() {
 				 var is_playing_new = true;
 			}
 			else if(this.playing_cachekey!=""){
-				//this.cachekey = process_cachekey(metadb);
-				//if(this.playing_cachekey == this.cachekey)
-				//	var is_playing_new = true;
 			}
 		} else var is_playing_new = is_playing;
 		this.setPlaying(is_playing_new, metadb);
@@ -718,9 +707,6 @@ oCover = function() {
 		this.metadb = metadb;
 		var img = g_image_cache.hit(metadb,this.is_playing);
 		if(img=="unchanged") {
-			//if(this.playing_cachekey!="" && this.playing_cachekey == this.cachekey) {
-				//this.setPlaying(true, this.metadb);
-			//}
 			if(this.is_playing && properties.showVisualization) this.setVisualisationY();
 			return;
 		}
@@ -760,21 +746,14 @@ oCover = function() {
 		var w = typeof w !== 'undefined' ? w : this.w;
 		var h = typeof h !== 'undefined' ? h : this.h;
 
-		//w = w - this.padding[1] - this.padding[3];
-		//h = h - this.padding[0] - this.padding[2];
-
 		if(globalProperties.keepProportion) {
 			if(this.artwork.Height>=this.artwork.Width) {
 				
 				this.resize_ratio = this.artwork.Width / this.artwork.Height;
-				//this.h = Math.min(h,w);
-			//	this.w = this.h * this.resize_ratio;
 				this.w_resized = this.h * this.resize_ratio;
 				this.h_resized = this.h;
 			} else {
 				this.resize_ratio = this.artwork.Height / this.artwork.Width;
-				//this.w = w;
-				//this.h = w * this.resize_ratio;
 				this.h_resized = h * this.resize_ratio;
 				this.w_resized = h;
 			}
@@ -994,7 +973,6 @@ function on_layout_change() {
 	setDarkLayout();
 
     if(!fb.IsPlaying) {
-		//g_cover.reset();
     }
 	get_colors();
 	get_images();
@@ -1007,7 +985,7 @@ function on_notify_data(name, info) {
 		break;	
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 		break;
 		case "g_avoid_on_focus_change":
@@ -1073,7 +1051,7 @@ function on_notify_data(name, info) {
 			break;
 		case "Right_panel_follow_cursor":
 			properties.follow_cursor = info;
-			window.SetProperty("_DISPLAY: cover follow cursor", properties.follow_cursor);
+			window.SetProperty("显示·封面跟随光标", properties.follow_cursor);
 			if(properties.follow_cursor) g_infos.on_item_focus_change(-1,-1,-1,fb.GetFocusItem());
 			if(properties.follow_cursor) g_cover.on_item_focus_change(-1,-1,-1,fb.GetFocusItem());
 			else if(fb.IsPlaying) on_playback_new_track(fb.GetNowPlaying());
@@ -1088,32 +1066,32 @@ function on_notify_data(name, info) {
         break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
-			window.SetProperty("GLOBAL colorsMainPanel", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "colorsControls":
 			globalProperties.colorsControls = info;
-			window.SetProperty("GLOBAL colorsControls", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·控制栏配色", globalProperties.colorsControls);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "MemSolicitation":
 			globalProperties.mem_solicitation = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 			window.Reload();
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 			on_font_changed();
 			window.Repaint();
 		break;
@@ -1134,29 +1112,27 @@ function on_notify_data(name, info) {
 		break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 			window.Repaint();
 		break;
 		case "RefreshImageCover":
 			var metadb = new FbMetadbHandleList(info);
-			//if(fb.IsPlaying && metadb[0].Compare(fb.GetNowPlaying()))
 			var cachekey = process_cachekey(metadb);
 			g_image_cache.reset(cachekey);
 			if(cachekey==g_cover.cachekey)
 				g_cover.refresh(metadb[0], true); //g_cover.refresh, false, undefined, true, g_cover.isPlaying());
 		break;
 		case "cover_cache_finalized":
-			//g_image_cache.cachelist = cloneImgs(info);
 			window.Repaint();
 		break;
 		case "playRandom":
 			properties.random_function = info;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			play_random(info);
 		break;
 		case "SetRandom":
 			properties.random_function = info;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 		break;
 		case "main_panel_state_force":
 		case "main_panel_state":
@@ -1192,37 +1168,37 @@ function on_notify_data(name, info) {
 		break;		
 		case "minimode_dark_theme":
 			properties.minimode_dark_theme=info;
-			window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+			window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "bio_stick_to_dark_theme":
 			properties.bio_stick_to_dark_theme = info;
-			window.SetProperty("BIO stick to dark theme", properties.bio_stick_to_dark_theme);
+			window.SetProperty("艺术家简介·跟随深色主题", properties.bio_stick_to_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme = info;
-			window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "library_dark_theme":
 			properties.library_dark_theme=info;
-			window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+			window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "playlists_dark_theme":
 			properties.playlists_dark_theme=info;
-			window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+			window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "bio_dark_theme":
 			properties.bio_dark_theme = info;
-			window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+			window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
@@ -1230,7 +1206,7 @@ function on_notify_data(name, info) {
 			Randomsetfocus = info;
 			if (!Randomsetfocus && properties.random_function >= 1000 && properties.random_function < 2001){
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 			}
 			window.Repaint();
 		break;
@@ -1241,19 +1217,19 @@ function on_notify_data(name, info) {
 		break;
 		case "controls_force_dark_layout":
 			properties.forcedarklayout = info;
-			window.SetProperty("_DISPLAY: force dark layout", properties.forcedarklayout);
+			window.SetProperty("显示·强制深色布局", properties.forcedarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "controls_main_dark_layout":
 			properties.maindarklayout = info;
-			window.SetProperty("_DISPLAY: Main layout:Dark", properties.maindarklayout);
+			window.SetProperty("显示·主布局深色", properties.maindarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "controls_mini_dark_layout":
 			properties.minidarklayout = info;
-			window.SetProperty("_DISPLAY: Mini layout:Dark", properties.minidarklayout);
+			window.SetProperty("显示·迷你布局深色", properties.minidarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
@@ -1379,7 +1355,7 @@ function oInfos() {
 	this.playing_metadb = false;
 	this.album_infos = false;
 	this.timer_cycle = false;
-	this.time_circle = Number(window.GetProperty("Info: Circle time, 3000~60000ms", 12000));
+	this.time_circle = Number(window.GetProperty("信息·圆形倒计时(3000-60000毫秒)", 12000));
 	if (this.time_circle < 3000) this.time_circle = 3000;
 	if (this.time_circle > 60000) this.time_circle = 60000;
 	this.tooltip_activated = false;
@@ -1658,11 +1634,11 @@ function on_mouse_rbtn_up(x, y){
 	idx = main_menu.TrackPopupMenu(x,y);
 	switch(true) {
 		case (idx == 2):
-			fb.RunContextCommandWithMetadb("Properties", fb.GetNowPlaying());
+			runContextCommand("Properties", fb.GetNowPlaying());
 		break;
 		case (idx == 11):
 			properties.circleMode = !properties.circleMode;
-			window.SetProperty("_DISPLAY: circle mode", properties.circleMode);
+			window.SetProperty("显示·圆形模式", properties.circleMode);
 			get_images();
 			g_cover.refreshCurrent();
 			adaptButtons();
@@ -1690,42 +1666,42 @@ function on_mouse_rbtn_up(x, y){
 			break;
 		case (idx == 2):
 			properties.random_function = '20_albums';
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(properties.random_function);
 			break;
 		case (idx == 3):
 			properties.random_function = '200_tracks';
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(properties.random_function);
 			break;
 		case (idx == 4):
 			properties.random_function = '1_genre';
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(properties.random_function);
 			break;
 		case (idx == 5):
 			properties.random_function = '1_artist';
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(properties.random_function);
 			break;
 		case (idx >= 1000 && idx < 2001):
 			properties.random_function = idx;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(idx);
 			break;
 		case (idx == 7):
 			properties.random_function = 'default';
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			window.NotifyOthers("SetRandom", properties.random_function);
 			play_random(properties.random_function);
 			break;
 		case (idx == 6):
-			fb.RunContextCommandWithMetadb("Open containing folder", now_playing_track, 8);
+			runContextCommand("Open containing folder", now_playing_track, 8);
 			break;
 		case (idx == 8):
 			window.NotifyOthers("RefreshImageCover",g_cover.metadb);
@@ -1826,31 +1802,31 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3):
 				properties.dble_click_action = 0;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;
             case (idx == 4):
 				properties.dble_click_action = 1;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;
             case (idx == 5):
 				properties.dble_click_action = 2;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;
             case (idx == 6):
 				properties.dble_click_action = 3;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;
             case (idx == 7):
 				properties.dble_click_action = 4;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;
             case (idx == 8):
 				properties.dble_click_action = 5;
-				window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+				window.SetProperty("属性·双击动作", properties.dble_click_action);
                 break;				
 			case (idx == 10):
 				properties.follow_cursor = !properties.follow_cursor;
-				window.SetProperty("_DISPLAY: cover follow cursor", properties.follow_cursor);
+				window.SetProperty("显示·封面跟随光标", properties.follow_cursor);
 				if(properties.follow_cursor) g_cover.on_item_focus_change(-1,-1,-1,fb.GetFocusItem());
 				else if(fb.IsPlaying) on_playback_new_track(fb.GetNowPlaying());
 				window.NotifyOthers("Right_panel_follow_cursor",properties.follow_cursor);
@@ -1858,7 +1834,7 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 11):
 				properties.circleMode = !properties.circleMode;
-				window.SetProperty("_DISPLAY: circle mode", properties.circleMode);
+				window.SetProperty("显示·圆形模式", properties.circleMode);
 				g_image_cache.resetCache();				
 				get_images();
 				adaptButtons();
@@ -1884,16 +1860,16 @@ function draw_settings_menu(x,y){
 				adaptButtons();
 				g_cover.refreshCurrent();
 				on_size(window.Width,window.Height);
-				window.SetProperty("_DISPLAY: cover no padding", properties.coverNoPadding)
+				window.SetProperty("显示·封面无留白", properties.coverNoPadding)
 				window.Repaint();
 				break;				
             case (idx >= 14 && idx<=15):
 				properties.single_click_action = idx-14;
-				window.SetProperty("PROPERTY single_click_action", properties.single_click_action);
+				window.SetProperty("属性·单击动作", properties.single_click_action);
                 break;
 			case (idx == 16):
 				properties.showRating = !properties.showRating;
-				window.SetProperty("_DISPLAY: showRating", properties.showRating);
+				window.SetProperty("显示·显示评级", properties.showRating);
 				get_images();
 				g_cover.refreshCurrent();
 				on_size(window.Width,window.Height);			
@@ -1902,7 +1878,7 @@ function draw_settings_menu(x,y){
 				break;	
 			case (idx == 17):
 				properties.doubleRowText = !properties.doubleRowText;
-				window.SetProperty("_DISPLAY: doubleRowText", properties.doubleRowText);
+				window.SetProperty("显示·双行文本", properties.doubleRowText);
 				window.Repaint();
 				break;				
 			case (idx == 18):
@@ -1926,7 +1902,7 @@ function draw_settings_menu(x,y){
 				break;				
 			case (idx == 20): 
 				properties.disableCoverCache = !properties.disableCoverCache;
-				window.SetProperty("_DISPLAY: disable cover cache", properties.disableCoverCache);
+				window.SetProperty("显示·禁用封面缓存", properties.disableCoverCache);
 				get_images();
 				adaptButtons();
 				g_image_cache.resetCache();
@@ -1938,27 +1914,27 @@ function draw_settings_menu(x,y){
 				break;
 			case (idx == 210):
 				properties.wallpapermode = 99;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				toggleWallpaper(properties.showwallpaper);
 				break;
 			case (idx == 211):
 				properties.wallpapermode = 0;
-				window.SetProperty("_SYSTEM: Wallpaper Mode", properties.wallpapermode);
+				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 				toggleWallpaper(properties.showwallpaper);
 				break;
 			case (idx == 221):
 				properties.wallpaperdisplay = 0;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				toggleWallpaper(properties.showwallpaper);
 				break;
 			case (idx == 222):
 				properties.wallpaperdisplay = 1;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				toggleWallpaper(properties.showwallpaper);
 				break;
 			case (idx == 223):
 				properties.wallpaperdisplay = 2;
-				window.SetProperty("_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", properties.wallpaperdisplay);
+				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				toggleWallpaper(properties.showwallpaper);
 				break;
 			case (idx == 220):
@@ -2141,14 +2117,14 @@ function get_images(){
 function toggleWallpaper(wallpaper_state){
 	wallpaper_state = typeof wallpaper_state !== 'undefined' ? wallpaper_state : !properties.showwallpaper;
 	properties.showwallpaper = wallpaper_state;
-	window.SetProperty("_DISPLAY: Show Wallpaper", properties.showwallpaper);
+	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	on_colours_changed();
 }
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = wallpaper_blur_state;
-	window.SetProperty("_DISPLAY: Wallpaper Blurred", properties.wallpaperblurred);
+	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 	g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	on_colours_changed();
 }

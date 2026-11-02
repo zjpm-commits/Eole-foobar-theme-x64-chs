@@ -1,5 +1,5 @@
 ﻿/* ==========================================================================
-   洛雪音源 · JSplitter 面板  v2.1.0
+   洛雪音源 · JSplitter 面板  v2.1.1
      - 排行榜：QQ / 网易 / 酷我 / 酷狗 / 咪咕（与上排标签严格同列对齐）
      - 搜索：当前平台单曲搜索（面板内直接打字，on_char + 按键兜底 + Ctrl+V）
      - 不输关键词时，搜索框下面直接显示「热门推荐」曲目（网易云热歌榜）
@@ -32,29 +32,26 @@
      - 搜索词不再写进面板属性（lx.keyword / lx.collKeyword.*）：重开软件 / 重载脚本后
        搜索框是空的；同一会话内切页签回来仍记得刚输的词
 
-   v2.0.1 相对 v2.0.0：
-     - **腾讯取链改成面板自己做**：以前只能靠音源脚本，而脚本用的都是
-       vkey.GetVkeyServer / CgiGetVkey 这套只认 songmid 的老接口 —— 腾讯现在对未登录
-       请求一律回 result=104003、purl 为空，脚本再新也拿不到东西。
-       面板改走 music.vkey.GetVkey / UrlGetVkey：这个接口必须带「文件名」
-       （M500{media_mid}.mp3 / M800….mp3 / F000….flac），只要拼对，免登录照样下发
-       128k 的 purl，拼到 sip 后面就能直接下 —— 实测整首歌 5.1 MB 正常抓完
-     - 一次请求把四档音质全问一遍，谁有 purl 用谁；缺 media_mid 时自动查
-       music.pf_song_detail_svr 补上，不用再依赖脚本里那份字段
-     - VIP 专享歌腾讯只回 RS02{songmid}.mp3 的试听（约 30 秒）：先让音源脚本试 8 秒
-       看能不能解锁，拿不到就播试听并在底栏注明。试听**不写缓存**，
-       免得 30 秒的片段被当成整首歌存下来
-     - 内置取链失败时仍退回音源脚本，两条路都断了才报错，报错文案也改了
-     - 顺手修 songId：lx-music 的 songId 是数字 id（97773），以前这里错填成 songmid
-       （0039MnYb…），凡是拿 songId 取链的脚本都会查不到歌
-     - 新增属性 lx.txNative（默认 1，写 0 就回到纯脚本）、lx.txTrial（默认 1，
-       写 0 就不再拿试听凑数）
-     - **取回来的东西先验一遍再播**：直链带 vkey= 但值为空时直接判失败（这种链接在
-       CDN 上必然 403）；缓存命中、下载完成后都读文件头认容器，认不出来（HTML / JSON /
-       0 字节）就删掉重下。以前只判断「文件大于 1 KB」，一个 403 错误页就能把一首歌
-       永久锁死在缓存里 —— foobar2000 只会说「不支持的格式或文件损坏」，重试多少次都一样
-     - 下载本身失败、且链接带 vkey 时如实报错，不再把 403 链接原样丢给 foobar2000 弹窗
-     - **取链失败但有本地缓存时直接播缓存**：平台挂了 / 断网，已经下好的歌照样能听
+
+   v2.1.1：
+     - 新增快捷键 F4 打开「艺人介绍」浮层（再按一次关掉）；顶栏第一行的「简介」按钮同效，
+       浮层开着也能直接点它切换（以前这一下只会把浮层关掉）
+     - **顶栏右上一列的两个图标按钮改成文字按钮**：上面「简介」= 艺人介绍，
+       下面「评论」= 歌曲评论，各两个字、宽 50px，与右端「设置」同宽；
+       14px 的人物剪影 / 气泡实在不好认，换回文字。设置按钮不变
+     - 浮层开着时 F3 / F4 都认：评论 ↔ 艺人介绍可以直接切
+     - **F3 变成评论浮层的开关**：再按一次就关掉（和 Esc、点 × 一致）；
+       以前按 F3 只会重新拉一次评论，关只能去点右上角的 ×
+     - 顶栏「评论」按钮同样变成开关：点第二下关掉评论浮层
+     - 设置面板右上角的「×」改成文字按钮「退出设置」（26px 宽的方块换成
+       76px 的长条，鼠标好点；「恢复默认」随之左移，两个按钮仍右对齐）
+     - **Shift + 滚轮调文字行间距**：左右两个列表一起变，一格 2px，
+       范围 -12~+36，属性 lx.rowGap（默认 0 = 原来的 44 / 30 / 27）
+     - **Ctrl + 滚轮调整块面板的字号**：一格 1px、范围 9~18，写的是
+       lx.fontSize —— 和设置 → 外观 →「字体字号」滑块同一个值，
+       滚过之后就不再跟随 foobar2000（恢复默认可回到跟随）
+     - **鼠标中键**：在面板上按一下就展开 / 收起左栏（和点右上角箭头等价；
+       设置面板、浮层、搜索页里不认，那几处没有左栏或不该换布局）
 
    v2.1.0：
      - **mp3 / flac 缓存分目录**：设置 → 音源与属性 里各自可改，默认
@@ -67,7 +64,7 @@
    索引 / 评论 / 艺人资料 / 封面仍在 <profile>\Lxbox\cache（lx.cacheDir 可改）。
    配色跟随 foobar2000 的浅色/深色设置；背景使用正在播放曲目的专辑封面（模糊+半透明）。
    ========================================================================== */
-var APP_VERSION = '2.1.0';       /* 顶栏左下角显示的就是它，与 DefineScript 保持一致 */
+var APP_VERSION = '2.1.1';       /* 顶栏左下角显示的就是它，与 DefineScript 保持一致 */
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
 /* --------------------------------------------------------------------------
@@ -259,8 +256,8 @@ function tabsX() { return 12 + brandW() + 12; }
    排行榜↔QQ、搜索↔网易、歌单↔酷我、播客↔酷狗、歌手↔咪咕 严格同列 */
 function headGrid() {
   var gap = W >= 400 ? TAB_GAP : 4;
-  /* 页签给右排按钮让出 12px：正常模式最左是「歌曲评论 / 艺人介绍」那一列，
-     紧凑模式是三个按钮里的「人物」 */
+  /* 页签给右排按钮让出 12px：正常模式最左是「简介 / 评论」那一列，
+     紧凑模式是三个按钮里的「简介」 */
   var right = Math.min(W - PAD, bioRect().x - 12);
   var avail = Math.max(0, right - tabsX());
   var cw = Math.floor((avail - gap * (TAB_DEFS.length - 1)) / TAB_DEFS.length);
@@ -306,12 +303,37 @@ function rowLines() {
   return rowLinesCache;
 }
 
+/* 行间距（Shift + 滚轮调节，属性 lx.rowGap）：
+   直接加在行高上，右侧曲目清单和左侧「榜单 / 集合」共用同一个值 ——
+   两边本来就是同一套目录式列表，行高一起变才整齐。
+   单位是像素而不是百分比：一格 2px，调出来的差距肉眼数得清。
+   默认 0，此时曲目行仍是 44 / 30、左栏仍是 27，跟没有这个属性时一模一样。 */
+var ROW_GAP_MIN = -12;
+var ROW_GAP_MAX = 36;
+var rowGapCache = null;      /* null = 还没读过（0 是有效值，不能用 0 表示「未读」） */
+
+function rowGap() {
+  if (rowGapCache === null) {
+    var v = parseInt(window.GetProperty('lx.rowGap', 0), 10);
+    if (isNaN(v)) v = 0;
+    rowGapCache = clamp(v, ROW_GAP_MIN, ROW_GAP_MAX);
+  }
+  return rowGapCache;
+}
+
+/* 左栏「榜单 / 集合」的行高：27 起步。下限 18 —— 再压字就顶到上一行了 */
+function boardRowH() {
+  return Math.max(18, BOARD_ROW_H + rowGap());
+}
+
 /* 曲目行高：跟着统一字号走。12px 时就是原来的 44 / 30，
-   字调大以后行也跟着长，双行显示才不会两行叠在一起。 */
+   字调大以后行也跟着长，双行显示才不会两行叠在一起。
+   行间距（rowGap）最后加上去，下限 18 同理。 */
 function rowH() {
   var f = FONT_BASE || 12;
-  if (rowLines() === 1) return Math.max(ROW_H_ONE, Math.round(f * 2.3));
-  return Math.max(ROW_H, trackLineH1() + trackLineH2() + 6);
+  var base = rowLines() === 1 ? Math.max(ROW_H_ONE, Math.round(f * 2.3))
+                              : Math.max(ROW_H, trackLineH1() + trackLineH2() + 6);
+  return Math.max(18, base + rowGap());
 }
 
 function toggleRowLines() {
@@ -2384,7 +2406,7 @@ function visTrackRows() {
 
 function visBoardRows() {
   if (!L.board) return 0;
-  return Math.max(0, Math.floor(L.boardListH / BOARD_ROW_H));
+  return Math.max(0, Math.floor(L.boardListH / boardRowH()));
 }
 
 function clampScroll() {
@@ -5172,6 +5194,12 @@ function sourceCount() {
 var COMMENT_TTL = 7 * 24 * 3600 * 1000;
 var BIO_TTL = 30 * 24 * 3600 * 1000;
 
+/* 评论请求的批次号：每开一次 +1，关掉浮层再 +1。
+   请求回来时对不上号（F3 按两下关掉了、或者已经切到「简介」）就整批丢掉，
+   否则晚到的结果会把「评论：30 条」写回状态栏，甚至盖掉艺人介绍浮层的内容。
+   F3 现在能一键关掉，这个竞态比以前更容易撞上（v2.1.1）。 */
+var commentLoadId = 0;
+
 function readCacheJson(file, ttl) {
   if (!file) return null;
   try {
@@ -5254,6 +5282,8 @@ function targetTrack() {
 
 function openOverlay(kind, name, subject) {
   if (editKind) endEdit();
+  /* 音质检测跑到一半就切到别的浮层：这一轮作废，别让结果写进别的浮层 */
+  if (overlay === 'probe' && kind !== 'probe' && probeBusy) probeCancel();
   overlay = kind;
   overlayName = name || '';
   overlaySubject = subject || '';
@@ -5293,6 +5323,7 @@ function closeOverlay() {
     probePickHot = false;
     probeStopHot = false;
   }
+  commentLoadId++;                 /* 关掉浮层：还在路上的评论请求全部作废 */
   overlay = '';
   overlayItems = null;
   overlayText = '';
@@ -5824,12 +5855,25 @@ function probePickRect() {
   return { x: g.x0, y: g.pickY, w: g.tw, h: g.pickH };
 }
 
+/* F3 与顶栏「评论」按钮共用：歌曲评论浮层开关。
+   和「简介」的 toggleBio 一个套路 —— 正在看评论就关掉（等同 Esc / 点 ×），
+   否则照旧打开。以前 F3 和按钮都只会「再打开一次」，想关掉只能去点右上角的 ×，
+   或者按 Esc（而 Esc 还会连带关掉刚打开的设置面板，容易误伤）。
+
+   想刷新当前曲目的评论：关一下再开（缓存过期才会重新请求），
+   或者先按 Esc / F3 关掉，再按 F3 打开。 */
+function toggleComments() {
+  if (overlay === 'comments') { closeOverlay(); return; }
+  showComments();
+}
+
 function showComments() {
   var track = targetTrack();
   if (!track || (!track.title && !track.artist)) {
     setStatus('没有正在播放的曲目，先播一首再点「评论」', true);
     return;
   }
+  var cid = ++commentLoadId;        /* 这一批请求的身份，回来时要对号 */
   openOverlay('comments', '歌曲评论', docBase(track) + ' · 网易云');
   setStatus('正在取网易云评论：' + docBase(track) + ' …');
 
@@ -5849,6 +5893,8 @@ function showComments() {
   }
 
   withTimeout(NM.providers.comments(track), 25000, '取评论').then(function (items) {
+    /* 浮层已关（F3 按了两下）、已切到「简介」、或又开了新的一批：这一批作废 */
+    if (cid !== commentLoadId || overlay !== 'comments') return;
     overlayLoading = false;
     overlayItems = items || [];
     writeCacheJson(file, { at: Date.now(), items: overlayItems });
@@ -5857,6 +5903,7 @@ function showComments() {
     setStatus('评论：' + overlayItems.length + ' 条');
     repaint();
   }, function (e) {
+    if (cid !== commentLoadId || overlay !== 'comments') return;
     overlayLoading = false;
     overlayError = '取网易云评论失败：' + ((e && e.message) || e);
     rebuildOverlayLines(true);
@@ -5986,11 +6033,20 @@ function ensureBioRemote(name, picFile, songsFile) {
   });
 }
 
+/* F4 / 顶栏「简介」按钮：艺人介绍浮层开关。
+   再按一次关掉（和点按钮、点 × 一致），否则按当前曲目的歌手开一次。 */
+function toggleBio() {
+  if (overlay === 'bio') { closeOverlay(); return; }
+  /* 正在搜索框里打字：先把关键词提交掉，别因为开个浮层把输了一半的字丢掉 */
+  if (editKind) commitEdit();
+  showBio();
+}
+
 function showBio() {
   var track = targetTrack();
   var name = String((track && track.artist) || '').trim();
   if (!name) {
-    setStatus('不知道歌手是谁，先播一首再点「艺人」', true);
+    setStatus('不知道歌手是谁，先播一首再按 F4（或点顶栏「简介」）看艺人介绍', true);
     return;
   }
   openOverlay('bio', '艺人介绍', name + ' · 网易云');
@@ -6125,22 +6181,23 @@ function qualityBarW() {
 /* --------------------------------------------------------------------------
    顶栏右侧：两行三列，上下对齐
    --------------------------------------------------------------------------
-     第一行   [人物] | 音源：自动 ……………………▾
-     第二行   [气泡] | 音质 320K ▾ | 设置
+     第一行   [简介] | 音源：自动 ……………………▾
+     第二行   [评论] | 音质 320K ▾ | 设置
 
-   列 1 是两个只放图标的按钮（上面人物 = 艺人介绍，下面气泡 = 歌曲评论），
+   列 1 是两个文字按钮（上面「简介」= 艺人介绍，下面「评论」= 歌曲评论），
    两行同 x 同宽，上下正对；
    列 2（音源 / 音质）左端同 x —— 音源那格更长，往右吃掉设置上方的空白；
    列 3 只有第二行有（设置），右端贴 W - PAD，永远是最后被挤掉的。
-   几何全部从右往左算：设置 → 音质 → 气泡 → 人物 → 音源，
+   几何全部从右往左算：设置 → 音质 → 评论 → 简介 → 音源，
    每一格都不依赖 headGrid，所以页签那套网格可以放心调用它们。
    -------------------------------------------------------------------------- */
 var HB_GAP = 6;                /* 格与格之间的间距 */
-var SET_W = 50;                /* 设置（保留文字：两个字，换成图标反而更难认） */
+var SET_W = 50;                /* 设置（两个字，和「简介 / 评论」同宽） */
+var HEAD_BTN_W = 50;           /* 简介 / 评论：也是两个字，与「设置」一样宽 */
 
 /* 第二排收起（设置 → 外观 → 第二排音源平台 = 隐藏）后，顶栏只剩一行：
-   版本号、平台按钮、音源下拉、音质下拉全撤掉，气泡和设置挪到「人物」右边，
-   一排放 [人物][气泡][设置]。所有几何都从这里分流，别处不用再判断。 */
+   版本号、平台按钮、音源下拉、音质下拉全撤掉，评论和设置挪到「简介」右边，
+   一排放 [简介][评论][设置]。所有几何都从这里分流，别处不用再判断。 */
 function headCompact() { return hidePlatformRow; }
 function headBtnY() { return headCompact() ? 8 : 36; }
 function headBtnH() { return headCompact() ? hdRow1H() : hdRow2H(); }
@@ -6152,12 +6209,13 @@ function headHeight() {
                        : Math.max(62, 36 + hdRow2H() + 2);
 }
 
-/* 图标按钮（艺人介绍 / 歌曲评论）：不放四个字了，只放一个 14px 图标，
-   宽度从 68 收到 30 —— 左边那排页签和右上角的音源下拉都松一口气。
-   跟着字号缩放，免得大字号下按钮比图标还小。 */
-function iconBtnW() {
-  var k = clamp((FONT_BASE || 12) / 12, 1, 1.5);
-  return Math.round(30 * k);
+/* 文字按钮（简介 / 评论）：两个字，宽度与「设置」一致，跟着字号温和放大。
+   原来是 30px 的纯图标按钮，只画一个人物剪影 / 一个对话气泡 —— 图标在
+   14px 上很难认，换成两个汉字反而一眼看懂，宽度也和右端的「设置」对得上。
+   跟着字号缩放，免得大字号下两个字被裁掉。 */
+function textBtnW() {
+  var k = clamp((FONT_BASE || 12) / 12, 1, 1.35);
+  return Math.round(HEAD_BTN_W * k);
 }
 
 /* 设置：第二行最右，常驻 */
@@ -6176,27 +6234,29 @@ function qualityRect() {
 
 /* 歌曲评论：正常模式在第二行音质左边；紧凑模式跟到第一行设置的左边 */
 function commentsRect() {
-  var w = iconBtnW();
+  var w = textBtnW();
   var x = headCompact() ? (settingsRect().x - HB_GAP - w)
                         : (qualityRect().x - HB_GAP - w);
   return { x: x, y: headBtnY(), w: w, h: headBtnH() };
 }
 
 /* 艺人介绍：第一行。正常模式与「歌曲评论」同一列（同 x 同宽）；
-   紧凑模式排到气泡左边，三个按钮一溜在第一行右端 */
+   紧凑模式排到「评论」左边，三个按钮一溜在第一行右端 */
 function bioRect() {
   var c = commentsRect();
-  var x = headCompact() ? (c.x - HB_GAP - iconBtnW()) : c.x;
-  return { x: x, y: 8, w: iconBtnW(), h: hdRow1H() };
+  var w = textBtnW();
+  var x = headCompact() ? (c.x - HB_GAP - w) : c.x;
+  return { x: x, y: 8, w: w, h: hdRow1H() };
 }
 
-/* 顶栏按钮元数据：label 给人看（菜单 / 日志 / 辅助文字用），
-   icon 非空就画图标不写字，几何在各自的 xxxRect() 里。
-   两个图标按钮一上一下同一列：上面「人物」= 艺人介绍，下面「气泡」= 歌曲评论。 */
+/* 顶栏按钮元数据：label 就是按钮上显示的字（也给人看：菜单 / 日志 / 辅助文字）。
+   icon 非空就画图标不写字 —— 现在三个按钮全走文字，icon 一律留空；
+   图标绘制那几个函数（drawUserIcon / drawChatIcon）先留着，将来想换回去不用重写。
+   两个文字按钮一上一下同一列：上面「简介」= 艺人介绍，下面「评论」= 歌曲评论。 */
 var HEAD_BTNS = [
   { key: 'settings', label: '设置', icon: '' },
-  { key: 'comments', label: '歌曲评论', icon: 'chat' },
-  { key: 'bio', label: '艺人介绍', icon: 'user' }
+  { key: 'comments', label: '评论', icon: '' },
+  { key: 'bio', label: '简介', icon: '' }
 ];
 
 function headerButtonRect(key) {
@@ -6250,7 +6310,7 @@ function boardAt(x, y) {
   if (tab !== 0 || sideCollapsed) return -1;
   if (x < L.board.x || x >= L.board.x + L.board.w) return -1;
   if (y < L.boardListY || y >= L.boardListY + L.boardListH) return -1;
-  var i = boardScroll + Math.floor((y - L.boardListY) / BOARD_ROW_H);
+  var i = boardScroll + Math.floor((y - L.boardListY) / boardRowH());
   return i >= 0 && i < boards.length ? i : -1;
 }
 
@@ -6258,7 +6318,7 @@ function collAt(x, y) {
   if (!isBrowseTab() || sideCollapsed) return -1;
   if (x < L.board.x || x >= L.board.x + L.board.w) return -1;
   if (y < L.boardListY || y >= L.boardListY + L.boardListH) return -1;
-  var i = collScroll + Math.floor((y - L.boardListY) / BOARD_ROW_H);
+  var i = collScroll + Math.floor((y - L.boardListY) / boardRowH());
   return i >= 0 && i < collItems.length ? i : -1;
 }
 
@@ -6862,10 +6922,12 @@ function buildDiagnosticLines(out, width) {
    绘制
    -------------------------------------------------------------------------- */
 /* --------------------------------------------------------------------------
-   顶栏两个图标按钮
+   顶栏两个文字按钮的图标（现未启用）
    --------------------------------------------------------------------------
-   上「人物」= 艺人介绍，下「气泡」= 歌曲评论。原来各写四个字，一列占 68px，
-   页签被挤得只剩三十来像素；换成图标后这一列只要 30px。
+   上「简介」= 艺人介绍，下「评论」= 歌曲评论。按钮文字改成两个汉字之后
+   （见 HEAD_BTNS），下面这几个图标函数暂时没有调用点，留着备查：
+   哪天想换回纯图标，把 HEAD_BTNS 里的 icon 填成 'user' / 'chat' 即可，
+   几何不用动（iconRect 会自己按按钮尺寸居中）。
 
    两个图标全部用 FillSolidRect 逐行堆出来，不用 FillEllipse / DrawEllipse：
    宿主 gdi 有没有那两个方法，不同 JSplitter 版本不一样（这一份代码里
@@ -7225,15 +7287,16 @@ function drawBoardList(gr) {
   drawSideToggle(gr);
 
   var vis = visBoardRows();
+  var rh = boardRowH();          /* 行高每帧只算一次：里面要读一次属性 */
   for (var i = boardScroll; i < boards.length && i < boardScroll + vis; i++) {
-    var ry = L.boardListY + (i - boardScroll) * BOARD_ROW_H;
+    var ry = L.boardListY + (i - boardScroll) * rh;
     var on = i === boardIndex;
     var hot = i === hoverRow && hoverKind === 'board';
-    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, BOARD_ROW_H, tint(C.sel, BG_A.rowSel));
-    else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, BOARD_ROW_H, tint(C.hover, BG_A.rowHot));
-    if (on) gr.FillSolidRect(L.board.x, ry, 2, BOARD_ROW_H, C.accent);
+    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.sel, BG_A.rowSel));
+    else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.hover, BG_A.rowHot));
+    if (on) gr.FillSolidRect(L.board.x, ry, 2, rh, C.accent);
     gr.GdiDrawText(boards[i].name, F.normal, on ? C.accent : C.text,
-                   L.board.x + 10, ry, L.board.w - 20, BOARD_ROW_H, FLAG_LEFT);
+                   L.board.x + 10, ry, L.board.w - 20, rh, FLAG_LEFT);
   }
 
   drawScrollbar(gr, 'board', L.board.x + L.board.w - 4, L.boardListY, L.boardListH,
@@ -7268,20 +7331,21 @@ function drawCollList(gr) {
   }
 
   var vis = visBoardRows();
+  var rh = boardRowH();
   for (var i = collScroll; i < collItems.length && i < collScroll + vis; i++) {
     var it = collItems[i] || {};
-    var ry = L.boardListY + (i - collScroll) * BOARD_ROW_H;
+    var ry = L.boardListY + (i - collScroll) * rh;
     var on = i === collIndex;
     var hot = i === hoverRow && hoverKind === 'coll';
-    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, BOARD_ROW_H, tint(C.sel, BG_A.rowSel));
-    else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, BOARD_ROW_H, tint(C.hover, BG_A.rowHot));
-    if (on) gr.FillSolidRect(L.board.x, ry, 2, BOARD_ROW_H, C.accent);
+    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.sel, BG_A.rowSel));
+    else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.hover, BG_A.rowHot));
+    if (on) gr.FillSolidRect(L.board.x, ry, 2, rh, C.accent);
     var label = String(it.name || '(未命名)');
     var tip = String(it.artist || '');
     if (!tip && it.count) tip = it.count + ' 首';
     if (tip) label += '  ' + tip;
     gr.GdiDrawText(label, F.small, on ? C.accent : C.text,
-                   L.board.x + 10, ry, L.board.w - 20, BOARD_ROW_H, FLAG_LEFT);
+                   L.board.x + 10, ry, L.board.w - 20, rh, FLAG_LEFT);
   }
 
   drawScrollbar(gr, 'coll', L.board.x + L.board.w - 4, L.boardListY, L.boardListH,
@@ -7591,7 +7655,7 @@ function scriptBarOn() {
 function scriptBarRect() {
   if (headCompact()) return null;     /* 紧凑模式：音源那格整格撤掉 */
   if (!scriptBarOn()) return null;
-  var x = bioRect().x + iconBtnW() + HB_GAP;
+  var x = bioRect().x + bioRect().w + HB_GAP;
   var minX = tabsEnd() + 8;                    /* 不许压到页签上 */
   if (x < minX) x = minX;
   var w = W - PAD - x;
@@ -8026,6 +8090,7 @@ function setProp(k, v) {
   setVer++;
   setLayoutCache = null;
   rowLinesCache = 0;          /* 行数可能改了，让 rowLines() 重新读一次 */
+  rowGapCache = null;         /* 行间距同理（Shift + 滚轮改的就是它） */
 }
 
 function openSettings() {
@@ -8533,14 +8598,24 @@ function rowHits(it) {
   return out;
 }
 
+/* 关闭按钮占多宽：四个字（退出设置）加上左右各 14px 的余量。
+   原来是个 26×26 的「×」，鼠标找起来太费劲；换成文字条之后横向好点得多。
+   跟着字号放大（12px 时 76，18px 时 106），四个字不会被挤掉。 */
+function settingsCloseW() {
+  var k = clamp((FONT_BASE || 12) / 12, 1, 1.4);
+  return Math.round(76 * k);
+}
+
+/* 恢复默认：贴在「退出设置」左边，两个按钮一起从右往左排 */
 function settingsResetRect() {
   if (!setOpen) return null;
-  return { x: Math.max(60, W - 34 - 10 - 96), y: 10, w: 96, h: 26 };
+  return { x: Math.max(60, W - 8 - settingsCloseW() - 10 - 96), y: 10, w: 96, h: 26 };
 }
 
 function settingsCloseRect() {
   if (!setOpen) return null;
-  return { x: W - 34, y: 10, w: 26, h: 26 };
+  var w = settingsCloseW();
+  return { x: W - 8 - w, y: 10, w: w, h: 26 };
 }
 
 /* 缓存 key。
@@ -8653,7 +8728,7 @@ function drawSettings(gr) {
   gr.GdiDrawText('面板设置', F.head, C.accent, 16, 1, Math.max(60, W - 200), 24, FLAG_LEFT);
   gr.GdiDrawText('改动即时生效，并写进面板属性', F.tiny, C.dim, 17, 21, Math.max(60, W - 210), 24, FLAG_LEFT);
 
-  /* 右上：恢复默认 + × */
+  /* 右上：恢复默认 + 退出设置 */
   var rb = settingsResetRect();
   var rhot = hoverOn(rb);
   gr.FillSolidRect(rb.x, rb.y, rb.w, rb.h, rhot ? tint(C.btnHot, 220) : tint(C.btn, 170));
@@ -8664,7 +8739,7 @@ function drawSettings(gr) {
   var chot = hoverOn(cb);
   gr.FillSolidRect(cb.x, cb.y, cb.w, cb.h, chot ? A(C.err, 60) : tint(C.btn, 150));
   gr.DrawRect(cb.x + 0.5, cb.y + 0.5, cb.w - 1, cb.h - 1, 1, A(C.line, 190));
-  gr.GdiDrawText('×', F.head, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
+  gr.GdiDrawText('退出设置', F.small, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
 
   /* 左栏分类 */
   if (P.wide) {
@@ -8977,6 +9052,7 @@ function resetSettingCat() {
     setProp('lx.fontColor', '');      /* v1.9.16 起不再有文字色设置，顺手清掉 */
     setProp('lx.theme', 'auto');
     setProp('lx.rowLines', '2');
+    setProp('lx.rowGap', 0);          /* Shift + 滚轮调的行间距也回默认 */
     setQuality('auto');
     /* 「播放音源」也回到自动（按脚本加载顺序） */
     setProp('lx.script.' + platform, '');
@@ -9425,6 +9501,22 @@ function on_mouse_leave() {
   }
 }
 
+/* 鼠标中键：展开 / 收起左栏，和点右上角那个小箭头完全等价。
+   面板里任何位置都认（"快捷键"就该随手就能按），只排除三种情况：
+     - 设置面板开着：整块面板都被它铺满，中键在那儿只可能是误触；
+     - 浮层开着（评论 / 简介 / 日志 / 检测）：同理，别把布局从浮层底下换掉；
+     - 搜索页：这一页本来就没有左栏（L.board 为 null），按了也没东西可变，
+       直接不动，免得状态栏刷一条没有意义的提示。 */
+function on_mouse_mbtn_up(x, y) {
+  x = toLogical(x);
+  y = toLogical(y);
+  if (setOpen || overlay) return;
+  if (!L.board) return;
+  toggleSide();
+  setStatus('左栏已' + (sideCollapsed ? '收起' : '展开') + '（鼠标中键切换）');
+  return true;
+}
+
 /* 按住滚动条：滑块跟手拖，点轨道空白直接跳过去 */
 function on_mouse_lbtn_down(x, y) {
   x = toLogical(x);
@@ -9464,7 +9556,16 @@ function on_mouse_lbtn_up(x, y) {
 
   /* 浮层优先：关闭 / 点外面 / 艺人介绍里的歌单与「更多…」 */
   if (overlay) {
-    /* 顶栏那两格不跟着「点外面就关」走：浮层开着也能直接换脚本 / 换音质 */
+    /* 顶栏那几格不跟着「点外面就关」走：浮层开着也能直接换脚本 / 换音质。
+       「简介 / 评论」两个文字按钮都是开关：点第二下就关掉。 */
+    for (var ob = 0; ob < HEAD_BTNS.length; ob++) {
+      var obtn = HEAD_BTNS[ob];
+      if (obtn.key === 'settings') continue;
+      if (!headerButtonVisible(obtn.key) || !inRect(headerButtonRect(obtn.key), x, y)) continue;
+      if (obtn.key === 'bio') toggleBio();
+      else if (obtn.key === 'comments') toggleComments();
+      return;
+    }
     if (scriptBarHot(x, y)) {
       var sbr0 = scriptBarRect();
       openScriptMenu(sbr0.x, sbr0.y + sbr0.h);
@@ -9552,8 +9653,8 @@ function on_mouse_lbtn_up(x, y) {
     var btn = HEAD_BTNS[b];
     if (!headerButtonVisible(btn.key) || !inRect(headerButtonRect(btn.key), x, y)) continue;
     if (btn.key === 'settings') openSettings();
-    else if (btn.key === 'comments') showComments();
-    else if (btn.key === 'bio') showBio();
+    else if (btn.key === 'comments') toggleComments();
+    else if (btn.key === 'bio') toggleBio();
     return;
   }
 
@@ -9693,7 +9794,49 @@ function on_mouse_lbtn_dblclk(x, y) {
   }
 }
 
+/* Ctrl + 滚轮：整个面板的字号 ±1（逻辑像素 9~18）。
+   跟设置 → 外观 →「字体字号」那条滑块写的是同一个属性 lx.fontSize，
+   所以滚一旦滚过，就跟滑块拖过一样：不再跟随 foobar2000，改由面板自己定。
+   走 applyUiScale：字体、行高、浮层行距、面板尺寸一起重算，只重绘一次。 */
+function nudgeFontSize(delta) {
+  var cur = Math.round(FONT_BASE || FONT_DEF);
+  var v = clamp(cur + delta, FONT_MIN, FONT_MAX);
+  if (v === cur) {
+    setStatus('字号已经是 ' + v + ' px（' + (delta > 0 ? '已经是最大' : '已经是最小') + '）');
+    return;
+  }
+  setProp('lx.fontSize', v);
+  applyUiScale({ quiet: true });
+  setStatus('字号：' + v + ' px（Ctrl + 滚轮调节；设置 → 外观 →「恢复默认」可回到跟随 foobar2000）');
+}
+
+/* Shift + 滚轮：行间距 ±2px（属性 lx.rowGap）。
+   左栏榜单 / 集合和右侧曲目清单一起变；setProp 已经作废 rowGapCache，
+   下一句 rowGap() 读到的就是新值。布局要重算（可见行数、滚动条都变了）。 */
+function nudgeRowGap(delta) {
+  var v = clamp(rowGap() + delta, ROW_GAP_MIN, ROW_GAP_MAX);
+  if (v === rowGap()) {
+    setStatus('行间距已经是 ' + (v > 0 ? '+' : '') + v + ' px（' +
+              (delta > 0 ? '已经是最大' : '已经是最小') + '）');
+    return;
+  }
+  setProp('lx.rowGap', v);
+  computeLayout();
+  clampScroll();
+  sbGeom = {};                  /* 行高变了，滚动条的槽长 / 滑块位置全作废 */
+  repaint();
+  setStatus('行间距：' + (v > 0 ? '+' : '') + v + ' px（Shift + 滚轮调节，0 = 默认）');
+}
+
 function on_mouse_wheel(step) {
+  step = Number(step) || 0;
+  if (!step) return;
+
+  /* 修饰键优先，且不分区域：设置面板 / 浮层里也照样能调字号、调行间距。
+     Ctrl 先判 —— Ctrl+Shift+滚轮 时按「调字号」算，免得两个一起动。 */
+  if (keyPressed(0x11)) { nudgeFontSize(step > 0 ? 1 : -1); return; }
+  if (keyPressed(0x10)) { nudgeRowGap(step > 0 ? 2 : -2); return; }
+
   if (setOpen) {
     setScroll -= step * 3;
     var P = settingsLayout();
@@ -9745,6 +9888,9 @@ function on_key_down(vkey) {
     return;
   }
   if (overlay) {
+    /* F3 / F4：浮层开着也认 —— 正在看评论就按一下关掉，看的是日志 / 简介则切过来 */
+    if (vkey === 0x72) { toggleComments(); return; }
+    if (vkey === 0x73) { toggleBio(); return; }
     if (vkey === 0x26) { overlayScroll -= 1; clampScroll(); repaint(); }
     else if (vkey === 0x28) { overlayScroll += 1; clampScroll(); repaint(); }
     else if (vkey === 0x21) { overlayScroll -= visOverlayLines(); clampScroll(); repaint(); }
@@ -9770,8 +9916,12 @@ function on_key_down(vkey) {
     else openSearch();
     return;
   }
-  if (vkey === 0x72) {          // F3：评论
-    showComments();
+  if (vkey === 0x72) {          // F3：评论（再按一次关掉）
+    toggleComments();
+    return;
+  }
+  if (vkey === 0x73) {          // F4：艺人介绍（再按一次关掉）
+    toggleBio();
     return;
   }
   if (vkey === 0x74) {          // F5

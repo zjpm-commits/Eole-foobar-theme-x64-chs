@@ -1,19 +1,19 @@
 ﻿var colors = {};
 var properties = {
 	panelName: 'WSHcoverpanel',
-    enableDiskCache: window.GetProperty("COVER Disk Cache", true),
-	showVisualization: window.GetProperty("Show Visualization", 1), // 0: Never 1: Only when track info panel isn't showing it // 2: Always
-	showTrackInfo: window.GetProperty("Show track info", false),
-    random_function: window.GetProperty("Random function", "default"),
-	maindarklayout: window.GetProperty("_DISPLAY: Main layout:Dark", true),
-	minidarklayout: window.GetProperty("_DISPLAY: Mini layout:Dark", true),
-    minimode_dark_theme: window.GetProperty("MINIMODE dark theme", true),
-    library_dark_theme: window.GetProperty("LIBRARY dark theme", true),
-    playlists_dark_theme: window.GetProperty("PLAYLISTS dark theme", true),
-    bio_dark_theme: window.GetProperty("BIO dark theme", true),
-    dble_click_action: window.GetProperty("PROPERTY double click action", 0),
-	deleteSpecificImageCache : window.GetProperty("COVER cachekey of covers to delete on next startup", ""),
-	forcedarklayout: window.GetProperty("_DISPLAY: force dark layout", true),
+    enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
+	showVisualization: window.GetProperty("显示可视化", 1), // 0: Never 1: Only when track info panel isn't showing it // 2: Always
+	showTrackInfo: window.GetProperty("显示曲目信息", false),
+    random_function: window.GetProperty("随机函数", "default"),
+	maindarklayout: window.GetProperty("显示·主布局深色", true),
+	minidarklayout: window.GetProperty("显示·迷你布局深色", true),
+    minimode_dark_theme: window.GetProperty("迷你模式·深色主题", true),
+    library_dark_theme: window.GetProperty("媒体库·深色主题", true),
+    playlists_dark_theme: window.GetProperty("播放列表·深色主题", true),
+    bio_dark_theme: window.GetProperty("艺术家简介·深色主题", true),
+    dble_click_action: window.GetProperty("属性·双击动作", 0),
+	deleteSpecificImageCache : window.GetProperty("封面·待删除缓存的键(下次启动)", ""),
+	forcedarklayout: window.GetProperty("显示·强制深色布局", true),
 	tintOnHover : true,
 	rawBitmap: false,
 	refreshRate: 50,
@@ -397,7 +397,7 @@ function on_mouse_lbtn_dblclk(x, y) {
 				if(!g_cover.isFiller()) openCoverFullscreen(fb.GetNowPlaying(), g_cover.isFiller() ? null : g_cover.artwork);
 			break;
 			case (properties.dble_click_action==3):
-				fb.RunContextCommandWithMetadb("打开所在文件夹", fb.GetNowPlaying(), 8);
+				runContextCommand("打开所在文件夹", fb.GetNowPlaying(), 8);
 			break;
 			case (properties.dble_click_action==4):
 				window.NotifyOthers('toggleLayoutMode',true);
@@ -650,10 +650,8 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
 
 function on_playback_new_track(metadb) {
 	if (metadb)	{
-		//current_played_track = metadb;
 		g_cover.getArtwork(metadb);
 		if(!animationTimer && properties.showVisualization>0) startAnimation();
-		//setRatingBtn(metadb);
 	}
 	window.Repaint();
 }
@@ -698,37 +696,37 @@ function on_notify_data(name, info) {
 		break;			
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
-			window.SetProperty("GLOBAL use ratings in file tags", globalProperties.use_ratings_file_tags);
+			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			window.Reload();
 			break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
-			window.SetProperty("GLOBAL colorsMainPanel", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "colorsControls":
 			globalProperties.colorsControls = info;
-			window.SetProperty("GLOBAL colorsControls", globalProperties.colorsMainPanel);
+			window.SetProperty("全局·控制栏配色", globalProperties.colorsControls);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "MemSolicitation":
 			globalProperties.mem_solicitation = info;
-			window.SetProperty("GLOBAL memory solicitation", globalProperties.mem_solicitation);
+			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
 			window.Reload();
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
-			window.SetProperty("GLOBAL thumbnail width max", globalProperties.thumbnailWidthMax);
+			window.SetProperty("全局·缩略图最大宽度", globalProperties.thumbnailWidthMax);
 		break;
 		case "coverCacheWidthMax":
 			globalProperties.coverCacheWidthMax = Number(info);
-			window.SetProperty("GLOBAL cover cache width max", globalProperties.coverCacheWidthMax);
+			window.SetProperty("全局·封面缓存最大宽度", globalProperties.coverCacheWidthMax);
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;
-			window.SetProperty("GLOBAL Font Adjustement", globalProperties.fontAdjustement);
+			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
 		break;
 		case "mouse_move":
 			last_mouse_move_notified = info;
@@ -747,7 +745,7 @@ function on_notify_data(name, info) {
 		break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;
-			window.SetProperty("COVER Disk Cache", globalProperties.enableDiskCache);
+			window.SetProperty("封面·磁盘缓存", globalProperties.enableDiskCache);
 			window.Repaint();
 		break;
 	   case "coverpanel_state_big":
@@ -762,17 +760,16 @@ function on_notify_data(name, info) {
 				g_cover.refresh(fb.GetNowPlaying(),true);
 		break;
 		case "cover_cache_finalized":
-			//g_image_cache.cachelist = cloneImgs(info);
 			window.Repaint();
 		break;
 		case "playRandom":
 			properties.random_function = info;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 			play_random(info);
 		break;
 		case "SetRandom":
 			properties.random_function = info;
-			window.SetProperty("Random function", properties.random_function);
+			window.SetProperty("随机函数", properties.random_function);
 		break;
 		case "main_panel_state":
 			if(main_panel_state!=info) {
@@ -815,37 +812,37 @@ function on_notify_data(name, info) {
 		break;
 		case "minimode_dark_theme":
 			properties.minimode_dark_theme=info;
-			window.SetProperty("MINIMODE dark theme", properties.minimode_dark_theme);
+			window.SetProperty("迷你模式·深色主题", properties.minimode_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "bio_stick_to_dark_theme":
 			properties.bio_stick_to_dark_theme = info;
-			window.SetProperty("BIO stick to dark theme", properties.bio_stick_to_dark_theme);
+			window.SetProperty("艺术家简介·跟随深色主题", properties.bio_stick_to_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme = info;
-			window.SetProperty("VISUALIZATION dark theme", properties.visualization_dark_theme);
+			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "library_dark_theme":
 			properties.library_dark_theme=info;
-			window.SetProperty("LIBRARY dark theme", properties.library_dark_theme);
+			window.SetProperty("媒体库·深色主题", properties.library_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "playlists_dark_theme":
 			properties.playlists_dark_theme=info;
-			window.SetProperty("PLAYLISTS dark theme", properties.playlists_dark_theme);
+			window.SetProperty("播放列表·深色主题", properties.playlists_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "bio_dark_theme":
 			properties.bio_dark_theme = info;
-			window.SetProperty("BIO dark theme", properties.bio_dark_theme);
+			window.SetProperty("艺术家简介·深色主题", properties.bio_dark_theme);
 			on_layout_change();
 			window.Repaint();
 		break;
@@ -853,7 +850,7 @@ function on_notify_data(name, info) {
 			Randomsetfocus = info;
 			if (!Randomsetfocus && properties.random_function >= 1000 && properties.random_function < 2001){
                 properties.random_function = '1_genre';
-                window.SetProperty("Random function", properties.random_function);
+                window.SetProperty("随机函数", properties.random_function);
 			}
 			window.Repaint();
 		break;
@@ -868,19 +865,19 @@ function on_notify_data(name, info) {
 		break;
 		case "controls_force_dark_layout":
 			properties.forcedarklayout = info;
-			window.SetProperty("_DISPLAY: force dark layout", properties.forcedarklayout);
+			window.SetProperty("显示·强制深色布局", properties.forcedarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "controls_main_dark_layout":
 			properties.maindarklayout = info;
-			window.SetProperty("_DISPLAY: Main layout:Dark", properties.maindarklayout);
+			window.SetProperty("显示·主布局深色", properties.maindarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
 		case "controls_mini_dark_layout":
 			properties.minidarklayout = info;
-			window.SetProperty("_DISPLAY: Mini layout:Dark", properties.minidarklayout);
+			window.SetProperty("显示·迷你布局深色", properties.minidarklayout);
 			on_layout_change();
 			window.Repaint();
 		break;
@@ -904,12 +901,6 @@ function on_notify_data(name, info) {
 				window.NotifyOthers("hereIsGenreList",JSON_stringify(g_genre_cache));
 			}
 		break;
-		/*case "rating_updated":
-			if(current_played_track && info.Compare(current_played_track)){
-				setRatingBtn(info);
-				window.Repaint();
-			}
-		break;*/
 	}
 }
 
@@ -967,7 +958,7 @@ function on_mouse_rbtn_up(x, y) {
 
 		let genrePopupMenu = window.CreatePopupMenu();
 		createGenrePopupMenu(false, -1, genrePopupMenu);
-		genrePopupMenu.AppendTo(main_menu, MF_STRING, "A specific genre");
+		genrePopupMenu.AppendTo(main_menu, MF_STRING, "指定流派");
 	}
 	
 	fb.IsPlaying && main_menu.AppendMenuItem(MF_STRING, 200, "属性");
@@ -997,42 +988,42 @@ function on_mouse_rbtn_up(x, y) {
         break;
       case 2:
         properties.random_function = '20_albums';
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(properties.random_function);
         break;
       case 3:
         properties.random_function = '200_tracks';
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(properties.random_function);
         break;
       case 4:
         properties.random_function = '1_genre';
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(properties.random_function);
         break;
       case 5:
         properties.random_function = '1_artist';
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(properties.random_function);
         break;
       case (idx >= 1000 && idx < 2001):
         properties.random_function = idx;
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(idx);
         break;
       case 7:
         properties.random_function = 'default';
-        window.SetProperty("Random function", properties.random_function);
+        window.SetProperty("随机函数", properties.random_function);
         window.NotifyOthers("SetRandom", properties.random_function);
         play_random(properties.random_function);
         break;
       case 6:
-        fb.RunContextCommandWithMetadb("打开所在文件夹", now_playing_track, 8);
+        runContextCommand("打开所在文件夹", now_playing_track, 8);
         break;
       case 8:
         g_cover.refresh(now_playing_track, true);
@@ -1075,7 +1066,7 @@ function on_mouse_rbtn_up(x, y) {
         draw_settings_menu(x,y);
         break;
       case 200:
-        fb.RunContextCommandWithMetadb("属性", fb.GetNowPlaying());
+        runContextCommand("属性", fb.GetNowPlaying());
       break;
 	  case (idx >= 100 && idx < 800):
 		Context.ExecuteByID(idx - 100);
@@ -1125,27 +1116,27 @@ function draw_settings_menu(x,y) {
       break;
     case 3:
       properties.dble_click_action = 0;
-      window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+      window.SetProperty("属性·双击动作", properties.dble_click_action);
       break;
     case 4:
       properties.dble_click_action = 1;
-      window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+      window.SetProperty("属性·双击动作", properties.dble_click_action);
       break;
     case 5:
       properties.dble_click_action = 2;
-      window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+      window.SetProperty("属性·双击动作", properties.dble_click_action);
       break;
     case 6:
       properties.dble_click_action = 3;
-      window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+      window.SetProperty("属性·双击动作", properties.dble_click_action);
       break;
     case 7:
       properties.dble_click_action = 4;
-      window.SetProperty("PROPERTY double click action", properties.dble_click_action);
+      window.SetProperty("属性·双击动作", properties.dble_click_action);
       break;
   case 8:
     properties.showVisualization === 0 ? (properties.showVisualization = 2) : (properties.showVisualization = 0);
-    window.SetProperty("Show Visualization", properties.showVisualization);
+    window.SetProperty("显示可视化", properties.showVisualization);
     resetAnimation();
     calculate_visu_margin_left();
     window.Repaint();
