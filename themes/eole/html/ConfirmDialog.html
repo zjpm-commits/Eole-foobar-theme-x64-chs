@@ -56,9 +56,9 @@
                 document.title = parsed_args[0];
 				window.div_text.insertAdjacentHTML('beforeend',parsed_args[1]);
                 var labelInnerHtml = window.btn_ok.innerHTML;
-                window.btn_ok.innerHTML = labelInnerHtml.replace(/No/g, parsed_args[2]);
+                window.btn_ok.innerHTML = labelInnerHtml.replace(/Yes/g, parsed_args[2]);
                 var labelInnerHtml = window.btn_cancel.innerHTML;
-                window.btn_cancel.innerHTML = labelInnerHtml.replace(/Yes/g, parsed_args[3]);				
+                window.btn_cancel.innerHTML = labelInnerHtml.replace(/No/g, parsed_args[3]);				
                 callback_fn = parsed_args[4];
             }
 

@@ -30,7 +30,7 @@
 			}
 			#inter_text{padding: 20px 25px;}
 			#size_container .col{display:inline-block; width:32%; padding: 0; font:caption; }
-			#size_container .col1{padding-right:4%;float:left}
+			#size_container .col1{padding-right:4%;float:left;width:58%}
 			#size_container .col2{padding-right:4%;width:100px;float:left}
 			#size_container .label{margin:0 0 10px;padding:0;}			
 			#size_container .label span{font-size:90%; color:#555}
@@ -56,16 +56,16 @@
         <div id="inter_text" class="container">inter_text</div>
         <div id="size_container">
 			<div class="col col1">
-				<div class="label">Thumbnails max width:<br/><span>for all panels, in pixels</span></div>
+				<div class="label">缩略图最大宽度：<br/><span>适用于所有面板，单位像素</span></div>
 			</div>	
 			<div class="col col2">			
 				<input id="coverCacheWidthMax" name="coverCacheWidthMax"></input>
-				<span class="radio_label">px</span>
+				<span class="radio_label">像素</span>
 			</div>				
 		</div>			
         <div id="bottom_msg" class="container"></div>		
 		<button id="btn_cancel" class="button_cancel">Cancel</button>		
-        <button class="button_ok" id="btn_ok">Validate</button>		
+        <button class="button_ok" id="btn_ok">确定</button>		
         <script>   
             // helpers
             function close_window() {

@@ -31,7 +31,7 @@
     addedRows_end_default: window.GetProperty("属性·末尾空行", 1),
     showPlaylistIcons: window.GetProperty("属性·播放列表名前显示图标", true),
     sortAlphabetically: window.GetProperty("属性·播放列表按字母排序", false),	
-    filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", -1),	
+    filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", 0),	
 	panelFontAdjustement: -1,
 	emphasisOnActive: false,
 	newly_added : "最近添加",

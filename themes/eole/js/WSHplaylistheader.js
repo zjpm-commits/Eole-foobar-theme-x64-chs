@@ -6,7 +6,7 @@
     filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", -1),		
 	panelFontAdjustement: -1,
 	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
-	showwallpaper: window.GetProperty("显示·显示壁纸", false),
+	showwallpaper: window.GetProperty("显示·显示壁纸", true),
 	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
 	wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
 	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
@@ -79,7 +79,7 @@ buttons = {
     Settings: new SimpleButton(0, 8, 21, 21, "Settings", "设置...", function () {
         if(plman.PlaylistItemCount(plman.ActivePlaylist)>0) draw_menu(buttons.Settings.x+25,buttons.Settings.y+25);
     },false,settings_off,settings_hover,ButtonStates.normal),
-    filtersToggle: new SimpleButton(18, 8, 50, 21, "filtersToggle", "扩展筛选器", function () {
+    filtersToggle: new SimpleButton(18, 8, 50, 21, "filtersToggle", "加宽筛选器", function () {
 		if(filters_panel_state.isMaximumValue()) filters_panel_state.decrement(1);
 		else filters_panel_state.increment(1);
 		positionButtons();

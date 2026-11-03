@@ -14,7 +14,7 @@
     headerbar_height:33,
     TagSwitcherBarHeight: 40,
     TagSwitcherBarHeight_old: 30,		
-    panelFontAdjustement: -1,
+    panelFontAdjustement: 0,
     showLibraryTreeSwitch:true,
     DropInplaylist: true
 };

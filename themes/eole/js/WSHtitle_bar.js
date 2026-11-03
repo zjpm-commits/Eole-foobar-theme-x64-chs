@@ -1,11 +1,39 @@
 ﻿// Restore Eole header controls hidden in the original FCL preset.
+// ---------------------------------------------------------------------------
+// 这一段原来是用英文键写进去的：["_DISPLAY: show light switch btn", ...]，
+// 所以面板的「属性」页里会露出一排英文条目。
+// 那几个键在脚本里从来没被读取过 —— 真正读的是下面 properties 里的中文键
+// （显示·显示明暗切换按钮、显示·显示全屏按钮 …），英文键只是"把 FCL 预设里
+// 关掉的顶栏按钮重新打开一次"的临时载体，建完就成了没人用的残留。
+// 现在改成直接写中文键，并把老配置里已经存在的英文键搬走、删除。
+var HEADER_BTN_KEYS = [
+    ["显示·显示明暗切换按钮", "_DISPLAY: show light switch btn"],
+    ["显示·显示全屏按钮",     "_DISPLAY: show fullscreen btn"],
+    ["显示·显示布局配置按钮", "_DISPLAY: show configure layout btn"],
+    ["显示·显示右侧栏按钮",   "_DISPLAY: show right sidebar btn"],
+    ["显示·显示正在播放按钮", "_DISPLAY: show now playing btn"]
+];
+
+// 一次性恢复（行为不变：老配置里这个开关已经是 true，不会再进来）
 if (!window.GetProperty("Eole 标题栏控制项 v1", false)) {
-    ["_DISPLAY: show light switch btn", "_DISPLAY: show fullscreen btn",
-     "_DISPLAY: show configure layout btn", "_DISPLAY: show right sidebar btn",
-     "_DISPLAY: show now playing btn"].forEach(function(key) { window.SetProperty(key, true); });
+    HEADER_BTN_KEYS.forEach(function (pair) { window.SetProperty(pair[0], true); });
     window.SetProperty("显示·迷你主菜单按钮", false);
     window.SetProperty("Eole 标题栏控制项 v1", true);
 }
+
+// 清掉残留的英文键。这里不能套在上面那个一次性开关里 —— 老配置里这些英文键
+// 早就存在了，一次性开关也早就置了 true，必须每次启动都清一遍。
+// 搬运规则和 JStheme_common.js 的 KEYPAIRS 一致：以中文键为准，中文键没值才接过来。
+// 包 try/catch：清理失败不该让整个标题栏不加载，下次启动会重试。
+try {
+    HEADER_BTN_KEYS.forEach(function (pair) {
+        var oldVal = window.GetProperty(pair[1], null);
+        if (oldVal === null || oldVal === undefined) return;          // 英文键不存在，跳过
+        var cur = window.GetProperty(pair[0], null);
+        if (cur === null || cur === undefined) window.SetProperty(pair[0], oldVal);
+        window.SetProperty(pair[1], null);                            // 删除英文键
+    });
+} catch (e) {}
 var colors = {};
 
 var properties = {
@@ -14,9 +42,6 @@ var properties = {
 	background_color: window.GetProperty("背景颜色", "255-255-255"),
 	fullMode_savedwidth: window.GetProperty("完整模式·保存宽度", 1100),
 	fullMode_pmanagerheight: window.GetProperty("完整模式·播放列表管理器保存高度", 820),
-	// 迷你模式的窗口宽度。切到迷你布局时主窗口会被收窄到这个值，高度保持不变。
-	// 默认 300px；想让迷你条更宽/更窄就改这里的 300（改完记得删掉一次
-	// foobar2000 里标题栏面板已存的"迷你模式·保存宽度"属性，否则旧值优先）。
 	miniMode_savedwidth: window.GetProperty("迷你模式·保存宽度", 300),
 	miniMode_playlistheight: window.GetProperty("迷你模式·播放列表保存高度", 380),
 	autosearch: window.GetProperty("显示·自动搜索", true),
@@ -959,33 +984,41 @@ function on_size(w, h) {
 }
 // ---------------------------------------------------------------------------
 // 伪标题栏（Pseudo Caption）：鼠标在这块矩形里按下 = 拖窗口，双击 = 最大化。
-// 它由 fb.Window.SetPseudoCaption(左, 上, 宽, 高) 一次性划出一块矩形，划进去的
-// 地方**鼠标消息不再交给脚本**（相当于系统标题栏），所以：
+// 它由 fb.Window.SetPseudoCaption(左, 上, 宽, 高) 划出一块矩形，划进去的地方
+// **鼠标消息不再交给脚本**（相当于系统标题栏），所以：
 //
-//   1) 这块矩形绝对不能和按钮重叠，否则按钮点了没反应（变成拖窗口）；
-//   2) 一次只能设一块矩形，没法"第一行整条"和"第二行中间空档"各来一块。
+//   1) 矩形绝对不能和按钮重叠，否则按钮点了没反应（变成拖窗口）；
+//   2) 一次只能设一块矩形 —— 这条限制绕不开，但可以"换着用"：
+//      鼠标在面板里移动时消息还在脚本手里，这时判断它落在哪块空白上，
+//      就把伪标题栏挪到哪块。鼠标一进矩形，消息就交给系统了，拖动过程中
+//      不会被自己改掉；挪出来又回到脚本手里，重新判定。
 //
 // 标准两行模式（面板高 64）的实际内容分布：
 //     y 0 ~ 30   第一行：设置按钮（左）、歌名文字、窗口按钮（右）
 //     y 31 ~ 63  第二行：主面板按钮（媒体库/播放列表/正在播放/洛雪音乐，x 从 17 起）、
 //                        右侧小图标按钮、搜索框（marginTop = 35）
 //
-// 于是有两种划法，二选一（受第 2 条限制）：
+// 于是有两块合法空白（都不碰任何按钮）：
 //
-//   A. 第一行整条（PSEUDO_CAPTION_USE_GAP = false）
-//      y 4 ~ 31，从设置按钮右沿到窗口按钮左沿。最宽，但只有 27px 高。
+//   ROW1  第一行整条：y 4 ~ 31，从设置按钮右沿到窗口按钮左沿。
+//         歌名文字压在里面不影响 —— 文字本身没有点击行为，双击还能顺带最大化。
 //
-//   B. 第二行中间的空档（PSEUDO_CAPTION_USE_GAP = true，默认）
-//      横向让开左边的主面板按钮、右边的小图标按钮 / 搜索框，纵向从 y 4 一直
-//      到面板底部 —— 也就是截图里红框那一条，上下贯通。面积和 A 差不多，但
-//      它是"整条高度"，鼠标随手一放就能拖。
-//      代价：第一行左侧（歌名文字那一块）不再是拖动区，想拖窗口得把鼠标挪到
-//      空档里。空档宽度不足 80px（窗口很窄）时会自动退回 A。
+//   GAP   第二行中间的空档：横向让开左边的主面板按钮、右边的小图标按钮 / 搜索框，
+//         纵向从 y 4 一直下到面板底部（和第一行的空白在 x 上是重叠的）。
+//
+// 默认行为：鼠标移到哪块空白就把哪块设成拖动区；两块都不在鼠标下时保持原样，
+// 这样按钮区域任何时候都不会被矩形盖住。窗口尺寸变化时先按 GAP 落一次位。
+// 把 PSEUDO_CAPTION_FOLLOW_CURSOR 设为 false，就退回"只用 GAP"的老行为。
 // ---------------------------------------------------------------------------
 var PSEUDO_CAPTION_TOP = 4;              // 上边让 4px 给窗口上边缘的缩放热区，别设 0
-var PSEUDO_CAPTION_ROW1_H = 27;          // A 方案的高度（4 + 27 = 31，正好到第二行上沿）
-var PSEUDO_CAPTION_USE_GAP = true;       // true = 用红框那条上下贯通的空档
-var PSEUDO_CAPTION_GAP_MIN_WIDTH = 80;   // 空档窄于这个值就退回 A 方案
+var PSEUDO_CAPTION_ROW1_H = 27;          // ROW1 的高度（4 + 27 = 31，正好到第二行上沿）
+var PSEUDO_CAPTION_USE_GAP = true;       // false = 只用 ROW1，不启用 GAP
+var PSEUDO_CAPTION_GAP_MIN_WIDTH = 80;   // GAP 窄于这个值就不启用，回落 ROW1
+var PSEUDO_CAPTION_FOLLOW_CURSOR = true; // true = 鼠标移到哪块空白就用哪块
+
+var PC_ZONE_NONE = 0, PC_ZONE_ROW1 = 1, PC_ZONE_GAP = 2;
+var g_pc_zone = PC_ZONE_NONE;
+var g_pc_key = "";                       // 上一次真正设进去的矩形，用来去重
 
 // 算出"第二行中间的空档"：左边让开主面板按钮，右边让开小图标按钮 / 搜索框。
 // 返回 {x, w}；算不出来（面板还没初始化）或左右撞上了就返回 null。
@@ -1007,31 +1040,71 @@ function pseudoCaptionGap(){
 	return {x: l, w: r - l};
 }
 
+// ROW1：第一行整条，设置按钮右沿 → 窗口按钮左沿
+function pseudoCaptionRow1(){
+	var x, r;
+	try {
+		x = topleft_btns.getWidth();
+		r = ww - window_btns.getWidth();
+	} catch (e) { return null; }
+	if(!(r > x)) return null;
+	return {x: x, y: PSEUDO_CAPTION_TOP, w: r - x, h: PSEUDO_CAPTION_ROW1_H};
+}
+
+// GAP：中间那条上下贯通的空档
+function pseudoCaptionGapRect(){
+	if(!PSEUDO_CAPTION_USE_GAP) return null;
+	var gap = pseudoCaptionGap();
+	if(!gap || gap.w < PSEUDO_CAPTION_GAP_MIN_WIDTH) return null;
+	return {x: gap.x, y: PSEUDO_CAPTION_TOP, w: gap.w,
+		h: Math.max(PSEUDO_CAPTION_ROW1_H, wh - PSEUDO_CAPTION_TOP)};
+}
+
+function pcHit(r, x, y){
+	return !!r && x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+}
+
+// 真正下发给 uihacks。同一个矩形不重复调用 —— SetPseudoCaption 内部每次都会写
+// fb.Window.FrameStyle，反复写等于反复重算窗口框架，没必要。
+function pcApply(zone, r){
+	if(!r) r = {x: 0, y: 0, w: 0, h: 0};
+	var key = zone + ":" + Math.round(r.x) + "," + Math.round(r.y) + "," +
+		Math.round(r.w) + "," + Math.round(r.h);
+	if(key === g_pc_key) return;
+	g_pc_key = key;
+	g_pc_zone = zone;
+	try { g_uihacks.SetPseudoCaption(r.x, r.y, Math.max(0, r.w), r.h); } catch (e) {}
+}
+
+// 鼠标移动时调用：命中哪块空白就把伪标题栏挪过去，都不命中就保持不动。
+function pseudoCaptionFollow(x, y){
+	if(!PSEUDO_CAPTION_FOLLOW_CURSOR) return;
+	if(!layout_state.isEqual(0) || compact_titlebar.isActive()) return;
+	var row1 = pseudoCaptionRow1();
+	if(pcHit(row1, x, y)) { pcApply(PC_ZONE_ROW1, row1); return; }
+	var gap = pseudoCaptionGapRect();
+	if(pcHit(gap, x, y)) { pcApply(PC_ZONE_GAP, gap); return; }
+}
+
 function SetPseudoCaption(){
+	g_pc_key = "";                       // 尺寸变了，强制重设一次
 	if(layout_state.isEqual(0)) {
 		if(!compact_titlebar.isActive()){
-			// 标准两行模式：默认用"空档竖条"，太窄或关掉时用第一行整条
-			var x = topleft_btns.getWidth();
-			var w = Math.max(0, ww - window_btns.getWidth() - x);
-			var y = PSEUDO_CAPTION_TOP, h = PSEUDO_CAPTION_ROW1_H;
-			if(PSEUDO_CAPTION_USE_GAP){
-				var gap = pseudoCaptionGap();
-				if(gap && gap.w >= PSEUDO_CAPTION_GAP_MIN_WIDTH){
-					x = gap.x;
-					w = gap.w;
-					h = Math.max(h, wh - y);          // 一直下到面板底部
-				}
-			}
-			g_uihacks.SetPseudoCaption(x, y, Math.max(0, w), h);
+			// 标准两行模式：先按 GAP 落位（和以前一样），之后跟着鼠标换
+			var gap = pseudoCaptionGapRect();
+			if(gap) pcApply(PC_ZONE_GAP, gap);
+			else pcApply(PC_ZONE_ROW1, pseudoCaptionRow1());
 		} else {
 			// 单行紧凑模式：让开左边按钮组和右边窗口按钮
 			// （42 = 50px 大紧凑模式留 8px 下边，28 = 36px 紧凑模式整条）
 			if(g_searchbox.hide) {
 				var compact_btns_w = compact_btns.getWidth();
 				var window_btns_w = window_btns.getWidth();
+				g_pc_zone = PC_ZONE_NONE;
 				g_uihacks.SetPseudoCaption(compact_btns_w, 8, ww - compact_btns_w - window_btns_w,
 					(compact_titlebar.isEqual(2)?42:28));
 			} else {
+				g_pc_zone = PC_ZONE_NONE;
 				g_uihacks.SetPseudoCaption(0, 8, 0, 28);
 			}
 		}
@@ -1039,6 +1112,7 @@ function SetPseudoCaption(){
 		// 迷你模式：单行，28 已经等于该行高度
 		var window_btns_w = window_btns.getWidth();
 		var topleft_btns_w = topleft_btns.getWidth();
+		g_pc_zone = PC_ZONE_NONE;
 		g_uihacks.SetPseudoCaption(topleft_btns_w, 8, ww - window_btns_w - topleft_btns_w, 28);
 	}
 }
@@ -1106,6 +1180,8 @@ function on_playback_stop(reason) {
 
 function on_mouse_move(x,y,m){
 	if(g_cursor.x==x && g_cursor.y==y) return;
+	// 鼠标还在脚本手里：顺手决定这一下按在空白处算不算拖窗口（见伪标题栏那段）
+	pseudoCaptionFollow(x, y);
 	g_cursor.onMouse("move", x, y, m);
     g_searchbox.on_mouse("move", x, y);
 	topleft_btns.on_mouse("move",x,y);
@@ -2017,7 +2093,7 @@ function draw_main_menu(x,y){
 	control_bar.AppendMenuItem(MF_STRING, 5105, "颜色自适应主面板");
 	control_bar.CheckMenuItem(5101+globalProperties.colorsControls, true);
 
-	colors_menu.AppendMenuItem(MF_STRING, 5301, "跟随 CUI 深色/浅色模式");
+	colors_menu.AppendMenuItem(MF_STRING, 5301, "跟随UI深浅色");
 	colors_menu.CheckMenuItem(5301, properties.darklayout_follow_cui);
 
 	skin_settings_menu.AppendMenuSeparator();
@@ -3151,7 +3227,7 @@ on_init();
 
 function on_colours_changed() {
 	if (!properties.darklayout_follow_cui) return;
-    var col = window.GetColourCUI(3);
+    var col = (window.InstanceType === 1) ? window.GetColourDUI(1) : window.GetColourCUI(3);
     var r = (col >> 16) & 0xFF;
     var g = (col >> 8) & 0xFF;
     var b = col & 0xFF;

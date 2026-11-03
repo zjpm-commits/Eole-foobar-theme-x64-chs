@@ -162,19 +162,28 @@ var timers = [];
         }
 
         // ---------- 2. 旧英文键 -> 新中文键 迁移 ----------
-        if (!readProp("_属性名已汉化迁移")) {
-            for (var i = 0; i < KEYPAIRS.length; i++) {
-                var p = KEYPAIRS[i].split("\u0001");
-                var nk = p[0], ok = p[1];
-                var old_val = readProp(ok);
-                if (old_val === undefined || old_val === null) continue;   // 旧键不存在
-                var cur = readProp(nk);
-                if (cur !== undefined && cur !== null) continue;            // 新键已有值，以新键为准
-                window.SetProperty(nk, old_val);
-                window.SetProperty(ok, null);                               // 旧键删除，面板保持全中文
+        // 这一段原来有两个毛病，导致属性面板里总会残留几条英文：
+        //   a) 外面套了 if (!readProp("_属性名已汉化迁移")) —— 只跑一次。可是英文键
+        //      会在迁移之后被重新创建（比如 WSHtitle_bar.js 顶部那段恢复代码），
+        //      标记一旦置了 true，后来冒出来的英文键就再也没人清。
+        //   b) 新键已有值时直接 continue，旧键既不搬运也不删除。而带默认值的
+        //      window.GetProperty("显示·xxx", true) 在属性不存在时会把默认值写进
+        //      属性表，等于新键"总是已有值"，旧键就被永久留在那里。
+        // 现在改成：每次启动都扫一遍（300 多次 GetProperty，无副作用、不创建属性），
+        // 发现旧键就处理；新键已有值时以新键为准，但旧键照样删除。
+        for (var i = 0; i < KEYPAIRS.length; i++) {
+            var p = KEYPAIRS[i].split("\u0001");
+            var nk = p[0], ok = p[1];
+            var old_val = readProp(ok);
+            if (old_val === undefined || old_val === null) continue;        // 旧键不存在
+            var cur = readProp(nk);
+            if (cur === undefined || cur === null) {
+                window.SetProperty(nk, old_val);                            // 新键没值，接过来
             }
-            window.SetProperty("_属性名已汉化迁移", true);
+            window.SetProperty(ok, null);                                   // 旧键一律删除，面板保持全中文
         }
+        // 老版本留下的标记已无用（不再当守卫用），顺手清掉，属性表里少一条
+        if (readProp("_属性名已汉化迁移") !== undefined) window.SetProperty("_属性名已汉化迁移", null);
     } catch (e) {
         // 任何异常都不应阻断主题加载，下次启动会重试
     }
@@ -1193,6 +1202,63 @@ oUIHacks = function () {
 };
 
 var g_uihacks = new oUIHacks();
+
+// ═══════════════════════════════════════════════════════════════════════
+// DUI 菜单栏 / 状态栏自动隐藏
+// -----------------------------------------------------------------------
+// DUI 的菜单栏和状态栏是 foo_ui_std 自己的 UI 元素，CUI 下没有这两个东西
+// （CUI 的菜单挂在工具栏里，由 foo_ui_columns 自己画）。JSplitter 的
+// fb.Window 直接给了两个属性管它们：
+//     fb.Window.MainMenuHidden  = true;    // 隐藏主菜单栏
+//     fb.Window.StatusBarHidden = true;    // 隐藏状态栏
+// 文档注明这两个属性「仅限 DUI，在 Columns UI 下读写都会抛 Error」，
+// 所以必须先判 window.InstanceType，否则 CUI 下每次加载都会报一次错。
+//
+// 为什么不用 foo_openhacks / foo_ui_hacks 当主方案：
+//   JSplitter 文档对 fb.Window 明确写着「多数方法与提供类似功能的插件不兼容：
+//   foo_ui_wizard、foo_openhacks、foo_ui_hacks，使用前需先卸载这些组件」。
+//   原生属性够用就不该再挂一个，两套逻辑同时改窗口状态正是菜单栏
+//   一会儿没了、一会儿又冒出来的典型原因。所以这里原生优先，openhacks 只作兜底。
+//
+// 为什么每个面板都设一遍：
+//   fb.Window 的这几个 UI 设置是「按面板跟踪」的 —— 最近一次显式赋值的面板
+//   决定全局生效值，该面板一卸载，请求就撤销、菜单栏会自己回来。公共库是被
+//   每个面板各自 include 的，谁加载谁就设一遍，等于让所有活着的面板一起背书。
+//   启动阶段 DUI 还会重建一次菜单栏，所以再补两次延迟赋值。
+// ═══════════════════════════════════════════════════════════════════════
+var g_dui_bar_hack = null;      // openhacks 兜底实例（原生属性不可用时才建）
+
+function hideDuiBars() {
+    if (window.InstanceType !== 1) return;                  // 只在 DUI 下做，CUI 下会抛 Error
+
+    // —— 首选：JSplitter 原生属性 ——
+    var done = false;
+    try {
+        if (fb.Window) {
+            fb.Window.MainMenuHidden = true;
+            fb.Window.StatusBarHidden = true;
+            done = (fb.Window.MainMenuHidden === true);     // 读回来确认真的生效，不能只看赋值没报错
+        }
+    } catch (e) { done = false; }
+
+    // —— 兜底：老版本 JSplitter 没有上面两个属性，改用 openhacks 系组件 ——
+    if (!done) {
+        try {
+            if (!g_dui_bar_hack) {
+                if (utils.CheckComponent("foo_openhacks_mod")) g_dui_bar_hack = new ActiveXObject("OpenHacksMod");
+                else if (utils.CheckComponent("foo_openhacks")) g_dui_bar_hack = new ActiveXObject("OpenHacks");
+            }
+            if (g_dui_bar_hack) {
+                g_dui_bar_hack.MenuBarVisible = false;
+                g_dui_bar_hack.StatusBarVisible = false;
+            }
+        } catch (e) {}
+    }
+}
+
+hideDuiBars();
+window.SetTimeout(hideDuiBars, 300);                        // 等 DUI 把第一次布局做完
+window.SetTimeout(hideDuiBars, 1500);                       // 再兜一次：某些配置下 DUI 会重建菜单栏
 
 function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 	this.resizing_left = typeof resizing_left !== 'undefined' ? resizing_left : false;
@@ -2866,33 +2932,16 @@ function get_font() {
 	};
     // tweaks to fix a problem with WSH Panel Mod on Font object Name property
     try {
-		if (g_hires_display && default_font && default_font.Name) {
-			// ---------- 4K 高分屏：使用系统默认字体样式 ----------
-			// 字体名直接取 foobar2000 的界面字体，粗细/斜体改用 GDI+ 样式位，
-			// 因为系统默认字体通常没有 Semibold / Italic 独立字形名。
-			g_fname = default_font.Name;
-			g_fname_light = default_font.Name;
-			g_fname_light_italic = default_font.Name;
-			g_fname_italic = default_font.Name;
-			g_fname_semibold = default_font.Name;
-			g_fsize = default_font.Size;
-			g_fstyle = 0;
-			g_fstyle_light = 0;
-			g_fstyle_bold = 1;
-			g_fstyle_italic = 2;
-		} else {
-			// ---------- 普通屏：脚本自定义字体 ----------
-			g_fname = "Segoe UI";
-			g_fname_light = "Segoe UI";
-			g_fname_light_italic = "Segoe UI";
-			g_fname_italic = "Segoe UI";
-			g_fname_semibold = "Segoe UI";
-			g_fsize = default_font.Size;
-			g_fstyle = 0;
-			g_fstyle_light = 0;
-			g_fstyle_bold = 0;
-			g_fstyle_italic = 0;
-		}
+		g_fname = "Microsoft YaHei UI";
+		g_fname_light = "Microsoft YaHei UI Light";
+		g_fname_light_italic = "Microsoft YaHei UI Light";
+		g_fname_italic = "Microsoft YaHei UI";
+		g_fname_semibold = "Microsoft YaHei UI Bold";
+		g_fsize = default_font.Size;
+		g_fstyle = 0;
+		g_fstyle_light = 0;
+		g_fstyle_bold = 1;
+		g_fstyle_italic = 2;
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
@@ -2900,7 +2949,7 @@ function get_font() {
         g_fname_light_italic = "arial";
         g_fname_italic = "arial";
         g_fname_semibold = "arial";
-        g_fsize = 12;
+        g_fsize = 14;
         g_fstyle = 0;
         g_fstyle_light = 0;
         g_fstyle_bold = 0;
