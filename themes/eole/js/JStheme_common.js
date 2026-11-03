@@ -2941,7 +2941,7 @@ function get_font() {
 		g_fstyle = 0;
 		g_fstyle_light = 0;
 		g_fstyle_bold = 1;
-		g_fstyle_italic = 2;
+		g_fstyle_italic = 0;
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
