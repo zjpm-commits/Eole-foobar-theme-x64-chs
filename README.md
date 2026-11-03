@@ -17,13 +17,13 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 ## 🛠️ 依赖环境
 
 运行此主题需要以下组件：
-- foobar2000 x64 Asion汉化版 (x64 版本)
-- foo_uie_jsplitter (v4.3.4版)
-- 注意：无需再安装 foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
+- foobar2000 x64 v2.25.10（Asion 汉化版）
+- foo_uie_jsplitter v4.3.4版（智享阁汉化版）
+- 无需再安装：foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
 
 其他运行所需脚本或程序：
-- **Lxbox（洛雪在线音源）脚本，附件中已包含。
-- **tools为去除win11主题边框强调色边框的程序。
+- Lxbox（洛雪在线音源）脚本，附件中已包含。
+- tools为去除win11主题边框强调色边框的程序。
 
 ## 🚀 安装说明
 
@@ -37,13 +37,13 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 本项目对原版 JS 脚本进行了诸多针对性修改，主要集中在以下文件：
 
-- 原来的可视化界面改为洛雪在线音源，避免多软件频繁切换；
+- 原来的可视化界面改为洛雪在线音源；
 - 修复歌词界面不跟随主题设置问题；
 - 优化标题栏鼠标拖放区域覆盖面；
 - 修复面板滚动卡顿，优化边界计算；
 - 简化和丢弃部分未使用的代码；
 - 增加4K屏适配，标题栏右键—设置—高分屏自动适配；
-- 字体调整为更利于中文显示的Microsoft YaHei UI (Light)；
+- 字体调整为更利于中文显示的Microsoft YaHei UI；
 - 面板属性改为中文以便个性化设置看不懂；
 
 ## 🙏 致谢
