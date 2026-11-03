@@ -17,10 +17,9 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 ## 🛠️ 依赖环境
 
 运行此主题需要以下组件：
-- **foobar2000 x64 Asion汉化版 (x64 版本)
-- **foo_ui_columns** (CUI 界面组件)
-- **foo_uie_jsplitter** (v4.6 及以上版本)
-- *注意：无需再安装 foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。*
+- *foobar2000 x64 Asion汉化版 (x64 版本)
+- *foo_uie_jsplitter (v4.3.4版)
+- *注意：无需再安装 foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
 
 其他运行所需脚本或程序：
 - **Lxbox（洛雪在线音源）脚本，附件中已包含。
@@ -28,24 +27,24 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 ## 🚀 安装与使用
 
-1、确保你已经安装了上述依赖组件。
-2、将仓库中的 `themes` 、 `Lxbox` 文件夹完整复制到你的 foobar2000 配置目录下（通常是 `profile/`）。
-3、在 foobar2000 中导入 `DUI_eole_x64_chs.fth` 配置文件（位于 `themes/eole/` 目录下）。
-4.、如果默认字体偏小，按住 `Ctrl + 鼠标滚轮` 进行全局缩放（ `shift+ 鼠标滚轮` 实时调整文字行间距）。
-5、eole-settings为我个人的设置配置文件，如果喜欢可以覆盖使用。
+- *确保你已经安装了上述依赖组件。
+- *将仓库中的 `themes` 、 `Lxbox` 文件夹完整复制到你的 foobar2000 配置目录下（通常是 `profile/`）。
+- *在 foobar2000 中导入 `DUI_eole_x64_chs.fth` 配置文件（位于 `themes/eole/` 目录下）。
+- *如果默认字体偏小，按住 `Ctrl + 鼠标滚轮` 进行全局缩放（ `shift+ 鼠标滚轮` 实时调整文字行间距）。
+- *eole-settings为我个人的设置配置文件，如果喜欢可以覆盖使用。
 
 ## 🔧 核心修改说明（开发者参考）
 
 本项目对原版 JS 脚本进行了诸多针对性修改，主要集中在以下文件：
 
- 1、原来的可视化界面改为洛雪在线音源，避免多软件频繁切换；
- 2、修复歌词界面不跟随主题设置问题；
- 3、优化标题栏鼠标拖放区域覆盖面；
- 4、修复面板滚动卡顿，优化边界计算；
- 5、简化和丢弃部分未使用的代码；
- 6、增加4K屏适配，标题栏右键—设置—高分屏自动适配；
- 7、字体调整为更利于中文显示的Microsoft YaHei UI (Light)；
- 8、面板属性改为中文以便个性化设置看不懂；
+- *原来的可视化界面改为洛雪在线音源，避免多软件频繁切换；
+- *修复歌词界面不跟随主题设置问题；
+- *优化标题栏鼠标拖放区域覆盖面；
+- *修复面板滚动卡顿，优化边界计算；
+- *简化和丢弃部分未使用的代码；
+- *增加4K屏适配，标题栏右键—设置—高分屏自动适配；
+- *字体调整为更利于中文显示的Microsoft YaHei UI (Light)；
+- *面板属性改为中文以便个性化设置看不懂；
 
 ## 🙏 致谢
 - 感谢 **Ottodix** 及所有贡献者开发了如此精美的 Eole 主题。
