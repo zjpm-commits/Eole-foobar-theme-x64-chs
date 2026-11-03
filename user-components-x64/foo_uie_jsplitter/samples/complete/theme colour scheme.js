@@ -17,13 +17,13 @@ const SMALL_FONT = gdi.Font('Segoe UI', 12, 0) || FONT;
 const FALLBACK_BACKGROUND = 0xFF181818;
 const FALLBACK_TEXT = 0xFFE8E8E8;
 const ROWS = [
-    ['Sample Artist', 'Prelude'],
-    ['Sample Artist', 'Nocturne'],
-    ['Sample Artist', 'Intermezzo'],
-    ['Sample Artist', 'Adagio'],
-    ['Sample Artist', 'Allegro'],
-    ['Sample Artist', 'Finale'],
-    ['Sample Artist', 'Encore']
+    ['示例艺人', '前奏曲'],
+    ['示例艺人', '夜曲'],
+    ['示例艺人', '间奏曲'],
+    ['示例艺人', '柔板'],
+    ['示例艺人', '快板'],
+    ['示例艺人', '终曲'],
+    ['示例艺人', '返场曲']
 ];
 
 let artwork = null;
@@ -75,15 +75,13 @@ function colours() {
     };
 }
 
-// playingBackgroundColor contains the Playing accent RGB together with the
-// recommended alpha for the row highlight. Reuse the same RGB at full opacity
-// when a solid Playing indicator is needed.
+// playingBackgroundColor 包含 Playing 强调色 RGB 以及推荐的行高亮 alpha。
+// 需要实心 Playing 指示条时，复用同一 RGB 并使用完全不透明度。
 function opaque(color) {
     return 0xFF000000 | (color & 0x00FFFFFF);
 }
 
-// Same muted text treatment used by Materialize Playlist: preserve the selected
-// Text RGB and reduce only its alpha.
+// 与 Materialize Playlist 相同的暗淡文字处理方式：保留所选文字 RGB，仅降低其 alpha。
 function mutedText(color, strength = 0.40) {
     const sourceAlpha = (color >>> 24) & 0xFF;
     const alpha = Math.max(0, Math.min(255, Math.round(sourceAlpha * strength)));
@@ -156,14 +154,14 @@ function drawLegend(gr, x, y, w, c) {
     const rowH = 22;
     const labelX = x + 60;
     const items = [
-        ['background', 'Background'],
-        ['text', 'Text'],
-        ['playing', 'Playing background + accent'],
-        ['focus', 'Focus'],
-        ['selection', 'Selection']
+        ['background', '背景'],
+        ['text', '文本'],
+        ['playing', '播放背景 + 强调色'],
+        ['focus', '焦点'],
+        ['selection', '选中']
     ];
 
-    gr.DrawText('Legend', FONT_BOLD, c.textColor, x, y, w, titleH,
+    gr.DrawText('图例', FONT_BOLD, c.textColor, x, y, w, titleH,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
     for (let i = 0; i < items.length; i++) {

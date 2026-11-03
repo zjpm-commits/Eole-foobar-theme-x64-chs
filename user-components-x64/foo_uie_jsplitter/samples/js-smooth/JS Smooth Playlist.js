@@ -1,33 +1,33 @@
-window.DefinePanel("JS Smooth Playlist", { author : "Br3tt aka Falstaff", features : { drag_n_drop : true }});
+﻿window.DefinePanel("JS Smooth 播放列表", { author : "Br3tt aka Falstaff", features : { drag_n_drop : true }});
 include(fb.ComponentPath + "samples\\js-smooth\\js\\JScommon.js");
 include(fb.ComponentPath + "samples\\js-smooth\\js\\JSinputbox.js");
 include(fb.ComponentPath + "samples\\js-smooth\\js\\jssp.js");
 
 /*
-[Features]
- * Groups (collpase or expand, add extra lines, ...)
- * True Smooth Scrolling
- * Screen Touch support
- * "in track" rating system
- * Playlist Header at Top (can be hidden with CTRL+T)
- * Vertical Scrollbar (can be hidden with CTRL+B)
- * Custom or Cover art Wallpaper as background supported (including a blur effect)
- * Collapsable playlists panel to easily drag'n drop tracks to a another playlist
- * Windows scaling compliant (you can adjust zoom size in real time with CTRL+mousewheel)
- * Custom Panel Colors (in Properties window)
- * ... and more!
+[功能]
+ * 分组（折叠或展开、添加额外行……）
+ * 真正的平滑滚动
+ * 支持触屏
+ * "音轨内"评级系统
+ * 顶部播放列表表头（可用 CTRL+T 隐藏）
+ * 垂直滚动条（可用 CTRL+B 隐藏）
+ * 支持自定义或封面艺术壁纸作为背景（含模糊效果）
+ * 可折叠的播放列表面板，便于将曲目拖放到另一播放列表
+ * 兼容 Windows 缩放（可用 CTRL+鼠标滚轮实时调整缩放大小）
+ * 自定义面板颜色（在属性窗口中）
+ * ……以及更多！
 
-[Tips]
- * Hold SHIFT key + right click to display Configure script and panel Properties entries
- * Change colors and fonts in foobar2000 Preferences > DefaultUI or ColumsUI
- * Some minor settings can be changed in window Properties (SHIFT + right click > Properties), use it carefully
- * Use Keyboard for "jumping" to an artist in the playlist (incremental search feature like in ELPlaylist) or to navigate in playlist
- * Right Click on items for contextual menu for the selection
- * CTRL+T to toggle the columns toolbar
- * CTRL+B to toggle the scrollbar
- * Hold CTRL + Mouse Wheel to scale elements (useful for 'retina' screens)
- * Hold SHIFT + Mouse Wheel to scale group header and so the cover art size
- * F3 key to show now playing track
- * F5 key to refresh covers
- * ... etc
+[提示]
+ * 按住 SHIFT 键 + 右键，可显示"配置脚本"和"面板属性"项
+ * 在 foobar2000 首选项 > DefaultUI 或 ColumnsUI 中更改颜色和字体
+ * 部分次要设置可在窗口属性中更改（SHIFT + 右键 > 属性），请谨慎使用
+ * 使用键盘在播放列表中"跳转到"某个艺术家（类似 ELPlaylist 的增量搜索功能），或在播放列表中导航
+ * 右键点击项目，显示针对所选内容的上下文菜单
+ * CTRL+T 切换列工具栏
+ * CTRL+B 切换滚动条
+ * 按住 CTRL + 鼠标滚轮缩放元素（对"视网膜"屏幕有用）
+ * 按住 SHIFT + 鼠标滚轮缩放分组标题，从而调整封面大小
+ * F3 键显示正在播放的曲目
+ * F5 键刷新封面
+ * ……等等
 */

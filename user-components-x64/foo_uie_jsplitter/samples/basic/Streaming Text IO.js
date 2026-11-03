@@ -1,10 +1,9 @@
-﻿// JSplitter sample: Worker.RunAsync + Streaming Text I/O
+﻿// JSplitter 示例：Worker.RunAsync + 流式文本 I/O
 //
-// Demonstrates Worker.RunAsync(), utils.OpenTextReader() and
-// utils.OpenTextWriter() together. TextReader/TextWriter are synchronous,
-// but the complete file job runs in a temporary Worker so the panel UI stays
-// responsive. The files are processed incrementally instead of being held as
-// one large JavaScript string.
+// 演示 Worker.RunAsync()、utils.OpenTextReader() 和
+// utils.OpenTextWriter() 的配合使用。TextReader/TextWriter 是同步的，
+// 但整个文件任务运行在临时 Worker 中，因此面板 UI 保持响应。
+// 文件是增量处理的，而不是作为一整个大字符串保存在内存中。
 
 const sourcePath = fb.ProfilePath + 'streaming-io-source.jsonl';
 const resultPath = fb.ProfilePath + 'streaming-io-filtered.txt';
@@ -15,20 +14,20 @@ async function runExample() {
             const started = performance.now();
             const recordCount = 10000;
 
-            // Create a JSON Lines source file incrementally.
-            // false = UTF-8 without BOM.
+            // 增量创建 JSON Lines 源文件。
+            // false = 无 BOM 的 UTF-8。
             const sourceWriter = utils.OpenTextWriter(sourcePath, false);
             if (!sourceWriter) {
-                throw new Error(`Unable to create ${sourcePath}`);
+                throw new Error(`无法创建 ${sourcePath}`);
             }
 
             try {
                 for (let i = 0; i < recordCount; ++i) {
                     if (!sourceWriter.WriteLine(JSON.stringify({
                         id: i,
-                        value: `item ${i}`
+                        value: `项目 ${i}`
                     }))) {
-                        throw new Error('Failed to write the source file');
+                        throw new Error('写入源文件失败');
                     }
                 }
             }
@@ -36,16 +35,16 @@ async function runExample() {
                 sourceWriter.Close();
             }
 
-            // Read the source one line at a time and write a small filtered file.
+            // 逐行读取源文件，并写入一个小的过滤文件。
             const reader = utils.OpenTextReader(sourcePath);
             if (!reader) {
-                throw new Error(`Unable to open ${sourcePath}`);
+                throw new Error(`无法打开 ${sourcePath}`);
             }
 
             const writer = utils.OpenTextWriter(resultPath, false);
             if (!writer) {
                 reader.Close();
-                throw new Error(`Unable to create ${resultPath}`);
+                throw new Error(`无法创建 ${resultPath}`);
             }
 
             let read = 0;
@@ -56,7 +55,7 @@ async function runExample() {
                     const line = reader.ReadLine();
                     if (line === null) {
                         if (!reader.EOF) {
-                            throw new Error('Failed to read or decode the source file');
+                            throw new Error('读取或解码源文件失败');
                         }
                         break;
                     }
@@ -67,10 +66,10 @@ async function runExample() {
                     const item = JSON.parse(line);
                     ++read;
 
-                    // Keep every 1000th record as a visible result.
+                    // 保留每第 1000 条记录作为可见结果。
                     if (item.id % 1000 === 0) {
                         if (!writer.WriteLine(`${item.id}\t${item.value}`)) {
-                            throw new Error('Failed to write the result file');
+                            throw new Error('写入结果文件失败');
                         }
                         ++written;
                     }
@@ -89,13 +88,13 @@ async function runExample() {
         }, sourcePath, resultPath);
 
         console.log(
-            `Worker.RunAsync finished: read ${result.read}, wrote ${result.written} ` +
-            `records in ${result.elapsedMs.toFixed(1)} ms`
+            `Worker.RunAsync 完成：读取 ${result.read} 条、写入 ${result.written} ` +
+            `条记录，耗时 ${result.elapsedMs.toFixed(1)} 毫秒`
         );
-        console.log(`Output: ${resultPath}`);
+        console.log(`输出：${resultPath}`);
     }
     catch (error) {
-        console.log(`Worker.RunAsync failed: ${error.name}: ${error.message}`);
+        console.log(`Worker.RunAsync 失败：${error.name}: ${error.message}`);
     }
 }
 

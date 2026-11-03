@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 function _rating(x, y, size, colour) {
 	this.paint = (gr) => {
@@ -15,7 +15,7 @@ function _rating(x, y, size, colour) {
 			this.hover = false;
 			this.rating = this.get_rating();
 			this.hrating = this.rating;
-			this.tiptext = this.properties.mode.value == 0 ? 'Choose a mode first.' : panel.tf('Rate "%title%" by "%artist%".');
+			this.tiptext = this.properties.mode.value == 0 ? '请先选择一种模式。' : panel.tf('Rate "%title%" by "%artist%".');
 		}
 		window.Repaint();
 	}
@@ -63,9 +63,9 @@ function _rating(x, y, size, colour) {
 			panel.s10.AppendMenuItem(i == 1 && !this.foo_playcount ? MF_GRAYED : MF_STRING, i + 1000, item);
 		});
 		panel.s10.CheckMenuRadioItem(1000, 1003, this.properties.mode.value + 1000);
-		panel.s10.AppendTo(panel.m, MF_STRING, 'Mode');
-		panel.m.AppendMenuItem(this.properties.mode.value == 2 ? MF_STRING : MF_GRAYED, 1004, 'Tag name');
-		panel.m.AppendMenuItem(this.properties.mode.value > 1 ? MF_STRING : MF_GRAYED, 1005, 'Max value...');
+		panel.s10.AppendTo(panel.m, MF_STRING, '模式');
+		panel.m.AppendMenuItem(this.properties.mode.value == 2 ? MF_STRING : MF_GRAYED, 1004, '标签名称');
+		panel.m.AppendMenuItem(this.properties.mode.value > 1 ? MF_STRING : MF_GRAYED, 1005, '最大值...');
 		panel.m.AppendMenuSeparator();
 	}
 
@@ -80,7 +80,7 @@ function _rating(x, y, size, colour) {
 			this.properties.tag.value = tmp || this.properties.tag.default_;
 			break;
 		case idx == 1005:
-			tmp = utils.InputBox(window.ID, 'Enter a maximum value. Defaults to "5" if left blank.', window.ScriptInfo.Name, this.properties.max.value);
+			tmp = utils.InputBox(window.ID, '输入最大值。留空默认为"5"。', window.ScriptInfo.Name, this.properties.max.value);
 			this.properties.max.value = tmp || this.properties.max.default_;
 			break;
 		}
@@ -92,12 +92,12 @@ function _rating(x, y, size, colour) {
 		switch (this.properties.mode.value) {
 		case 1: // foo_playcount
 			return panel.tf('$if2(%rating%,0)');
-		case 2: // file tag
+		case 2: // 文件标签
 			let f = panel.metadb.GetFileInfo();
 			const idx = f.MetaFind(this.properties.tag.value);
 			const ret = idx > -1 ? f.MetaValue(idx, 0) : 0;
 			return ret;
-		case 3: // JSplitter DB
+		case 3: // JSplitter 数据库
 			return panel.tf('$if2(%jsplitter_rating%,0)');
 		default:
 			return 0;
@@ -109,14 +109,14 @@ function _rating(x, y, size, colour) {
 		case 1: // foo_playcount
 			fb.RunContextCommandWithMetadb('Playback Statistics/Rating/' + (this.hrating == this.rating ? '<not set>' : this.hrating), panel.metadb, 8);
 			break;
-		case 2: // file tag
+		case 2: // 文件标签
 			const tmp = this.hrating == this.rating ? '' : this.hrating;
 			let obj = {};
 			obj[this.properties.tag.value] = tmp;
 			let handles = new FbMetadbHandleList(panel.metadb);
 			handles.UpdateFileInfoFromJSON(JSON.stringify(obj));
 			break;
-		case 3: // JSplitter DB
+		case 3: // JSplitter 数据库
 			panel.metadb.SetRating(this.hrating == this.rating ? 0 : this.hrating);
 			panel.metadb.RefreshStats();
 			break;
@@ -128,8 +128,8 @@ function _rating(x, y, size, colour) {
 	}
 
 	this.properties = {
-		mode : new _p('2K3.RATING.MODE', 0), // 0 not set 1 foo_playcount 2 file tag 3 JSplitter DB
-		max : new _p('2K3.RATING.MAX', 5), // only use for file tag/JSplitter DB
+		mode : new _p('2K3.RATING.MODE', 0), // 0 未设置 1 foo_playcount 2 文件标签 3 JSplitter 数据库
+		max : new _p('2K3.RATING.MAX', 5), // 仅用于文件标签/JSplitter 数据库
 		tag: new _p('2K3.RATING.TAG', 'rating')
 	};
 	this.x = x;
@@ -141,10 +141,10 @@ function _rating(x, y, size, colour) {
 	this.rating = 0;
 	this.hrating = 0;
 	this.font = gdi.Font('FontAwesome', this.h - 2);
-	this.modes = ['Not Set', 'foo_playcount', 'File Tag', 'JSplitter DB'];
+	this.modes = ['未设置', 'foo_playcount', '文件标签', 'JSplitter 数据库'];
 	this.foo_playcount = _cc('foo_playcount');
 	window.SetTimeout(() => {
-		if (this.properties.mode.value == 1 && !this.foo_playcount) { // if mode is set to 1 (foo_playcount) but component is missing, reset to 0.
+		if (this.properties.mode.value == 1 && !this.foo_playcount) { // 如果模式设为 1（foo_playcount）但组件缺失，重置为 0。
 			this.properties.mode.value = 0;
 		}
 		if (this.properties.mode.value == 0) {

@@ -1,4 +1,4 @@
-window.DefineScript('TrackInfo follows cursor');
+window.DefineScript('曲目信息跟随光标');
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
@@ -12,8 +12,8 @@ function on_item_focus_change() {
 }
 
 function on_playlist_switch() {
-    //because on_item_focus_change isn't called when the user switches playlists
-    //we must invoke it manually inside this callback
+    //因为切换播放列表时不会调用 on_item_focus_change
+    //我们必须在此回调内手动调用它
     on_item_focus_change();
 }
 

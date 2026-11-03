@@ -1,4 +1,4 @@
-function Clamp(value, min, max) {
+﻿function Clamp(value, min, max) {
 	if (value < min)
 		return min;
 	else if (value > max)
@@ -107,7 +107,7 @@ function _vu_meter(x, y, w, h) {
 		}
 	}
 
-// callbacks begin
+// 回调开始
 	this.paint = function (gr) {
 		if (this.w < 1 || this.h < 1)
 			return;
@@ -218,13 +218,13 @@ function _vu_meter(x, y, w, h) {
 		menu.AppendMenuItem(MF_STRING, 4, 'Bar...');
 		menu.AppendMenuItem(EnableMenuIf(this.peak_bar_width > 0), 5, 'Peak...');
 
-		style_menu.AppendMenuItem(MF_STRING, 10, 'Smooth');
-		style_menu.AppendMenuItem(MF_STRING, 11, 'Blocks');
+		style_menu.AppendMenuItem(MF_STRING, 10, '平滑');
+		style_menu.AppendMenuItem(MF_STRING, 11, '块状');
 		style_menu.CheckMenuRadioItem(10, 11, this.properties.meter_style.value + 10);
 
 		if (this.properties.meter_style.value == 1) {
 			style_menu.AppendMenuSeparator();
-			style_menu.AppendMenuItem(MF_GRAYED, 0, 'Block width (dB)');
+			style_menu.AppendMenuItem(MF_GRAYED, 0, '分贝块宽度（dB）');
 
 			this.rms_block_dbs.forEach(function (item, index) {
 				style_menu.AppendMenuItem(MF_STRING, 20 + index, item);
@@ -234,7 +234,7 @@ function _vu_meter(x, y, w, h) {
 			style_menu.CheckMenuRadioItem(20, 20 + this.rms_block_dbs.length, 20 + rms_block_db_index);
 		}
 
-		style_menu.AppendTo(menu, MF_STRING, 'Meter style');
+		style_menu.AppendTo(menu, MF_STRING, '电表样式');
 
 		menu.AppendMenuSeparator();
 		menu.AppendMenuItem(MF_STRING, 50, 'Configure...');
@@ -287,15 +287,15 @@ function _vu_meter(x, y, w, h) {
 
 		return true;
 	}
-// callbacks end
+// 回调结束
 
 	this.x = x;
 	this.y = y;
 	this.w = w;
 	this.h = h;
 
-	this.minDB = -60; // minimum dB on the meter (meter range)
-	this.maxDB = 5; // maximum dB on the meter (meter range)
+	this.minDB = -60; // 表上的最小 dB（仪表范围）
+	this.maxDB = 5; // 表上的最大 dB（仪表范围）
 
 	this.rms_block_dbs = [0.3125, 0.625, 1.25, 2.5];
 	this.RMS_levels = [];
@@ -312,8 +312,8 @@ function _vu_meter(x, y, w, h) {
 	this.properties = {
 		custom_background : new _p("2K3.METER.BACKGROUND.COLOUR", _RGB(30, 30, 30)),
 		custom_bar : new _p("2K3.METER.BAR.COLOUR", _RGB(200, 200, 200)),
-		custom_peak : new _p("2K3.METER.PEAK.COLOUR", _RGB(255, 0, 0)), // no default
-		meter_style : new _p("2K3.METER.STYLE", 1), // 0: smooth, 1: blocks
+		custom_peak : new _p("2K3.METER.PEAK.COLOUR", _RGB(255, 0, 0)), // 无默认值
+		meter_style : new _p("2K3.METER.STYLE", 1), // 0：平滑，1：块状
 		rms_block_db : new _p("2K3.METER.BLOCK.DB", 0.625),
 	};
 }

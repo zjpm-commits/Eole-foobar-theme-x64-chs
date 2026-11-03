@@ -1,41 +1,41 @@
-window.DefineScript('Timer', { author: 'T.P Wang' });
+window.DefineScript('定时器', { author: 'T.P Wang' });
 
-// This sample create two timers
-// Click the window to start the timer, and see the result after the console is shown.
-// Click the window again to kill all timers.
+// 本示例创建两个定时器
+// 点击窗口以启动定时器，控制台显示后再查看结果。
+// 再次点击窗口以终止所有定时器。
 
 let g_timer_started = false;
 let g_count = 0;
 let g_timer1_ID = 0, g_timer2_ID = 0;
 
 function print_to_console(msg) {
-    console.log('Timer test:', msg);
+    console.log('定时器测试：', msg);
 }
 
 function on_mouse_lbtn_up() {
     if (!g_timer_started) {
-        // Timer are created here
-        // 2s - one shot, happens after 2000 ms, only once
+        // 在这里创建定时器
+        // 2 秒 - 一次性，发生在 2000 毫秒后，仅一次
         g_timer1_ID = setTimeout(() => {
-            // Print and show console
+            // 打印并显示控制台
             fb.ShowConsole();
-            print_to_console('g_timer1: Show console now.');
+            print_to_console('g_timer1: 现在显示控制台。');
         }, 2000);
 
-        // 500ms - periodic, happens every 500 ms
+        // 500 毫秒 - 周期性，每 500 毫秒发生一次
         g_timer2_ID = setInterval(() => {
             g_count++;
-            print_to_console('g_timer2: ' + g_count + ' time(s).');
+            print_to_console('g_timer2: ' + g_count + ' 次。');
         }, 500);
 
         g_timer_started = true;
     }
     else {
-        // Kill all timers
+        // 终止所有定时器
         clearTimeout(g_timer2_ID);
         clearInterval(g_timer1_ID);
         g_timer_started = false;
         g_count = 0;
-        print_to_console('Timers killed.');
+        print_to_console('定时器已终止。');
     }
 }

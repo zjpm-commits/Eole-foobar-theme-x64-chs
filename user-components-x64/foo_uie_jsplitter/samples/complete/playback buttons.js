@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 
-window.DefineScript('Playback Buttons', {author:'marc2003', options:{grab_focus:false}});
+window.DefineScript('播放按钮', {author:'marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');
@@ -10,10 +10,10 @@ let buttons = new _buttons();
 let bs = _scale(24);
 
 buttons.update = () => {
-	buttons.buttons.stop = new _button(0, 0, bs, bs, {normal : 'buttons\\stop.png'}, (x, y) => { fb.Stop(); }, 'Stop');
-	buttons.buttons.play = new _button(bs, 0, bs, bs, {normal : !fb.IsPlaying || fb.IsPaused ? 'buttons\\play.png' : 'buttons\\pause.png'}, (x, y) => { fb.PlayOrPause(); }, !fb.IsPlaying || fb.IsPaused ? 'Play' : 'Pause');
-	buttons.buttons.previous = new _button(bs * 2, 0, bs, bs, {normal : 'buttons\\previous.png'}, (x, y) => { fb.Prev(); }, 'Previous');
-	buttons.buttons.next = new _button(bs * 3, 0, bs, bs, {normal : 'buttons\\next.png'}, (x, y) => { fb.Next(); }, 'Next');
+	buttons.buttons.stop = new _button(0, 0, bs, bs, {normal : 'buttons\\stop.png'}, (x, y) => { fb.Stop(); }, '停止');
+	buttons.buttons.play = new _button(bs, 0, bs, bs, {normal : !fb.IsPlaying || fb.IsPaused ? 'buttons\\play.png' : 'buttons\\pause.png'}, (x, y) => { fb.PlayOrPause(); }, !fb.IsPlaying || fb.IsPaused ? '播放' : '暂停');
+	buttons.buttons.previous = new _button(bs * 2, 0, bs, bs, {normal : 'buttons\\previous.png'}, (x, y) => { fb.Prev(); }, '上一首');
+	buttons.buttons.next = new _button(bs * 3, 0, bs, bs, {normal : 'buttons\\next.png'}, (x, y) => { fb.Next(); }, '下一首');
 }
 
 function on_size() {

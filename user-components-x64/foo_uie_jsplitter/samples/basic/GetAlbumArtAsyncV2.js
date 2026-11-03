@@ -2,7 +2,7 @@ window.DefineScript('GetAlbumArtAsyncV2', { author: 'TheQwertiest' });
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
-// Nothing will show until you start playing a new track
+// 在开始播放新曲目之前不会显示任何内容
 
 let g_img = null;
 let path = '';
@@ -15,7 +15,7 @@ function on_paint(gr) {
         return;
     }
 
-    // Keep aspect ratio
+    // 保持宽高比
     let scale_w = ww / g_img.Width;
     let scale_h = wh / g_img.Height;
     let scale = Math.min(scale_w, scale_h);
@@ -45,7 +45,7 @@ function on_playback_new_track(metadb) {
 }
 
 function on_mouse_lbtn_dblclk(x, y) {
-    //double click panel to show path in popup window
+    //双击面板以在弹窗中显示路径
     if (path) {
         fb.ShowPopupMessage(path);
     }

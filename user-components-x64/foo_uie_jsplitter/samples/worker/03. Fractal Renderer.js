@@ -1,10 +1,10 @@
 ﻿'use strict';
 
-// Worker sample 3: Fractal Renderer
-// Demonstrates: CPU-bound Worker work, stable local pan/zoom preview,
-// settled-view rendering, stale-frame rejection and transferable bitmap frames.
-// The in-panel Renderer switch recreates the Worker so the same gdi.* facade can be
-// compared in GDI+ and Direct2D modes.
+// Worker 示例 3：分形渲染器
+// 演示：CPU 密集的 Worker 工作、稳定的本地平移/缩放预览、
+// 稳定视图渲染、过期帧拒绝以及可转移的位图帧。
+// 面板内的渲染器切换会重新创建 Worker，以便在 GDI+ 和 Direct2D 模式下
+// 比较同一个 gdi.* 门面。
 let drawMode = 1;
 window.DrawMode = drawMode;
 
@@ -16,7 +16,7 @@ const DT_NOPREFIX = 0x0800;
 
 const VIEW_DEBOUNCE_MS = 80;
 const MAX_ITERATIONS = 220;
-const PREVIEW_INTERPOLATION = 2; // InterpolationMode.HighQuality
+const PREVIEW_INTERPOLATION = 2; // InterpolationMode.HighQuality（高质量插值模式）
 let INFO_FONT = gdi.Font('Segoe UI', 13);
 let switchingRenderer = false;
 const DEFAULT_VIEW = { centerX: -0.65, centerY: 0.0, scale: 2.8 };
@@ -92,7 +92,7 @@ function renderRow(job, y) {
         const q = xm * xm + cy * cy;
         let iteration = job.maxIterations;
 
-        // Main cardioid and period-2 bulb are known to be inside the set.
+        // 主心形和周期 2 球已知位于集合内部。
         if (q * (q + xm) > 0.25 * cy * cy && (cx + 1) * (cx + 1) + cy * cy > 0.0625) {
             let zx = 0;
             let zy = 0;
@@ -114,8 +114,8 @@ function renderRow(job, y) {
 }
 
 function finishBitmap(job) {
-    // In DrawMode 0 this is a GdiBitmap; in DrawMode 1 the same gdi.* call
-    // is routed to the Worker's Direct2D backend and returns a D2DBitmap.
+    // 在 DrawMode 0 中这是 GdiBitmap；在 DrawMode 1 中同样的 gdi.* 调用
+    // 会被路由到 Worker 的 Direct2D 后端并返回 D2DBitmap。
     return gdi.CreateImageFromPixelData(job.pixels, job.width, job.height, 'bgra32');
 }
 
@@ -196,7 +196,7 @@ function startWorker() {
     };
 
     currentWorker.onerror = function (event) {
-        if (worker === currentWorker) console.log(`Worker error: ${event.message}`);
+        if (worker === currentWorker) console.log(`Worker 错误：${event.message}`);
     };
 
     invalidateView();
@@ -315,8 +315,8 @@ function on_mouse_move(x, y) {
 
     invalidateView();
 
-    // Interaction is immediate and uses one stable completed bitmap for the
-    // entire drag. The Worker is not fed intermediate drag positions.
+    // 交互是即时的，并使用一张已完成的稳定位图覆盖整个拖动过程。
+    // Worker 不会接收中间的拖动位置。
     window.Repaint();
 }
 
@@ -377,8 +377,8 @@ function on_mouse_wheel(step) {
     wheelActive = true;
     invalidateView();
 
-    // Zoom one stable completed frame locally for the whole wheel burst.
-    // Only the final viewport is rendered after the burst settles.
+    // 整个滚轮突发期间本地使用一张已完成的稳定帧进行缩放。
+    // 仅在突发结束后才渲染最终视口。
     window.Repaint();
     queueView();
 }
@@ -414,11 +414,11 @@ function on_paint(gr) {
     }
 
     gr.FillSolidRect(8, 8, Math.max(1, Math.min(window.Width - 16, 520)), 26, 0xC0101318);
-    gr.DrawText('Renderer:', INFO_FONT, 0xFFB7C1CB, 14, 8, 66, 26,
+    gr.DrawText('渲染器：', INFO_FONT, 0xFFB7C1CB, 14, 8, 66, 26,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     drawChoice(gr, RENDERER_GDI, 'GDI', drawMode === 0);
     drawChoice(gr, RENDERER_D2D, 'D2D', drawMode === 1);
-    gr.DrawText('Wheel: zoom   Drag: pan   Right click: reset', INFO_FONT, 0xFFE8EDF2,
+    gr.DrawText('滚轮：缩放   拖动：平移   右键：重置', INFO_FONT, 0xFFE8EDF2,
         196, 8, Math.max(1, window.Width - 210), 26, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 }
 

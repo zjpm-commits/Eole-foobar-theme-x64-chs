@@ -30,7 +30,7 @@ function on_paint(dgr) {
     dgr.FillSolidRect(0, 0, ww, wh, g_backcolour);
 	emboss.SetValue(Effects.Emboss.Height, height);
 	dgr.DrawEffect(emboss, 0, 0, 0, 0, ww, wh);
-	dgr.DrawText(`EMBOSS effect\nMove around center and scroll\nDirection (deg): ${direction.toFixed(2)}\nHeight: ${height}`, font, 0xFF000000, 0, 0, ww, wh, DT_CENTER | DT_VCENTER);
+	dgr.DrawText(`浮雕效果\n在中心周围移动并滚动\n方向（度）：${direction.toFixed(2)}\n高度：${height}`, font, 0xFF000000, 0, 0, ww, wh, DT_CENTER | DT_VCENTER);
 }
 
 let lastX = 0, lastY = 0;

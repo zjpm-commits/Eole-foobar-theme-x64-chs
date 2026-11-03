@@ -1,8 +1,8 @@
-// *****************************************************************************************************************************************
-// Common functions & flags by Br3tt aka Falstaff (c)2013-2015
+﻿// *****************************************************************************************************************************************
+// 通用函数与标志，作者 Br3tt aka Falstaff (c)2013-2015
 // *****************************************************************************************************************************************
 
-//=================================================// General declarations
+//=================================================// 通用声明
 SM_CXVSCROLL = 2;
 SM_CYHSCROLL = 3;
 
@@ -19,7 +19,7 @@ DLGC_STATIC = 0x0100; /* Static item: don't include       */
 DLGC_BUTTON = 0x2000; /* Button item: can be checked      */
 
 // }}
-// Use with MenuManager()
+// 与 MenuManager() 配合使用
 // {{
 MF_STRING = 0x00000000;
 MF_SEPARATOR = 0x00000800;
@@ -27,14 +27,14 @@ MF_GRAYED = 0x00000001;
 MF_DISABLED = 0x00000002;
 MF_POPUP = 0x00000010;
 // }}
-// Used in get_colors()
+// 用于 get_colors()
 // {{
 COLOR_WINDOW = 5;
 COLOR_HIGHLIGHT = 13;
 COLOR_BTNFACE = 15;
 COLOR_BTNTEXT = 18;
 // }}
-// Used in window.SetCursor()
+// 用于 window.SetCursor()
 // {{
 IDC_ARROW = 32512;
 IDC_IBEAM = 32513;
@@ -53,7 +53,7 @@ IDC_APPSTARTING = 32650;
 IDC_HAND = 32649;
 IDC_HELP = 32651;
 // }}
-// Use with GdiDrawText()
+// 与 GdiDrawText() 配合使用
 // {{
 var DT_LEFT = 0x00000000;
 var DT_RIGHT = 0x00000002;
@@ -68,7 +68,7 @@ var DT_NOPREFIX = 0x00000800;
 var DT_EDITCONTROL = 0x00002000;
 var DT_END_ELLIPSIS = 0x00008000;
 // }}
-// Keyboard Flags & Tools
+// 键盘标志与工具
 // {{
 var VK_F1 = 0x70;
 var VK_F2 = 0x71;
@@ -125,7 +125,7 @@ function GetKeyboardMask() {
 };
 // }}
 // {{
-// Used in window.GetColorCUI()
+// 用于 window.GetColorCUI()
 ColorTypeCUI = {
 	text: 0,
 	selection_text: 1,
@@ -135,19 +135,19 @@ ColorTypeCUI = {
 	inactive_selection_background: 5,
 	active_item_frame: 6
 };
-// Used in window.GetFontCUI()
+// 用于 window.GetFontCUI()
 FontTypeCUI = {
 	items: 0,
 	labels: 1
 };
-// Used in window.GetColorDUI()
+// 用于 window.GetColorDUI()
 ColorTypeDUI = {
 	text: 0,
 	background: 1,
 	highlight: 2,
 	selection: 3
 };
-// Used in window.GetFontDUI()
+// 用于 window.GetFontDUI()
 FontTypeDUI = {
 	defaults: 0,
 	tabs: 1,
@@ -158,7 +158,7 @@ FontTypeDUI = {
 };
 //}}
 // {{
-// Used in gr.DrawString()
+// 用于 gr.DrawString()
 function StringFormat() {
 	var h_align = 0,
 	v_align = 0,
@@ -193,7 +193,7 @@ var cb_stringformat = StringFormat(StringAlignment.Centre, StringAlignment.Far);
 var rb_stringformat = StringFormat(StringAlignment.Far, StringAlignment.Far);
 //}}
 // {{
-// Used in utils.GetAlbumArt()
+// 用于 utils.GetAlbumArt()
 AlbumArtId = {
 	front: 0,
 	back: 1,
@@ -203,7 +203,7 @@ AlbumArtId = {
 };
 //}}
 // {{
-// Used everywhere!
+// 到处都用！
 function RGB(r, g, b) {
 	return (0xff000000 | (r << 16) | (g << 8) | (b));
 };
@@ -233,7 +233,7 @@ function negative(colour) {
 	return RGB(Math.abs(R - 255), Math.abs(G - 255), Math.abs(B - 255));
 };
 
-function toRGB(d) { // convert back to RGB values
+function toRGB(d) { // 转换回 RGB 值
 	var d = d - 0xff000000;
 	var r = d >> 16;
 	var g = d >> 8 & 0xFF;
@@ -242,7 +242,7 @@ function toRGB(d) { // convert back to RGB values
 };
 
 function blendColors(c1, c2, factor) {
-	// When factor is 0, result is 100% color1, when factor is 1, result is 100% color2.
+	// factor 为 0 时结果为 100% color1，factor 为 1 时结果为 100% color2。
 	var c1 = toRGB(c1);
 	var c2 = toRGB(c2);
 	var r = Math.round(c1[0] + factor * (c2[0] - c1[0]));
@@ -252,7 +252,7 @@ function blendColors(c1, c2, factor) {
 };
 
 function draw_glass_reflect(w, h) {
-	// Mask for glass effect
+	// 玻璃效果的蒙版
 	var Mask_img = gdi.CreateImage(w, h);
 	var gb = Mask_img.GetGraphics();
 	gb.FillSolidRect(0, 0, w, h, 0xffffffff);
@@ -260,25 +260,25 @@ function draw_glass_reflect(w, h) {
 	gb.SetSmoothingMode(2);
 	gb.FillEllipse(-20, 25, w * 2 + 40, h * 2, 0xffffffff);
 	Mask_img.ReleaseGraphics(gb);
-	// drawing the white rect
+	// 绘制白色矩形
 	var glass_img = gdi.CreateImage(w, h);
 	gb = glass_img.GetGraphics();
 	gb.FillSolidRect(0, 0, w, h, 0xffffffff);
 	glass_img.ReleaseGraphics(gb);
-	// resizing and applying the mask
+	// 调整大小并应用蒙版
 	var Mask = Mask_img.Resize(w, h);
 	glass_img.ApplyMask(Mask);
 	return glass_img;
 };
 
 function drawBlurbox(w, h, bgcolor, boxcolor, radius, iteration) {
-	// Create a image which background is true transparent
+	// 创建背景为完全透明的图像
 	var g_blurbox = gdi.CreateImage(w + 40, h + 40);
-	// Get graphics interface like "gr" in on_paint
+	// 获取图形接口，如同 on_paint 中的 "gr"
 	var gb = g_blurbox.GetGraphics();
 	gb.FillSolidRect(20, 20, w, h, boxcolor);
 	g_blurbox.ReleaseGraphics(gb);
-	// Make box blur, radius = 2, iteration = 2
+	// 制作方框模糊，radius = 2，iteration = 2
 	g_blurbox.BoxBlur(radius, iteration);
 	var g_blurbox_main = gdi.CreateImage(w + 40, h + 40);
 	gb = g_blurbox_main.GetGraphics();
@@ -299,7 +299,7 @@ function num(strg, nb) {
 	};
 	return str.toString();
 };
-//Time formatting secondes -> 0:00
+//时间格式化为 秒 -> 0:00
 function TimeFromSeconds(t) {
 	var zpad = function (n) {
 		var str = n.toString();
@@ -370,7 +370,7 @@ function removeAccents(str) {
 };
 //}}
 
-//=================================================// Button object
+//=================================================// 按钮对象
 ButtonStates = {
 	normal: 0,
 	hover: 1,
@@ -432,7 +432,7 @@ button = function (normal, hover, down) {
 	};
 };
 
-//=================================================// Tools (general)
+//=================================================// 工具（通用）
 function decode_colour(opt_colour, resultype) {
 	var XYZ_colour = {
 		RGBcolour: 0,
@@ -485,8 +485,8 @@ function HSL2RGB(zH, zS, zL, result) {
 	B,
 	var_1,
 	var_2;
-	if (S == 0) { //HSL from 0 to 1
-		R = L * 255; //RGB results from 0 to 255
+	if (S == 0) { //HSL 范围 0 到 1
+		R = L * 255; //RGB 结果范围 0 到 255
 		G = L * 255;
 		B = L * 255;
 	} else {
@@ -541,16 +541,16 @@ function RGB2HSL(RGB_colour) {
 		L: 0
 	};
 
-	var_Min = Math.min(R, G, B); //Min. value of RGB
-	var_Max = Math.max(R, G, B); //Max. value of RGB
-	del_Max = var_Max - var_Min; //Delta RGB value
+	var_Min = Math.min(R, G, B); //RGB 最小值
+	var_Max = Math.max(R, G, B); //RGB 最大值
+	del_Max = var_Max - var_Min; //RGB 差值
 
 	L = (var_Max + var_Min) / 2;
 
-	if (del_Max == 0) { //This is a gray, no chroma...
+	if (del_Max == 0) { //这是灰色，无色相……
 		H = 0; //HSL results from 0 to 1
 		S = 0;
-	} else { //Chromatic data...
+	} else { //有彩色数据……
 		if (L < 0.5)
 			S = del_Max / (var_Max + var_Min);
 		else
@@ -587,7 +587,7 @@ function DrawColoredText(gr, text, font, default_color, x, y, w, h, alignment, f
 	z = 0,
 	tmp = "";
 	var pos = text.indexOf(String.fromCharCode(3));
-	if (pos < 0) { // no specific color
+	if (pos < 0) { // 无指定颜色
 		gr.GdiDrawText(text, font, default_color, x, y, w, h, alignment | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 	} else {
 		var tab = text.split(String.fromCharCode(3));
@@ -616,7 +616,7 @@ function DrawColoredText(gr, text, font, default_color, x, y, w, h, alignment, f
 			var delta_align = 0;
 		};
 
-		// if first part is default color
+		// 若第一部分为默认颜色
 		if (pos > 0) {
 			txt = tab[0];
 			lg = gr.CalcTextWidth(txt, font);
@@ -624,7 +624,7 @@ function DrawColoredText(gr, text, font, default_color, x, y, w, h, alignment, f
 			z += lg;
 		};
 
-		// draw all other colored parts
+		// 绘制所有其他带颜色的部分
 		while (i < fin && z < w) {
 			if (!force_default_color) {
 				tmp = tab[i];
@@ -642,13 +642,13 @@ function DrawColoredText(gr, text, font, default_color, x, y, w, h, alignment, f
 
 function DrawPolyStar(gr, x, y, out_radius, in_radius, points, line_thickness, line_color, fill_color, angle, opacity) {
 	// ---------------------
-	// code by ExtremeHunter
+	// 代码由 ExtremeHunter 编写
 	// ---------------------
 
 	if (!opacity && opacity != 0)
 		opacity = 255;
 
-	//---> Create points
+	//---> 创建点
 	var point_arr = [];
 	for (var i = 0; i != points; i++) {
 		i % 2 ? r = Math.round((out_radius - line_thickness * 4) / 2) / in_radius : r = Math.round((out_radius - line_thickness * 4) / 2);
@@ -658,7 +658,7 @@ function DrawPolyStar(gr, x, y, out_radius, in_radius, points, line_thickness, l
 		point_arr.push(y_point + out_radius / 2);
 	};
 
-	//---> Crate poligon image
+	//---> 创建多边形图像
 	var img = gdi.CreateImage(out_radius, out_radius);
 	var _gr = img.GetGraphics();
 	_gr.SetSmoothingMode(2);
@@ -667,7 +667,7 @@ function DrawPolyStar(gr, x, y, out_radius, in_radius, points, line_thickness, l
 		_gr.DrawPolygon(line_color, line_thickness, point_arr);
 	img.ReleaseGraphics(_gr);
 
-	//---> Draw image
+	//---> 绘制图像
 	gr.DrawImage(img, x, y, out_radius, out_radius, 0, 0, out_radius, out_radius, angle, opacity);
 };
 

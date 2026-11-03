@@ -1,4 +1,4 @@
-'use strict';
+﻿'use strict';
 
 function _thumbs() {
 	this.size = (f) => {
@@ -6,13 +6,13 @@ function _thumbs() {
 		this.close_btn.x = panel.w - this.close_btn.w;
 		this.offset = 0;
 		switch (true) {
-		case panel.w < this.properties.px.value || panel.h < this.properties.px.value || this.properties.mode.value == 5: // off
+		case panel.w < this.properties.px.value || panel.h < this.properties.px.value || this.properties.mode.value == 5: // 关闭
 			this.nc = true;
 			this.img = null;
 			this.w = 0;
 			this.h = 0;
 			break;
-		case this.properties.mode.value == 0: // grid
+		case this.properties.mode.value == 0: // 网格
 			this.x = 0;
 			this.y = 0;
 			this.w = panel.w;
@@ -39,8 +39,8 @@ function _thumbs() {
 				temp_gr = null;
 			}
 			break;
-		case this.properties.mode.value == 1: // left
-		case this.properties.mode.value == 2: // right
+		case this.properties.mode.value == 1: // 左
+		case this.properties.mode.value == 2: // 右
 			this.x = this.properties.mode.value == 1 ? 0 : panel.w - this.properties.px.value;
 			this.y = 0;
 			this.w = this.properties.px.value;
@@ -58,8 +58,8 @@ function _thumbs() {
 				temp_gr = null;
 			}
 			break;
-		case this.properties.mode.value == 3: // top
-		case this.properties.mode.value == 4: // bottom
+		case this.properties.mode.value == 3: // 上
+		case this.properties.mode.value == 4: // 下
 			this.x = 0;
 			this.y = this.properties.mode.value == 3 ? 0 : panel.h - this.properties.px.value;
 			this.w = panel.w;
@@ -85,7 +85,7 @@ function _thumbs() {
 		case !this.images.length:
 			this.image_xywh = [];
 			break;
-		case this.properties.mode.value == 5: // off
+		case this.properties.mode.value == 5: // 关闭
 			if (this.properties.aspect.value == image.centre) {
 				this.image_xywh = _drawImage(gr, this.images[this.image], 20, 20, panel.w - 40, panel.h - 40, this.properties.aspect.value);
 			} else {
@@ -94,7 +94,7 @@ function _thumbs() {
 			break;
 		case !this.img:
 			break;
-		case this.properties.mode.value == 0: // grid
+		case this.properties.mode.value == 0: // 网格
 			gr.DrawImage(this.img, this.x, this.y, this.w, this.h, 0, this.offset * this.properties.px.value, this.w, this.h);
 			if (this.overlay) {
 				_drawOverlay(gr, this.x, this.y, this.w, this.h);
@@ -104,7 +104,7 @@ function _thumbs() {
 				this.image_xywh = [];
 			}
 			break;
-		case this.properties.mode.value == 1: // left
+		case this.properties.mode.value == 1: // 左
 			if (this.properties.aspect.value == image.centre) {
 				this.image_xywh = _drawImage(gr, this.images[this.image], this.properties.px.value + 20, 20, panel.w - this.properties.px.value - 40, panel.h - 40, this.properties.aspect.value);
 			} else {
@@ -113,7 +113,7 @@ function _thumbs() {
 			_drawOverlay(gr, this.x, this.y, this.w, this.h);
 			gr.DrawImage(this.img, this.x, this.y, this.w, this.h, 0, this.offset * this.properties.px.value, this.w, this.h);
 			break;
-		case this.properties.mode.value == 2: // right
+		case this.properties.mode.value == 2: // 右
 			if (this.properties.aspect.value == image.centre) {
 				this.image_xywh = _drawImage(gr, this.images[this.image], 20, 20, panel.w - this.properties.px.value - 40, panel.h - 40, this.properties.aspect.value);
 			} else {
@@ -122,7 +122,7 @@ function _thumbs() {
 			_drawOverlay(gr, this.x, this.y, this.w, this.h);
 			gr.DrawImage(this.img, this.x, this.y, this.w, this.h, 0, this.offset * this.properties.px.value, this.w, this.h);
 			break;
-		case this.properties.mode.value == 3: // top
+		case this.properties.mode.value == 3: // 上
 			if (this.properties.aspect.value == image.centre) {
 				this.image_xywh = _drawImage(gr, this.images[this.image], 20, this.properties.px.value + 20, panel.w - 40, panel.h - this.properties.px.value - 40, this.properties.aspect.value);
 			} else {
@@ -131,7 +131,7 @@ function _thumbs() {
 			_drawOverlay(gr, this.x, this.y, this.w, this.h);
 			gr.DrawImage(this.img, this.x, this.y, this.w, this.h, this.offset * this.properties.px.value, 0, this.w, this.h);
 			break;
-		case this.properties.mode.value == 4: // bottom
+		case this.properties.mode.value == 4: // 下
 			if (this.properties.aspect.value == image.centre) {
 				this.image_xywh = _drawImage(gr, this.images[this.image], 20, 20, panel.w - 40, panel.h - this.properties.px.value - 40, this.properties.aspect.value);
 			} else {
@@ -145,7 +145,7 @@ function _thumbs() {
 
 	this.metadb_changed = () => {
 		if (panel.metadb) {
-			if (this.properties.source.value == 0) { // custom folder
+			if (this.properties.source.value == 0) { // 自定义文件夹
 				let temp_folder = this.properties.tf.value.replace('%profile%', fb.ProfilePath);
 				temp_folder = temp_folder.startsWith(fb.ProfilePath) ? fb.ProfilePath + panel.tf(temp_folder.substring(fb.ProfilePath.length, temp_folder.length)) : panel.tf(temp_folder);
 				if (this.folder == temp_folder) {
@@ -176,7 +176,7 @@ function _thumbs() {
 		this.counter++;
 		if (this.properties.source.value == 1 && this.properties.auto_download.enabled && this.counter == 2 && this.images.length == 0) {
 			var np = fb.GetNowPlaying();
-			// check selection matches playing item
+			// 检查所选项目是否与正在播放的项目匹配
 			if (panel.metadb.Path == np.Path && panel.metadb.SubSong == np.SubSong) {
 				this.download();
 			}
@@ -190,8 +190,8 @@ function _thumbs() {
 	this.image_xywh_trace = (x, y) => {
 		switch (true) {
 		case !this.images.length:
-		case this.properties.mode.value == 0 && !this.overlay: // grid
-		case this.properties.mode.value != 0 && this.trace(x, y): // not grid
+		case this.properties.mode.value == 0 && !this.overlay: // 网格
+		case this.properties.mode.value != 0 && this.trace(x, y): // 非网格
 			return false;
 		default:
 			return x > this.image_xywh[0] && x < this.image_xywh[0] + this.image_xywh[2] && y > this.image_xywh[1] && y < this.image_xywh[1] + this.image_xywh[3];
@@ -202,7 +202,7 @@ function _thumbs() {
 		let offset = this.offset - s;
 		switch (true) {
 		case !this.trace(this.mx, this.my):
-		case this.properties.mode.value == 0 && this.overlay: // grid
+		case this.properties.mode.value == 0 && this.overlay: // 网格
 			if (this.images.length < 2) {
 				return;
 			}
@@ -215,7 +215,7 @@ function _thumbs() {
 			}
 			window.Repaint();
 			return;
-		case this.properties.mode.value == 0: // grid
+		case this.properties.mode.value == 0: // 网格
 			if (this.img_rows < this.rows) {
 				return;
 			}
@@ -226,8 +226,8 @@ function _thumbs() {
 				offset = this.img_rows - this.rows + 1;
 			}
 			break;
-		case this.properties.mode.value == 1: // left
-		case this.properties.mode.value == 2: // right
+		case this.properties.mode.value == 1: // 左
+		case this.properties.mode.value == 2: // 右
 			if (this.images.length < this.rows) {
 				return;
 			}
@@ -238,8 +238,8 @@ function _thumbs() {
 				offset = this.images.length - this.rows + 1;
 			}
 			break;
-		case this.properties.mode.value == 3: // top
-		case this.properties.mode.value == 4: // bottom
+		case this.properties.mode.value == 3: // 上
+		case this.properties.mode.value == 4: // 下
 			if (this.images.length < this.columns) {
 				return;
 			}
@@ -264,7 +264,7 @@ function _thumbs() {
 		switch (true) {
 		case !this.trace(x, y):
 			break;
-		case this.properties.mode.value == 0: // grid
+		case this.properties.mode.value == 0: // 网格
 			if (this.overlay) {
 				return window.SetCursor(this.close_btn.move(x, y) ? IDC_HAND : IDC_ARROW);
 			}
@@ -273,12 +273,12 @@ function _thumbs() {
 				this.index = tmp + ((Math.floor(y / this.properties.px.value) + this.offset) * this.columns);
 			}
 			break;
-		case this.properties.mode.value == 1: // left
-		case this.properties.mode.value == 2: // right
+		case this.properties.mode.value == 1: // 左
+		case this.properties.mode.value == 2: // 右
 			this.index = Math.floor(y / this.properties.px.value) + this.offset;
 			break;
-		case this.properties.mode.value == 3: // top
-		case this.properties.mode.value == 4: // bottom
+		case this.properties.mode.value == 3: // 上
+		case this.properties.mode.value == 4: // 下
 			this.index = Math.floor(x / this.properties.px.value) + this.offset;
 			break;
 		}
@@ -310,22 +310,22 @@ function _thumbs() {
 	}
 
 	this.rbtn_up = (x, y) => {
-		panel.m.AppendMenuItem(MF_STRING, 1000, 'Custom folder');
-		panel.m.AppendMenuItem(MF_STRING, 1001, 'Last.fm artist art');
+		panel.m.AppendMenuItem(MF_STRING, 1000, '自定义文件夹');
+		panel.m.AppendMenuItem(MF_STRING, 1001, 'Last.fm 艺术家图片');
 		panel.m.CheckMenuRadioItem(1000, 1001, this.properties.source.value + 1000);
 		panel.m.AppendMenuSeparator();
-		if (this.properties.source.value == 0) { // custom folder
-			panel.m.AppendMenuItem(MF_STRING, 1002, 'Refresh');
-			panel.m.AppendMenuItem(MF_STRING, 1003, 'Set custom folder...');
+		if (this.properties.source.value == 0) { // 自定义文件夹
+			panel.m.AppendMenuItem(MF_STRING, 1002, '刷新');
+			panel.m.AppendMenuItem(MF_STRING, 1003, '设置自定义文件夹...');
 		} else { // last.fm
-			panel.m.AppendMenuItem(panel.metadb ? MF_STRING : MF_GRAYED, 1004, 'Download now');
-			panel.m.AppendMenuItem(MF_STRING, 1005, 'Automatic downloads');
+			panel.m.AppendMenuItem(panel.metadb ? MF_STRING : MF_GRAYED, 1004, '立即下载');
+			panel.m.AppendMenuItem(MF_STRING, 1005, '自动下载');
 			panel.m.CheckMenuItem(1005, this.properties.auto_download.enabled);
 			_.forEach(this.limits, (item) => {
 				panel.s10.AppendMenuItem(MF_STRING, item + 1010, item);
 			});
 			panel.s10.CheckMenuRadioItem(_.first(this.limits) + 1010, _.last(this.limits) + 1010, this.properties.limit.value + 1010);
-			panel.s10.AppendTo(panel.m, MF_STRING, 'Limit');
+			panel.s10.AppendTo(panel.m, MF_STRING, '限制');
 		}
 		panel.m.AppendMenuSeparator();
 		if (!panel.text_objects.length && !panel.list_objects.length) {
@@ -339,40 +339,40 @@ function _thumbs() {
 				panel.s11.AppendMenuItem(flag, item + 1000, item + 'px');
 			});
 			panel.s11.CheckMenuRadioItem(_.first(this.pxs) + 1000, _.last(this.pxs) + 1000, this.properties.px.value + 1000);
-			panel.s11.AppendTo(panel.m, MF_STRING, 'Thumbs');
+			panel.s11.AppendTo(panel.m, MF_STRING, '缩略图');
 			panel.m.AppendMenuSeparator();
 		}
-		panel.s12.AppendMenuItem(MF_STRING, 1400, 'Off');
-		panel.s12.AppendMenuItem(MF_STRING, 1405, '5 seconds');
-		panel.s12.AppendMenuItem(MF_STRING, 1410, '10 seconds');
-		panel.s12.AppendMenuItem(MF_STRING, 1420, '20 seconds');
+		panel.s12.AppendMenuItem(MF_STRING, 1400, '关闭');
+		panel.s12.AppendMenuItem(MF_STRING, 1405, '5 秒');
+		panel.s12.AppendMenuItem(MF_STRING, 1410, '10 秒');
+		panel.s12.AppendMenuItem(MF_STRING, 1420, '20 秒');
 		panel.s12.CheckMenuRadioItem(1400, 1420, this.properties.cycle.value + 1400);
-		panel.s12.AppendTo(panel.m, MF_STRING, 'Cycle');
+		panel.s12.AppendTo(panel.m, MF_STRING, '循环');
 		panel.m.AppendMenuSeparator();
 		panel.s13.AppendMenuItem(MF_STRING, 1500, 'A-Z');
-		panel.s13.AppendMenuItem(MF_STRING, 1501, 'Newest first');
+		panel.s13.AppendMenuItem(MF_STRING, 1501, '最新优先');
 		panel.s13.CheckMenuRadioItem(1500, 1501, this.properties.sort.value + 1500);
-		panel.s13.AppendTo(panel.m, MF_STRING, 'Sort');
+		panel.s13.AppendTo(panel.m, MF_STRING, '排序');
 		panel.m.AppendMenuSeparator();
 		if (this.image_xywh_trace(x, y)) {
 			if (this.properties.mode.value != 0) {
-				panel.m.AppendMenuItem(MF_STRING, 1510, 'Crop (focus on centre)');
-				panel.m.AppendMenuItem(MF_STRING, 1511, 'Crop (focus on top)');
-				panel.m.AppendMenuItem(MF_STRING, 1512, 'Stretch');
-				panel.m.AppendMenuItem(MF_STRING, 1513, 'Centre');
+				panel.m.AppendMenuItem(MF_STRING, 1510, '裁剪（居中聚焦）');
+				panel.m.AppendMenuItem(MF_STRING, 1511, '裁剪（顶部聚焦）');
+				panel.m.AppendMenuItem(MF_STRING, 1512, '拉伸');
+				panel.m.AppendMenuItem(MF_STRING, 1513, '居中');
 				panel.m.CheckMenuRadioItem(1510, 1513, this.properties.aspect.value + 1510);
 				panel.m.AppendMenuSeparator();
 			}
 			if (this.properties.source.value == 1 && this.images.length > 1) {
-				panel.m.AppendMenuItem(this.default_file == this.files[this.image] ? MF_GRAYED : MF_STRING, 1520, 'Set as default');
-				panel.m.AppendMenuItem(MF_STRING, 1521, 'Clear default');
+				panel.m.AppendMenuItem(this.default_file == this.files[this.image] ? MF_GRAYED : MF_STRING, 1520, '设为默认');
+				panel.m.AppendMenuItem(MF_STRING, 1521, '清除默认');
 				panel.m.AppendMenuSeparator();
 			}
-			panel.m.AppendMenuItem(MF_STRING, 1530, 'Open image');
-			panel.m.AppendMenuItem(MF_STRING, 1531, 'Delete image');
+			panel.m.AppendMenuItem(MF_STRING, 1530, '打开图片');
+			panel.m.AppendMenuItem(MF_STRING, 1531, '删除图片');
 			panel.m.AppendMenuSeparator();
 		}
-		panel.m.AppendMenuItem(_isFolder(this.folder) ? MF_STRING : MF_GRAYED, 1540, 'Open containing folder');
+		panel.m.AppendMenuItem(_isFolder(this.folder) ? MF_STRING : MF_GRAYED, 1540, '打开所在文件夹');
 		panel.m.AppendMenuSeparator();
 	}
 
@@ -528,7 +528,7 @@ function _thumbs() {
 		var artist = this.artists[id];
 
 		if (!artist)
-			return; // we didn't request this id
+			return; // 我们没有请求此 id
 
 		if (!success) {
 			console.log(N, response_text);
@@ -594,13 +594,13 @@ function _thumbs() {
 	this.counter = 0;
 
 	this.properties = {
-		mode : new _p('2K3.THUMBS.MODE', 4), // 0 grid 1 left 2 right 3 top 4 bottom 5 off
-		source : new _p('2K3.THUMBS.SOURCE', 0), // 0 custom folder 1 last.fm
+		mode : new _p('2K3.THUMBS.MODE', 4), // 0 网格 1 左 2 右 3 上 4 下 5 关闭
+		source : new _p('2K3.THUMBS.SOURCE', 0), // 0 自定义文件夹 1 last.fm
 		tf : new _p('2K3.THUMBS.CUSTOM.FOLDER.TF', '$directory_path(%path%)'),
 		limit : new _p('2K3.THUMBS.DOWNLOAD.LIMIT', 10),
 		px : new _p('2K3.THUMBS.PX', 75),
 		cycle : new _p('2K3.THUMBS.CYCLE', 0),
-		sort : new _p('2K3.THUMBS.SORT', 0), // 0 a-z 1 newest first
+		sort : new _p('2K3.THUMBS.SORT', 0), // 0 A-Z 1 最新优先
 		aspect : new _p('2K3.THUMBS.ASPECT', image.crop_top),
 		auto_download : new _p('2K3.THUMBS.AUTO.DOWNLOAD', true),
 	};

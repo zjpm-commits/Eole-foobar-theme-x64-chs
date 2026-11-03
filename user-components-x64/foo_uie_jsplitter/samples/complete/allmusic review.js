@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 
-window.DefineScript('Allmusic Review', {author:'marc2003'});
+window.DefineScript('Allmusic 评论', {author:'marc2003'});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');

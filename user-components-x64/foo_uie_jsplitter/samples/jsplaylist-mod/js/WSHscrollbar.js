@@ -1,5 +1,5 @@
-// *****************************************************************************************************************************************
-// scrollbar & scrollBar object by Br3tt aka Falstaff (c)2015
+﻿// *****************************************************************************************************************************************
+// scrollbar & scrollBar 对象，作者 Br3tt aka Falstaff (c)2015
 // *****************************************************************************************************************************************
 
 oScrollbar = function (themed) {
@@ -13,7 +13,7 @@ oScrollbar = function (themed) {
 	this.buttons = Array(null, null, null);
 
 	this.draw = function (gr, x, y) {
-		// draw background and buttons up & down
+		// 绘制背景及上下按钮
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(6, 1);
@@ -24,22 +24,22 @@ oScrollbar = function (themed) {
 		} else {
 			gr.FillSolidRect(this.x, this.y, this.w, this.h, g_color_normal_txt & 0x15ffffff);
 		};
-		// draw up & down buttons
+		// 绘制上下按钮
 		this.buttons[cScrollBar.buttonType.up] && this.buttons[cScrollBar.buttonType.up].draw(gr, this.x, this.y, 255);
 		this.buttons[cScrollBar.buttonType.down] && this.buttons[cScrollBar.buttonType.down].draw(gr, this.x, this.y + this.h - this.w, 255);
 
-		// draw cursor
+		// 绘制光标
 		this.buttons[cScrollBar.buttonType.cursor] && this.buttons[cScrollBar.buttonType.cursor].draw(gr, this.x, this.cursorPos, 255);
 	};
 
 	this.setCursor = function (totalRowVisible, totalRows, offset) {
 		if (totalRows > 0 && totalRows > totalRowVisible && this.w > 2) {
 			this.cursorWidth = this.w;
-			// calc cursor height
+			// 计算光标高度
 			this.cursorHeight = Math.round((totalRowVisible / totalRows) * this.area_h);
 			if (this.cursorHeight < this.w - 2 || this.cursorHeight > p.list.h)
 				this.cursorHeight = this.w - 2;
-			// cursor pos
+			// 光标位置
 			var ratio = offset / (totalRows - totalRowVisible);
 			this.cursorPos = this.area_y + Math.round((this.area_h - this.cursorHeight) * ratio);
 			this.setCursorButton();
@@ -47,10 +47,10 @@ oScrollbar = function (themed) {
 	};
 
 	this.setCursorButton = function () {
-		// normal cursor Image
+		// 普通光标图像
 		this.cursorImage_normal = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		var gb = this.cursorImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(3, 1);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.cursorWidth, this.cursorHeight);
@@ -63,10 +63,10 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_normal.ReleaseGraphics(gb);
 
-		// hover cursor Image
+		// 悬停光标图像
 		this.cursorImage_hover = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		gb = this.cursorImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(3, 2);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.cursorWidth, this.cursorHeight);
@@ -79,10 +79,10 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_hover.ReleaseGraphics(gb);
 
-		// down cursor Image
+		// 按下光标图像
 		this.cursorImage_down = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		gb = this.cursorImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(3, 3);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.cursorWidth, this.cursorHeight);
@@ -95,16 +95,16 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_down.ReleaseGraphics(gb);
 
-		// create/refresh cursor Button in buttons array
+		// 在 buttons 数组中创建/刷新光标按钮
 		this.buttons[cScrollBar.buttonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down);
 	};
 
 	this.setButtons = function () {
 
-		// normal scroll_up Image
+		// 普通向上滚动图像
 		this.upImage_normal = gdi.CreateImage(this.w, this.w);
 		var gb = this.upImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 1);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -114,10 +114,10 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_normal.ReleaseGraphics(gb);
 
-		// hover scroll_up Image
+		// 悬停向上滚动图像
 		this.upImage_hover = gdi.CreateImage(this.w, this.w);
 		gb = this.upImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 2);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -127,10 +127,10 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_hover.ReleaseGraphics(gb);
 
-		// down scroll_up Image
+		// 按下向上滚动图像
 		this.upImage_down = gdi.CreateImage(this.w, this.w);
 		gb = this.upImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 3);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -140,10 +140,10 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_down.ReleaseGraphics(gb);
 
-		// normal scroll_down Image
+		// 普通向下滚动图像
 		this.downImage_normal = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 5);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -153,10 +153,10 @@ oScrollbar = function (themed) {
 		};
 		this.downImage_normal.ReleaseGraphics(gb);
 
-		// hover scroll_down Image
+		// 悬停向下滚动图像
 		this.downImage_hover = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 6);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -166,10 +166,10 @@ oScrollbar = function (themed) {
 		};
 		this.downImage_hover.ReleaseGraphics(gb);
 
-		// down scroll_down Image
+		// 按下向下滚动图像
 		this.downImage_down = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		try {
 			this.theme.SetPartAndStateId(1, 7);
 			this.theme.DrawThemeBackground(gb, 0, 0, this.w, this.w);
@@ -200,16 +200,16 @@ oScrollbar = function (themed) {
 		this.y = y;
 		this.w = w;
 		this.h = h;
-		// scrollbar area for the cursor (<=> scrollbar height minus up & down buttons height)
+		// 光标可用的滚动条区域（<=> 滚动条高度减去上下按钮高度）
 		this.area_y = y + w;
 		this.area_h = h - (w * 2);
 		this.setButtons();
 	};
 
 	this.setOffsetFromCursorPos = function () {
-		// calc ratio of the scroll cursor to calc the equivalent item for the full playlist (with gh)
+		// 计算滚动光标的比例，以换算整个播放列表中对应的项（含 gh）
 		var ratio = (this.cursorPos - this.area_y) / (this.area_h - this.cursorHeight);
-		// calc idx of the item (of the full playlist with gh) to display at top of the panel list (visible)
+		// 计算要显示在面板列表顶部（可见）的项索引（整个播放列表，含 gh）
 		var newOffset = Math.round((p.list.totalRows - p.list.totalRowVisible) * ratio);
 		return newOffset;
 	};
@@ -276,16 +276,16 @@ oScrollbar = function (themed) {
 
 		this.hover = this.isHoverObject(x, y);
 
-		// check cursor
+		// 检测光标
 		this.cursorCheck(event, x, y);
 
-		// check other buttons
+		// 检测其他按钮
 		var fin = this.buttons.length;
 		for (var i = 1; i < fin; i++) {
 			switch (event) {
 			case "dblclk":
 				switch (i) {
-				case 1: // up button
+				case 1: // 向上按钮
 					if (this.buttons[i] && this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
 						this.clicked = true;
 						p.list.buttonclicked = true;
@@ -312,7 +312,7 @@ oScrollbar = function (themed) {
 						};
 					};
 					break;
-				case 2: // down button
+				case 2: // 向下按钮
 					if (this.buttons[i] && this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
 						this.clicked = true;
 						p.list.buttonclicked = true;
@@ -343,7 +343,7 @@ oScrollbar = function (themed) {
 				break;
 			case "down":
 				switch (i) {
-				case 1: // up button
+				case 1: // 向上按钮
 					if (this.buttons[i] && this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
 						this.clicked = true;
 						p.list.buttonclicked = true;
@@ -369,7 +369,7 @@ oScrollbar = function (themed) {
 						};
 					};
 					break;
-				case 2: // down button
+				case 2: // 向下按钮
 					if (this.buttons[i] && this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
 						this.clicked = true;
 						p.list.buttonclicked = true;
@@ -452,10 +452,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 	};
 
 	this.setCursorButton = function () {
-		// normal cursor Image
+		// 普通光标图像
 		this.cursorImage_normal = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		var gb = this.cursorImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 1);
@@ -472,10 +472,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.cursorImage_normal.ReleaseGraphics(gb);
 
-		// hover cursor Image
+		// 悬停光标图像
 		this.cursorImage_hover = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		gb = this.cursorImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 2);
@@ -492,10 +492,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.cursorImage_hover.ReleaseGraphics(gb);
 
-		// down cursor Image
+		// 按下光标图像
 		this.cursorImage_down = gdi.CreateImage(this.cursorWidth, this.cursorHeight);
 		gb = this.cursorImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 3);
@@ -512,15 +512,15 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.cursorImage_down.ReleaseGraphics(gb);
 
-		// create/refresh cursor Button in buttons array
+		// 在 buttons 数组中创建/刷新光标按钮
 		this.buttons[this.buttonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down);
 	};
 
 	this.setButtons = function () {
-		// normal scroll_up Image
+		// 普通向上滚动图像
 		this.upImage_normal = gdi.CreateImage(this.w, this.w);
 		var gb = this.upImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 1);
@@ -535,10 +535,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.upImage_normal.ReleaseGraphics(gb);
 
-		// hover scroll_up Image
+		// 悬停向上滚动图像
 		this.upImage_hover = gdi.CreateImage(this.w, this.w);
 		gb = this.upImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 2);
@@ -553,10 +553,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.upImage_hover.ReleaseGraphics(gb);
 
-		// down scroll_up Image
+		// 按下向上滚动图像
 		this.upImage_down = gdi.CreateImage(this.w, this.w);
 		gb = this.upImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 3);
@@ -571,10 +571,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.upImage_down.ReleaseGraphics(gb);
 
-		// normal scroll_down Image
+		// 普通向下滚动图像
 		this.downImage_normal = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_normal.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 5);
@@ -589,10 +589,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.downImage_normal.ReleaseGraphics(gb);
 
-		// hover scroll_down Image
+		// 悬停向下滚动图像
 		this.downImage_hover = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_hover.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 6);
@@ -607,10 +607,10 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		};
 		this.downImage_hover.ReleaseGraphics(gb);
 
-		// down scroll_down Image
+		// 按下向下滚动图像
 		this.downImage_down = gdi.CreateImage(this.w, this.w);
 		gb = this.downImage_down.GetGraphics();
-		// Draw Themed Scrollbar (lg/col)
+		// 绘制主题滚动条（lg/col）
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(1, 7);
@@ -659,7 +659,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 
 	this.updateCursorPos = function (offset) {
 		this.offset = offset;
-		// calc cursor position and height / offset
+		// 计算光标位置与高度/偏移
 		this.ratio1 = this.totalRowsFull / this.total;
 		this.cursorWidth = this.w;
 		this.cursorHeight = Math.round(this.ratio1 * this.cursorAreaHeight);
@@ -709,7 +709,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		this.x = x;
 		this.y = y;
 		if (this.visible) {
-			// scrollbar background
+			// 滚动条背景
 			if (this.themed) {
 				try {
 					this.theme.SetPartAndStateId(6, 1);
@@ -720,7 +720,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 			} else {
 				gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_txt & 0x15ffffff);
 			};
-			// scrollbar buttons
+			// 滚动条按钮
 			this.buttons[this.buttonType.cursor].draw(gr, x, this.cursorY, 255);
 			if (this.showButtons) {
 				this.buttons[this.buttonType.up].draw(gr, x, y, 255);
@@ -731,7 +731,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 
 	this.draw = function (gr) {
 		if (this.visible) {
-			// scrollbar background
+			// 滚动条背景
 			if (this.themed) {
 				try {
 					this.theme.SetPartAndStateId(6, 1);
@@ -742,7 +742,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 			} else {
 				gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_txt & 0x15ffffff);
 			};
-			// scrollbar buttons
+			// 滚动条按钮
 			this.buttons[this.buttonType.cursor].draw(gr, this.x, this.cursorY, 255);
 			if (this.showButtons) {
 				this.buttons[this.buttonType.up].draw(gr, this.x, this.y, 255);
@@ -752,9 +752,9 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 	};
 
 	this.getOffsetFromCursorPos = function () {
-		// calc ratio of the scroll cursor to calc the equivalent item for the full playlist (with gh)
+		// 计算滚动光标的比例，以换算整个播放列表中对应的项（含 gh）
 		var ratio = (this.cursorY - this.cursorAreaY) / (this.cursorAreaHeight - this.cursorHeight);
-		// calc idx of the item (of the full list with gh) to display at top of the panel list (visible)
+		// 计算要显示在面板列表顶部（可见）的项索引（整个列表，含 gh）
 		var newOffset = Math.round((this.total - this.totalRowsFull) * ratio);
 		return newOffset;
 	};
@@ -832,18 +832,18 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 		this.isHoverEmptyArea = (x >= this.x && x <= this.x + this.w && y >= this.y + this.buttonHeight && y <= this.cursorAreaY + this.cursorAreaHeight) && !this.isHoverCursor;
 		this.isHoverButtons = this.isHoverScrollbar && !this.isHoverCursor && !this.isHoverEmptyArea;
 
-		// cursor events
+		// 光标事件
 		if (!this.buttonClick)
 			this.cursorCheck(event, x, y);
 
 		if (!this.cursorDrag) {
-			// buttons events
+			// 按钮事件
 			var totalButtonToCheck = (this.themed ? 3 : 3);
 			for (var i = 1; i < totalButtonToCheck; i++) {
 				switch (event) {
 				case "down":
 					switch (i) {
-					case 1: // up button
+					case 1: // 向上按钮
 						if (this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
 							this.buttonClick = true;
 							this.offset = this.offset > 0 ? this.offset - 1 : 0;
@@ -866,7 +866,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 							};
 						};
 						break;
-					case 2: // down button
+					case 2: // 向下按钮
 						if (this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
 							this.buttonClick = true;
 							var max_offset = this.total - this.totalRowsFull;
@@ -908,13 +908,13 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 				};
 			};
 
-			// click on empty scrollbar area to scroll page
+			// 点击滚动条空白区域翻页
 			if (this.isHoverEmptyArea) {
 				switch (event) {
 				case "down":
 				case "dblclk":
 					switch (y < this.cursorY) {
-					case true: // up
+					case true: // 向上
 						this.offset = this.offset > this.totalRowsFull ? this.offset - this.totalRowsFull : 0;
 						eval(this.parentObject).offset = this.offset;
 						this.reSet(this.total, this.itemHeight, this.offset);
@@ -934,7 +934,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 								}, 60);
 						};
 						break;
-					case false: // down
+					case false: // 向下
 						var max_offset = this.total - this.totalRowsFull;
 						this.offset = (this.offset + this.totalRowsFull >= max_offset ? max_offset : this.offset + this.totalRowsFull);
 						eval(this.parentObject).offset = this.offset;
@@ -961,7 +961,7 @@ oScrollBar = function (id, object_name, x, y, w, h, total_items, item_height, of
 				};
 			};
 
-			// mouse wheel event
+			// 鼠标滚轮事件
 			if (event == "wheel") {
 				if (delta > 0) {
 					this.offset = this.offset > this.scrollStep ? this.offset - this.scrollStep : 0;

@@ -1,9 +1,8 @@
-﻿window.DefineScript('Audio Stream Selector');
+﻿window.DefineScript('音频流选择器');
 
-// Visual selector for audio streams exposed by the input decoder.
-// The panel follows the focused playlist item. Click a stream card to select it.
-// If the focused item is currently playing, SetAudioStream() restarts playback
-// automatically when the effective stream changes.
+// 由输入解码器暴露的音频流的可视化选择器。
+// 面板跟随聚焦的播放列表项目。点击某个音频流卡片即可选择它。
+// 如果聚焦的项目正在播放，当有效流发生变化时，SetAudioStream() 会自动重启播放。
 
 include("docs/Helpers.js");
 
@@ -113,7 +112,7 @@ function getRowAt(x, y) {
 }
 
 function drawHeader(gr) {
-    const title = handle ? tfTitle.EvalWithMetadb(handle) : 'No focused item';
+    const title = handle ? tfTitle.EvalWithMetadb(handle) : '无聚焦项目';
     gr.GdiDrawText(title, fontTitle, TEXT, MARGIN, 7, Math.max(0, window.Width - MARGIN * 2), 24, 0x00000020 | 0x00008000);
 }
 
@@ -139,10 +138,10 @@ function drawStream(gr, stream, row) {
     gr.DrawRect(x, y, w - 1, h - 1, 1, border);
 
     let flags = [];
-    if (stream.selected) flags.push('selected');
-    if (stream.default) flags.push('default');
+    if (stream.selected) flags.push('已选择');
+    if (stream.default) flags.push('默认');
 
-    const heading = `Stream ${stream.index}${flags.length ? `  [${flags.join(', ')}]` : ''}`;
+    const heading = `音频流 ${stream.index}${flags.length ? `  [${flags.join(', ')}]` : ''}`;
     gr.GdiDrawText(heading, fontHeader, stream.selected ? TEXT_ACCENT : TEXT,
         x + CARD_PADDING, y + CARD_PADDING, Math.max(0, w - CARD_PADDING * 2), CARD_HEADER_HEIGHT,
         0x00000020 | 0x00008000);
@@ -163,17 +162,17 @@ function on_paint(gr) {
     drawHeader(gr);
 
     if (!handle) {
-        drawMessage(gr, 'Focus a playlist item to inspect its audio streams.', TEXT_DIM);
+        drawMessage(gr, '请聚焦一个播放列表项目以查看其音频流。', TEXT_DIM);
         return;
     }
 
     if (errorText) {
-        drawMessage(gr, `GetAudioStreams failed:\n${errorText}`, ERROR);
+        drawMessage(gr, `获取音频流失败：\n${errorText}`, ERROR);
         return;
     }
 
     if (!streams.length) {
-        drawMessage(gr, 'The input decoder does not expose selectable audio streams for this file.', TEXT_DIM);
+        drawMessage(gr, '该文件的输入解码器未暴露可选择的音频流。', TEXT_DIM);
         return;
     }
 

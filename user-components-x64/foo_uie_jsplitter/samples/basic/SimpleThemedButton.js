@@ -1,4 +1,4 @@
-window.DefineScript('SimpleThemedButton', {author: 'T.P Wang'});
+window.DefineScript('简单主题按钮', {author: 'T.P Wang'});
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
@@ -12,10 +12,10 @@ const ButtonStates = {
 };
 
 const buttons = {
-    Console: new SimpleButton(5, 5, 80, 26, 'Console', function () {
+    Console: new SimpleButton(5, 5, 80, 26, '控制台', function () {
         fb.ShowConsole();
     }),
-    Configure: new SimpleButton(5, 40, 80, 26, 'Configure', function () {
+    Configure: new SimpleButton(5, 40, 80, 26, '配置', function () {
         window.ShowConfigure();
     })
 };
@@ -141,4 +141,3 @@ function on_mouse_lbtn_up(x, y) {
         window.Repaint();
     }
 }
-

@@ -1,11 +1,11 @@
-﻿window.DefineScript('SQLite Playback History');
+﻿window.DefineScript('SQLite 播放历史');
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
-// A small persistent playback-history panel.
-// The database is stored in the foobar2000 profile folder and survives restarts.
-// It demonstrates schema creation, parameters, a reusable prepared statement,
-// aggregate queries, SQLite exception handling and explicit cleanup.
+// 一个小型的持久化播放历史面板。
+// 数据库存放在 foobar2000 配置文件文件夹中，重启后仍会保留。
+// 它演示了建表、参数、可复用的预处理语句、
+// 聚合查询、SQLite 异常处理以及显式的清理。
 
 const DB_PATH = fb.ProfilePath + 'jsplitter-playback-history.db';
 const RECENT_LIMIT = 12;
@@ -18,8 +18,8 @@ const fontTitle = gdi.Font('Segoe UI', 16, 1);
 const fontText = gdi.Font('Segoe UI', 12, 0);
 const fontSmall = gdi.Font('Segoe UI', 10, 0);
 
-const tfArtist = fb.TitleFormat('$if2(%album artist%,$if2(%artist%,Unknown artist))');
-const tfTitle = fb.TitleFormat('$if2(%title%,Unknown title)');
+const tfArtist = fb.TitleFormat('$if2(%album artist%,$if2(%artist%,未知艺术家))');
+const tfTitle = fb.TitleFormat('$if2(%title%,未知标题)');
 const tfAlbum = fb.TitleFormat('[%album%]');
 
 let db = utils.OpenDatabase(DB_PATH);
@@ -64,7 +64,7 @@ if (db) {
 
 function reportDatabaseError(error) {
     databaseError = error && error.message ? error.message : String(error);
-    console.log(`SQLite Playback History: ${databaseError}`);
+    console.log(`SQLite 播放历史：${databaseError}`);
     window.Repaint();
 }
 
@@ -80,7 +80,7 @@ function addPlayback(metadb) {
             metadb.Path
         ]);
 
-        // Keep the demo database bounded without rebuilding the table.
+        // 在不重建表的情况下，让演示数据库保持有界。
         db.Exec(`
             DELETE FROM playback_history
             WHERE id <= (
@@ -155,27 +155,27 @@ function on_paint(gr) {
     gr.FillSolidRect(0, 0, width, height, RGB(28, 30, 34));
 
     let y = 10;
-    drawLine(gr, 'SQLite Playback History', margin, y, width - margin * 2, 28, fontTitle, text);
+    drawLine(gr, 'SQLite 播放历史', margin, y, width - margin * 2, 28, fontTitle, text);
     y += 32;
 
     if (!db) {
         const message = databaseError
-            ? `SQLite error: ${databaseError}`
-            : 'Unable to open the playback history database.';
+            ? `SQLite 错误：${databaseError}`
+            : '无法打开播放历史数据库。';
         drawLine(gr, message, margin, y, width - margin * 2, 22, fontText, error);
         return;
     }
 
     if (databaseError) {
-        drawLine(gr, `SQLite error: ${databaseError}`, margin, y, width - margin * 2, 22, fontSmall, error);
+        drawLine(gr, `SQLite 错误：${databaseError}`, margin, y, width - margin * 2, 22, fontSmall, error);
         y += 24;
     }
 
-    drawLine(gr, 'Top artists — last 30 days', margin, y, width - margin * 2, 20, fontSmall, muted);
+    drawLine(gr, '热门艺人 — 最近30天', margin, y, width - margin * 2, 20, fontSmall, muted);
     y += 20;
 
     if (!topArtists.length) {
-        drawLine(gr, 'Play a few tracks to populate the database.', margin, y, width - margin * 2, 22, fontText, muted);
+        drawLine(gr, '播放几首曲目以填充数据库。', margin, y, width - margin * 2, 22, fontText, muted);
         y += 28;
     } else {
         for (const row of topArtists) {
@@ -185,7 +185,7 @@ function on_paint(gr) {
         y += 8;
     }
 
-    drawLine(gr, 'Recent plays', margin, y, width - margin * 2, 20, fontSmall, muted);
+    drawLine(gr, '最近播放', margin, y, width - margin * 2, 20, fontSmall, muted);
     y += 22;
 
     for (const row of recent) {
@@ -204,7 +204,7 @@ function on_mouse_rbtn_up(x, y) {
     if (!db) return;
 
     const menu = window.CreatePopupMenu();
-    menu.AppendMenuItem(MF_STRING, 1, 'Clear history');
+    menu.AppendMenuItem(MF_STRING, 1, '清除历史');
 
     if (menu.TrackPopupMenu(x, y) === 1) {
         try {

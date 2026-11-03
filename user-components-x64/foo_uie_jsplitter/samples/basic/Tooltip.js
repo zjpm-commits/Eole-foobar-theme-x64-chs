@@ -1,4 +1,4 @@
-window.DefineScript('Tooltip', { author: 'T.P Wang' });
+window.DefineScript('提示气泡', { author: 'T.P Wang' });
 include('docs/Helpers.js');
 
 const g_font = gdi.Font('Segoe UI', 14, 1);
@@ -13,7 +13,7 @@ let cur_btn = null;
 let ww, wh;
 
 function SampleButton(x, y, w, h, caption, func, tiptext) {
-    // 'Constructor' stuff
+    // '构造函数'内容
     this.left = x;
     this.top = y;
     this.w = w;
@@ -24,17 +24,17 @@ function SampleButton(x, y, w, h, caption, func, tiptext) {
     this.func = func;
     this.tiptext = tiptext;
 
-    // Estimate whether the coordinate is in this button
+    // 判断坐标是否位于该按钮内
     this.traceMouse = function(x, y) {
         return (this.left < x) && (x < this.right) && (this.top < y) && (y < this.bottom);
     };
 
     this.draw = function(gr) {
-        // Draw border
-        // RGB function is defined in docs/Helpers.js
+        // 绘制边框
+        // RGB 函数定义在 docs/Helpers.js 中
         gr.FillRoundRect(this.left, this.top, this.w, this.h, 3, 3, RGB(19, 30, 38));
         gr.DrawRoundRect(this.left, this.top, this.w, this.h, 3, 3, 1, RGB(151, 180, 202));
-        // Draw caption
+        // 绘制标题
         gr.DrawString(this.caption, g_font, RGB(0xc0, 0xc0, 0xc0), this.left, this.top, this.w, this.h, 0x11005000);
     };
 
@@ -43,13 +43,13 @@ function SampleButton(x, y, w, h, caption, func, tiptext) {
     };
 
     this.onMouseIn = function() {
-        // Update tooltip text
+        // 更新提示文本
         g_tooltip.Text = this.tiptext;
         g_tooltip.Activate();
     };
 
     this.onMouseOut = function() {
-        // Hide tooltip
+        // 隐藏提示
         g_tooltip.Deactivate();
     }
 }
@@ -100,7 +100,7 @@ function on_mouse_lbtn_up(x, y) {
 
 function on_paint(gr) {
     gr.SetTextRenderingHint(5); // clear type
-    gr.SetSmoothingMode(4); // Anti-Alias
+    gr.SetSmoothingMode(4); // Anti-Alias 抗锯齿
     gr.FillSolidRect(0, 0, ww, wh, utils.GetSysColour(15));
     buttonsDraw(gr);
 }
@@ -112,29 +112,29 @@ function on_size() {
     let buttonY = 5;
 
     SampleButtons = {
-        stop: new SampleButton(5, buttonY, 70, 30, 'Stop', function() {
+        stop: new SampleButton(5, buttonY, 70, 30, '停止', function() {
             fb.Stop();
         },
-        'Stop'),
-        prev: new SampleButton(80, buttonY, 70, 30, 'Previous', function() {
+        '停止'),
+        prev: new SampleButton(80, buttonY, 70, 30, '上一首', function() {
             fb.Prev();
         },
-        'Previous'),
-        play: new SampleButton(155, buttonY, 70, 30, 'Play', function() {
+        '上一首'),
+        play: new SampleButton(155, buttonY, 70, 30, '播放', function() {
             fb.Play();
         },
-        'Play'),
-        pause: new SampleButton(230, buttonY, 70, 30, 'Pause', function() {
+        '播放'),
+        pause: new SampleButton(230, buttonY, 70, 30, '暂停', function() {
             fb.Pause();
         },
-        'Pause'),
-        next: new SampleButton(305, buttonY, 70, 30, 'Next', function() {
+        '暂停'),
+        next: new SampleButton(305, buttonY, 70, 30, '下一首', function() {
             fb.Next();
         },
-        'Next'),
-        rand: new SampleButton(380, buttonY, 70, 30, 'Random', function() {
+        '下一首'),
+        rand: new SampleButton(380, buttonY, 70, 30, '随机', function() {
             fb.Random();
         },
-        'Random')
+        '随机')
     };
 }

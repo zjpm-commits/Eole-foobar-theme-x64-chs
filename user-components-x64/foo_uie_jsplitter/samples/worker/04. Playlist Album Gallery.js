@@ -1,19 +1,18 @@
 ﻿'use strict';
 
-// Worker sample 4: Playlist Album Gallery
-// Demonstrates: cloning playlist handles, Worker-side album deduplication, asynchronous
-// artwork loading, thumbnail resizing and transferring GDI/D2D images back to a live panel UI.
-// Engine switches between the panel-side baseline and the Worker pipeline so the effect on
-// UI responsiveness and useful artwork concurrency can be compared directly.
-// Mouse wheel changes cover size. Only the albums that fit in the current viewport are
-// requested, and every settled size reloads them from scratch on purpose: this sample has
-// no artwork cache. Each image is resized in the Worker so its shorter side matches the
-// current cover size; panel drawing then only crops the already-small thumbnail. In Worker mode
-// resize runs in the Worker; in Main mode it deliberately runs in the panel realm as a baseline.
-// Images are drawn directly in on_paint as they arrive; no offscreen gallery bitmap is composed.
-// Concurrency controls how many album-art
-// promises may be in flight at once. Worker GDI uses the runtime's eager WIC decode path, while
-// Main GDI keeps the legacy GDI+ path. The status separates first display, load, panel receive/display, and paint cost.
+// Worker 示例 4：播放列表专辑画廊
+// 演示：克隆播放列表句柄、Worker 端专辑去重、异步封面加载、缩略图缩放，
+// 以及将 GDI/D2D 图像回传到实时面板 UI。
+// 引擎可在面板端基线和 Worker 管线之间切换，便于直接对比其对 UI 响应性
+// 以及有用封面并发能力的影响。
+// 滚轮可改变封面大小。仅请求适合当前视口的专辑，并且每次大小稳定后
+// 都故意从头重新加载：本示例没有封面缓存。每张图像都在 Worker 中调整大小，
+// 使其较短边与当前封面大小一致；面板绘制仅对已缩小的缩略图做裁剪。
+// 在 Worker 模式下，缩放在 Worker 中运行；在 主线程 模式下则有意放在面板域
+// 中作为基线。图像到达后直接在 on_paint 中绘制；不会合成离屏的画廊位图。
+// 并发数控制同时可有多少专辑封面的 Promise 在途。Worker 的 GDI 使用
+// 运行时的预解码 WIC 路径，而 主线程 的 GDI 保留传统的 GDI+ 路径。
+// 状态行区分首次显示、加载、面板接收/显示以及绘制开销。
 
 let engine = 'worker';
 let drawMode = 1;
@@ -94,8 +93,8 @@ function buildAlbumsMain(handles) {
     const result = [];
 
     for (let i = 0; i < handles.Count; ++i) {
-        const artist = artists[i] || '(unknown artist)';
-        const title = titles[i] || '(unknown album)';
+        const artist = artists[i] || '(未知艺术家)';
+        const title = titles[i] || '(未知专辑)';
         const year = years[i] || '';
         const key = artist + '\0' + title;
 
@@ -147,8 +146,8 @@ function buildAlbums(handles) {
     const result = [];
 
     for (let i = 0; i < handles.Count; ++i) {
-        const artist = artists[i] || '(unknown artist)';
-        const title = titles[i] || '(unknown album)';
+        const artist = artists[i] || '(未知艺术家)';
+        const title = titles[i] || '(未知专辑)';
         const year = years[i] || '';
         const key = artist + '\\0' + title;
 
@@ -278,7 +277,7 @@ function concurrencyRects() {
             { value: 4, rect: { x: x + 80, y, w: 30, h: 24 }, text: '4' },
             { value: 8, rect: { x: x + 114, y, w: 30, h: 24 }, text: '8' },
             { value: 16, rect: { x: x + 148, y, w: 34, h: 24 }, text: '16' },
-            { value: 0, rect: { x: x + 186, y, w: 48, h: 24 }, text: 'All' }
+            { value: 0, rect: { x: x + 186, y, w: 48, h: 24 }, text: '全部' }
         ]
     };
 }
@@ -339,15 +338,15 @@ function drawCover(gr, image, x, y, size) {
 
 function statusText() {
     const visible = Math.min(albums.length, getLayout().capacity);
-    let text = coverSize + ' px  •  visible ' + visible + '/' + albums.length;
+    let text = coverSize + ' px  •  可见 ' + visible + '/' + albums.length;
 
     if (loadState.count) {
         text += '  •  ' + loadState.completed + '/' + loadState.count;
-        if (loadState.firstDisplayElapsed > 0) text += '  •  first ' + loadState.firstDisplayElapsed.toFixed(0) + ' ms';
-        if (loadState.loadElapsed > 0) text += '  •  load ' + loadState.loadElapsed.toFixed(0) + ' ms';
-        if (loadState.receiveElapsed > 0) text += '  •  receive ' + loadState.receiveElapsed.toFixed(0) + ' ms';
-        if (loadState.displayElapsed > 0) text += '  •  display ' + loadState.displayElapsed.toFixed(0) + ' ms';
-        if (loadState.paintCount > 0) text += '  •  paints ' + loadState.paintCount + '/' + loadState.paintElapsed.toFixed(0) + ' ms';
+        if (loadState.firstDisplayElapsed > 0) text += '  •  首次 ' + loadState.firstDisplayElapsed.toFixed(0) + ' ms';
+        if (loadState.loadElapsed > 0) text += '  •  加载 ' + loadState.loadElapsed.toFixed(0) + ' ms';
+        if (loadState.receiveElapsed > 0) text += '  •  接收 ' + loadState.receiveElapsed.toFixed(0) + ' ms';
+        if (loadState.displayElapsed > 0) text += '  •  显示 ' + loadState.displayElapsed.toFixed(0) + ' ms';
+        if (loadState.paintCount > 0) text += '  •  绘制 ' + loadState.paintCount + '/' + loadState.paintElapsed.toFixed(0) + ' ms';
     }
 
     return text;
@@ -460,7 +459,7 @@ function sendPlaylist() {
 
     const playlistIndex = plman.ActivePlaylist;
     const handles = playlistIndex >= 0 ? plman.GetPlaylistItems(playlistIndex) : fb.CreateHandleList();
-    playlistName = playlistIndex >= 0 ? plman.GetPlaylistName(playlistIndex) : 'No active playlist';
+    playlistName = playlistIndex >= 0 ? plman.GetPlaylistName(playlistIndex) : '无活动播放列表';
 
     ++generation;
     if (engine === 'worker') {
@@ -545,7 +544,7 @@ function startEngine() {
         };
 
         currentWorker.onerror = function (event) {
-            if (worker === currentWorker) console.log('Worker error: ' + event.message);
+            if (worker === currentWorker) console.log('Worker 错误：' + event.message);
         };
     }
 
@@ -641,29 +640,29 @@ function on_paint(gr) {
     const concurrencyUi = concurrencyRects();
     const titleRight = Math.max(MARGIN + 80, engineUi.label.x - 10);
     const statusRight = Math.max(MARGIN + 80, concurrencyUi.label.x - 10);
-    gr.DrawText('Albums', TITLE_FONT, 0xFFE8EDF2,
+    gr.DrawText('专辑', TITLE_FONT, 0xFFE8EDF2,
         MARGIN, 5, 60, 24,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    gr.DrawText('Mouse wheel: resize covers', INFO_FONT, 0xFF7E8A96,
+    gr.DrawText('滚轮：调整封面大小', INFO_FONT, 0xFF7E8A96,
         MARGIN + 66, 5, Math.max(1, titleRight - (MARGIN + 66)), 24,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     gr.DrawText(statusText(), INFO_FONT, 0xFF9AA6B2,
         MARGIN, 34, Math.max(1, statusRight - MARGIN), 20,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-    gr.DrawText('Engine:', INFO_FONT, 0xFFB7C1CB,
+    gr.DrawText('引擎：', INFO_FONT, 0xFFB7C1CB,
         engineUi.label.x, engineUi.label.y, engineUi.label.w, engineUi.label.h,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    drawChoice(gr, engineUi.main, 'Main', engine === 'main');
+    drawChoice(gr, engineUi.main, '主线程', engine === 'main');
     drawChoice(gr, engineUi.worker, 'Worker', engine === 'worker');
 
-    gr.DrawText('Renderer:', INFO_FONT, 0xFFB7C1CB,
+    gr.DrawText('渲染器：', INFO_FONT, 0xFFB7C1CB,
         rects.label.x, rects.label.y, rects.label.w, rects.label.h,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     drawChoice(gr, rects.gdi, 'GDI', drawMode === 0);
     drawChoice(gr, rects.d2d, 'D2D', drawMode === 1);
 
-    gr.DrawText('Concurrent:', INFO_FONT, 0xFFB7C1CB,
+    gr.DrawText('并发：', INFO_FONT, 0xFFB7C1CB,
         concurrencyUi.label.x, concurrencyUi.label.y, concurrencyUi.label.w, concurrencyUi.label.h,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     for (const choice of concurrencyUi.choices) {
@@ -671,7 +670,7 @@ function on_paint(gr) {
     }
 
     if (!albums.length) {
-        gr.DrawText('No albums in the active playlist.', INFO_FONT, 0xFF7E8A96,
+        gr.DrawText('当前播放列表无专辑。', INFO_FONT, 0xFF7E8A96,
             MARGIN, HEADER_H + 8, Math.max(1, window.Width - MARGIN * 2), 28,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         return;
@@ -690,7 +689,7 @@ function on_paint(gr) {
         if (image) {
             drawCover(gr, image, rect.x, rect.y, coverSize);
         } else {
-            gr.DrawText(loadState.active ? 'Loading...' : 'No artwork', META_FONT, 0xFF72808D,
+            gr.DrawText(loadState.active ? '加载中...' : '无封面', META_FONT, 0xFF72808D,
                 rect.x, rect.y, coverSize, coverSize,
                 DT_CENTER | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         }

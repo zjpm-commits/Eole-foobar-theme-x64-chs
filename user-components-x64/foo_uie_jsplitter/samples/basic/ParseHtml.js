@@ -1,5 +1,5 @@
 ﻿//
-// Demonstrates utils.ParseHtml(), HtmlDocument, and HtmlNode.
+// 演示 utils.ParseHtml()、HtmlDocument 和 HtmlNode。
 //
 
 function log_section(title) {
@@ -11,64 +11,64 @@ function normalize_text(s) {
     return (s || "").replace(/\s+/g, " ").trim();
 }
 
-// This example uses the same structure as samples/basic/html/parse_test.html.
+// 本示例使用与 samples/basic/html/parse_test.html 相同的结构。
 // const html = utils.ReadUTF8(`${fb.ComponentPath}\\samples\\basic\\html\\parse_test.html`);
 const html = `
 <!doctype html>
-<html lang="en">
+<html lang="zh">
 <head>
 	<meta charset="utf-8">
-	<title>Lexbor Parser Test</title>
-	<meta property="og:title" content="Test Artist Biography">
+	<title>Lexbor 解析器测试</title>
+	<meta property="og:title" content="测试艺人传记">
 </head>
 <body>
 	<main id="page" class="artist-page biography">
-		<h1 class="artist-name">Test Artist</h1>
+		<h1 class="artist-name">测试艺人</h1>
 
 		<section class="wiki-content" data-source="lastfm">
 			<p>
-				Test Artist is an experimental music project from London.
-				The project combines <strong>ambient</strong>, <em>industrial</em>,
-				and electronic music.
+				测试艺人是一个来自伦敦的实验音乐项目。
+				该项目融合了 <strong>氛围</strong>、<em>工业</em>
+				和电子音乐。
 			</p>
 
 			<p>
-				Their first album,
-				<a href="/music/Test+Artist/First+Album" class="album-link">First Album</a>,
-				was released in 2020.
+				他们的第一张专辑，
+				<a href="/music/Test+Artist/First+Album" class="album-link">第一张专辑</a>，
+				于 2020 年发行。
 			</p>
 		</section>
 
 		<section class="albums">
-			<h2>Albums</h2>
+			<h2>专辑</h2>
 
 			<ul class="album-list">
 				<li class="album" data-year="2020">
-					<a href="/music/Test+Artist/First+Album">First Album</a>
+					<a href="/music/Test+Artist/First+Album">第一张专辑</a>
 				</li>
 				<li class="album featured" data-year="2022">
-					<a href="/music/Test+Artist/Second+Album">Second Album</a>
+					<a href="/music/Test+Artist/Second+Album">第二张专辑</a>
 				</li>
 				<li class="album" data-year="2024">
-					<span>No link album</span>
+					<span>无链接专辑</span>
 				</li>
 			</ul>
 		</section>
 
 		<section class="external-links">
-			<h2>External links</h2>
+			<h2>外部链接</h2>
 
 			<ul>
 				<li>
-					text before link
-					<a href="https://example.com/artist" rel="external">Official site</a>
+					链接前的文本
+					<a href="https://example.com/artist" rel="external">官方网站</a>
 				</li>
 				<li>
-					<!-- comment before link -->
+					<!-- 链接前的注释 -->
 					<a href="https://musicbrainz.org/artist/test">MusicBrainz</a>
 				</li>
 				<li>
-					<span>Broken item without href</span>
+					<span>没有 href 的损坏项目</span>
 				</li>
 			</ul>
 		</section>
@@ -80,54 +80,54 @@ const html = `
 const doc = utils.ParseHtml(html);
 
 if (!doc) {
-    console.log("Parse failed.");
+    console.log("解析失败。");
 } else {
-    log_section("Document basics");
+    log_section("文档基本信息");
 
-    console.log("documentElement tag:", doc.documentElement.tagName); // html
-    console.log("root tag:", doc.root.tagName);                       // html
+    console.log("documentElement 标签:", doc.documentElement.tagName); // html
+    console.log("根标签:", doc.root.tagName);                       // html
     console.log("head innerHTML:", normalize_text(doc.head.innerHTML));
-    console.log("body text:", normalize_text(doc.body.textContent));
+    console.log("body 文本:", normalize_text(doc.body.textContent));
 
     log_section("querySelector");
 
     const title = doc.querySelector("title");
-    console.log("title:", title ? title.textContent : "<missing>");
+    console.log("标题:", title ? title.textContent : "<缺失>");
 
     const artistName = doc.querySelector(".artist-name");
-    console.log("artist:", artistName ? artistName.textContent : "<missing>");
+    console.log("艺人:", artistName ? artistName.textContent : "<缺失>");
 
     const wiki = doc.querySelector(".wiki-content");
     if (wiki) {
-        console.log("wiki source:", wiki.getAttribute("data-source")); // lastfm
-        console.log("wiki text:", normalize_text(wiki.textContent));
+        console.log("wiki 来源:", wiki.getAttribute("data-source")); // lastfm
+        console.log("wiki 文本:", normalize_text(wiki.textContent));
     }
 
     log_section("querySelectorAll");
 
     const albums = doc.querySelectorAll(".album");
-    console.log("albums count:", albums.length); // 3
+    console.log("专辑数量:", albums.length); // 3
 
     for (let i = 0; i < albums.length; i++) {
         const album = albums[i];
         const link = album.querySelector("a");
 
         console.log(
-            "album #" + (i + 1) + ":",
+            "专辑 #" + (i + 1) + ":",
             "year=" + album.getAttribute("data-year"),
             "featured=" + album.hasClass("featured"),
             "title=" + (link ? normalize_text(link.textContent) : normalize_text(album.textContent)),
-            "href=" + (link ? link.getAttribute("href") : "<no link>")
+            "href=" + (link ? link.getAttribute("href") : "<无链接>")
         );
     }
 
-    log_section("Attribute selectors");
+    log_section("属性选择器");
 
     const nodesWithClass = doc.querySelectorAll("[class]");
-    console.log("nodes with class:", nodesWithClass.length);
+    console.log("带 class 的节点:", nodesWithClass.length);
 
     const featuredAlbums = doc.querySelectorAll(".album.featured");
-    console.log("featured albums:", featuredAlbums.length);
+    console.log("特色专辑:", featuredAlbums.length);
 
     const albumToken = doc.querySelectorAll("[class~='album']");
     console.log("[class~='album']:", albumToken.length);
@@ -135,7 +135,7 @@ if (!doc) {
     log_section("getElementsByTagName");
 
     const allLinks = doc.getElementsByTagName("a");
-    console.log("all links:", allLinks.length);
+    console.log("所有链接:", allLinks.length);
 
     for (let i = 0; i < allLinks.length; i++) {
         console.log(
@@ -146,43 +146,43 @@ if (!doc) {
         );
     }
 
-    log_section("children vs childNodes");
+    log_section("children 与 childNodes");
 
     const p = doc.querySelector(".wiki-content p");
 
     console.log("p.children.length:", p.children.length);
     console.log("p.childNodes.length:", p.childNodes.length);
 
-    // firstChild is a text node here. JSON.stringify() is used intentionally
-    // to show that original whitespace and line breaks are preserved.
-    console.log("p.firstChild text:", JSON.stringify(p.firstChild.textContent));
+    // 这里的 firstChild 是一个文本节点。刻意使用 JSON.stringify()
+    // 以表明原始的空白和换行会被保留。
+    console.log("p.firstChild 文本:", JSON.stringify(p.firstChild.textContent));
 
-    log_section("Safe link extraction");
+    log_section("安全的链接提取");
 
     const externalItems = doc.querySelectorAll(".external-links li");
 
     for (let i = 0; i < externalItems.length; i++) {
         const li = externalItems[i];
 
-        // Do not use li.firstChild.getAttribute("href"):
-        // firstChild can be a text node or a comment.
+        // 不要使用 li.firstChild.getAttribute("href")：
+        // firstChild 可能是文本节点或注释。
         const a = li.querySelector("a[href]");
 
         if (!a) {
-            console.log("external item #" + (i + 1) + ": no link");
+            console.log("外部项目 #" + (i + 1) + ": 无链接");
             continue;
         }
 
         console.log(
-            "external item #" + (i + 1) + ":",
+            "外部项目 #" + (i + 1) + ":",
             normalize_text(a.textContent),
             "=>",
             a.getAttribute("href")
         );
     }
 
-    log_section("Missing nodes");
+    log_section("缺失的节点");
 
-    console.log("missing node:", doc.querySelector(".missing"));          // null
-    console.log("missing list length:", doc.querySelectorAll(".missing").length); // 0
+    console.log("缺失节点:", doc.querySelector(".missing"));          // null
+    console.log("缺失列表长度:", doc.querySelectorAll(".missing").length); // 0
 }

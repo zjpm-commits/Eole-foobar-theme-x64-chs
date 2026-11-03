@@ -11,8 +11,8 @@ function on_size(width, height) {
 }
 
 let result = DialogResult.None;
-const msg = "You clicked ";
-let str = msg + "None";
+const msg = "你点击了 ";
+let str = msg + "无";
 
 function on_paint(gr) {
 	gr.GdiDrawText(
@@ -29,22 +29,22 @@ function on_paint(gr) {
 function on_mouse_lbtn_down(x, y) {
 		
 	let result = utils.MessageBox(
-		"Want some fun?", "Question", 
+		"想来点乐趣吗？", "提问", 
 		MessageBoxButtons.YesNo, 
 		MessageBoxIcon.Question);
 	
 	if(result == DialogResult.No) {
 		utils.MessageBox(
-			"You're so boring... OK, good bye.", 
-			"Information", 
+			"你真没劲……好吧，再见。", 
+			"信息", 
 			MessageBoxButtons.OK, 
 			MessageBoxIcon.Information);
-		str = "Good bye!";
+		str = "再见！";
 	}
 	else {
 		result = utils.MessageBox(
-			"OK, choose you totem animal:\n\nYes - A cow\nNo - A dog\nCancel - I don't play this game!\n\nOr maybe you need some help? (press Help)", 
-			"Question", 
+			"好的，选择你的图腾动物：\n\n是 - 一头牛\n否 - 一条狗\n取消 - 我不玩这个游戏！\n\n或者你需要一些帮助？（按帮助）", 
+			"提问", 
 			MessageBoxButtons.YesNoCancel, 
 			MessageBoxIcon.Warning,
 			MessageBoxDefaultButton.Button3, 
@@ -52,13 +52,13 @@ function on_mouse_lbtn_down(x, y) {
 		switch(result)
 		{
 		case DialogResult.Yes:
-			str = msg + "Yes!";
+			str = msg + "是！";
 			break;
 		case DialogResult.No:
-			str = msg + "No!";
+			str = msg + "否！";
 			break;
 		default:
-			str = msg + "Cancel!";
+			str = msg + "取消！";
 			break;
 		}	
 	}

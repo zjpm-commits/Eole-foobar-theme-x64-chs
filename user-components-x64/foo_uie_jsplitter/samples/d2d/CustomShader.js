@@ -4,26 +4,26 @@ include(`${fb.ComponentPath}\\docs\\Effects.js`);
 
 window.DrawMode = 1;
 
-// Simple colour inversion shader
+// 简单的颜色反转着色器
 const shaderSource = `
-    // Input texture (Direct2D passed it into t0)
+    // 输入纹理（Direct2D 将其传入 t0）
     Texture2D InputTexture : register(t0);
     SamplerState InputSampler : register(s0);
 
-    // Direct2D input data structure
+    // Direct2D 输入数据结构
     struct VS_OUTPUT {
         float4 clipSpacePos : SV_POSITION;
         float4 sceneSpacePos : SCENE_POS;
         float4 texelSpacePos : TEXEL_POS;
     };
 
-    // Simple color inversion shader
+    // 简单的颜色反转着色器
     float4 main(VS_OUTPUT input) : SV_Target
     {
-        // Selecting a pixel from an input image
+        // 从输入图像中选取一个像素
         float4 color = InputTexture.Sample(InputSampler, input.texelSpacePos.xy);
 	
-        // Invert RGB, keep alpha
+        // 反转 RGB，保留 alpha
         return float4(1.0 - color.rgb, color.a) * color.a;
     }
 `;
@@ -34,7 +34,7 @@ effect.SetInput(0, img);
 
 const shaderCode = d2d.Compile(shaderSource);
 if (shaderCode.Error !== "") 
-    fb.ShowPopupMessage(shaderCode.Error, "Direct2D compile error!");
+    fb.ShowPopupMessage(shaderCode.Error, "Direct2D 编译错误！");
 else
     effect.SetValue(Effects.CustomShader.ShaderCode, shaderCode.Code);
 

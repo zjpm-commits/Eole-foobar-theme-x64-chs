@@ -1,4 +1,4 @@
-window.DefineScript('Custom context menu', { author: 'T.P Wang / marc2003' });
+window.DefineScript('自定义上下文菜单', { author: 'T.P Wang / marc2003' });
 include('docs/Flags.js');
 
 function on_mouse_lbtn_down(x, y) {
@@ -6,11 +6,11 @@ function on_mouse_lbtn_down(x, y) {
     let _basemenu = window.CreatePopupMenu();
     let _child = window.CreatePopupMenu();
 
-    // start index at 1, NOT 0
-    _basemenu.AppendMenuItem(MF_STRING, 1, 'item1');
-    _basemenu.AppendMenuItem(MF_STRING, 2, 'item2');
+    // 从索引 1 开始，而不是 0
+    _basemenu.AppendMenuItem(MF_STRING, 1, '项目1');
+    _basemenu.AppendMenuItem(MF_STRING, 2, '项目2');
     if (fb.GetNowPlaying()) {
-        _child.AppendTo(_basemenu, MF_STRING, 'Now Playing');
+        _child.AppendTo(_basemenu, MF_STRING, '正在播放');
     }
     
     _context.InitNowPlaying();
@@ -19,13 +19,13 @@ function on_mouse_lbtn_down(x, y) {
     const idx = _basemenu.TrackPopupMenu(x, y);
     
     switch (idx) {
-        case 0: //user dismissed menu by clicking elsewhere. that's why you can't use 0 when building menu items
+        case 0: //用户点击其他位置关闭了菜单，因此构建菜单项时不能使用 0
             break;
         case 1:
-            fb.ShowPopupMessage('You have chosen item1.');
+            fb.ShowPopupMessage('你已选择项目1。');
             break;
         case 2:
-            fb.ShowPopupMessage('OK, item2 is clicked.');
+            fb.ShowPopupMessage('好的，项目2 被点击了。');
             break;
         default:
             _context.ExecuteByID(idx - 3);

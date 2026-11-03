@@ -56,7 +56,7 @@ function on_paint(dgr) {
 	if(!started)
 	{
 		dgr.DrawEffect(scale, 0, 0, 0, 0, ww, wh);
-		dgr.DrawText("Clik to enter the matrix...", font, 0xFFFFFFFF, 10, 10, ww, 100, DT_CENTER | DT_VCENTER);
+		dgr.DrawText("点击进入矩阵...", font, 0xFFFFFFFF, 10, 10, ww, 100, DT_CENTER | DT_VCENTER);
 	}
 	else
 		dgr.DrawEffect(chromakey, 0, 0, 0, 0, ww, wh);

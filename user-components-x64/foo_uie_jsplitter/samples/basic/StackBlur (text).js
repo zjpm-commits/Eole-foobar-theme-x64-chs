@@ -1,9 +1,9 @@
-window.DefineScript('StackBlur (text)', {author: 'T.P Wang / marc2003'});
+window.DefineScript('StackBlur（文本）', {author: 'T.P Wang / marc2003'});
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
 const g_font = gdi.Font('Segoe UI', 32, FontStyle.Bold);
-const text = '\'Stack Blur\' Sample';
+const text = '\'堆叠模糊\' 示例';
 
 let ww = 0, wh = 0;
 let img_to_blur;
@@ -25,6 +25,6 @@ function on_size() {
     g.SetTextRenderingHint(TextRenderingHint.AntiAlias);
     g.DrawString(text, g_font, RGB(0, 0, 255), 0, 0, ww, wh, StringFormat(StringAlignment.Center, StringAlignment.Center));
     img_to_blur.ReleaseGraphics(g);
-    // Make Stack Blur, radius value can be between 2 and 254
+    // 进行堆叠模糊，半径值可以介于 2 和 254 之间
     img_to_blur.StackBlur(30);
 }

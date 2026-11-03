@@ -1,18 +1,18 @@
 window.DefineScript('LoadImageAsyncV2', { author: 'TheQwertiest' });
 
-// Get a list of jpg files from a folder
+// 从文件夹获取 jpg 文件列表
 const g_image_list = utils.Glob(`${fb.ComponentPath}samples/basic/images/*.jpg`);
 let ww = 0, wh = 0;
 let g_img = null;
 
-// Trigger every 5 seconds.
+// 每 5 秒触发一次。
 let g_timer = window.SetInterval(function () {
     load_random_image_async();
 }, 5000);
 
 const load_random_image_async = async (metadb, art_id) =>
 {
-    // Load a random image from the list
+    // 从列表中加载一张随机图片
     let path = g_image_list[Math.floor(Math.random() * g_image_list.length)];
     g_img = await gdi.LoadImageAsyncV2(0, path);
     window.Repaint();

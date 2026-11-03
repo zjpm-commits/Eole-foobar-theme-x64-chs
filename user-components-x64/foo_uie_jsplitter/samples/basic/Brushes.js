@@ -18,7 +18,7 @@ const img = gdi.Image(`${fb.ComponentPath}\\samples\\d2d\\images\\Flowers.jpg`);
 const bitmapBrush = gdi.Brush(BrushType.Bitmap, img, BrushWrapMode.TileFlipXY);
 
 const font = gdi.Font("Segoe UI", 96, 1);
-const text = "TEST FOR TEXT BRUSH";
+const text = "文字笔刷测试";
 
 function on_paint(gr) {
 

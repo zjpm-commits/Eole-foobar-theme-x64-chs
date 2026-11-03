@@ -1,8 +1,8 @@
 ﻿'use strict';
 
-// Worker sample 1: Basic Messaging
-// Demonstrates: Worker lifecycle, structured-clone messages, message/error handlers and shutdown.
-// Why a Worker: this is the smallest complete pattern used by the larger samples.
+// Worker 示例 1：基础消息通信
+// 演示：Worker 生命周期、结构化克隆消息、消息/错误处理与关闭。
+// 为何使用 Worker：这是较大示例所使用的最小完整模式。
 
 const workerSource = String.raw`
 'use strict';
@@ -17,14 +17,14 @@ onmessage = function (event) {
         workerName: self.name
     });
 
-    // The current message task is allowed to finish, then this Worker exits.
+    // 当前消息任务允许完成，然后此 Worker 退出。
     close();
 };
 
 onmessageerror = function (event) {
-    console.log('Worker could not reconstruct an incoming message.');
-    console.log('Direction: ' + event.direction);
-    console.log('Reason: ' + (event.errorMessage || '(no diagnostic text)'));
+    console.log('Worker 无法重建传入的消息。');
+    console.log('方向：' + event.direction);
+    console.log('原因：' + (event.errorMessage || '（无诊断信息）'));
 };
 `;
 
@@ -35,20 +35,19 @@ worker.onmessage = function (event) {
 };
 
 worker.onmessageerror = function (event) {
-    console.log('Panel could not reconstruct a Worker message.');
-    console.log(`Direction: ${event.direction}`);
-    console.log(`Reason: ${event.errorMessage || '(no diagnostic text)'}`);
+    console.log('面板无法重建 Worker 消息。');
+    console.log(`方向：${event.direction}`);
+    console.log(`原因：${event.errorMessage || '（无诊断信息）'}`);
 };
 
 worker.onerror = function (event) {
-    console.log(`Worker error: ${event.message}`);
+    console.log(`Worker 错误：${event.message}`);
 };
 
 worker.postMessage({ values: [1, 2, 3, 4] });
 
 function on_script_unload() {
-    // Explicit termination is optional on panel unload: JSplitter automatically
-    // terminates Workers still owned by the panel. Calling terminate() here is also
-    // safe, including after this sample Worker has already called close().
+    // 面板卸载时显式终止是可选的：JSplitter 会自动终止仍由面板拥有的 Worker。
+    // 在此处调用 terminate() 也是安全的，包括在本示例 Worker 已调用 close() 之后。
     worker.terminate();
 }

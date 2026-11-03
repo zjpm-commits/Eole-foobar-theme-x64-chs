@@ -1,6 +1,6 @@
-'use strict';
+﻿'use strict';
 
-window.DefineScript('Seekbar', {author:'marc2003', options:{grab_focus:false}});
+window.DefineScript('进度条', {author:'marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\seekbar.js');

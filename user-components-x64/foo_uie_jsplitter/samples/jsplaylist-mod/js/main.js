@@ -1,4 +1,4 @@
-var g_script_version = "2.1.0";
+﻿var g_script_version = "2.1.0";
 var g_LDT = DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS;
 var g_middle_clicked = false;
 var g_middle_click_timer = false;
@@ -12,7 +12,7 @@ var g_repaint = 0;
 var g_seconds = 0;
 var g_timer1 = false, need_repaint = false;
 var g_mouse_wheel_timer = false;
-// drag'n drop from windows system
+// 从 Windows 系统拖放
 var g_dragndrop_status = false;
 var g_dragndrop_x = -1;
 var g_dragndrop_y = -1;
@@ -22,7 +22,7 @@ var g_dragndrop_trackId = -1;
 var g_dragndrop_rowId = -1;
 var g_dragndrop_targetPlaylistId = -1;
 var g_dragndrop_total_before = 0;
-// font vars
+// 字体变量
 var g_fname, g_fsize, g_fstyle;
 var g_font = null;
 var g_font_headers = null;
@@ -31,7 +31,7 @@ var g_font_group2 = null;
 var g_font_guifx_found = utils.CheckFont("guifx v2 transports");
 var g_font_playicon, g_font_pauseicon, g_font_checkbox, g_font_queue_idx, g_font_rating, g_font_mood;
 var g_font_wd1, g_font_wd2, g_font_wd3;
-// color vars
+// 颜色变量
 var g_color_normal_bg = 0;
 var g_color_selected_bg = 0;
 var g_color_normal_txt = 0;
@@ -41,7 +41,7 @@ var g_syscolor_window_bg = 0;
 var g_syscolor_highlight = 0;
 var g_syscolor_button_bg = 0;
 var g_syscolor_button_txt = 0;
-// main window vars
+// 主窗口变量
 var g_avoid_on_playlists_changed = false;
 var g_avoid_on_playlist_items_reordered = false;
 var g_avoid_on_item_focus_change = false;
@@ -68,7 +68,7 @@ var foo_playcount = utils.CheckComponent("foo_playcount", true);
 clipboard = {
 	selection: null
 };
-// wallpaper infos
+// 壁纸信息
 var wpp_img_info = {
 	orient: 0,
 	cut: 0,
@@ -79,10 +79,10 @@ var wpp_img_info = {
 	w: 0,
 	h: 0
 };
-// WSH statistics globals
+// WSH 统计全局变量
 var tf_path = fb.TitleFormat("$left(%_path_raw%,4)");
 var g_path, g_track_type;
-var opt_stats = window.GetProperty("CUSTOM.Enable Statistics (write to file)", false);
+var opt_stats = window.GetProperty("自定义.启用统计（写入文件）", false);
 var wsh_time_elaps;
 var wsh_delay_stats;
 var wsh_limit_stats;
@@ -96,33 +96,33 @@ cStats = {
 	waiting_for_writing: false
 };
 
-//=================================================// main properties / parameters
+//=================================================// 主属性/参数
 properties = {
-	showDPI: window.GetProperty("SYSTEM.Show DPI", false),
-	enableTouchControl: window.GetProperty("SYSTEM.Enable Touch Scrolling", false),
-	collapseGroupsByDefault: window.GetProperty("SYSTEM.Collapse Groups by default", false),
-	enablePlaylistFilter: window.GetProperty("SYSTEM.Enable Playlist Filter", false),
-	enableCustomColors: window.GetProperty("SYSTEM.Enable Custom Colors", false),
-	defaultPlaylistItemAction: window.GetProperty("SYSTEM.Default Playlist Action", "Play"), //"Add to playback queue",
-	autocollapse: window.GetProperty("SYSTEM.Auto-Collapse", false),
-	showgroupheaders: window.GetProperty("*GROUP: Show Group Headers", true),
-	showscrollbar: window.GetProperty("CUSTOM Show Scrollbar", true),
-	showwallpaper: window.GetProperty("CUSTOM Show Wallpaper", false),
-	wallpaperalpha: window.GetProperty("CUSTOM Wallpaper Alpha", 192),
-	wallpaperblurred: window.GetProperty("CUSTOM Wallpaper Blurred", true),
-	wallpaperblurvalue: window.GetProperty("CUSTOM Wallpaper Blur value", 1.05),
-	wallpapermode: window.GetProperty("CUSTOM Wallpaper Type", 0),
-	wallpaperpath: window.GetProperty("CUSTOM Default Wallpaper Path", ".\\user-components\\foo_uie_jsplitter\\samples\\jsplaylist-mod\\images\\default.jpg"),
-	oddevenrowshighlight: window.GetProperty("CUSTOM Highlight Odd/Even Rows", true),
+	showDPI: window.GetProperty("系统.显示DPI", false),
+	enableTouchControl: window.GetProperty("系统.启用触摸滚动", false),
+	collapseGroupsByDefault: window.GetProperty("系统.默认折叠分组", false),
+	enablePlaylistFilter: window.GetProperty("系统.启用播放列表筛选", false),
+	enableCustomColors: window.GetProperty("系统.启用自定义颜色", false),
+	defaultPlaylistItemAction: window.GetProperty("系统.默认播放列表操作", "Play"), //"Add to playback queue",
+	autocollapse: window.GetProperty("系统.自动折叠", false),
+	showgroupheaders: window.GetProperty("*分组: 显示分组标题", true),
+	showscrollbar: window.GetProperty("自定义 显示滚动条", true),
+	showwallpaper: window.GetProperty("自定义 显示壁纸", false),
+	wallpaperalpha: window.GetProperty("自定义 壁纸透明度", 192),
+	wallpaperblurred: window.GetProperty("自定义 壁纸模糊", true),
+	wallpaperblurvalue: window.GetProperty("自定义 壁纸模糊值", 1.05),
+	wallpapermode: window.GetProperty("自定义 壁纸类型", 0),
+	wallpaperpath: window.GetProperty("自定义 默认壁纸路径", ".\\user-components\\foo_uie_jsplitter\\samples\\jsplaylist-mod\\images\\default.jpg"),
+	oddevenrowshighlight: window.GetProperty("自定义 高亮奇/偶行", true),
 	settingspanel: false,
-	smoothscrolling: window.GetProperty("CUSTOM Enable Smooth Scrolling", true),
+	smoothscrolling: window.GetProperty("自定义 启用平滑滚动", true),
 	max_columns: 24,
 	max_patterns: 25,
-	focus_rect_alpha: window.GetProperty("CUSTOM Focus box ALPHA", 75),
-	selection_rect_alpha: window.GetProperty("CUSTOM Selection solid box ALPHA", 60)
+	focus_rect_alpha: window.GetProperty("自定义 焦点框透明度", 75),
+	selection_rect_alpha: window.GetProperty("自定义 选中实心框透明度", 60)
 };
 
-// =================================================================== // Singleton for Images
+// =================================================================== // 图像单例
 images = {
 	path: fb.ComponentPath + "\\samples\\jsplaylist-mod\\images\\",
 	sortdirection: null,
@@ -137,24 +137,24 @@ images = {
 	loading_angle: 0
 };
 
-// =================================================================== // Fonts / Dpi / Colors / Images init
+// =================================================================== // 字体 / Dpi / 颜色 / 图像初始化
 function system_init() {
 	get_font();
 	get_colors();
 };
 system_init();
 
-// =================================================================== // Titleformat field
+// =================================================================== // Titleformat 字段
 var tf_group_key = null;
-// tf fields used in incremental search feature
+// 增量搜索功能中使用的 tf 字段
 var tf_artist = fb.TitleFormat("$if(%length%,%artist%,'Stream')");
 var tf_albumartist = fb.TitleFormat("$if(%length%,%album artist%,'Stream')");
 var tf_bitrate = fb.TitleFormat("$if(%__bitrate_dynamic%,$if(%el_isplaying%,%__bitrate_dynamic%'K',$if($stricmp($left(%codec_profile%,3),'VBR'),%codec_profile%,%__bitrate%'K')),$if($stricmp($left(%codec_profile%,3),'VBR'),%codec_profile%,%__bitrate%'K'))");
 var tf_bitrate_playing = fb.TitleFormat("$if(%__bitrate_dynamic%,$if(%_isplaying%,$select($add($mod(%_time_elapsed_seconds%,2),1),%__bitrate_dynamic%,%__bitrate_dynamic%),%__bitrate_dynamic%),%__bitrate%)'K'");
 
-// =================================================================== // Singletons
-cRow = { // references of row height (zoom 100%)
-	default_playlist_h: window.GetProperty("SYSTEM.Playlist Row Height in Pixel", 28),
+// =================================================================== // 单例
+cRow = { // 行高引用（缩放 100%）
+	default_playlist_h: window.GetProperty("系统.播放列表行高（像素）", 28),
 	playlist_h: 29,
 	extra_line_h: 6,
 	playlistManager_h: 28,
@@ -189,14 +189,14 @@ cSettings = {
 };
 
 cPlaylistManager = {
-	mediaLibraryPlaylist: window.GetProperty("SYSTEM.Media Library Playlist", false),
-	enableHistoricPlaylist: window.GetProperty("CUSTOM Historic Playlist enabled", false),
+	mediaLibraryPlaylist: window.GetProperty("系统.媒体库播放列表", false),
+	enableHistoricPlaylist: window.GetProperty("自定义 历史播放列表已启用", false),
 	width: zoom(220, g_dpi),
 	rowHeight: zoom(cRow.playlistManager_h, g_dpi),
 	showStatusBar: true,
 	statusBarHeight: zoom(18, g_dpi),
 	step: zoom(50, g_dpi),
-	visible: window.GetProperty("SYSTEM.PlaylistManager.Visible", false),
+	visible: window.GetProperty("系统.播放列表管理器.可见", false),
 	visible_on_launch: false,
 	drag_move_timer: false,
 	hscroll_timer: false,
@@ -206,7 +206,7 @@ cPlaylistManager = {
 	blink_counter: -1,
 	blink_id: null,
 	blink_totaltracks: 0,
-	showTotalItems: window.GetProperty("SYSTEM.PlaylistManager.ShowTotalItems", true),
+	showTotalItems: window.GetProperty("系统.播放列表管理器.显示总项数", true),
 	playlist_switch_pending: false,
 	drag_clicked: false,
 	drag_moved: false,
@@ -224,14 +224,14 @@ cPlaylistManager = {
 cTopBar = {
 	height: zoom(54, g_dpi),
 	txtHeight: zoom(19, g_dpi),
-	visible: window.GetProperty("SYSTEM.TopBar.Visible", true)
+	visible: window.GetProperty("系统.顶栏.可见", true)
 };
 
 cHeaderBar = {
 	height: zoom(cRow.headerBar_h, g_dpi),
 	txtHeight: zoom(12, g_dpi),
 	borderWidth: Math.ceil(cRow.headerBar_h * g_dpi / 100 / 14),
-	locked: window.GetProperty("SYSTEM.HeaderBar.Locked", true),
+	locked: window.GetProperty("系统.标题栏.已锁定", true),
 	timerAutoHide: false,
 	sortRequested: false
 };
@@ -249,7 +249,7 @@ cScrollBar = {
 	timerID2: false,
 	timerCounter: 0,
 	timer_repaint: false,
-	themed: window.GetProperty("CUSTOM.Scrollbar Themed", false)
+	themed: window.GetProperty("自定义.主题滚动条", false)
 };
 
 cTrack = {
@@ -258,23 +258,23 @@ cTrack = {
 };
 
 cGroup = {
-	show: window.GetProperty("*GROUP: Show Group Headers", true),
+	show: window.GetProperty("*分组: 显示分组标题", true),
 	default_collapsed_height: 3,
 	default_expanded_height: 3,
 	collapsed_height: 3,
 	expanded_height: 3,
-	default_count_minimum: window.GetProperty("*GROUP: Minimum number of rows in a group", 0),
-	count_minimum: window.GetProperty("*GROUP: Minimum number of rows in a group", 0),
+	default_count_minimum: window.GetProperty("*分组: 每组最少行数", 0),
+	count_minimum: window.GetProperty("*分组: 每组最少行数", 0),
 	extra_rows: 0,
 	type: 0,
-	pattern_idx: window.GetProperty("SYSTEM.Groups.Pattern Index", 0)
+	pattern_idx: window.GetProperty("系统.分组.模式索引", 0)
 };
 
 cover = {
 	show: true,
 	column: false,
-	draw_glass_reflect: window.GetProperty("CUSTOM.Cover draw reflect", false),
-	keepaspectratio: window.GetProperty("CUSTOM.Cover keep ration aspect", true),
+	draw_glass_reflect: window.GetProperty("自定义.封面绘制倒影", false),
+	keepaspectratio: window.GetProperty("自定义.封面保持纵横比", true),
 	load_timer: false,
 	repaint_timer: false,
 	margin: 7,
@@ -294,8 +294,8 @@ cList = {
 	clear_incsearch_timer: false,
 	incsearch_timer: false,
 	repaint_timer: false,
-	scrollstep: window.GetProperty("SYSTEM.Playlist Scroll Step", 3),
-	touchstep: window.GetProperty("SYSTEM.Playlist Touch Step", 2),
+	scrollstep: window.GetProperty("系统.播放列表滚动步长", 3),
+	touchstep: window.GetProperty("系统.播放列表触摸步长", 2),
 	scroll_timer: false,
 	scroll_delta: cTrack.height,
 	scroll_direction: 1,
@@ -303,7 +303,7 @@ cList = {
 	scroll_div: 2,
 	borderWidth: Math.ceil(cRow.headerBar_h * g_dpi / 100 / 14),
 	beam_timer: false,
-	enableExtraLine: window.GetProperty("SYSTEM.Enable Extra Line", true)
+	enableExtraLine: window.GetProperty("系统.启用额外行", true)
 };
 
 dragndrop = {
@@ -331,7 +331,7 @@ columns = {
 	mood_drag: false
 };
 
-//=================================================// Smoother scrolling in playlist
+//=================================================// 播放列表平滑滚动
 function set_scroll_delta() {
 	var maxOffset = (p.list.totalRows > p.list.totalRowVisible ? p.list.totalRows - p.list.totalRowVisible : 0);
 	if (p.list.offset > 0 && p.list.offset < maxOffset) {
@@ -355,7 +355,7 @@ function set_scroll_delta() {
 	};
 };
 
-//=================================================// Extra functions for playlist manager panel
+//=================================================// 播放列表管理器面板的额外函数
 function renamePlaylist() {
 	if (!p.playlistManager.inputbox.text || p.playlistManager.inputbox.text == "" || p.playlistManager.inputboxID == -1)
 		p.playlistManager.inputbox.text = p.playlistManager.playlists[p.playlistManager.inputboxID].name;
@@ -426,7 +426,7 @@ function togglePlaylistManager() {
 						cPlaylistManager.hscroll_timer && window.ClearTimeout(cPlaylistManager.hscroll_timer);
 						cPlaylistManager.hscroll_timer = false;
 						cPlaylistManager.visible = false;
-						window.SetProperty("SYSTEM.PlaylistManager.Visible", cPlaylistManager.visible);
+						window.SetProperty("系统.播放列表管理器.可见", cPlaylistManager.visible);
 						p.headerBar.button.update(p.headerBar.slide_open_normal, p.headerBar.slide_open_hover, p.headerBar.slide_open_down);
 						full_repaint();
 					};
@@ -440,7 +440,7 @@ function togglePlaylistManager() {
 						cPlaylistManager.hscroll_timer && window.ClearTimeout(cPlaylistManager.hscroll_timer);
 						cPlaylistManager.hscroll_timer = false;
 						cPlaylistManager.visible = true;
-						window.SetProperty("SYSTEM.PlaylistManager.Visible", cPlaylistManager.visible);
+						window.SetProperty("系统.播放列表管理器.可见", cPlaylistManager.visible);
 						p.headerBar.button.update(p.headerBar.slide_close_normal, p.headerBar.slide_close_hover, p.headerBar.slide_close_down);
 						full_repaint();
 					} else {
@@ -492,13 +492,13 @@ function adjustMetrics(origin) {
 	//
 
 	if (origin == 1) {
-		// reset cover cache on zoom/resize
+		// 缩放/调整大小时重置封面缓存
 		cover.max_w = (cGroup.default_collapsed_height > cGroup.default_expanded_height ? cGroup.default_collapsed_height * cTrack.height : cGroup.default_expanded_height * cTrack.height);
 		g_image_cache = new image_cache;
 	};
 };
 
-//=================================================// Images cache
+//=================================================// 图像缓存
 function on_get_album_art_done(metadb, art_id, image, image_path) {
 	var cover_metadb = null;
 	var fin = p.list.items.length;
@@ -532,7 +532,7 @@ image_cache = function () {
 	this.hit = function (metadb) {
 		var d = (properties.showgroupheaders ? metadb.Path : fb.TitleFormat("$replace(%path%,%filename_ext%,)").EvalWithMetadb(metadb));
 		var img = this._cachelist[d];
-		if (typeof img == "undefined") { // if image not in cache, we load it asynchronously
+		if (typeof img == "undefined") { // 若图像不在缓存中，我们异步加载它
 			if (!cover.load_timer) {
 				cover.load_timer = window.SetTimeout(function () {
 						utils.GetAlbumArtAsync(window.ID, metadb, AlbumArtId.front);
@@ -577,7 +577,7 @@ image_cache = function () {
 }
 var g_image_cache = new image_cache;
 
-//=================================================// Cover tools
+//=================================================// 封面工具
 function FormatCover(image, w, h, reflect, rawBitmap) {
 	if (!image || w <= 0 || h <= 0)
 		return image;
@@ -610,7 +610,7 @@ function reset_cover_timers() {
 	cover.load_timer = false;
 };
 
-//=================================================// WSH Statistics update function
+//=================================================// WSH 统计更新函数
 function update_statistics() {
 	if (opt_stats && !foo_playcount && cStats.waiting_for_writing && cStats.handle) {
 		var d;
@@ -662,9 +662,9 @@ function update_statistics() {
 		}
 		handles.UpdateFileInfoFromJSON(JSON.stringify(obj));
 		cStats.waiting_for_writing = false;
-		// report to console
-		console.log("--- WSH Statistics ---");
-		console.log("--- Track updated: \"" + cStats.handle.Path + "\"");
+		// 报告到控制台
+		console.log("--- WSH 统计 ---");
+		console.log("--- 曲目已更新：\"" + cStats.handle.Path + "\"");
 	};
 };
 
@@ -676,7 +676,7 @@ function full_repaint() {
 
 function resize_panels() {
 
-	// list row height
+	// 列表行高
 	if (cList.enableExtraLine) {
 		cRow.playlist_h = cRow.default_playlist_h + cRow.extra_line_h;
 	} else {
@@ -685,7 +685,7 @@ function resize_panels() {
 	cTrack.height = zoom(cRow.playlist_h, g_dpi);
 	cTrack.parity = ((zoom(cRow.playlist_h, g_dpi) / 2) == Math.floor(zoom(cRow.playlist_h, g_dpi) / 2) ? 0 : 1);
 
-	// topbar default height ?
+	// 顶栏默认高度？
 	if (cTopBar.visible) {
 		var topbar_h = cTopBar.height + cHeaderBar.borderWidth;
 	} else {
@@ -700,11 +700,11 @@ function resize_panels() {
 		p.headerBar.visible = false;
 	};
 
-	// playlist_manager default width/height ?
+	// 播放列表管理器默认宽度/高度？
 	var playlistManager_h = wh - topbar_h;
 	cPlaylistManager.visible_on_launch = cPlaylistManager.visible;
 	if (cPlaylistManager.visible) {
-		if (g_init_on_size) { // show again panel when back from settings!
+		if (g_init_on_size) { // 从设置返回时再次显示面板！
 			cPlaylistManager.visible = true;
 			p.playlistManager.woffset = 0;
 			/*
@@ -724,30 +724,30 @@ function resize_panels() {
 		};
 	};
 
-	// list default height ?
+	// 列表默认高度？
 	var list_h = wh - topbar_h - headerbar_h - (p.headerBar.visible ? cHeaderBar.borderWidth : 0);
 
-	// set Size of Topbar
+	// 设置顶栏大小
 	p.topBar.setSize(0, 0, ww, topbar_h);
 
-	// set Size of Header Bar
+	// 设置标题栏大小
 	p.headerBar && p.headerBar.setSize(0, topbar_h, ww, cHeaderBar.height);
 	p.headerBar.calculateColumns();
 
-	// set Size of List
+	// 设置列表大小
 	p.list.setSize(0, (wh - list_h), ww, list_h);
 	if (g_init_on_size) {
 		p.list.setItems(true);
 	};
 
-	// set Size of scrollbar
+	// 设置滚动条大小
 	p.scrollbar.setSize(p.list.x + p.list.w - cScrollBar.width, p.list.y, cScrollBar.width, p.list.h);
 	p.scrollbar.setCursor(p.list.totalRowVisible, p.list.totalRows, p.list.offset);
 
-	// set Size of Settings
+	// 设置设置面板大小
 	p.settings.setSize(0, 0, ww, wh);
 
-	// set Size of PlaylistManager
+	// 设置播放列表管理器大小
 	p.playlistManager.setSize(ww, p.list.y, cPlaylistManager.width, p.list.h);
 	if (cPlaylistManager.visible) {
 		p.playlistManager.refresh("", false, false);
@@ -756,10 +756,10 @@ function resize_panels() {
 	};
 };
 
-//=================================================// Init
+//=================================================// 初始化
 function on_init() {
 	plman.SetActivePlaylistContext();
-	// check properties
+	// 检测属性
 	if (!properties.showgroupheaders) {
 		cGroup.collapsed_height = 0;
 		cGroup.expanded_height = 0;
@@ -812,14 +812,14 @@ function on_size() {
 
 	resize_panels();
 
-	// set wallpaper
+	// 设置壁纸
 	if (fb.IsPlaying) {
 		p.wallpaperImg = setWallpaperImg(properties.wallpaperpath, fb.GetNowPlaying());
 	} else {
 		p.wallpaperImg = null;
 	};
 
-	// Set the empty rows count in playlist setup for cover column size!
+	// 在播放列表设置中为封面列大小设置空行数！
 	if (p.headerBar.columns[0].percent > 0) {
 		//cover.resized = true;
 		cover.column = true;
@@ -856,7 +856,7 @@ function on_paint(gr) {
 
  	if (!cSettings.visible) {
 
-		// draw background under playlist
+		// 绘制播放列表下方背景
 		if (fb.IsPlaying && p.wallpaperImg && properties.showwallpaper) {
 			gr.GdiDrawBitmap(p.wallpaperImg, 0, p.list.y, ww, wh - p.list.y, 0, p.list.y, p.wallpaperImg.Width, p.wallpaperImg.Height - p.list.y);
 			gr.FillSolidRect(0, p.list.y, ww, wh - p.list.y, g_color_normal_bg & RGBA(255, 255, 255, properties.wallpaperalpha));
@@ -864,13 +864,13 @@ function on_paint(gr) {
 			gr.FillSolidRect(0, p.list.y, ww, wh - p.list.y, g_color_normal_bg);
 		};
 
-		// List
+		// 列表
 		if (p.list) {
 			if (p.list.count > 0) {
-				// calculate columns metrics before drawing row contents!
+				// 在绘制行内容前计算列尺寸！
 				p.headerBar.calculateColumns();
 
-				// scrollbar
+				// 滚动条
 				if (properties.showscrollbar && p.scrollbar && p.list.totalRows > 0 && (p.list.totalRows > p.list.totalRowVisible)) {
 					p.scrollbar.visible = true;
 					p.scrollbar.draw(gr);
@@ -878,10 +878,10 @@ function on_paint(gr) {
 					p.scrollbar.visible = false;
 				};
 
-				// draw rows of the playlist
+				// 绘制播放列表的行
 				p.list && p.list.draw(gr);
 
-				// draw flashing beam if scroll max reached on mouse wheel! (android like effect)
+				// 鼠标滚轮滚动到极限时绘制闪烁光束！（类似 android 效果）
 				if (p.list.beam > 0) {
 					var r = getRed(g_color_highlight);
 					var g = getGreen(g_color_highlight);
@@ -890,10 +890,10 @@ function on_paint(gr) {
 					var beam_h = Math.floor(cTrack.height * 7 / 4);
 					var alpha = (p.list.beam_alpha <= 255 ? p.list.beam_alpha : 255);
 					switch (p.list.beam) {
-					case 1: // top beam
+					case 1: // 顶部光束
 						gr.DrawImage(images.beam, p.list.x, p.list.y - cHeaderBar.borderWidth * 10, p.list.w, beam_h - cHeaderBar.borderWidth, 0, 0, images.beam.Width, images.beam.Height, 180, alpha);
 						break;
-					case 2: // bot beam
+					case 2: // 底部光束
 						gr.DrawImage(images.beam, p.list.x, p.list.y + p.list.h - beam_h + cHeaderBar.borderWidth * 10, p.list.w, beam_h, 0, 0, images.beam.Width, images.beam.Height, 0, alpha);
 						break;
 					};
@@ -903,20 +903,20 @@ function on_paint(gr) {
 
 				if (plman.PlaylistCount > 0) {
 					var text_top = plman.GetPlaylistName(plman.ActivePlaylist);
-					var text_bot = "This playlist is empty";
+					var text_bot = "此播放列表为空";
 				} else {
-					var text_top = "JSPlaylist " + g_script_version + " coded by Br3tt - 2015";
-					var text_bot = "Create a playlist to start!";
+					var text_top = "JSPlaylist " + g_script_version + " 由 Br3tt 编写 - 2015";
+					var text_bot = "创建一个播放列表开始吧！";
 				};
-				// if Search Playlist, draw image "No Result"
+				// 若为搜索播放列表，绘制"无结果"图像
 				if (text_top.substr(0, 8) == "Search [") {
 					gr.SetTextRenderingHint(3);
 					var search_text = text_top.substr(8, text_top.length - 9);
-					gr.DrawString("No Result for \"" + search_text + "\"", gdi_font(g_fname, g_fsize + 7, 0), g_color_normal_txt & 0x40ffffff, 0, 0 - zoom(20, g_dpi), ww, wh, cc_stringformat);
+					gr.DrawString("未找到 \"" + search_text + "\"", gdi_font(g_fname, g_fsize + 7, 0), g_color_normal_txt & 0x40ffffff, 0, 0 - zoom(20, g_dpi), ww, wh, cc_stringformat);
 					gr.DrawString(text_bot, gdi_font(g_fname, g_fsize + 2, 0), g_color_normal_txt & 0x40ffffff, 0, 0 + zoom(20, g_dpi), ww, wh, cc_stringformat);
 					gr.FillGradRect(40, Math.floor(wh / 2), ww - 80, Math.floor(zoom(1, g_dpi)), 0, 0, g_color_normal_txt & 0x40ffffff, 0.5);
 				} else {
-					// if empty playlist, display text info
+					// 若播放列表为空，显示文本信息
 					gr.SetTextRenderingHint(3);
 					gr.DrawString(text_top, gdi_font(g_fname, g_fsize + 7, 0), g_color_normal_txt & 0x40ffffff, 0, 0 - zoom(20, g_dpi), ww, wh, cc_stringformat);
 					gr.DrawString(text_bot, gdi_font(g_fname, g_fsize + 2, 0), g_color_normal_txt & 0x40ffffff, 0, 0 + zoom(20, g_dpi), ww, wh, cc_stringformat);
@@ -925,7 +925,7 @@ function on_paint(gr) {
 			};
 		};
 
-		// draw background part above playlist (topbar + headerbar)
+		// 绘制播放列表上方背景部分（顶栏 + 标题栏）
 		if (cTopBar.visible || p.headerBar.visible) {
 			if (fb.IsPlaying && p.wallpaperImg && properties.showwallpaper) {
 				gr.GdiDrawBitmap(p.wallpaperImg, 0, 0, ww, p.list.y, 0, 0, p.wallpaperImg.Width, p.list.y);
@@ -935,16 +935,16 @@ function on_paint(gr) {
 			};
 		};
 
-		// TopBar
+		// 顶栏
 		if (cTopBar.visible) {
 			p.topBar && p.topBar.draw(gr);
 		}
 
-		// HeaderBar
+		// 标题栏
 		if (p.headerBar.visible) {
 			p.headerBar && p.headerBar.drawColumns(gr);
 			if (p.headerBar.borderDragged && p.headerBar.borderDraggedId >= 0) {
-				// all borders
+				// 所有边框
 				var fin = p.headerBar.borders.length;
 				for (var b = 0; b < fin; b++) {
 					var lg_x = p.headerBar.borders[b].x - 2;
@@ -952,7 +952,7 @@ function on_paint(gr) {
 					var segment_h = zoom(5, g_dpi);
 					var gap_h = zoom(5, g_dpi);
 					if (b == p.headerBar.borderDraggedId) {
-						var d = ((mouse_x / zoom(10, g_dpi)) - Math.floor(mouse_x / zoom(10, g_dpi))) * zoom(10, g_dpi); // give a value between [0;9]
+						var d = ((mouse_x / zoom(10, g_dpi)) - Math.floor(mouse_x / zoom(10, g_dpi))) * zoom(10, g_dpi); // 给出 [0;9] 之间的值
 					} else {
 						d = 5;
 					};
@@ -976,10 +976,10 @@ function on_paint(gr) {
 			p.headerBar && p.headerBar.drawHiddenPanel(gr);
 		};
 
-		// PlaylistManager
+		// 播放列表管理器
 		p.playlistManager && p.playlistManager.draw(gr);
 
-		// Incremental Search Display
+		// 增量搜索显示
 		if (cList.search_string.length > 0) {
 			gr.SetSmoothingMode(2);
 			p.list.tt_x = Math.floor(((p.list.w) / 2) - (((cList.search_string.length * zoom(13, g_dpi)) + (zoom(10, g_dpi) * 2)) / 2));
@@ -996,7 +996,7 @@ function on_paint(gr) {
 		};
 
 	} else {
-		// Settings...
+		// 设置...
 		p.settings && p.settings.draw(gr);
 	};
 
@@ -1006,7 +1006,7 @@ function on_paint(gr) {
 	};
 };
 
-//=================================================// Mouse Callbacks
+//=================================================// 鼠标回调
 function on_mouse_lbtn_down(x, y) {
 
 	if (properties.enableTouchControl) {
@@ -1024,23 +1024,23 @@ function on_mouse_lbtn_down(x, y) {
 
 	g_left_click_hold = true;
 
-	// check settings
+	// 检测设置
 	if (cSettings.visible) {
 		p.settings.on_mouse("down", x, y);
 	} else {
 
 		cover.previous_max_size = p.headerBar.columns[0].w;
 
-		// check list
+		// 检测列表
 		p.list.check("down", x, y);
 
-		// check scrollbar
+		// 检测滚动条
 		if (!cPlaylistManager.visible) {
 			if (p.playlistManager.woffset == 0 && properties.showscrollbar && p.scrollbar && p.list.totalRows > 0 && (p.list.totalRows > p.list.totalRowVisible)) {
 				p.scrollbar.check("down", x, y);
 			};
 
-			// check scrollbar scroll on click above or below the cursor
+			// 检测点击光标上方或下方时的滚动条滚动
 			if (p.scrollbar.hover && !p.scrollbar.cursorDrag) {
 				var scrollstep = p.list.totalRowVisible;
 				if (y < p.scrollbar.cursorPos) {
@@ -1085,10 +1085,10 @@ function on_mouse_lbtn_down(x, y) {
 			p.playlistManager.check("down", x, y);
 		};
 
-		// check topbar
+		// 检测顶栏
 		if (cTopBar.visible)
 			p.topBar.check("down", x, y);
-		// check headerbar
+		// 检测标题栏
 		if (p.headerBar.visible)
 			p.headerBar.on_mouse("down", x, y);
 	};
@@ -1098,22 +1098,22 @@ function on_mouse_lbtn_dblclk(x, y, mask) {
 
 	g_left_click_hold = true;
 
-	// check settings
+	// 检测设置
 	if (cSettings.visible) {
 		p.settings.on_mouse("dblclk", x, y);
 	} else {
-		// check list
+		// 检测列表
 		p.list.check("dblclk", x, y);
-		// check headerbar
+		// 检测标题栏
 		if (p.headerBar.visible)
 			p.headerBar.on_mouse("dblclk", x, y);
 
-		// check scrollbar
+		// 检测滚动条
 		if (!cPlaylistManager.visible) {
 			if (properties.showscrollbar && p.scrollbar && p.list.totalRows > 0 && (p.list.totalRows > p.list.totalRowVisible)) {
 				p.scrollbar.check("dblclk", x, y);
 				if (p.scrollbar.hover) {
-					on_mouse_lbtn_down(x, y); // ...to have a scroll response on double clicking scrollbar area above or below the cursor!
+					on_mouse_lbtn_down(x, y); // ……以便双击光标上方或下方的滚动条区域时产生滚动响应！
 				};
 			};
 		} else {
@@ -1124,22 +1124,22 @@ function on_mouse_lbtn_dblclk(x, y, mask) {
 
 function on_mouse_lbtn_up(x, y) {
 
-	// check settings
+	// 检测设置
 	if (cSettings.visible) {
 		p.settings.on_mouse("up", x, y);
 	} else {
 
-		// scrollbar scrolls up and down RESET
+		// 滚动条上下滚动重置
 		p.list.buttonclicked = false;
 		cScrollBar.timerID1 && window.ClearTimeout(cScrollBar.timerID1);
 		cScrollBar.timerID1 = false;
 		cScrollBar.timerID2 && window.ClearTimeout(cScrollBar.timerID2);
 		cScrollBar.timerID2 = false;
 
-		// after a cover column resize, update cover image cache
+		// 封面列调整大小后，更新封面图像缓存
 		if (cover.resized == true) {
 			cover.resized = false;
-			// reset cache
+			// 重置缓存
 			if (!g_first_launch) {
 				cover.max_w = (cGroup.default_collapsed_height > cGroup.default_expanded_height ? cGroup.default_collapsed_height * cTrack.height : cGroup.default_expanded_height * cTrack.height);
 				g_image_cache = new image_cache;
@@ -1149,20 +1149,20 @@ function on_mouse_lbtn_up(x, y) {
 			update_playlist(properties.collapseGroupsByDefault);
 		};
 
-		// check list
+		// 检测列表
 		p.list.check("up", x, y);
 
-		// playlist manager (if visible)
+		// 播放列表管理器（若可见）
 		if (p.playlistManager.woffset > 0 || cPlaylistManager.visible) {
 			p.playlistManager.check("up", x, y);
 		};
 
-		// check scrollbar
+		// 检测滚动条
 		if (properties.showscrollbar && p.scrollbar && p.list.totalRows > 0 && (p.list.totalRows > p.list.totalRowVisible)) {
 			p.scrollbar.check("up", x, y);
 		};
 
-		// Drop items after a drag'n drop INSIDE the playlist
+		// 在播放列表内部拖放后放置项目
 		if (!properties.enableTouchControl) {
 			if (p.list.ishover && dragndrop.drag_in) {
 				if (dragndrop.drag_id >= 0 && dragndrop.drop_id >= 0) {
@@ -1172,11 +1172,11 @@ function on_mouse_lbtn_up(x, y) {
 
 					if (dragndrop.contigus_sel && nb_selected_items > 0) {
 						if (dragndrop.drop_id > dragndrop.drag_id) {
-							// on pointe sur le dernier item de la selection si on move vers le bas
+							// 向下移动时指向选区的最后一个项目
 							var new_drag_pos = p.list.handleList.Find(p.list.metadblist_selection[nb_selected_items - 1]);
 							var move_delta = dragndrop.drop_id - new_drag_pos;
 						} else {
-							// on pointe sur le 1er item de la selection si on move vers le haut
+							// 向上移动时指向选区的第一个项目
 							var new_drag_pos = p.list.handleList.Find(p.list.metadblist_selection[0]);
 							var move_delta = dragndrop.drop_id - new_drag_pos;
 						};
@@ -1186,12 +1186,12 @@ function on_mouse_lbtn_up(x, y) {
 
 					} else {
 
-						// 1st: move selected item at the full end of the playlist to make then contigus
+						// 1：将所选项目移到播放列表末尾，使其连续
 						g_avoid_on_item_focus_change = true;
 						g_avoid_on_playlist_items_reordered = true;
 						plman.UndoBackup(p.list.playlist);
 						plman.MovePlaylistSelection(p.list.playlist, plman.PlaylistItemCount(p.list.playlist));
-						// 2nd: move bottom selection to new drop_id place (to redefine first...)
+						// 2：将底部选区移到新的 drop_id 位置（先重新定义……）
 						plman.SetPlaylistFocusItemByHandle(p.list.playlist, drop_handle);
 						var drop_id_new = plman.GetPlaylistFocusItemIndex(p.list.playlist);
 						plman.SetPlaylistFocusItemByHandle(p.list.playlist, save_focus_handle);
@@ -1220,15 +1220,15 @@ function on_mouse_lbtn_up(x, y) {
 		dragndrop.timerID = false;
 		//window.SetCursor(IDC_ARROW);
 
-		// check topbar
+		// 检测顶栏
 		if (cTopBar.visible)
 			p.topBar.check("up", x, y);
 
-		// check headerbar
+		// 检测标题栏
 		if (p.headerBar.visible)
 			p.headerBar.on_mouse("up", x, y);
 
-		// repaint on mouse up to refresh covers just loaded
+		// 鼠标抬起时重绘，以刷新刚加载的封面
 		full_repaint();
 	};
 
@@ -1245,15 +1245,15 @@ function on_mouse_rbtn_up(x, y) {
 	if (cSettings.visible) {
 		p.settings.on_mouse("right", x, y);
 	} else {
-		// check list
+		// 检测列表
 		p.list.check("right", x, y);
-		// check topBar
+		// 检测顶栏
 		if (cTopBar.visible)
 			p.topBar.check("right", x, y);
-		// check headerbar
+		// 检测标题栏
 		if (p.headerBar.visible)
 			p.headerBar.on_mouse("right", x, y);
-		// playlist manager
+		// 播放列表管理器
 		if (p.playlistManager.ishoverItem || p.playlistManager.ishoverHeader) {
 			p.playlistManager.check("right", x, y);
 		};
@@ -1269,7 +1269,7 @@ function on_mouse_move(x, y) {
 	if (x >= 0 && x < ww && y >= 0 && y < wh)
 		g_leave = false;
 
-	// check settings
+	// 检测设置
 	if (cSettings.visible) {
 
 		if (cTouch.down) {
@@ -1277,11 +1277,11 @@ function on_mouse_move(x, y) {
 			var y_delta = (cTouch.y_end - cTouch.y_start);
 			if (x < p.list.w) {
 				if (y_delta > p.settings.h / cSettings.rowHeight) {
-					on_mouse_wheel(1); // scroll up
+					on_mouse_wheel(1); // 向上滚动
 					cTouch.y_start = cTouch.y_end;
 				};
 				if (y_delta < -p.settings.h / cSettings.rowHeight) {
-					on_mouse_wheel(-1); // scroll down
+					on_mouse_wheel(-1); // 向下滚动
 					cTouch.y_start = cTouch.y_end;
 				};
 			};
@@ -1297,11 +1297,11 @@ function on_mouse_move(x, y) {
 				var y_delta = (cTouch.y_end - cTouch.y_start);
 				if (x < p.list.w) {
 					if (y_delta > p.list.h / cTrack.height) {
-						on_mouse_wheel(1); // scroll up
+						on_mouse_wheel(1); // 向上滚动
 						cTouch.y_start = cTouch.y_end;
 					};
 					if (y_delta < -p.list.h / cTrack.height) {
-						on_mouse_wheel(-1); // scroll down
+						on_mouse_wheel(-1); // 向下滚动
 						cTouch.y_start = cTouch.y_end;
 					};
 				};
@@ -1309,32 +1309,32 @@ function on_mouse_move(x, y) {
 
 		} else {
 
-			// playlist manager (if visible)
+			// 播放列表管理器（若可见）
 			if (p.playlistManager.woffset > 0) {
 				if (!cPlaylistManager.blink_timer) {
 					p.playlistManager.check("move", x, y);
 				};
 			};
 
-			// check list
+			// 检测列表
 			p.list.check("move", x, y);
 
-			// check scrollbar
+			// 检测滚动条
 			if (!cPlaylistManager.visible) {
 				if (properties.showscrollbar && p.scrollbar && p.list.totalRows > 0 && (p.list.totalRows > p.list.totalRowVisible)) {
 					p.scrollbar.check("move", x, y);
 				};
 			};
 
-			// check topbar
+			// 检测顶栏
 			if (cTopBar.visible)
 				p.topBar.check("move", x, y);
 
-			// check headerbar
+			// 检测标题栏
 			if (p.headerBar.visible)
 				p.headerBar.on_mouse("move", x, y);
 
-			// if cover column resized (or init), refresh column cover, minimum count, ... and playlist
+			// 若封面列调整了大小（或初始化），刷新列封面、最小数量……以及播放列表
 			if (cover.previous_max_size != p.headerBar.columns[0].w) {
 				cover.resized = true;
 				if (p.headerBar.columns[0].w > 0) {
@@ -1349,7 +1349,7 @@ function on_mouse_move(x, y) {
 				cover.previous_max_size = p.headerBar.columns[0].w;
 			};
 
-			// check toolbar for mouse icon dragging mode ***
+			// 检测工具栏的鼠标图标拖动模式 ***
 			if (p.list.mclicked && !p.headerBar.borderDragged && !p.headerBar.columnDragged) {
 				if (p.list.ishover || p.playlistManager.ishover || p.playlistManager.ishoverHeader) {
 					if (dragndrop.enabled && (dragndrop.drag_in || dragndrop.moved)) {
@@ -1385,9 +1385,9 @@ function on_mouse_move(x, y) {
 				};
 			};
 
-			// if Dragging Track on playlist, scroll playlist if required
+			// 若在播放列表上拖动音轨，必要时滚动播放列表
 			if (dragndrop.drag_in) {
-				// Dragn Drop
+				// 拖放
 				if (p.playlistManager.woffset == 0 || (cPlaylistManager.visible && x < p.playlistManager.x - p.playlistManager.woffset)) {
 					if (y < p.list.y) {
 						if (!p.list.buttonclicked) {
@@ -1437,7 +1437,7 @@ function on_mouse_move(x, y) {
 		};
 	};
 
-	// save coords
+	// 保存坐标
 	mouse_x = x;
 	mouse_y = y;
 };
@@ -1458,13 +1458,13 @@ function on_mouse_wheel(delta) {
 			if (g_forced_percent <= g_dpi_percent)
 				g_forced_percent = 0;
 		};
-		window.SetProperty("SYSTEM.dpi (0 = Default)", g_forced_percent);
+		window.SetProperty("系统.DPI（0=默认）", g_forced_percent);
 		g_dpi = (g_forced_percent == 0 ? g_dpi_percent : g_forced_percent);
 		adjustMetrics(1);
 		resize_panels();
 		full_repaint();
 	} else {
-		// check settings
+		// 检测设置
 		if (cSettings.visible) {
 			p.settings.on_mouse("wheel", mouse_x, mouse_y, delta);
 			if (cSettings.wheel_timer) {
@@ -1478,20 +1478,20 @@ function on_mouse_wheel(delta) {
 				}, 50);
 		} else {
 
-			// handle p.list Beam
+			// 处理 p.list 光束
 			var limit_reached = false;
 			var maxOffset = (p.list.totalRows > p.list.totalRowVisible ? p.list.totalRows - p.list.totalRowVisible : 0);
 			if (maxOffset > 0) {
-				if (delta > 0) { // scroll up requested
+				if (delta > 0) { // 请求向上滚动
 					if (p.list.offset == 0) {
-						// top beam to draw
+						// 要绘制的顶部光束
 						p.list.beam = 1;
 						cList.beam_sens = 1;
 						limit_reached = true;
 					};
-				} else { // scroll down requested
+				} else { // 请求向下滚动
 					if (p.list.offset >= maxOffset) {
-						// bottom beam to draw
+						// 要绘制的底部光束
 						p.list.beam = 2;
 						cList.beam_sens = 1;
 						limit_reached = true;
@@ -1523,9 +1523,9 @@ function on_mouse_wheel(delta) {
 			reset_cover_timers();
 
 			if (p.list.ishover || cScrollBar.timerID1 || cList.repaint_timer) {
-				// timer to tell to other functions (on cover load asynch done, ...) that a repaint is already running
+				// 计时器，用于告知其他函数（异步封面加载完成等）重绘已在进行
 				if (!g_mouse_wheel_timer) {
-					// set scroll speed / mouse y offset from panel limits
+					// 设置滚动速度/距面板边界的鼠标 y 偏移
 					if (g_dragndrop_status) {
 						if (g_dragndrop_y < p.list.y + cTrack.height) {
 							var s = Math.abs(g_dragndrop_y - (p.list.y + cTrack.height));
@@ -1622,7 +1622,7 @@ function on_mouse_leave() {
 	p.playlistManager.check("leave", 0, 0);
 };
 
-//=================================================// Callbacks
+//=================================================// 回调
 
 function update_playlist(iscollapsed) {
 	g_group_id_focused = 0;
@@ -1630,7 +1630,7 @@ function update_playlist(iscollapsed) {
 
 	p.list.setItems(false);
 	p.scrollbar.setCursor(p.list.totalRowVisible, p.list.totalRows, p.list.offset);
-	// if sort by header click was requested, reset mouse cursor to default
+	// 若请求了按列头点击排序，将鼠标光标重置为默认
 	if (cHeaderBar.sortRequested) {
 		window.SetCursor(IDC_ARROW);
 		cHeaderBar.sortRequested = false;
@@ -1651,7 +1651,7 @@ function on_playlists_changed() {
 		if (cPlaylistManager.mediaLibraryPlaylist)
 			checkMediaLibrayPlaylist();
 
-		// close timers if dragging tracks is running
+		// 若正在拖动音轨则关闭计时器
 		if (dragndrop.drag_in || dragndrop.moved) {
 			if (dragndrop.timerID) {
 				window.ClearTimeout(dragndrop.timerID);
@@ -1672,14 +1672,14 @@ function on_playlists_changed() {
 					cPlaylistManager.vscroll_timer = false;
 				};
 				p.playlistManager.woffset = 0;
-				on_mouse_move(mouse_x + 1, mouse_y); // to reset window cursor style to a simple arrow
+				on_mouse_move(mouse_x + 1, mouse_y); // 将窗口光标样式重置为简单箭头
 			};
 		};
 
 		p.list.playlist = plman.ActivePlaylist;
 		p.topBar.setDatas();
 		if (cPlaylistManager.visible) {
-			if (cPlaylistManager.drag_droped) { // no reset of the scroll offset if playlist item moved by dragging
+			if (cPlaylistManager.drag_droped) { // 若通过拖动移动了播放列表项目，不重置滚动偏移
 				window.SetCursor(IDC_ARROW);
 				p.playlistManager.refresh("", false, false, false);
 			} else {
@@ -1773,7 +1773,7 @@ function on_metadb_changed() {
 		g_path = tf_path.EvalWithMetadb(g_metadb);
 		g_track_type = TrackType(g_path);
 	};
-	// rebuild list to draw
+	// 重建要绘制的列表
 	p.list.setItems(false);
 	full_repaint();
 };
@@ -1787,13 +1787,13 @@ function on_key_up(vkey) {
 		};
 	} else {
 
-		// after a cover column resize, update cover image and empty rows to show the whole cover if low tracks count in group
+		// 封面列调整大小后，若分组中音轨数较少，更新封面图像和空行以显示完整封面
 		if (cover.resized == true) {
 			cover.resized = false;
 			update_playlist(properties.collapseGroupsByDefault);
 		};
 
-		// scroll keys up and down RESET (step and timers)
+		// 滚动键上下重置（步长与计时器）
 		p.list.keypressed = false;
 		cScrollBar.timerID1 && window.ClearTimeout(cScrollBar.timerID1);
 		cScrollBar.timerID1 = false;
@@ -1838,11 +1838,11 @@ function on_key_down(vkey) {
 			if (mask == KMask.none) {
 				switch (vkey) {
 				case VK_F2:
-					// rename playlist (playlist manager panel visible)
+					// 重命名播放列表（播放列表管理器面板可见）
 					if (cPlaylistManager.visible) {
 						p.playlistManager.inputbox = new oInputbox(p.playlistManager.w - p.playlistManager.border - p.playlistManager.scrollbarWidth - 40, cPlaylistManager.rowHeight - 10, plman.GetPlaylistName(act_pls), "", g_color_normal_txt, g_color_normal_bg, RGB(0, 0, 0), g_color_selected_bg & 0xccffffff, "renamePlaylist()", "p.playlistManager", 0, g_fsize, 225);
 						p.playlistManager.inputboxID = act_pls;
-						// activate box content + selection activated
+						// 激活框内容 + 选中激活
 						if (cPlaylistManager.inputbox_timer) {
 							window.ClearTimeout(cPlaylistManager.inputbox_timer);
 							cPlaylistManager.inputbox_timer = false;
@@ -1851,13 +1851,13 @@ function on_key_down(vkey) {
 					}
 					break;
 				case VK_F5:
-					// refresh covers
+					// 刷新封面
 					g_image_cache = new image_cache;
 					full_repaint();
 					break;
 				case VK_F6:
 					properties.showDPI = !properties.showDPI;
-					window.SetProperty("SYSTEM.Show DPI", properties.showDPI);
+					window.SetProperty("系统.显示DPI", properties.showDPI);
 					full_repaint();
 					break;
 				case VK_TAB:
@@ -1918,7 +1918,7 @@ function on_key_down(vkey) {
 						};
 
 						//new_focus_id = (p.list.focusedTrackId > 0) ? p.list.focusedTrackId - scrollstep : 0;
-						// if new track focused id is in a collapsed group, set the 1st track of the group as the focused track (= group focused)
+						// 若新聚焦的音轨 id 位于折叠分组中，将分组的第一个音轨设为聚焦音轨（= 分组聚焦）
 						//var grpId = p.list.getGroupIdfromTrackId(new_focus_id);
 						if (p.list.groups[grpId].collapsed) {
 							if (properties.autocollapse) {
@@ -1948,7 +1948,7 @@ function on_key_down(vkey) {
 								cScrollBar.timerID2 && window.ClearInterval(cScrollBar.timerID2);
 								cScrollBar.timerID2 = window.SetInterval(function () {
 									new_focus_id = (p.list.focusedTrackId > 0) ? p.list.focusedTrackId - scrollstep : 0;
-									// if new track focused id is in a collapsed group, set the 1st track of the group as the focused track (= group focused)
+									// 若新聚焦的音轨 id 位于折叠分组中，将分组的第一个音轨设为聚焦音轨（= 分组聚焦）
 									var grpId = p.list.getGroupIdfromTrackId(new_focus_id);
 									if (p.list.groups[grpId].collapsed) {
 										if (properties.autocollapse) {
@@ -1988,7 +1988,7 @@ function on_key_down(vkey) {
 						};
 
 						//new_focus_id = (p.list.focusedTrackId < p.list.count - 1) ? p.list.focusedTrackId + 1 : p.list.count - 1;
-						// if new track focused id is in a collapsed group, set the last track of the group as the focused track (= group focused)
+						// 若新聚焦的音轨 id 位于折叠分组中，将分组的最后一个音轨设为聚焦音轨（= 分组聚焦）
 						//var grpId = p.list.getGroupIdfromTrackId(new_focus_id);
 						if (p.list.groups[grpId].collapsed) {
 							if (properties.autocollapse) {
@@ -2006,7 +2006,7 @@ function on_key_down(vkey) {
 							cScrollBar.timerID2 && window.ClearInterval(cScrollBar.timerID2);
 							cScrollBar.timerID2 = window.SetInterval(function () {
 								new_focus_id = (p.list.focusedTrackId < p.list.count - 1) ? p.list.focusedTrackId + 1 : p.list.count - 1;
-								// if new track focused id is in a collapsed group, set the last track of the group as the focused track (= group focused)
+								// 若新聚焦的音轨 id 位于折叠分组中，将分组的最后一个音轨设为聚焦音轨（= 分组聚焦）
 								var grpId = p.list.getGroupIdfromTrackId(new_focus_id);
 								if (p.list.groups[grpId].collapsed) {
 									if (properties.autocollapse) {
@@ -2115,7 +2115,7 @@ function on_key_down(vkey) {
 				switch (mask) {
 				case KMask.shift:
 					switch (vkey) {
-					case VK_SHIFT: // SHIFT key alone
+					case VK_SHIFT: // 仅 SHIFT 键
 						p.list.SHIFT_count = 0;
 						break;
 					case VK_UP: // SHIFT + KEY UP
@@ -2202,15 +2202,15 @@ function on_key_down(vkey) {
 					};
 					if (vkey == 73) { // CTRL+I
 						cTopBar.visible = !cTopBar.visible;
-						window.SetProperty("SYSTEM.TopBar.Visible", cTopBar.visible);
+						window.SetProperty("系统.顶栏.可见", cTopBar.visible);
 						resize_panels();
 						full_repaint();
 					};
 					if (vkey == 84) { // CTRL+T
-						// Toggle Toolbar
+						// 切换工具栏
 						if (!p.timer_onKey) {
 							cHeaderBar.locked = !cHeaderBar.locked;
-							window.SetProperty("SYSTEM.HeaderBar.Locked", cHeaderBar.locked);
+							window.SetProperty("系统.标题栏.已锁定", cHeaderBar.locked);
 							if (!cHeaderBar.locked) {
 								p.headerBar.visible = false;
 							};
@@ -2224,7 +2224,7 @@ function on_key_down(vkey) {
 					};
 					if (vkey == 48) { // CTRL + 0
 						g_forced_percent = 0;
-						window.SetProperty("SYSTEM.dpi (0 = Default)", g_forced_percent);
+						window.SetProperty("系统.DPI（0=默认）", g_forced_percent);
 						g_dpi = (g_forced_percent == 0 ? g_dpi_percent : g_forced_percent);
 						//
 						adjustMetrics(0);
@@ -2265,7 +2265,7 @@ function on_char(code) {
 				p.list.tt_w = ((cList.search_string.length * zoom(13, g_dpi)) + (zoom(10, g_dpi) * 2));
 				p.list.tt_h = zoom(60, g_dpi);
 				if (code == 32 && cList.search_string.length == 0)
-					return true; // SPACE Char not allowed on 1st char
+					return true; // 第一个字符不允许使用空格
 				if (cList.search_string.length <= 20 && p.list.tt_w <= p.list.w - 20) {
 					if (code > 31) {
 						cList.search_string = cList.search_string + String.fromCharCode(code).toUpperCase();
@@ -2285,22 +2285,22 @@ function on_char(code) {
 	};
 };
 
-//=================================================// Playback Callbacks
+//=================================================// 播放回调
 
 function on_playback_starting(cmd, is_paused) {
-	// called only on user action (cmd)
+	// 仅在用户操作（cmd）时调用
 };
 
 function on_playback_new_track(metadb) {
-	// update historic playlist
+	// 更新历史播放列表
 	if (cPlaylistManager.enableHistoricPlaylist) {
 		addToHistoricPlaylist(metadb);
 	};
 
-	// update statistics (if changing track without stop action <=> continous play)
+	// 更新统计（若未停止而切换音轨 <=> 连续播放）
 	update_statistics();
 
-	// update g_metadb and g_track_type because of on_playback_time uses
+	// 更新 g_metadb 和 g_track_type，因为 on_playback_time 会使用它们
 	//on_item_focus_change();
 	g_metadb = metadb;
 	if (g_metadb) {
@@ -2336,19 +2336,19 @@ function on_playback_new_track(metadb) {
 	full_repaint();
 };
 
-function on_playback_stop(reason) { // reason: (integer, begin with 0): user, eof, starting_another
+function on_playback_stop(reason) { // reason：（整数，从 0 开始）：user、eof、starting_another
 	switch (reason) {
-	case 0: // user stop
-	case 1: // eof (e.g. end of playlist)
-		// update wallpaper
+	case 0: // 用户停止
+	case 1: // eof（例如播放列表结束）
+		// 更新壁纸
 		if (properties.showwallpaper) {
 			p.wallpaperImg = null
 		};
-		// update statistics
+		// 更新统计
 		update_statistics();
 		full_repaint();
 		break;
-	case 2: // starting_another (only called on user action, i.e. click on next button)
+	case 2: // starting_another（仅在用户操作时调用，例如点击下一曲按钮）
 		break;
 	};
 
@@ -2367,9 +2367,9 @@ function on_playback_time(time) {
 	g_seconds = time;
 
 	// -------------------------------------------------------------------------------/
-	// WSH Statistics TAGs Engine (v0.6 by Br3tt)
-	// Update file after 50% time played with TAG update on track's ending:
-	// <FIRST_PLAYED>, <LAST_PLAYED>, <PLAY_COUNTER> (<PLAY_COUNT> replaced if found)
+	// WSH 统计标签引擎（v0.6，作者 Br3tt）
+	// 播放时间达 50% 后更新文件，在音轨结束时更新标签：
+	// <FIRST_PLAYED>、<LAST_PLAYED>、<PLAY_COUNTER>（若找到则替换 <PLAY_COUNT>）
 	// -------------------------------------------------------------------------------/
 	var bool;
 	var played_seconds = time;
@@ -2397,9 +2397,9 @@ function on_playback_time(time) {
 			wsh_time_elaps = 0;
 			cStats.waiting_for_writing = true;
 			cStats.handle = g_metadb;
-			// report to console
-			console.log("--- WSH Statistics ---");
-			console.log("--- Queued for track: \"" + cStats.handle.Path + "\"");
+			// 报告到控制台
+			console.log("--- WSH 统计 ---");
+			console.log("--- 已排入队列的曲目：\"" + cStats.handle.Path + "\"");
 		};
 	};
 
@@ -2426,7 +2426,7 @@ function on_focus(is_focused) {
 	}
 };
 
-//=================================================// Colour + Font + Images Callbacks
+//=================================================// 颜色 + 字体 + 图像回调
 function on_font_changed() {
 	get_font();
 	full_repaint();
@@ -2464,13 +2464,13 @@ function get_font() {
 		g_font_headers = window.GetFontDUI(FontTypeDUI.tabs);
 	};
 
-	// tweak to fix a problem with WSH Panel Mod 1.5.6 and lower version on Font object Name property
+	// 微调：修复 WSH Panel Mod 1.5.6 及更低版本中 Font 对象 Name 属性的问题
 	try {
 		g_fname = g_font.Name;
 		g_fsize = g_font.Size;
 		g_fstyle = g_font.Style;
 	} catch (e) {
-		console.log("WSH report: Unable to use your default font. Using Segoe UI instead.");
+		console.log("WSH 报告：无法使用默认字体。改用 Segoe UI。");
 		g_fname = "segoe ui";
 		g_fsize = 12;
 		g_fstyle = 0;
@@ -2478,7 +2478,7 @@ function get_font() {
 	};
 
 	g_dpi_percent = Math.floor(g_fsize / 12 * 100);
-	g_forced_percent = window.GetProperty("SYSTEM.dpi (0 = Default)", 0);
+	g_forced_percent = window.GetProperty("系统.DPI（0=默认）", 0);
 	g_dpi = (g_forced_percent == 0 ? g_dpi_percent : g_forced_percent);
 
 	g_z2 = zoom(2, g_dpi);
@@ -2515,41 +2515,44 @@ function get_font() {
 	g_font_wd3_headerBar = gdi_font("wingdings 3", Math.floor(zoom(12, g_dpi)), 0);
 	g_font_wd3_scrollBar = gdi_font("wingdings 3", Math.floor(zoom(10, g_dpi)), 0);
 
-	// group font
+	// 分组字体
 	g_font_group1 = gdi_font(g_fname, g_fsize + 4, 0);
+	// 第2519行：分组标题第1行（主标题）= 基准字号 + 4
 	g_font_group1_bold = gdi_font(g_fname, g_fsize + 3, 1);
+	// 第2520行：第1行加粗版 = +3
 	g_font_group2 = gdi_font(g_fname, g_fsize + 2, 0);
+	// 第2521行：分组标题第2行（副标题）= 基准字号 + 2
 
 };
 
 function get_colors() {
 	var arr;
-	// get some system colors
+	// 获取一些系统颜色
 	g_syscolor_window_bg = utils.GetSysColour(COLOR_WINDOW);
 	g_syscolor_highlight = utils.GetSysColour(COLOR_HIGHLIGHT);
 	g_syscolor_button_bg = utils.GetSysColour(COLOR_BTNFACE);
 	g_syscolor_button_txt = utils.GetSysColour(COLOR_BTNTEXT);
 
-	arr = window.GetProperty("SYSTEM.COLOR TEXT NORMAL", "180-180-180").split("-");
-	g_color_selected_txt = window.GetProperty("SYSTEM.COLOR TEXT SELECTED", "200-210-255");
-	g_color_normal_bg = window.GetProperty("SYSTEM.COLOR BACKGROUND NORMAL", "25-25-35");
-	g_color_selected_bg = window.GetProperty("SYSTEM.COLOR BACKGROUND SELECTED", "130-150-255");
-	g_color_highlight = window.GetProperty("SYSTEM.COLOR HIGHLIGHT", "255-175-50");
+	arr = window.GetProperty("系统.颜色 文本 正常", "180-180-180").split("-");
+	g_color_selected_txt = window.GetProperty("系统.颜色 文本 选中", "200-210-255");
+	g_color_normal_bg = window.GetProperty("系统.颜色 背景 正常", "25-25-35");
+	g_color_selected_bg = window.GetProperty("系统.颜色 背景 选中", "130-150-255");
+	g_color_highlight = window.GetProperty("系统.颜色 高亮", "255-175-50");
 
-	arr = window.GetProperty("SYSTEM.COLOR TEXT NORMAL", "180-180-180").split("-");
+	arr = window.GetProperty("系统.颜色 文本 正常", "180-180-180").split("-");
 	g_color_normal_txt = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("SYSTEM.COLOR TEXT SELECTED", "200-210-255").split("-");
+	arr = window.GetProperty("系统.颜色 文本 选中", "200-210-255").split("-");
 	g_color_selected_txt = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("SYSTEM.COLOR BACKGROUND NORMAL", "25-25-35").split("-");
+	arr = window.GetProperty("系统.颜色 背景 正常", "25-25-35").split("-");
 	g_color_normal_bg = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("SYSTEM.COLOR BACKGROUND SELECTED", "130-150-255").split("-");
+	arr = window.GetProperty("系统.颜色 背景 选中", "130-150-255").split("-");
 	g_color_selected_bg = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("SYSTEM.COLOR HIGHLIGHT", "255-175-50").split("-");
+	arr = window.GetProperty("系统.颜色 高亮", "255-175-50").split("-");
 	g_color_highlight = RGB(arr[0], arr[1], arr[2]);
 
-	// get custom colors from window Properties first
+	// 先从窗口属性获取自定义颜色
 	if (!properties.enableCustomColors) {
-		// get UI colors set in UI Preferences if no custom color set
+		// 若未设置自定义颜色，则获取 UI 首选项中设置的 UI 颜色
 		if (g_instancetype == 0) {
 			g_color_normal_txt = window.GetColourCUI(ColorTypeCUI.text);
 			g_color_selected_txt = window.GetColourCUI(ColorTypeCUI.selection_text);
@@ -2596,7 +2599,7 @@ function get_images() {
 	images.noresult = gdi.Image(images.path + "noresult.png");
 };
 
-// ===================================================== // Wallpaper
+// ===================================================== // 壁纸
 
 function setWallpaperImg(path, metadb) {
 
@@ -2632,7 +2635,7 @@ function setWallpaperImg(path, metadb) {
 
 function draw_beam_image() {
 	var sbeam = gdi.CreateImage(500, 128);
-	// Get graphics interface like "gr" in on_paint
+	// 获取图形接口，如同 on_paint 中的 "gr"
 	var gb = sbeam.GetGraphics();
 	gb.FillEllipse(-250, 50, 1000, 640, g_color_highlight & 0x60ffffff);
 	sbeam.ReleaseGraphics(gb);
@@ -2648,7 +2651,7 @@ function draw_blurred_image(image, ix, iy, iw, ih, bx, by, bw, bh, blur_value, o
 	var imgB = imgA.Resize(iw, ih, 2);
 
 	var bbox = gdi.CreateImage(bw, bh);
-	// Get graphics interface like "gr" in on_paint
+	// 获取图形接口，如同 on_paint 中的 "gr"
 	var gb = bbox.GetGraphics();
 	var offset = 90 - blurValue;
 	gb.DrawImage(imgB, 0 - offset, 0 - (ih - bh) - offset, iw + offset * 2, ih + offset * 2, 0, 0, imgB.Width, imgB.Height, 0, 255);
@@ -2663,12 +2666,12 @@ function draw_blurred_image(image, ix, iy, iw, ih, bx, by, bw, bh, blur_value, o
 	};
 	gb.DrawImage(bbox, bx, by, bw, bh, 0, 0, bbox.Width, bbox.Height, 0, 255);
 
-	// overlay
+	// 叠加层
 	if (overlay_color != null) {
 		gb.FillSolidRect(bx, by, bw, bh, overlay_color);
 	};
 
-	// top border of blur area
+	// 模糊区域的顶部边界
 	if (ix != bx || iy != by || iw != bw || ih != bh) {
 		gb.FillSolidRect(bx, by, bw, 1, 0x22ffffff);
 		gb.FillSolidRect(bx, by - 1, bw, 1, 0x22000000);
@@ -2690,9 +2693,9 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 
 	if (wpp_img_info.ratio > panel_ratio) {
 		wpp_img_info.orient = 1;
-		// 1/3 : default image is in landscape mode
+		// 1/3：默认图像为横向模式
 		switch (display_mode) {
-		case 0: // Filling
+		case 0: // 填充
 			//wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
 			wpp_img_info.w = ih * wpp_img_info.ratio;
 			wpp_img_info.h = ih;
@@ -2700,14 +2703,14 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 			wpp_img_info.x = 0 - (wpp_img_info.cut / 2);
 			wpp_img_info.y = 0;
 			break;
-		case 1: // Adjust
+		case 1: // 调整
 			wpp_img_info.w = iw;
 			wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
 			wpp_img_info.cut = ih - wpp_img_info.h;
 			wpp_img_info.x = 0;
 			wpp_img_info.y = wpp_img_info.cut / 2;
 			break;
-		case 2: // Stretch
+		case 2: // 拉伸
 			wpp_img_info.w = iw;
 			wpp_img_info.h = ih;
 			wpp_img_info.cut = 0;
@@ -2717,9 +2720,9 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 		};
 	} else if (wpp_img_info.ratio < panel_ratio) {
 		wpp_img_info.orient = 2;
-		// 2/3 : default image is in portrait mode
+		// 2/3：默认图像为纵向模式
 		switch (display_mode) {
-		case 0: // Filling
+		case 0: // 填充
 			wpp_img_info.w = iw;
 			//wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
 			wpp_img_info.h = iw / wpp_img_info.ratio;
@@ -2727,14 +2730,14 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 			wpp_img_info.x = 0;
 			wpp_img_info.y = 0 - (wpp_img_info.cut / 4);
 			break;
-		case 1: // Adjust
+		case 1: // 调整
 			wpp_img_info.h = ih;
 			wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
 			wpp_img_info.cut = iw - wpp_img_info.w;
 			wpp_img_info.y = 0;
 			wpp_img_info.x = wpp_img_info.cut / 2;
 			break;
-		case 2: // Stretch
+		case 2: // 拉伸
 			wpp_img_info.w = iw;
 			wpp_img_info.h = ih;
 			wpp_img_info.cut = 0;
@@ -2743,7 +2746,7 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 			break;
 		};
 	} else {
-		// 3/3 : default image is a square picture, ratio = 1
+		// 3/3：默认图像为正方形图片，ratio = 1
 		wpp_img_info.w = iw;
 		wpp_img_info.h = ih;
 		wpp_img_info.cut = 0;
@@ -2757,7 +2760,7 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 	gp.DrawImage(image, wpp_img_info.x, wpp_img_info.y, wpp_img_info.w, wpp_img_info.h, 0, 0, image.Width, image.Height, angle, 255);
 	tmp_img.ReleaseGraphics(gp);
 
-	// blur it!
+	// 模糊它！
 	if (properties.wallpaperblurred) {
 		var blur_factor = properties.wallpaperblurvalue; // [1-90]
 		tmp_img = draw_blurred_image(tmp_img, 0, 0, tmp_img.Width, tmp_img.Height, 0, 0, tmp_img.Width, tmp_img.Height, blur_factor, 0x00ffffff);
@@ -2770,12 +2773,12 @@ function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle,
 	};
 };
 
-//=================================================// Queue Playlist features
+//=================================================// 队列播放列表功能
 function on_playback_queue_changed(origin) {
 	full_repaint();
 };
 
-//=================================================// Drag'n'Drop Callbacks
+//=================================================// 拖放回调
 var g_dragndrop_hover_playlistManager = false;
 
 function on_drag_enter() {
@@ -2824,7 +2827,7 @@ function on_drag_drop(action, x, y, mask) {
 		if (g_dragndrop_targetPlaylistId == -1) {
 			if (p.playlistManager.ishoverHeader) {
 				var count = plman.PlaylistCount;
-				plman.CreatePlaylist(count, "Dropped Items");
+				plman.CreatePlaylist(count, "拖放的项目");
 				action.Playlist = count;
 				action.Base = 0;
 				action.ToSelect = true;
@@ -2847,7 +2850,7 @@ function on_drag_drop(action, x, y, mask) {
 			action.Effect = 0;
 		} else if (plman.PlaylistCount == 0 || plman.ActivePlaylist == -1) {
 			var count = plman.PlaylistCount;
-			plman.CreatePlaylist(count, "Dropped Items");
+			plman.CreatePlaylist(count, "拖放的项目");
 			action.Playlist = count;
 			action.Base = 0;
 			action.ToSelect = true;

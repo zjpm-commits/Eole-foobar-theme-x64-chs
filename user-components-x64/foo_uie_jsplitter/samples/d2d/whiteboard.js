@@ -31,11 +31,11 @@ function on_paint(gr) {
 	gr.SetSmoothingMode(2);
 	gr.DrawImage(memBmp, 0, 0, memBmp.Width, memBmp.Height, 0, 0, memBmp.Width, memBmp.Height);
 
-	gr.GdiDrawText("Tips:\n   Press 1 to 5 to switch color, Right button to erase\n   Scroll to change pen size\n   R to clear whiteboard", font, 0xFF000000, 10, 10, ww, 200);
+	gr.GdiDrawText("提示：\n   按 1 到 5 切换颜色，右键擦除\n   滚动更改画笔大小\n   按 R 清空白板", font, 0xFF000000, 10, 10, ww, 200);
 
 	if (showGettingStart)
 	{
-		gr.GdiDrawText("Draw something...", fontStart, 0xFFDAA520, 0, 0, ww, wh, DT_CENTER | DT_VCENTER | DT_CALCRECT);
+		gr.GdiDrawText("画点什么...", fontStart, 0xFFDAA520, 0, 0, ww, wh, DT_CENTER | DT_VCENTER | DT_CALCRECT);
 	}
 
 	drawCursor(gr, cursorPoint);

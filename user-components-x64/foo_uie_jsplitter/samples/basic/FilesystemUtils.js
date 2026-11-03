@@ -1,14 +1,14 @@
 ﻿"use strict";
 
-window.DefineScript("Filesystem Utils");
+window.DefineScript("文件系统工具");
 
 include("docs/Flags.js");
 include("docs/Helpers.js");
 
 /*
- * Filesystem utilities sample
+ * 文件系统工具示例
  *
- * Demonstrates:
+ * 演示内容：
  *   - utils.GetDrives()
  *   - utils.GetDriveInfo()
  *   - utils.GetShortPath()
@@ -36,12 +36,12 @@ const colors = {
 };
 
 const driveTypeNames = [
-    "Unknown",
-    "Removable",
-    "Fixed",
-    "Network",
-    "CD-ROM",
-    "RAM Disk"
+    "未知",
+    "可移动",
+    "固定",
+    "网络",
+    "光驱",
+    "RAM 磁盘"
 ];
 
 let ww = 0;
@@ -54,7 +54,7 @@ let shortPath = "";
 let drives = [];
 
 function formatBytes(value) {
-    if (!Number.isFinite(value) || value < 0) return "n/a";
+    if (!Number.isFinite(value) || value < 0) return "不可用";
 
     const units = ["B", "KB", "MB", "GB", "TB", "PB"];
     let size = value;
@@ -70,7 +70,7 @@ function formatBytes(value) {
 }
 
 function driveTypeName(type) {
-    return driveTypeNames[type] || "Unknown";
+    return driveTypeNames[type] || "未知";
 }
 
 function initializeSample() {
@@ -108,10 +108,10 @@ function on_paint(gr) {
     const contentWidth = Math.max(0, ww - margin * 2);
     let y = 18;
 
-    drawText(gr, "Filesystem utilities", fontTitle, colors.text, margin, y, contentWidth, 30, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    drawText(gr, "文件系统工具", fontTitle, colors.text, margin, y, contentWidth, 30, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     y += 40;
 
-    drawText(gr, "Logical drives", fontSection, colors.accent, margin, y, contentWidth, 24, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    drawText(gr, "逻辑驱动器", fontSection, colors.accent, margin, y, contentWidth, 24, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     y += 30;
 
     for (const info of drives) {
@@ -128,7 +128,7 @@ function on_paint(gr) {
         drawText(gr, label, fontSection, colors.text, innerX, y + 8, innerW, 22, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
         drawText(
             gr,
-            driveTypeName(info.DriveType) + (info.FileSystem ? "  •  " + info.FileSystem : "") + (info.IsReady ? "" : "  •  Not ready"),
+            driveTypeName(info.DriveType) + (info.FileSystem ? "  •  " + info.FileSystem : "") + (info.IsReady ? "" : "  •  未就绪"),
             fontNormal,
             info.IsReady ? colors.muted : colors.error,
             innerX,
@@ -138,14 +138,14 @@ function on_paint(gr) {
             DT_LEFT | DT_VCENTER | DT_SINGLELINE
         );
 
-        drawLabelValue(gr, "Total", formatBytes(info.TotalSize), innerX, y + 55, innerW);
-        drawLabelValue(gr, "Free / available", formatBytes(info.FreeSpace) + " / " + formatBytes(info.AvailableSpace), innerX, y + 77, innerW);
+        drawLabelValue(gr, "总计", formatBytes(info.TotalSize), innerX, y + 55, innerW);
+        drawLabelValue(gr, "可用 / 可调用", formatBytes(info.FreeSpace) + " / " + formatBytes(info.AvailableSpace), innerX, y + 77, innerW);
 
         y += cardHeight + 10;
     }
 
     y += 4;
-    drawText(gr, "Path and folder size", fontSection, colors.accent, margin, y, contentWidth, 24, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    drawText(gr, "路径与文件夹大小", fontSection, colors.accent, margin, y, contentWidth, 24, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
     y += 30;
 
     gr.FillSolidRect(margin, y, contentWidth, 118, colors.surface);
@@ -154,12 +154,12 @@ function on_paint(gr) {
     const innerX = margin + 12;
     const innerW = Math.max(0, contentWidth - 24);
 
-    drawText(gr, "Short path", fontNormal, colors.muted, innerX, y + 8, innerW, 20, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    drawText(gr, shortPath || "Unavailable", fontMono, shortPath ? colors.text : colors.error, innerX, y + 30, innerW, 22, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    drawText(gr, "短路径", fontNormal, colors.muted, innerX, y + 8, innerW, 20, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
+    drawText(gr, shortPath || "不可用", fontMono, shortPath ? colors.text : colors.error, innerX, y + 30, innerW, 22, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
-    drawLabelValue(gr, "Synchronous", formatBytes(folderSizeSync), innerX, y + 58, innerW);
+    drawLabelValue(gr, "同步", formatBytes(folderSizeSync), innerX, y + 58, innerW);
 
-    let asyncText = "Calculating…  (task " + folderSizeTaskId + ")";
+    let asyncText = "计算中…  (任务 " + folderSizeTaskId + ")";
     let asyncColor = colors.muted;
 
     if (folderSizeAsync !== null) {
@@ -171,7 +171,7 @@ function on_paint(gr) {
         asyncColor = colors.error;
     }
 
-    drawLabelValue(gr, "Asynchronous", asyncText, innerX, y + 82, innerW, asyncColor);
+    drawLabelValue(gr, "异步", asyncText, innerX, y + 82, innerW, asyncColor);
 }
 
 function on_get_folder_size_done(task_id, success, size, error_text) {
@@ -181,7 +181,7 @@ function on_get_folder_size_done(task_id, success, size, error_text) {
         folderSizeAsync = size;
     }
     else {
-        folderSizeAsyncError = error_text || "Failed";
+        folderSizeAsyncError = error_text || "失败";
     }
 
     utils.RemovePath(sampleDir);
