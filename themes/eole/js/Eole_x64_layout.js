@@ -1,6 +1,18 @@
 ﻿// ============================================================================
+// Eole 布局脚本 —— JSplitter x64 版
 // ----------------------------------------------------------------------------
+// 这个面板本身什么都不显示，它只干一件事：按当前窗口尺寸和皮肤里的各种开关，
+// 把同一个窗口里的其它子面板（标题栏、封面、播放控制、筛选器、媒体库、
+// 播放列表、右侧栏……）摆到该在的位置、给该有的尺寸。所有面板都是
+// 「绝对坐标 + Move」，没有用到 splitter 的自动分割。
+//
+// 数据来源：Eole 的各个面板把设置写成文件，路径形如
+//     <foobar2000 配置目录>\wsh-data\eole-settings\<键名>_<值>
+// 例如 RIGHTPLAYLISTWIDTH_240 就表示右侧栏宽 240。所以本脚本不去问面板
+// 要设置，而是直接枚举这个目录里的文件名——这也是后面必须用 utils.Glob
+// 的原因。目录里同一个键只会存在一个文件（换值时先删旧的再写新的）。
 // ============================================================================
+// 原始面板脚本作者：Ottodix 及贡献者，这里是本地适配版。
 window.DefinePanel('Eole x64 layout', {author: 'Eole contributors / local adaptation'});
 
 try {
@@ -17,13 +29,8 @@ if (typeof fw_enabled !== 'function') {
     var fw_blurValue = function () { return 0; };
     var fw_maskAlpha = function () { return 0; };
     var fw_quality = function () { return 1; };
-
-
 }
 
-// ============================================================================
-// ----------------------------------------------------------------------------
-// ============================================================================
 function fw_hostOn(force) {
     var st = null;
     try { st = (typeof fw_sharedState === 'function') ? fw_sharedState(force) : null; } catch (e) { st = null; }
@@ -44,9 +51,6 @@ function fwSeedShared() {
     try { console.log('[FW] [宿主] 共享开关已补写: 1'); } catch (e4) {}
 }
 
-// ============================================================================
-// ----------------------------------------------------------------------------
-// ============================================================================
 function fwApplyCfg() {
     var c = null;
     try { c = (typeof fw_cfgRead === 'function') ? fw_cfgRead() : null; } catch (e) { c = null; }
@@ -67,9 +71,6 @@ function fwApplyCfg() {
 
 var settingRoot = fb.ProfilePath + 'wsh-data\\eole-settings\\';
 
-// ----------------------------------------------------------------------------
-// setting(prefix, fallback)
-// ----------------------------------------------------------------------------
 function setting(prefix, fallback) {
     try {
         var files = utils.Glob(settingRoot + prefix + '_*');
@@ -79,8 +80,6 @@ function setting(prefix, fallback) {
     } catch (e) { return fallback; }
 }
 
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
 function getPanel(names) {
     if (typeof names === 'string') names = [names];
     for (var i = 0; i < names.length; ++i) {
@@ -102,9 +101,6 @@ var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'LIBRARYFILTER
     'COVERPANELBIG', 'COVERPANELMINI', 'MINICONTROLBAR', 'SHOWTRACKINFOBIG', 'SHOWTRACKINFOSMALL',
     'TRACKINFOSLIB', 'TRACKINFOSPLAYLIST', 'TRACKINFOSBIO', 'TRACKINFOSVISU', 'TRACKINFOSTEXT'];
 
-// ----------------------------------------------------------------------------
-// snapshot()
-// ----------------------------------------------------------------------------
 function snapshot() {
     var files = null;
     try { files = utils.Glob(settingRoot + "*"); } catch (e) { files = null; }
@@ -112,7 +108,6 @@ function snapshot() {
     var map = {};
     for (var i = 0; i < files.length; ++i) {
         var path = String(files[i]);
-        //   ...\eole-settings\RIGHTPLAYLISTWIDTH_240
         var us = path.lastIndexOf('_'), sl = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
         if (us > sl && us > 0) map[path.substring(sl + 1, us)] = path.substring(us + 1);
     }
@@ -130,9 +125,6 @@ function snapshot() {
     return out.join(',');
 }
 
-// ============================================================================
-// ----------------------------------------------------------------------------
-// ============================================================================
 function arrange() {
     var w = window.Width, h = window.Height;
     if (w < 1 || h < 1) return;
@@ -328,11 +320,6 @@ function on_notify_data(name, info) {
     window.SetTimeout(arrange, 0);
 }
 
-
-// ============================================================================
-// ----------------------------------------------------------------------------
-// ============================================================================
-
 var fwImg = null;
 var fwKey = "";
 var fwTimer = 0;
@@ -422,8 +409,7 @@ function fwQueue(ms) {
     }, ms == null ? 250 : ms);
 }
 
-// ----------------------------------------------------------------------------
-// ----------------------------------------------------------------------------
+
 function fwRefreshGlass() {
     var n = 0;
     try { n = window.GetPanelCount(); } catch (e) { n = 0; }
