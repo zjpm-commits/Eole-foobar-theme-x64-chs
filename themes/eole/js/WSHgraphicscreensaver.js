@@ -77,7 +77,6 @@ var already_saved=false;
 
 //=================================================// Properties
 var properties = {
-	// 封面下方文字是否居中；原版直接读了未定义字段，实际永远左对齐，这里补上定义并沿用原效果
 	centerText: window.GetProperty("封面·文字居中", false),
 	panelName: 'WSHgraphicbrowser',
     load_covers_at_startup: window.GetProperty("封面·启动时全部加载", true),
@@ -2331,7 +2330,6 @@ function draw_settings_menu(x,y){
 	_menu2A.CheckMenuItem(222, properties.wallpaperdisplay==1);
 	_menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
 	_menu2A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-	_menu2A.AppendTo(_menu2,MF_STRING, "壁纸尺寸");
 
 	_menu2.AppendTo(_menu,MF_STRING, "背景壁纸");
 
@@ -2880,7 +2878,6 @@ oScrollbar = function(parentObjectName) {
 			this.buttons[0].checkstate(event, x, y);
 			break;
 		default:
-			//
         }
     }
 

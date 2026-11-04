@@ -78,8 +78,6 @@ var already_saved=false;
 //=================================================// Properties
 var properties = {
 	panelName: 'WSHgraphicbrowser',
-	// 启动预加载艺术家图片时的缓存键；原版引用了不存在的字段，key 恒为空串，
-	// 所有艺术家共用同一张缓存图。这里延迟创建，避免加载顺序问题。
 	tf_crc_artist: null,
     thumbnailWidthMin: window.GetProperty("封面·最小宽度", 40),
     thumbnailWidth: window.GetProperty("封面·宽度", 100),
@@ -184,7 +182,6 @@ var properties = {
 	groupCustomFirstRowTF: window.GetProperty("主面板·媒体库自定义分组第一行格式", ""),
 	groupCustomSecondRow: window.GetProperty("主面板·媒体库自定义分组第二行", false),
 	groupCustomSecondRowTF: window.GetProperty("主面板·媒体库自定义分组第二行格式", ""),
-	//disableGroupHeader: window.GetProperty("主面板·禁用媒体库分组标题", false),
 }
 properties.show2linesCustomTag_tf = fb.TitleFormat(properties.show2linesCustomTag);
 properties.smooth_scroll_value = properties.smooth_scroll_value < 0 ? 0 : properties.smooth_scroll_value > 0.9 ? 0.9 : properties.smooth_scroll_value;
@@ -1080,10 +1077,10 @@ oRow = function(metadb,itemIndex) {
 				var playingText = gdi.CreateImage(this.w+10, this.h);
 				pt = playingText.GetGraphics();
 					pt.SetTextRenderingHint(5);
-					if(typeof(g_showlist.g_wallpaperImg) == "undefined" || !g_showlist.g_wallpaperImg) {
-						g_showlist.g_wallpaperImg = setWallpaperImgV2(g_showlist.showlist_img, g_showlist.pl[0], true, this.w, this.h*16,properties.wallpaperblurvalue,false);
-					};
-					pt.DrawImage(g_showlist.g_wallpaperImg, 10, 0, this.w,  this.h, 0, 0, g_showlist.g_wallpaperImg.Width, this.h);
+					var _pbWall3 = setWallpaperImgV2(g_showlist.showlist_img, g_showlist.pl[0], true, this.w, this.h*16,properties.wallpaperblurvalue,false);
+					if(isImage(_pbWall3) && _pbWall3.Width > 0) {
+						pt.DrawImage(_pbWall3, 10, 0, this.w, this.h, 0, 0, _pbWall3.Width, this.h);
+					}
 					if(!g_showlist.light_bg) pt.FillSolidRect (10, 0, this.w, this.h, dark.albumartprogressbar_overlay);  //solid bg
 					else pt.FillSolidRect (10, 0, this.w, this.h, colors.albumartprogressbar_overlay);  //solid bg
 					if(elapsed_seconds%2==0)
@@ -2298,7 +2295,9 @@ oShowList = function(parentPanelName) {
 			
 				if(properties.showListColoredBlurred) {
 					try {
-						gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
+						if(isImage(this.g_wallpaperImg) && this.g_wallpaperImg.Width > 0)
+							if(isImage(this.g_wallpaperImg) && this.g_wallpaperImg.Width > 0)
+								gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
 						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
 					} catch(e) {
 						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
@@ -2307,7 +2306,9 @@ oShowList = function(parentPanelName) {
 				else if(properties.showListColoredMixedColor && properties.showListColored) {
 					try {
 						if((this.h-this.delta_)<40) {
-							gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
+							if(isImage(this.g_wallpaperImg) && this.g_wallpaperImg.Width > 0)
+							if(isImage(this.g_wallpaperImg) && this.g_wallpaperImg.Width > 0)
+								gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
 							gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
 						} else gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
 					} catch(e) {
@@ -2679,11 +2680,6 @@ oHeaderBar = function(name) {
 		this.setHideButton();
 	}
     this.draw = function(gr) {
-		// 顶栏底色原本全透明（透出面板底色/壁纸）；列表滚动溢出的内容会从这里透上来。
-		// 这里把这块背景重画一遍，外观不变但能挡住溢出。
-		paintHeaderBarBackdrop(gr, 0, 0, ww, this.h, colors.normal_bg,
-			properties.showwallpaper ? g_wallpaperImg : null, wh,
-			(properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
 
 		//bottom line
 		gr.FillSolidRect(0, this.h, ww, 1,colors.headerbar_line);
@@ -3047,7 +3043,6 @@ oHeaderBar = function(name) {
 		basemenu.AppendMenuItem(MF_STRING, 803, "播放全部");
 		basemenu.AppendMenuSeparator();
 				
-		//basemenu.AppendMenuItem(MF_STRING, 801, "曲目属性");		
 		actions[801] = function(){
 			runContextCommand("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
 		}
@@ -3281,7 +3276,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 
 	_menuGroupRow1.AppendTo(_menuGroupHeader,MF_STRING, "第一行");
 	_menuGroupRow2.AppendTo(_menuGroupHeader,MF_STRING, "第二行");
-	//_menuGroupHeader.AppendMenuItem(MF_STRING, 302, "禁用标题栏");
 	_menuGroupHeader.AppendTo(_menuTracklist,MF_STRING, "标题栏");
 
 	_menuTracklist.AppendMenuSeparator();
@@ -3324,9 +3318,7 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menu2A.CheckMenuItem(222, properties.wallpaperdisplay==1);
 	_menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
 	_menu2A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-	_menu2A.AppendTo(_menu2,MF_STRING, "壁纸尺寸");
 
-	_menu2.AppendTo(_menu,MF_STRING, "背景壁纸");
 
 	_menu.AppendMenuSeparator();
 	_menu.AppendMenuItem(MF_STRING, 9, "刷新图像缓存");
@@ -3730,6 +3722,7 @@ function draw_settings_menu(x,y,right_align,sort_group){
 		case (idx == 200):
 			toggleWallpaper();
 			break;
+
 		case (idx == 220):
 			properties.wallpaperblurred = !properties.wallpaperblurred;
 			on_colours_changed();
@@ -3798,7 +3791,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 			}
 			catch(e) {}
 			break;
-		//	window.SetProperty("主面板·禁用媒体库分组标题", properties.disableGroupHeader);
 		case (idx == 328):
 			properties.enableAutoSwitchPlaylistMode = !properties.enableAutoSwitchPlaylistMode;
 			window.SetProperty("主面板·自动切换显示的播放列表", properties.enableAutoSwitchPlaylistMode);
@@ -4118,7 +4110,6 @@ oScrollbar = function(parentObjectName) {
 			this.buttons[0].checkstate(event, x, y);
 			break;
 		default:
-			//
         }
     }
 
@@ -5020,6 +5011,7 @@ oBrowser = function(name) {
 				ay = firstalbum_y + (row * this.rowHeight);
 				coverTop = ay + this.CoverMarginTop;
 
+				if(ay >= (this.y - (this.marginTop < 0 ? 1 : 0)) && ay < this.y + this.h)
 				gr.FillEllipse(ax+1-Math.round((this.ellipse_size-this.coverRealWith)/2), coverTop+1-Math.round((this.ellipse_size-this.coverRealWith)/2), this.ellipse_size-2, this.ellipse_size-2, colors.nowplaying_animation_circle);
 			}
 
@@ -5040,7 +5032,7 @@ oBrowser = function(name) {
 					this.GetAlbumCover(loop_id);
 				}
 				
-				if(ay >= (0 - this.rowHeight) && ay < this.y + this.h) {
+				if(ay >= (this.y - (this.marginTop < 0 ? 1 : 0)) && ay < this.y + this.h) {
 					// Calcs
 					coverTop = ay + this.CoverMarginTop;
 					this.groups[loop_id].x = ax;
@@ -6011,8 +6003,6 @@ function populate_with_library_covers(start_items, str_comp_items){
 			string_compare_items = string_current_item;
 			if(globalProperties.load_covers_at_startup) cachekey_album = process_cachekey(covers_FullLibraryList[covers_current_item]);
 			if(globalProperties.load_artist_img_at_startup) {
-				// 原版这里引用了一个不存在的字段，process_cachekey 内部 try/catch 兜住，
-				// 结果 key 恒为空串 —— 所有艺术家共用同一张缓存图。这里按需创建。
 				if(!properties.tf_crc_artist) properties.tf_crc_artist = fb.TitleFormat(globalProperties.crc_artist);
 				cachekey_artist = process_cachekey(covers_FullLibraryList[covers_current_item],properties.tf_crc_artist);
 			}
@@ -6145,7 +6135,12 @@ function set_update_function(string){
 	else Update_Required_function=string;
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	if(update_size) on_size(window.Width, window.Height);
 	if(Update_Required_function!="") {
 		eval(Update_Required_function);
@@ -6157,11 +6152,7 @@ function on_paint(gr) {
     };
 	if(update_headerbar) g_headerbar.setDisplayedInfo();
 	
-	gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
-	if(g_wallpaperImg && properties.showwallpaper) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	}
+
 
     brw && brw.draw(gr);
 	gr.FillGradRect(0, wh-colors.fading_bottom_height, ww, colors.fading_bottom_height, 90, colors.grad_bottom_2,  colors.grad_bottom_1,1);
@@ -6571,7 +6562,6 @@ function on_mouse_rbtn_down(x, y){
 										_menu.AppendMenuItem(MF_STRING, 17, "从播放列表中删除项目");
 									else
 										_menu.AppendMenuItem(MF_STRING, 17, "从播放列表中删除项目");
-									//_menu.AppendMenuItem(MF_STRING, 18, "删除无用标签");
 								}
 
 								track_clicked = true;
@@ -7460,6 +7450,14 @@ function on_drag_over(action, x, y, mask) {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;			

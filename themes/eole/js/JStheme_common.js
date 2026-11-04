@@ -22,10 +22,6 @@ var randomBtnTimer = false;
 var last_mouse_move_notified = (new Date).getTime();
 var foo_playcount = utils.CheckComponent("foo_playcount", true);
 var timers = [];
-// ================= 属性键名汉化：一次性迁移 =================
-// 旧版本用英文属性键（如 "COVER Width"），新版本全部改成中文（如 "封面·宽度"）。
-// 下面这段在首次运行时把旧键的值搬到新键上，避免升级后所有皮肤设置被重置。
-// 迁移完成后写入标记，之后不再执行；用户在新键上已有的值优先，不会被覆盖。
 (function MigrateLegacyProperties() {
     var KEYPAIRS = [
     "Eole 标题栏控制项 v1\u0001Eole x64 header controls v1", "主面板·专辑排序依据\u0001MAINPANEL Sort albums by", "主面板·允许拖拽到播放列表\u0001MAINPANEL Enable dragging to a playlist", "主面板·右侧面板跟随光标\u0001_MAINPANEL: right_panel_follow_cursor",
@@ -139,9 +135,6 @@ var timers = [];
     "迷你·锁定正在播放\u0001MINI:lockOnNowPlaying", "迷你·额外行数\u0001MINI:extraRowsNumber", "迷你·默认行高\u0001MINI:defaultRowHeight", "迷你模式·保存宽度\u0001Mini mode saved width",
     "迷你模式·播放列表保存高度\u0001Mini mode playlist saved height", "迷你模式·深色主题\u0001MINIMODE dark theme", "随机函数\u0001Random function",
     ];
-    // 关键：GetProperty(name, 默认值) 在属性不存在时会把默认值写进属性表，
-    // 所以这里一律用单参数的 GetProperty(name)，不存在时返回 undefined 且不创建。
-    // 故意不吞异常：读取失败时整段中止、不写标记，下次启动重试，避免"标记了却没清理"。
     function readProp(k) {
         return window.GetProperty(k);
     }
@@ -149,9 +142,6 @@ var timers = [];
         return v !== undefined && v !== null && String(v).indexOf("eole_none") >= 0;
     }
     try {
-        // ---------- 1. 清理上一版迁移误建的哨兵属性 ----------
-        // 旧写法用 "\u0001__eole_none__" 当探测默认值，导致 439 个英文键被创建成该值。
-        // 这里把值仍然是哨兵的新旧键统统删掉（SetProperty 传 null 即删除）。
         if (!readProp("_哨兵属性已清理")) {
             for (var c = 0; c < KEYPAIRS.length; c++) {
                 var cp = KEYPAIRS[c].split("\u0001");
@@ -161,31 +151,19 @@ var timers = [];
             window.SetProperty("_哨兵属性已清理", true);
         }
 
-        // ---------- 2. 旧英文键 -> 新中文键 迁移 ----------
-        // 这一段原来有两个毛病，导致属性面板里总会残留几条英文：
-        //   a) 外面套了 if (!readProp("_属性名已汉化迁移")) —— 只跑一次。可是英文键
-        //      会在迁移之后被重新创建（比如 WSHtitle_bar.js 顶部那段恢复代码），
-        //      标记一旦置了 true，后来冒出来的英文键就再也没人清。
-        //   b) 新键已有值时直接 continue，旧键既不搬运也不删除。而带默认值的
-        //      window.GetProperty("显示·xxx", true) 在属性不存在时会把默认值写进
-        //      属性表，等于新键"总是已有值"，旧键就被永久留在那里。
-        // 现在改成：每次启动都扫一遍（300 多次 GetProperty，无副作用、不创建属性），
-        // 发现旧键就处理；新键已有值时以新键为准，但旧键照样删除。
         for (var i = 0; i < KEYPAIRS.length; i++) {
             var p = KEYPAIRS[i].split("\u0001");
             var nk = p[0], ok = p[1];
             var old_val = readProp(ok);
-            if (old_val === undefined || old_val === null) continue;        // 旧键不存在
+            if (old_val === undefined || old_val === null) continue;
             var cur = readProp(nk);
             if (cur === undefined || cur === null) {
-                window.SetProperty(nk, old_val);                            // 新键没值，接过来
+                window.SetProperty(nk, old_val);
             }
-            window.SetProperty(ok, null);                                   // 旧键一律删除，面板保持全中文
+            window.SetProperty(ok, null);
         }
-        // 老版本留下的标记已无用（不再当守卫用），顺手清掉，属性表里少一条
         if (readProp("_属性名已汉化迁移") !== undefined) window.SetProperty("_属性名已汉化迁移", null);
     } catch (e) {
-        // 任何异常都不应阻断主题加载，下次启动会重试
     }
 })();
 
@@ -232,8 +210,6 @@ var globalProperties = {
     stream_img: gdi.Image(theme_img_path+"\\stream_icon.png"),
 	ResizeQLY: 0,
 	use_ratings_file_tags: window.GetProperty("全局·评级存入文件标签", false),
-	// 屏保面板收到这几个通知时会写属性，但全工程没有任何地方读回来，
-	// 于是「启用屏保 / 鼠标移动退出 / 激活等待毫秒」重启后一律回到默认。默认值沿用原版的实际效果。
 	enable_screensaver: window.GetProperty("全局·启用屏保", false),
 	escape_on_mouse_move: window.GetProperty("全局·移动鼠标退出屏保", false),
 	mseconds_before_screensaver: window.GetProperty("全局·屏保激活等待毫秒", 60000),
@@ -304,8 +280,6 @@ function setMemoryParameters(){
 	}
 }
 setMemoryParameters();
-// 属性键汉化后不能再按 "全局·通用" + 参数名 拼键：拼出来是 "全局·通用keepProportion"，
-// 而读取用的是 "全局·保持比例"，写了也读不回来（原版键是 "GLOBAL " + 参数名）。
 var GLOBAL_PARAM_KEY = {
 	"keepProportion": "全局·保持比例",
 	"Font Adjustement": "全局·字体调整",
@@ -670,33 +644,43 @@ function customTracklistDetails(title, top_msg, bottom_msg, input_default_values
 	});
 }
 //Colors ------------------------------------------------------------------------------
-// ================= 【壁纸透明度 / Wallpaper Transparency】修改说明 =================
-// 壁纸 = 图片 + 一层半透明蒙版(overlay)。蒙版颜色函数的最后一个参数 alpha 决定壁纸透出多少：
-//     0   = 蒙版全透明 -> 壁纸 100% 显示
-//     255 = 蒙版全不透明 -> 壁纸完全被盖住
-// 想调壁纸透明度，只改下面这几个数字（本文件 dark/light 两个分支各一组）：
-//     colors.wallpaper_overlay          -> 壁纸不模糊时用的蒙版
-//     colors.wallpaper_overlay_blurred  -> 壁纸模糊时用的蒙版
-// 建议区间：150(壁纸很清晰) ~ 220(壁纸很淡)；默认已改为 180 / 160 / 210。
-// 注意：标题栏 WSHtitle_bar.js、播放控制栏 WSHcontrols.js 里各有一份同名设置，如需整体统一要一起改。
 // ===================================================================================
 var colors = {};
 var darkcolors = {};
 
 // ===================================================================================
-// 列表区裁剪 & 顶栏背景
-// -----------------------------------------------------------------------------------
-// Eole 每个列表面板的顶栏（搜索框那一行）底色都是 RGBA(0,0,0,0)，等于不画。
-// 列表行只判断「行是否落在可视区」，滚到非整行位置（惯性/触摸滚动）时首行会
-// 画进顶栏区域，从搜索框下面透出来，看起来就是叠字。
-//
-// 处理分两层：
-//   1. clipListArea()  —— 画列表行之前把绘制区裁到顶栏以下，行根本画不出去；
-//   2. paintHeaderBarBackdrop() —— 顶栏绘制时把面板背景（纯色或壁纸片段）重画
-//      一遍。SMP 的 GdiDrawText 走 GDI、不一定吃 GDI+ 的 clip，这层做兜底，
-//      同时外观与原来的「全透明顶栏透出底色/壁纸」完全一致。
+// list clipping helpers (header bar stays fully transparent)
 // ===================================================================================
 var _list_clip_state = false;
+
+function rowHeightForSnap() {
+    try {
+        if (typeof brw !== 'undefined' && brw && brw.rowHeight > 0) return brw.rowHeight;
+    } catch (e) {}
+    try {
+        if (properties.rowHeight > 0) return properties.rowHeight;
+    } catch (e2) {}
+    return 0;
+}
+
+function snapScrollToRow(v, rowHeight) {
+    var rh = rowHeight;
+    if (!(rh > 0)) rh = rowHeightForSnap();
+    if (!(rh > 0) || !isFinite(v)) return v;
+    return Math.round(v / rh) * rh;
+}
+
+function stepScrollToRow(cur, target, rowHeight, smoothness) {
+    var rh = rowHeight;
+    if (!(rh > 0)) rh = rowHeightForSnap();
+    if (!(rh > 0) || !isFinite(cur) || !isFinite(target)) return target;
+    if (target == cur) return target;
+    var sm = (smoothness > 1 ? smoothness : 1);
+    var next = Math.round((cur + (target - cur) / sm) / rh) * rh;
+    if (next == cur) next = cur + (target > cur ? rh : -rh);
+    if ((target > cur && next >= target) || (target < cur && next <= target)) next = target;
+    return next;
+}
 
 function clipListArea(gr, top) {
     _list_clip_state = false;
@@ -715,24 +699,6 @@ function unclipListArea(gr) {
     _list_clip_state = false;
 }
 
-// 在 (x, y, w, h) 处重画面板背景。
-//   baseColor    —— 面板底色（透明顶栏平时透出的就是它）
-//   wallImg      —— 壁纸图（没开壁纸传 null）
-//   panelH       —— 壁纸铺满时对应的面板高度，用来把 h 换算成源图上的高度
-//   overlayColor —— 壁纸蒙版色
-function paintHeaderBarBackdrop(gr, x, y, w, h, baseColor, wallImg, panelH, overlayColor) {
-    if (!(h > 0 && w > 0)) return;
-    gr.FillSolidRect(x, y, w, h, baseColor);
-    if (!wallImg || !(panelH > 0) || !(wallImg.Height > 0)) return;
-    var sy = Math.round(wallImg.Height * y / panelH);
-    var sh = Math.round(wallImg.Height * h / panelH);
-    if (sy < 0) sy = 0;
-    if (sy >= wallImg.Height) return;
-    if (sh < 1) sh = 1;
-    if (sy + sh > wallImg.Height) sh = wallImg.Height - sy;
-    gr.DrawImage(wallImg, x, y, w, h, 0, sy, wallImg.Width, sh, 0, 255);
-    if (overlayColor) gr.FillSolidRect(x, y, w, h, overlayColor);
-}
 
 function get_colors_global(){
 	darkcolors.normal_txt = GetGrey(240);
@@ -767,8 +733,6 @@ function get_colors_global(){
 		colors.selected_bg = RGBA(015,177,255,160);
 		colors.highlight = RGB(255,175,050);
 
-		// 顶栏（含搜索框那一行）保持透明，让壁纸/底色透出来。
-		// 列表滚动的溢出改由 clipListArea() + paintHeaderBarBackdrop() 处理，见文件上方。
 		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(255,38);
 
@@ -849,7 +813,6 @@ function get_colors_global(){
 		colors.selected_bg = RGBA(015,177,255,100);
 		colors.highlight = RGB(255,175,050);
 
-		// 同 dark 分支：顶栏保持透明，溢出由裁剪 + 顶栏背景重绘处理。
 		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		colors.headerbar_line = GetGrey(0,36);
 
@@ -992,15 +955,6 @@ var cover_img_cache = data_global_path+"\\"+theme_name+"-img-cache";
 if(!g_files.FolderExists(cover_img_cache))
 g_files.CreateFolder(cover_img_cache);
 
-/*
-var square_img_cache = cover_img_cache+"\\square";
-if(!g_files.FolderExists(square_img_cache))
-g_files.CreateFolder(square_img_cache);
-
-var keepProportion_img_cache = cover_img_cache+"\\keepProportion";
-if(!g_files.FolderExists(keepProportion_img_cache))
-g_files.CreateFolder(keepProportion_img_cache);
-*/
 function setImageCachePath(){
 }
 setImageCachePath();
@@ -1120,11 +1074,9 @@ oTooltip = function (varName) {
 };
 
 oUIHacks = function () {
-    // 自动检测是否可以使用原生 fb.Window（JSplitter 或 新版 foobar2000）
     this.useNative = (typeof fb !== 'undefined' && typeof fb.Window !== 'undefined');
     this.activeXObject = null;
     
-    // 如果不能用原生，就尝试用插件
     if (!this.useNative) {
         try {
             this.activeXObject = new ActiveXObject("OpenHacks");
@@ -1140,8 +1092,6 @@ oUIHacks = function () {
         if (this.useNative) {
             try {
                 fb.Window.FrameStyle = 2; // NoBorder
-                // 将 maximize_on_dblclk 设为 true，启用双击最大化/还原
-                // y - 2 用于消除顶部留白
                 fb.Window.SetPseudoCaption(x, y - 2, w, h, true); 
             } catch(e) { console.log("Native PseudoCaption Err: " + e); }
         } else if (this.activeXObject) {
@@ -1170,7 +1120,6 @@ oUIHacks = function () {
     
     this.getMainWindowState = function () { 
         if (this.useNative) {
-            // JSplitter 原生接口没有数字型 WindowState，需通过布尔值判断
             if (fb.Window.IsMaximized) return 2; // Maximized
             if (fb.Window.IsMinimized) return 1; // Minimized
             return 0; // Normal
@@ -1180,7 +1129,6 @@ oUIHacks = function () {
     
     this.setMainWindowState = function (v) { 
         if (this.useNative) {
-            // 使用 JSplitter 原生的 Maximize/Minimize/Restore 方法
             if (v === 2) fb.Window.Maximize();
             else if (v === 1) fb.Window.Minimize();
             else fb.Window.Restore();
@@ -1204,44 +1152,22 @@ oUIHacks = function () {
 var g_uihacks = new oUIHacks();
 
 // ═══════════════════════════════════════════════════════════════════════
-// DUI 菜单栏 / 状态栏自动隐藏
 // -----------------------------------------------------------------------
-// DUI 的菜单栏和状态栏是 foo_ui_std 自己的 UI 元素，CUI 下没有这两个东西
-// （CUI 的菜单挂在工具栏里，由 foo_ui_columns 自己画）。JSplitter 的
-// fb.Window 直接给了两个属性管它们：
-//     fb.Window.MainMenuHidden  = true;    // 隐藏主菜单栏
-//     fb.Window.StatusBarHidden = true;    // 隐藏状态栏
-// 文档注明这两个属性「仅限 DUI，在 Columns UI 下读写都会抛 Error」，
-// 所以必须先判 window.InstanceType，否则 CUI 下每次加载都会报一次错。
-//
-// 为什么不用 foo_openhacks / foo_ui_hacks 当主方案：
-//   JSplitter 文档对 fb.Window 明确写着「多数方法与提供类似功能的插件不兼容：
-//   foo_ui_wizard、foo_openhacks、foo_ui_hacks，使用前需先卸载这些组件」。
-//   原生属性够用就不该再挂一个，两套逻辑同时改窗口状态正是菜单栏
-//   一会儿没了、一会儿又冒出来的典型原因。所以这里原生优先，openhacks 只作兜底。
-//
-// 为什么每个面板都设一遍：
-//   fb.Window 的这几个 UI 设置是「按面板跟踪」的 —— 最近一次显式赋值的面板
-//   决定全局生效值，该面板一卸载，请求就撤销、菜单栏会自己回来。公共库是被
-//   每个面板各自 include 的，谁加载谁就设一遍，等于让所有活着的面板一起背书。
-//   启动阶段 DUI 还会重建一次菜单栏，所以再补两次延迟赋值。
 // ═══════════════════════════════════════════════════════════════════════
-var g_dui_bar_hack = null;      // openhacks 兜底实例（原生属性不可用时才建）
+var g_dui_bar_hack = null;
 
 function hideDuiBars() {
-    if (window.InstanceType !== 1) return;                  // 只在 DUI 下做，CUI 下会抛 Error
+    if (window.InstanceType !== 1) return;
 
-    // —— 首选：JSplitter 原生属性 ——
     var done = false;
     try {
         if (fb.Window) {
             fb.Window.MainMenuHidden = true;
             fb.Window.StatusBarHidden = true;
-            done = (fb.Window.MainMenuHidden === true);     // 读回来确认真的生效，不能只看赋值没报错
+            done = (fb.Window.MainMenuHidden === true);
         }
     } catch (e) { done = false; }
 
-    // —— 兜底：老版本 JSplitter 没有上面两个属性，改用 openhacks 系组件 ——
     if (!done) {
         try {
             if (!g_dui_bar_hack) {
@@ -1257,8 +1183,8 @@ function hideDuiBars() {
 }
 
 hideDuiBars();
-window.SetTimeout(hideDuiBars, 300);                        // 等 DUI 把第一次布局做完
-window.SetTimeout(hideDuiBars, 1500);                       // 再兜一次：某些配置下 DUI 会重建菜单栏
+window.SetTimeout(hideDuiBars, 300);
+window.SetTimeout(hideDuiBars, 1500);
 
 function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 	this.resizing_left = typeof resizing_left !== 'undefined' ? resizing_left : false;
@@ -1722,12 +1648,6 @@ function RGB(r, g, b) {
 function RGBA(r, g, b, a) {
     return ((a << 24) | (r << 16) | (g << 8) | (b));
 };
-// ================= foobar2000 菜单命令的语言适配 =================
-// 主菜单命令和右键菜单命令都是按「界面语言」匹配的字符串：
-// 中文版 fb2k 里没有 "File/New playlist" 这条路径，英文版里也没有 "文件/新建播放列表"，
-// 调用只会安静地返回 false，什么都发生。这套主题里两种写法混着用，所以在中文界面上
-// 「新建播放列表」「属性」「添加到播放队列」「首选项」这些按钮点下去毫无反应 —— 原版就有的问题。
-// 统一走下面两个函数：先按传进来的写法试一次，明确返回 false 再试另一种语言。
 var MAIN_MENU_ALIAS = {
 	"File/New playlist": "文件/新建播放列表",
 	"File/Open...": "文件/打开...",
@@ -2870,12 +2790,6 @@ String.prototype.removeAccents = function() {
 
 var g_instancetype = window.InstanceType;
 
-// ======================== 高分屏 (4K) 自动适配 ========================
-// 判定依据：window.DPI（JScript Panel / SMP 提供），>=144 即 150% 及以上缩放，
-// 这是 4K 显示器最常见的配置；1080p 常规配置为 96。
-// 4K 时：字体改用系统默认字体样式；标题栏切「紧凑标题栏 - 大」；控制栏切「加宽控制栏」。
-// 手动强制：右键 → 皮肤设置 → 4K 高分屏自动适配（属性键 GLOBAL HiRes display mode：
-//   0 = 自动，1 = 强制开启，2 = 强制关闭）。
 var g_hires_display = false;
 var g_hires_checked = false;
 var g_hires_mode = 0;
@@ -2900,9 +2814,6 @@ function InitHiResDisplay() {
         }
         g_hires_dpi = hires_dpi;
     }
-    // 直接改内存值，不走 setValue：避免写设置文件、NotifyOthers 和 RefreshPSS 引起的重载递归。
-    // 若本文件先于 JSpss_switch.js 载入，这两个对象此刻还不存在，
-    // 由 JSpss_switch.js 末尾再调用一次本函数补上。
     if (!g_hires_display) return;
     try {
         if (typeof compact_titlebar !== "undefined" && compact_titlebar && compact_titlebar.value != 2) {
@@ -3547,6 +3458,7 @@ function draw_blurred_image(image,ix,iy,iw,ih,bx,by,bw,bh,blur_value,overlay_col
     return bbox;
 };
 function setWallpaperImgV2(image, metadb, progressbar_art, width, height, blur_value, rawBitmap, quality) {
+    return null;
 	progressbar_art = typeof progressbar_art !== 'undefined' ? progressbar_art : false;
 	rawBitmap = typeof rawBitmap !== 'undefined' ? rawBitmap : false;
 	quality = typeof quality !== 'undefined' ? quality : 1;
@@ -3574,6 +3486,7 @@ function setWallpaperImgV2(image, metadb, progressbar_art, width, height, blur_v
     return img;
 };
 function setWallpaperImg(defaultpath, metadb, progressbar_art, width, height, blur_value, rawBitmap, quality) {
+    return null;
 	progressbar_art = typeof progressbar_art !== 'undefined' ? progressbar_art : false;
 	rawBitmap = typeof rawBitmap !== 'undefined' ? rawBitmap : false;
 	quality = typeof quality !== 'undefined' ? quality : 1;
@@ -3717,6 +3630,444 @@ function openCoverFullscreen(metadb, displayedImage){
 // Debugger functions
 function debugger_hint(string){
 }
+// ===================================================================================
+// -----------------------------------------------------------------------------------
+// ===================================================================================
+var FW_PROP_ENABLED = "显示·全屏壁纸";
+var FW_PROP_SOURCE  = "显示·全屏壁纸来源(0=封面 1=指定图片 2=优先图片)";
+var FW_PROP_IMAGE   = "显示·全屏壁纸图片路径";
+var FW_PROP_BLUR    = "显示·全屏壁纸模糊强度(0-90)";
+var FW_PROP_BLUR_LT = "显示·全屏壁纸模糊强度·浅色(0-90)";
+var FW_PROP_MASK    = "显示·全屏壁纸蒙版浓度(0-255)";
+var FW_PROP_MASK_LT = "显示·全屏壁纸蒙版浓度·浅色(0-255)";
+var FW_PROP_QUALITY = "显示·全屏壁纸质量(1=已缩放 2=1.5x 3=2x)";
+var FW_PROP_LXB     = "Lxbox·全屏透明";
+
+var g_fw_lastHasRealImg = null;
+var g_fw_lastSrcCover = false;
+
+var FW_ID_ON          = 7100;
+var FW_ID_OFF         = 7101;
+var FW_ID_SRC0        = 7102;
+var FW_ID_SRC1        = 7103;
+var FW_ID_SRC2        = 7104;
+var FW_ID_PICK        = 7105;
+var FW_ID_CLEAR       = 7106;
+var FW_ID_BLUR_INC    = 7110;
+var FW_ID_BLUR_DEC    = 7111;
+var FW_ID_BLUR_0      = 7112;
+var FW_ID_BLUR_30     = 7113;
+var FW_ID_BLUR_60     = 7114;
+var FW_ID_BLUR_90     = 7115;
+var FW_ID_MASK_INC    = 7120;
+var FW_ID_MASK_DEC    = 7121;
+var FW_ID_MASK_0      = 7122;
+var FW_ID_MASK_120    = 7123;
+var FW_ID_MASK_180    = 7124;
+var FW_ID_MASK_230    = 7125;
+var FW_ID_Q1          = 7130;
+var FW_ID_Q2          = 7131;
+var FW_ID_Q3          = 7132;
+var FW_ID_REFRESH     = 7133;
+
+var g_fwDarkV = null, g_fwDarkAt = 0;
+
+function fw_isDark(force) {
+    var now = (new Date()).getTime();
+    if (!force && g_fwDarkV !== null && (now - g_fwDarkAt) < 250) return g_fwDarkV;
+    var v = false;
+    try { v = fw_isDarkRaw(); } catch (e) { v = false; }
+    g_fwDarkV = v;
+    g_fwDarkAt = now;
+    return v;
+}
+
+function fw_isDarkRaw() {
+    try {
+        if (window.GetProperty("显示·深色布局", false)) return true;
+        if (window.GetProperty("显示·固定深色布局", false)) return true;
+        if (window.GetProperty("显示·强制深色布局", false)) return true;
+    } catch (e0) {}
+    try {
+        if (window.GetProperty("媒体库·深色主题", false)) return true;
+        if (window.GetProperty("播放列表·深色主题", false)) return true;
+        if (window.GetProperty("艺术家简介·深色主题", false)) return true;
+        if (window.GetProperty("可视化·深色主题", false)) return true;
+        if (window.GetProperty("迷你模式·深色主题", false)) return true;
+    } catch (e01) {}
+    try {
+        if (window.GetProperty("显示·深色布局跟随CUI", false)) {
+            return fw_bgIsDark();
+        }
+    } catch (e1) {}
+    return fw_bgIsDark();
+}
+
+function fw_bgIsDark() {
+    var c = 0;
+    try {
+        c = (window.InstanceType === 1) ? window.GetColourDUI(1) : window.GetColourCUI(3);
+    } catch (e) { return false; }
+    try { c = Number(c) & 0xffffff; } catch (e2) { return false; }
+    if (!c) return false;
+    var r = (c >> 16) & 0xff, g = (c >> 8) & 0xff, b = c & 0xff;
+    var lum = 0.299 * r + 0.587 * g + 0.114 * b;
+    return lum < 0x80;
+}
+
+function fw_enabled() {
+    try { return !!window.GetProperty(FW_PROP_ENABLED, false); } catch (e) { return false; }
+}
+
+// ===================================================================================
+// -----------------------------------------------------------------------------------
+// ===================================================================================
+var FW_SHARED_KEY = 'FULLSCREENWALLPAPER';
+
+function fw_sharedRoot() {
+    return fb.ProfilePath + 'wsh-data\\eole-settings\\';
+}
+
+function fw_sharedSet(on) {
+    var root = fw_sharedRoot();
+    var target = root + FW_SHARED_KEY + '_' + (on ? '1' : '0');
+    try {
+        var files = utils.Glob(root + FW_SHARED_KEY + '_*');
+        if (files) {
+            for (var i = 0; i < files.length; ++i) {
+                if (String(files[i]) === target) continue;
+                try { g_files.DeleteFile(files[i]); } catch (e1) {}
+            }
+        }
+        if (utils.FileTest(target, 'e')) return true;
+        var ts = g_files.CreateTextFile(target);
+        if (ts) {
+            try { ts.Write('1'); } catch (e2) {}
+            try { ts.Close(); } catch (e3) {}
+        }
+        return true;
+    } catch (e) {
+        try { console.log('[FW] 写共享开关失败: ' + e); } catch (x) {}
+        return false;
+    }
+}
+
+var g_fw_sharedRaw = null, g_fw_sharedRawAt = 0;
+function fw_sharedState(force) {
+    var now = (new Date()).getTime();
+    if (!force && g_fw_sharedRaw !== null && (now - g_fw_sharedRawAt) < 500) return g_fw_sharedRaw;
+    var v = null;
+    try {
+        var files = utils.Glob(fw_sharedRoot() + FW_SHARED_KEY + '_*');
+        if (files && files.length) {
+            var name = String(files[0]);
+            v = (name.substring(name.lastIndexOf('_') + 1) === '1');
+        }
+    } catch (e) { v = null; }
+    g_fw_sharedRaw = v;
+    g_fw_sharedRawAt = now;
+    return v;
+}
+
+function fw_sharedOn(force) {
+    return fw_sharedState(force) === true;
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_transparent(localOn) {
+    if (!localOn) return false;
+    return fw_sharedOn();
+}
+
+function fw_source() {
+    var v = 0;
+    try { v = Number(window.GetProperty(FW_PROP_SOURCE, 0)); } catch (e) { v = 0; }
+    return (v === 1 || v === 2) ? v : 0;
+}
+
+function fw_imagePath() {
+    var p = "";
+    try { p = String(window.GetProperty(FW_PROP_IMAGE, "") || ""); } catch (e) { p = ""; }
+    return p;
+}
+function fw_setImagePath(p) {
+    try { window.SetProperty(FW_PROP_IMAGE, String(p || "")); } catch (e) {}
+}
+
+function fw_blurValue() {
+    var key = fw_isDark() ? FW_PROP_BLUR : FW_PROP_BLUR_LT;
+    var def = fw_isDark() ? 30 : 20;
+    var v = def;
+    try { v = Number(window.GetProperty(key, def)); } catch (e) { v = def; }
+    if (!isFinite(v)) v = def;
+    return Math.max(0, Math.min(90, v));
+}
+
+function fw_maskAlpha() {
+    var key = fw_isDark() ? FW_PROP_MASK : FW_PROP_MASK_LT;
+    var def = fw_isDark() ? 180 : 210;
+    var v = def;
+    try { v = Number(window.GetProperty(key, def)); } catch (e) { v = def; }
+    if (!isFinite(v)) v = def;
+    v = Math.max(0, Math.min(255, Math.round(v)));
+    if (g_fw_lastHasRealImg === false) v = Math.round(v / 3);
+    return v;
+}
+
+function fw_maskColor() {
+    if (fw_isDark()) return GetGrey(25, fw_maskAlpha());
+    return GetGrey(255, fw_maskAlpha());
+}
+
+function fw_setBlur(v) {
+    v = Math.max(0, Math.min(90, Math.round(Number(v) || 0)));
+    try { window.SetProperty(fw_isDark() ? FW_PROP_BLUR : FW_PROP_BLUR_LT, v); } catch (e) {}
+}
+function fw_setMask(v) {
+    v = Math.max(0, Math.min(255, Math.round(Number(v) || 0)));
+    try { window.SetProperty(fw_isDark() ? FW_PROP_MASK : FW_PROP_MASK_LT, v); } catch (e) {}
+}
+
+function fw_quality() {
+    var v = 1;
+    try { v = Number(window.GetProperty(FW_PROP_QUALITY, 1)); } catch (e) { v = 1; }
+    return (v === 2 || v === 3) ? v : 1;
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_pickSource() {
+    var src = fw_source(), p = fw_imagePath();
+    if (src === 1 || src === 2) {
+        if (p) {
+            try {
+                var im = gdi.Image(p);
+                if (isImage(im)) return { img: im, path: p };
+            } catch (e) {}
+        }
+        if (src === 1) return { img: null, path: p };
+    }
+    return { img: null, path: "" };
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_coverArt(metadb) {
+    if (!metadb) return null;
+    try {
+        var im = utils.GetAlbumArtV2(metadb, 0, false);
+        if (isImage(im) && im.Width > 1 && im.Height > 1) return im;
+    } catch (e1) {}
+    try {
+        var im2 = utils.GetAlbumArtV2(metadb, AlbumArtId.front);
+        if (isImage(im2) && im2.Width > 1 && im2.Height > 1) return im2;
+    } catch (e2) {}
+    try {
+        var im3 = get_albumArt(metadb);
+        if (isImage(im3) && im3.Width > 1 && im3.Height > 1) return im3;
+    } catch (e3) {}
+    return null;
+}
+
+// -----------------------------------------------------------------------------------
+// fw_buildWallpaper(w, h, metadb)
+// -----------------------------------------------------------------------------------
+function fw_buildWallpaper(w, h, metadb, qOverride) {
+    if (!(w > 0 && h > 0)) return null;
+    var q = (typeof qOverride === 'number' && qOverride > 0) ? qOverride : fw_quality();
+    var bw = Math.round(w * q), bh = Math.round(h * q);
+    if (bw < 8) bw = 8;
+    if (bh < 8) bh = 8;
+
+    var srcMode = fw_source();
+    var img = null, fromCover = false;
+
+    if (srcMode === 0 || srcMode === 2) {
+        if (!metadb) { try { metadb = fb.GetNowPlaying(); } catch (e0) { metadb = null; } }
+        var cov = fw_coverArt(metadb);
+        if (isImage(cov)) { img = cov; fromCover = true; }
+    }
+    if (!isImage(img) && srcMode !== 1) {
+        var pick = fw_pickSource();
+        if (isImage(pick.img)) img = pick.img;
+    }
+    if (!isImage(img) && srcMode === 1) {
+        var pick1 = fw_pickSource();
+        if (isImage(pick1.img)) img = pick1.img;
+    }
+    if (!isImage(img)) {
+        try {
+            var def = globalProperties.default_wallpaper;
+            if (def) {
+                var imd = gdi.Image(def);
+                if (isImage(imd) && imd.Width > 1) img = imd;
+            }
+        } catch (e4) {}
+    }
+    if (!isImage(img)) {
+        try {
+            var nc = globalProperties.nocover_img;
+            if (isImage(nc) && nc.Width > 1) img = nc;
+        } catch (e5) {}
+    }
+    g_fw_lastSrcCover = fromCover;
+    g_fw_lastHasRealImg = isImage(img);
+    if (!isImage(img)) {
+        try {
+            img = gdi.CreateImage(Math.max(2, Math.round(bw / 8)), Math.max(2, Math.round(bh / 8)));
+            var fg = img.GetGraphics();
+            fg.FillSolidRect(0, 0, img.Width, img.Height, fw_isDark() ? GetGrey(52) : GetGrey(224));
+            img.ReleaseGraphics(fg);
+        } catch (e6) { img = null; }
+    }
+    if (!isImage(img)) return null;
+
+    var iw = img.Width, ih = img.Height;
+    var dstRatio = bw / bh;
+    var srcRatio = iw / ih;
+    var cx = 0, cy = 0, cw = iw, ch = ih;
+    if (srcRatio > dstRatio) {
+        cw = Math.round(ih * dstRatio);
+        cx = Math.round((iw - cw) / 2);
+    } else if (srcRatio < dstRatio) {
+        ch = Math.round(iw / dstRatio);
+        cy = Math.round((ih - ch) / 2);
+    }
+    if (cw < 1) cw = iw;
+    if (ch < 1) ch = ih;
+
+    var blur = fw_blurValue();
+    var tmp = null;
+    if (blur > 0) {
+        try {
+            var div = 1 + blur / 6;
+            var sw = Math.max(24, Math.round(bw / div));
+            var sh = Math.max(24, Math.round(bh / div));
+            var small = gdi.CreateImage(sw, sh);
+            var sg = small.GetGraphics();
+            sg.SetInterpolationMode(1);
+            sg.DrawImage(img, 0, 0, sw, sh, cx, cy, cw, ch, 0, 255);
+            small.ReleaseGraphics(sg);
+            small.StackBlur(Math.max(1, Math.round(blur / 2)));
+            tmp = small.Resize(bw, bh, 1);
+        } catch (e) { tmp = null; }
+    }
+    if (!isImage(tmp)) {
+        try {
+            tmp = gdi.CreateImage(bw, bh);
+            var g2 = tmp.GetGraphics();
+            g2.SetInterpolationMode(1);
+            g2.DrawImage(img, 0, 0, bw, bh, cx, cy, cw, ch, 0, 255);
+            tmp.ReleaseGraphics(g2);
+        } catch (e) { tmp = null; }
+    }
+    if (!isImage(tmp)) tmp = img;
+    return tmp;
+}
+
+// -----------------------------------------------------------------------------------
+// fw_drawWallpaper(gr, w, h, wallImg)
+// -----------------------------------------------------------------------------------
+function fw_drawWallpaper(gr, w, h, wallImg) {
+    if (!gr) return false;
+    if (isImage(wallImg) && wallImg.Width > 0) {
+        gr.DrawImage(wallImg, 0, 0, w, h, 0, 0, wallImg.Width, wallImg.Height, 0, 255);
+    } else {
+        gr.FillSolidRect(0, 0, w, h, fw_isDark() ? GetGrey(30) : GetGrey(255));
+        return false;
+    }
+    var a = fw_maskAlpha();
+    if (a > 0) gr.FillSolidRect(0, 0, w, h, fw_maskColor());
+    return true;
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_isGlass() {
+    return fw_enabled();
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+var g_fw_on = null;
+function fw_on() {
+    if (g_fw_on === null) g_fw_on = fw_enabled();
+    return g_fw_on;
+}
+function fw_setOn(v) {
+    g_fw_on = !!v;
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_glass() {
+    return fw_on();
+}
+
+// -----------------------------------------------------------------------------------
+// -----------------------------------------------------------------------------------
+function fw_np_glass(localOn) {
+    if (!fw_transparent(localOn === undefined ? fw_enabled() : localOn)) return false;
+    var circle = true, txt = false;
+    try { circle = !!window.GetProperty("显示·圆形模式", true); } catch (e) { circle = true; }
+    try { txt = !!window.GetProperty("显示曲目信息", false); } catch (e) { txt = false; }
+    return !!(circle || txt);
+}
+
+// ===================================================================================
+// -----------------------------------------------------------------------------------
+// ===================================================================================
+function fw_cfgPath() {
+    return fb.ProfilePath + 'wsh-data\\eole-settings\\FULLSCREENWALLPAPER.cfg';
+}
+
+function fw_rawNum(key, def) {
+    var v = def;
+    try { v = Number(window.GetProperty(key, def)); } catch (e) { v = def; }
+    return isFinite(v) ? v : def;
+}
+
+function fw_cfgWrite() {
+    var c = {
+        on:  fw_enabled(),
+        src: fw_source(),
+        img: fw_imagePath(),
+        bd:  fw_rawNum(FW_PROP_BLUR, 30),
+        bl:  fw_rawNum(FW_PROP_BLUR_LT, 20),
+        md:  fw_rawNum(FW_PROP_MASK, 180),
+        ml:  fw_rawNum(FW_PROP_MASK_LT, 210),
+        q:   fw_quality()
+    };
+    try {
+        utils.WriteTextFile(fw_cfgPath(), JSON.stringify(c));
+        return true;
+    } catch (e) {
+        try { console.log('[FW] 写配置文件失败: ' + e); } catch (x) {}
+        return false;
+    }
+}
+
+function fw_cfgRead() {
+    try {
+        var t = utils.ReadTextFile(fw_cfgPath());
+        if (!t) return null;
+        var c = JSON.parse(t);
+        return (c && typeof c === 'object') ? c : null;
+    } catch (e) { return null; }
+}
+
+function fw_broadcast(on) {
+    var v = (typeof on === "boolean") ? on : fw_enabled();
+    try { window.SetProperty(FW_PROP_ENABLED, v); } catch (e) {}
+    try { fw_sharedSet(v); } catch (eS) {}
+    try { fw_cfgWrite(); } catch (eW) {}
+    try { g_fw_sharedRaw = null; } catch (eC) {}
+    try { window.NotifyOthers("fullscreenWallpaper", v); } catch (e) {}
+    try { window.NotifyOthers("wallpaper", { enabled: v }); } catch (e2) {}
+    try { window.Repaint(); } catch (e3) {}
+}
+
 //JSON wrappers
 function JSON_parse(info) {
 	try {

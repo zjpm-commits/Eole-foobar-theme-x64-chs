@@ -89,9 +89,6 @@ buttons = {
 		positionButtons();
 		window.Repaint();
     },black_images.playlist_decrease_icon,black_images.playlist_decrease_hover_icon,ButtonStates.normal,224),
-    /*NowPlayingToggle: new SimpleButton(18, 8, 35, 21, "NowPlayingToggle", function () {
-		nowplayingplaylist_state.toggleValue();
-    },false,black_images.nowplaying_on_icon,black_images.nowplaying_on_hover_icon,ButtonStates.normal,224)*/
 }
 
 function positionButtons(){
@@ -267,6 +264,7 @@ function draw_settings_menu(x, y) {
 	basemenu.AppendMenuSeparator();
 	basemenu.AppendMenuItem(MF_STRING, 4989, "显示切换按钮");
 	basemenu.CheckMenuItem(4989, properties.displayToggleBtns);
+	basemenu.AppendMenuSeparator();
 
     idx = 0;
     idx = basemenu.TrackPopupMenu(x, y, 0x0008);
@@ -818,21 +816,18 @@ function on_size(w, h) {
 	positionButtons();
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	if(g_pinfo.refresh_needed > 0) {
 		g_pinfo.refresh(true, 10 + g_pinfo.refresh_needed);
 		g_pinfo.refresh_needed = 0;
 	}
 
-  gr.FillSolidRect(0,0, ww, wh,colors.normal_bg);
-	// 表头也铺壁纸，和播放列表/媒体库保持一致
-	if(properties.showwallpaper && !g_wallpaperImg) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-	}
-	if(properties.showwallpaper && g_wallpaperImg) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	}
+
 	gr.FillSolidRect(0, wh-1, ww, 1, colors.headerbar_line);
 
 	if(g_pinfo.items_width < 0) {
@@ -1010,6 +1005,14 @@ function on_playback_stop(reason) {
 
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
 			window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);

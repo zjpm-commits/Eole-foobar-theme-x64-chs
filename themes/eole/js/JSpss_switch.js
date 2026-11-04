@@ -118,10 +118,6 @@ var librarytree = new oPanelSetting("librarytree", "LIBRARYTREE_", 0, 0, 1);
 var mini_controlbar = new oPanelSetting("mini_controlbar", "MINICONTROLBAR_", 1, 0, 1);
 var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 2);
 
-// ---- 4K 高分屏自动适配 ----
-// 主题的两个样式对象刚定义好，让 JStheme_common.js 的判定结果立即生效：
-// 4K 时标题栏固定为「紧凑标题栏 - 大」（value 2），控制栏固定为「加宽控制栏」（value 0）。
-// 若 JStheme_common.js 尚未载入，这里会自动跳过，由它的顶层调用补上，两个载入顺序都成立。
 if (typeof InitHiResDisplay === "function") InitHiResDisplay();
 
 //Individual Filter state

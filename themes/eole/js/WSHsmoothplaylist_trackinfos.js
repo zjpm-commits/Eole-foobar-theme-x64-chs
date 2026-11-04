@@ -152,11 +152,6 @@ function setAllProperties(){
 }
 setAllProperties();
 
-// ── 属性名 → 真实存储键 ──────────────────────────────────────────────
-// properties_big / properties_mini 用的是中文键（如 "大面板·双行文本"），但 setOneProperty()
-// 以前按 "大面板·通用" + 属性名 拼键，拼出来是 "大面板·通用doubleRowText" —— 跟定义里的键
-// 不是同一个。结果是：菜单改了值写进 A 键，重启后从 B 键读，所有用菜单改的设置都不会保存
-// （双行显示、行高、评级、进度条……全部）。这里把定义里的键抄成表，读写都按表走。
 var PROP_KEY_BIG = {
 		"ParentName": "大面板·父面板名称", 	"lockOnNowPlaying": "大面板·锁定正在播放", 	"lockOnPlaylistNamed": "大面板·锁定指定播放列表",
 		"FollowNowPlaying": "大面板·跟随正在播放", 	"defaultRowHeight": "大面板·默认行高", 	"drawAlternateBG": "大面板·交替行背景",
@@ -199,9 +194,6 @@ var PROP_KEY_MINI = {
 		"autocollapse": "迷你·自动折叠", 	"addedRows_end_default": "迷你·末尾空行数"
 };
 
-// 一次性迁移：旧版本菜单把值写进了 "大面板·通用xxx" / "迷你·通用xxx" 这类错误键，
-// 这里把它们搬回 properties 真正读取的键，省得升级后所有菜单设置还得重设一遍。
-// 只执行一次；正确键上已经有值时以已有的为准，不覆盖。
 (function migrateMiskeyedProperties() {
 	try {
 	if (window.GetProperty("_属性键已修正迁移", false)) return;
@@ -219,12 +211,9 @@ var PROP_KEY_MINI = {
 	}
 	window.SetProperty("_属性键已修正迁移", true);
 	} catch (e) {
-		// 迁移失败不能拖垮面板，下次启动再来
 	}
 })();
 
-// 查表取键；表里没有的（如 groupHeaderRowsNumberSimple 这种运行时镜像变量）保持原来的拼法，
-// 与原版行为一致，写进去也不会被读，无害。
 function propKey(scope, name) {
 	var tbl = (scope == 'mini') ? PROP_KEY_MINI : PROP_KEY_BIG;
 	return tbl[name] || ((scope == 'mini' ? '迷你·通用' : '大面板·通用') + name);
@@ -2396,13 +2385,14 @@ oBrowser = function(name) {
                     this.nowplaying = null;
                 };
 
-                // 行只允许画在顶栏以下：滚动到非整行位置时，首行会越过
-                // this.y 画进搜索框区域，这里直接裁掉（顶栏绘制前解除）。
+                scroll_ = snapScrollToRow(scroll_, ah);
                 clipListArea(gr, this.y);
                 for(var i = g_start_;i <= g_end_;i++){
                     ay = Math.floor(this.y + (i * ah) - scroll_);
                     this.rows[i].x = ax;
                     this.rows[i].y = ay;
+
+                    if(ay < this.y) continue;
 
                     switch(this.rows[i].type) {
                     case ghrh: // group header row
@@ -2752,10 +2742,10 @@ oBrowser = function(name) {
 												pt = playingText.GetGraphics();
 													pt.FillSolidRect(0, 0, total_size+15, ah,colors.normal_bg)
 													pt.SetTextRenderingHint(5);
-													if(typeof(this.groups[this.rows[i].albumId].g_wallpaperImg) == "undefined" || !this.groups[this.rows[i].albumId].g_wallpaperImg){
-														this.groups[this.rows[i].albumId].g_wallpaperImg = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
-													};
-													pt.DrawImage(this.groups[this.rows[i].albumId].g_wallpaperImg, 0, 0, total_size+15,  ah, 0, 0, this.groups[this.rows[i].albumId].g_wallpaperImg.Width, ah);
+													var _pbWall = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
+													if(isImage(_pbWall) && _pbWall.Width > 0) {
+														pt.DrawImage(_pbWall, 0, 0, total_size+15, ah, 0, 0, _pbWall.Width, ah);
+													}
 													pt.FillSolidRect(0, 0, total_size+15, ah,colors.albumartprogressbar_overlay)
 													pt.SetTextRenderingHint(5);
 													pt.DrawString(track_time_part, g_font.normal, colors.albumartprogressbar_txt, 0, 1, total_size+6, ah_1, 554696704);
@@ -3009,13 +2999,11 @@ oBrowser = function(name) {
 										if(cNowPlaying.flashEnable && cNowPlaying.flash){
 											gr.DrawRect(-1, ay, ww+2, ah-1, 1.0, colors.flash_rectline);
 										}
-                                        //
                                         if(track_time_part == "ON AIR") {
                                             if(g_radio_artist.length > 0) {
                                                 g_radio_artist_final = " - " + g_radio_artist;
                                             } else g_radio_artist_final = ""
                                         };
-                                        //
 										if(!g_var_cache.isdefined("track_num_part")) g_var_cache.set("track_num_part",gr.CalcTextWidth("000", g_font.normal));
                                         cColumns.track_num_part = g_var_cache.get("track_num_part") + 11;
                                         if(!isDefined(this.rows[i].title_part_w)) this.rows[i].title_part_w = gr.CalcTextWidth(track_title_part, g_font.normal) + 10;
@@ -3094,10 +3082,10 @@ oBrowser = function(name) {
 												pt = playingText.GetGraphics();
 													pt.SetTextRenderingHint(globalProperties.TextRendering);
 
-													if(typeof(this.groups[this.rows[i].albumId].g_wallpaperImg) == "undefined" || !this.groups[this.rows[i].albumId].g_wallpaperImg) {
-														this.groups[this.rows[i].albumId].g_wallpaperImg = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
-													};
-													pt.DrawImage(this.groups[this.rows[i].albumId].g_wallpaperImg, 0, 0, total_size+15,  ah, 0, 0, this.groups[this.rows[i].albumId].g_wallpaperImg.Width, ah);
+													var _pbWall2 = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
+													if(isImage(_pbWall2) && _pbWall2.Width > 0) {
+														pt.DrawImage(_pbWall2, 0, 0, total_size+15, ah, 0, 0, _pbWall2.Width, ah);
+													}
 													pt.FillSolidRect(0, 0, total_size+15, ah,colors.albumartprogressbar_overlay)
 													pt.SetTextRenderingHint(5);
 													pt.DrawString(track_time_part, g_font.normal, colors.albumartprogressbar_txt, 0, 0, total_size+6, ah, 554696704);
@@ -3279,11 +3267,6 @@ oBrowser = function(name) {
             if(properties.showHeaderBar) {
                 var boxText = (this.totaltracks > 1 ? this.totaltracks+"张专辑" : this.totaltracks+"张专辑");
                 // draw background part above playlist (headerbar)
-				// 顶栏底色原本是全透明（透出面板底色/壁纸）。这里把这块背景重画一遍，
-				// 视觉不变，但能挡住任何没被裁剪干净的滚动内容（GDI 文字不受 SetClip 约束）。
-				paintHeaderBarBackdrop(gr, 0, 0, ww, properties.headerBarHeight, colors.normal_bg,
-					properties.showwallpaper ? g_wallpaperImg : null, wh,
-					(properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
 
 				gr.FillGradRect(this.x+(this.drawLeftLine?1:0), properties.headerBarHeight, ww, 1, 0, colors.headerbar_line, colors.headerbar_line, 1.0);
 
@@ -3900,15 +3883,16 @@ oBrowser = function(name) {
 
 		if(cScrollBar.visible) {
 			scroll = check_scroll(scroll);
-			if(Math.abs(scroll - scroll_) >= 2){
-				scroll_ += (scroll - scroll_) / properties.scrollSmoothness;
+			var rh_snap = rowHeightForSnap();
+			var scroll_tgt = snapScrollToRow(scroll, rh_snap);
+			if(scroll_ != scroll_tgt){
+				scroll_ = stepScrollToRow(scroll_, scroll_tgt, rh_snap, properties.scrollSmoothness);
 				repaint_1 = true;
-				isScrolling = true;
-				//
+				isScrolling = (scroll_ != scroll_tgt);
 				if(scroll_prev != scroll) brw.scrollbar.updateScrollbar();
 			} else {
+				if(scroll_< 1) scroll_ = 0;
 				if(isScrolling) {
-					if(scroll_< 1) scroll_ = 0;
 					isScrolling = false;
 					repaint_1 = true;
 				};
@@ -4356,9 +4340,7 @@ oBrowser = function(name) {
             _menu2A.CheckMenuItem(222, properties.wallpaperdisplay === 1);
             _menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
             _menu2A.CheckMenuItem(223, properties.wallpaperdisplay === 2);
-			_menu2A.AppendTo(_menu2,MF_STRING, "壁纸尺寸");
 
-            _menu2.AppendTo(_menu, MF_STRING, "背景壁纸");
 
 			if (layout_state === 0 && main_panel_state === 1) {
 				_menu.AppendMenuSeparator();
@@ -4617,9 +4599,6 @@ oBrowser = function(name) {
                         window.ShowConfigure();
                         break;
                     case 993:
-                        // 原版调用了一个全工程都不存在的 set_nowplaying_state()，点下去直接抛
-                        // ReferenceError，菜单毫无反应。这个分支只在「主面板=播放列表」时出现，
-                        // 语义就是收起右侧的「正在播放」区，等同标题栏的 toggleNowPlayingState(true,0)。
                         if (typeof set_nowplaying_state === 'function') set_nowplaying_state(0);
                         else if (typeof nowplayingplaylist_state !== 'undefined') nowplayingplaylist_state.setValue(0);
                         break;
@@ -4839,7 +4818,6 @@ var g_dragndrop_targetPlaylistId = -1;
 var g_dragndrop_total_before = 0;
 var g_dragndrop_drop_forbidden = false;
 
-//
 var ww = 0, wh = 0;
 var g_metadb = null;
 var g_focus = false;
@@ -4864,11 +4842,9 @@ var g_avoid_on_playlist_items_reordered = false;
 // mouse actions
 var g_lbtn_click = false;
 var g_rbtn_click = false;
-//
 var g_total_duration_text = "";
 var g_first_populate_done = false;
 var g_first_populate_launched = false;
-//
 var repaintforced = false;
 var launch_time = fb.CreateProfiler("launch_time");
 var form_text = "";
@@ -4929,7 +4905,12 @@ function set_update_function(string){
     }
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	if(Update_Required_function!="") {
 		eval(Update_Required_function);
 		Update_Required_function = "";
@@ -4946,14 +4927,7 @@ function on_paint(gr) {
 
     if(!g_1x1) {
         // draw background under playlist
-		gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
-        if(fb.IsPlaying && g_wallpaperImg && properties.showwallpaper) {
-            gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-            gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-        } else if(g_wallpaperImg && properties.showwallpaper) {
-			gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-			gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-        }
+
 
         brw && brw.draw(gr);
 
@@ -5317,7 +5291,6 @@ function get_metrics(finalize_groups) {
     properties.rowHeight = Math.round(_defaultRowHeight * g_zoom_percent / 100);
     cScrollBar.width = Math.floor(cScrollBar.defaultWidth * g_zoom_percent / 100);
     cScrollBar.minCursorHeight = Math.round(cScrollBar.defaultMinCursorHeight * g_zoom_percent / 100);
-    //
     cover.margin = Math.floor(cover.default_margin * g_zoom_percent / 100);
     cover.w = properties.groupHeaderRowsNumber * properties.rowHeight;
 	cover.max_w = properties.groupHeaderRowsNumber * properties.rowHeight;
@@ -5340,7 +5313,6 @@ function get_metrics(finalize_groups) {
             brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
         };
         brw.setList(finalize_groups);
-        //
         g_focus_row = brw.getOffsetFocusItem(g_focus_id);
         // if focused track not totally visible, we scroll to show it centered in the panel
         if(g_focus_row < scroll/properties.rowHeight || g_focus_row > scroll/properties.rowHeight + brw.totalRowsVis - 1) {
@@ -6489,6 +6461,14 @@ function stopFlashNowPlaying() {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;			
@@ -6890,8 +6870,6 @@ function on_drag_over(action, x, y, mask) {
 	} else if(y > brw.y + brw.h - ((properties.doubleRowText)?properties.rowHeight:properties.rowHeight*2)) {
 		if(!brw.buttonclicked) {
 			brw.buttonclicked = true;
-			//
-			//
 			if(!cScrollBar.timerID) {
 				cScrollBar.timerID = setInterval(function () {
 					on_mouse_wheel(-1);

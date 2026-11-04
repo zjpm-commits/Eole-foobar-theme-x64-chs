@@ -147,6 +147,43 @@ function id3UsltFrame(text) {
   return b.done();
 }
 
+/* 古典字段走 TXXX（iTunes / foobar 的约定：TXXX:WORK、TXXX:MOVEMENTNAME…）
+   描述按业界写法不带 BOM，值带 BOM —— iTunes 就是这么写的，两边都认。 */
+function utf16Raw(s) {
+  s = String(s == null ? '' : s);
+  var o = new Uint8Array(s.length * 2);
+  for (var i = 0; i < s.length; i++) {
+    var c = s.charCodeAt(i);
+    o[i * 2] = c & 0xFF;
+    o[i * 2 + 1] = (c >> 8) & 0xFF;
+  }
+  return o;
+}
+
+function id3TxxxFrame(desc, val) {
+  var b = new Bytes();
+  b.byte(1);                       /* encoding: UTF-16 */
+  b.push(utf16Raw(desc));          /* 描述（不带 BOM） */
+  b.byte(0); b.byte(0);            /* 描述结束 */
+  b.push(utf16Bytes(val));         /* 值（带 BOM） */
+  return b.done();
+}
+
+/* 读 TXXX 帧的描述（0=Latin1 / 1,2=UTF-16 / 3=UTF-8），用来判断字段是否已存在 */
+function id3TxxxDesc(payload) {
+  if (!payload || payload.length < 2) return '';
+  var enc = payload[0], s = '', i = 1;
+  if (enc === 1 || enc === 2) {
+    for (; i + 1 < payload.length; i += 2) {
+      if (payload[i] === 0 && payload[i + 1] === 0) break;
+      s += String.fromCharCode(payload[i] | (payload[i + 1] << 8));
+    }
+  } else {
+    for (; i < payload.length && payload[i] !== 0; i++) s += String.fromCharCode(payload[i]);
+  }
+  return s.replace(/^\uFEFF/, '');
+}
+
 function id3ApicFrame(img, meta) {
   var b = new Bytes();
   b.byte(0);                       /* encoding: ISO-8859-1 */
@@ -237,19 +274,34 @@ function mp3WithCover(u8, img, fields) {
   var frames = info ? readId3Frames(u8, info.bodyStart, info.bodyEnd, info.major) : [];
   if (audio.length < 128) return { ok: false, reason: '音频数据为空' };
 
-  var keep = [], has = {};
+  var keep = [], has = {}, txxxHas = {};
   for (var i = 0; i < frames.length; i++) {
     if (frames[i].id === 'APIC') continue;          /* 旧封面丢掉，换新的 */
     keep.push(frames[i]);
     has[frames[i].id] = true;
+    if (frames[i].id === 'TXXX') {
+      var td = id3TxxxDesc(frames[i].data).toLowerCase();
+      if (td) txxxHas[td] = true;
+    }
   }
 
-  /* 文本字段：文件里没有才补（fb2k 刚写好的不覆盖） */
-  var map = { TITLE: 'TIT2', ARTIST: 'TPE1', ALBUM: 'TALB', DATE: 'TYER', GENRE: 'TCON' };
+  /* 文本字段：文件里没有才补（fb2k 刚写好的不覆盖）。
+     2026-01 起把苹果标签源会用到的字段也接上，免得 fb2k 那条路失败时
+     只剩曲名/歌手两个帧，专辑号、作曲、版权全丢。 */
+  var map = {
+    TITLE: 'TIT2', ARTIST: 'TPE1', ALBUM: 'TALB', DATE: 'TYER', GENRE: 'TCON',
+    ALBUMARTIST: 'TPE2', COMPOSER: 'TCOM', TRACK: 'TRCK', DISCNUMBER: 'TPOS',
+    COPYRIGHT: 'TCOP', ISRC: 'TSRC'
+  };
   for (var key in map) {
     var fid = map[key];
     var val = String((fields && fields[key]) || '').trim();
     if (!val || has[fid]) continue;
+    /* TRCK / TPOS 写「曲序/总数」：有总数就拼成 2/10，没有就单写 2 */
+    if (fid === 'TRCK' || fid === 'TPOS') {
+      var tot = String((fields && fields[fid === 'TRCK' ? 'TRACKTOTAL' : 'DISCTOTAL'] ) || '').trim();
+      if (tot && val.indexOf('/') < 0) val = val + '/' + tot;
+    }
     keep.push({ id: fid, data: id3TextFrame(val) });
     has[fid] = true;
   }
@@ -257,6 +309,17 @@ function mp3WithCover(u8, img, fields) {
   if (lyr && !has.USLT) {
     keep.push({ id: 'USLT', data: id3UsltFrame(lyr) });
     has.USLT = true;
+  }
+
+  /* 古典：作品 / 乐章 / 乐章号 / 乐章总数 / Show Movement。
+     iTunes 与 foobar 都认 TXXX 这一套，文件里已经有同名字段就不覆盖。 */
+  var txxxMap = ['WORK', 'MOVEMENTNAME', 'MOVEMENT', 'MOVEMENTTOTAL', 'SHOWMOVEMENT'];
+  for (var q = 0; q < txxxMap.length; q++) {
+    var tk = txxxMap[q];
+    var tv = String((fields && fields[tk]) || '').trim();
+    if (!tv || txxxHas[tk.toLowerCase()]) continue;
+    keep.push({ id: 'TXXX', data: id3TxxxFrame(tk, tv) });
+    txxxHas[tk.toLowerCase()] = true;
   }
 
   keep.push({ id: 'APIC', data: id3ApicFrame(img, meta) });

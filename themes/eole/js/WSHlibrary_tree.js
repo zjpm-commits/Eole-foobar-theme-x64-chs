@@ -190,7 +190,8 @@ oTagSwitcherBar_old = function() {
 		var prev_text_width=0;
 
 		// draw background part above playlist (headerbar)
-		gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+
 		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
@@ -381,7 +382,8 @@ oTagSwitcherBar = function() {
 		var prev_text_width=0;
 
 		// draw background part above playlist (headerbar)
-		gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+
 		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x, 1, colors.headerbar_line);
 
 		//Calculate text size
@@ -425,7 +427,6 @@ oTagSwitcherBar = function() {
 		for(i = this.items_txt.length-1; i >= 0; i--) {
 			basemenu.AppendMenuItem(MF_STRING, i+1, this.items_txt[i]);
 		}
-		//basemenu.AppendMenuItem(MF_STRING, 0, "自定义分组");
 		
 		idx = 0;
 		idx = basemenu.TrackPopupMenu(x, y, 0x0008);
@@ -1318,17 +1319,17 @@ function scrollbar() {
             if (!this.draw_timer) this.scroll_timer();
         }
         if (!this.smooth || this.draw_timer === 0) {
-            this.delta = this.scroll;
+            this.delta = snapScrollToRow(this.scroll, this.row_h);
             this.bar_y = this.but_h + this.scrollbar_travel * (this.delta * this.ratio) / (this.row_count * this.row_h);
             p.tree_paint();
         }
     }
 
     this.smooth_scroll = function() {
-        if (Math.abs(this.scroll - this.delta) > 0.5) {
-            this.s1 += (this.scroll - this.s1) * smoothness;
-            this.s2 += (this.s1 - this.s2) * smoothness;
-            this.delta += (this.s2 - this.delta) * smoothness;
+        var tgt = snapScrollToRow(this.scroll, this.row_h);
+        if (this.delta != tgt) {
+            this.delta = stepScrollToRow(this.delta, tgt, this.row_h, 2.2);
+            this.s1 = this.s2 = this.delta;
             this.bar_y = this.but_h + this.scrollbar_travel * (this.delta * this.ratio) / (this.row_count * this.row_h);
             p.tree_paint();
         } else if (this.draw_timer) {
@@ -2571,6 +2572,7 @@ function populate() {
         check_node(gr);
         for (var i = s; i < e; i++) {
             item_y = ui.row_h * i + p.s_h - sbar.delta;
+            if (item_y < p.s_h) continue;
             if (ui.alternate) {
                 if (i % 2 == 0) gr.FillSolidRect(0, item_y + 1, ui.w, ui.row_h - 2, colors.alternate_row);
             }
@@ -2619,6 +2621,7 @@ function populate() {
         for (i = s; i < e; i++) {
             if ((this.tree[i].sel && ui.backcolsel != 0) || g_rightClickedIndex == i) {
                 item_y = ui.row_h * i + p.s_h - sbar.delta;
+                if (item_y < p.s_h) continue;
                 item_x = Math.round(ui.pad * this.tree[i].tr + ui.margin);
                 if (ui.node_style>=0 || !this.tree[i].track) item_x = item_x + ui.symbol_w;
                 sel_x = item_x - ui.sel;
@@ -2634,6 +2637,7 @@ function populate() {
 		this.cursor = IDC_ARROW;
         for (i = s; i < e; i++) {
             item_y = ui.row_h * i + p.s_h - sbar.delta;
+            if (item_y < p.s_h) continue;
             nm = this.tree[i].name;
 			count_text = (this.show_counts && (!this.tree[i].track || !p.show_tracks) ? " " + this.tree[i].item.length + "" : "");
 			text_w = gr.CalcTextWidth(nm, ui.font);
@@ -3408,11 +3412,6 @@ function searchLibrary() {
         s = Math.min(Math.max(s, 0), p.s_txt.length);
         e = Math.min(Math.max(e, 0), p.s_txt.length);
         cx = Math.min(Math.max(cx, 0), p.s_txt.length);
-        // 顶栏底色原本全透明（透出面板底色/壁纸）；树列表滚动溢出的行会从这里透上来。
-        // 重画一遍面板背景，外观不变但能挡住溢出。
-        paintHeaderBarBackdrop(gr, 0, this.y-1, ui.w, p.s_sp+1, ui.backcol,
-            properties.showwallpaper ? g_wallpaperImg : null, ui.h,
-            (properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
 		gr.FillSolidRect(0, this.y+p.s_sp, ww -((draw_right_line)?1:0), 1,colors.headerbar_line);
 
         if (p.s_txt) {
@@ -3525,23 +3524,19 @@ function set_update_function(string){
 	else Update_Required_function=string;
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	if(update_size) on_size(window.Width, window.Height);
 	if(Update_Required_function!="") {
 		eval(Update_Required_function);
 		Update_Required_function = "";
 	}
 	gr.SetTextRenderingHint(globalProperties.TextRendering);
-    if (ui.bg) gr.FillSolidRect(0, 0, ui.w, ui.h, ui.backcol);
 
-	if((update_wallpaper || !g_wallpaperImg) && properties.showwallpaper && properties.wallpapermode == 0){
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-		update_wallpaper = false;		
-	}
-	if(g_wallpaperImg && properties.showwallpaper) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ui.w, ui.h, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ui.w, ui.h, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	}
     if (lib.upd) {
         lib.refresh();
         lib.upd = false;
@@ -3869,8 +3864,6 @@ function menu_object() {
 			wallpaper2.CheckMenuItem(9022, properties.wallpaperdisplay==1);
 			wallpaper2.AppendMenuItem(MF_STRING, 9023, "拉伸");
 			wallpaper2.CheckMenuItem(9023, properties.wallpaperdisplay==2);
-			wallpaper2.AppendTo(wallpaper,MF_STRING, "壁纸尺寸");
-			wallpaper.AppendTo(Menu,MF_STRING, "背景壁纸");
 
 			Menu.AppendMenuItem(MF_SEPARATOR, 0, 0);
 
@@ -4206,8 +4199,6 @@ function showSettingsMenu(x,y){
 	wallpaper2.CheckMenuItem(9022, properties.wallpaperdisplay==1);
 	wallpaper2.AppendMenuItem(MF_STRING, 9023, "拉伸");
 	wallpaper2.CheckMenuItem(9023, properties.wallpaperdisplay==2);
-	wallpaper2.AppendTo(wallpaper,MF_STRING, "壁纸尺寸");
-	wallpaper.AppendTo(menu,MF_STRING, "背景壁纸");
 
 	menu.AppendMenuItem(MF_SEPARATOR, 0, 0);
 
@@ -4314,7 +4305,7 @@ function showSettingsMenu(x,y){
 		libraryfilter_width.userInputValue("请输入所需的宽度（像素）。\n默认宽度为 210 像素。\n最小宽度：100 像素。最大宽度：900 像素", "自定义左侧菜单宽度");
 	} else if(idx==9000){
 		toggleWallpaper();
-	} else if(idx==9020){
+} else if(idx==9020){
 		properties.wallpaperblurred = !properties.wallpaperblurred;
 		on_colours_changed();
 		window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
@@ -4491,7 +4482,7 @@ function showOptionsMenu(x,y,reduced){
 		libraryfilter_width.userInputValue("请输入所需的宽度（像素）。\n默认宽度为 210 像素。\n最小宽度：100 像素。最大宽度：900 像素", "自定义左侧菜单宽度");
 	} else if(idx==9000){
 		toggleWallpaper();
-	} else if(idx==9020){
+} else if(idx==9020){
 		properties.wallpaperblurred = !properties.wallpaperblurred;
 		on_colours_changed();
 		window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
@@ -4962,6 +4953,14 @@ function get_images() {
 };
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
             window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);

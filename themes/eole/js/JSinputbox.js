@@ -42,7 +42,6 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
     var gfunc_launch_timer = false;
 	var g_parentObjectName = parentObjectName;
 	this.autovalidation = false;
-    //
     this.edit = false;
     this.select = false;
     this.hover = false;
@@ -73,7 +72,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
         // draw bg
 		gr.SetSmoothingMode(0);
         if(this.bordercolor) gr.FillSolidRect(x-2,y+0,(this.w+4),this.h-0,this.bordercolor);
-        gr.FillSolidRect(x-1,y+1,(this.w+2),this.h-2,this.backcolor);
+        if(this.backcolor) gr.FillSolidRect(x-1,y+1,(this.w+2),this.h-2,this.backcolor);
 		
         // adjust offset to always see the cursor
         if(!this.drag && !this.select) {
@@ -693,7 +692,6 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
                         if(this.edit && this.select) {
                             //save text avant MAJ
                             this.stext = this.text;
-                            //
                             cInputbox.doc.parentWindow.clipboardData.setData("Text", this.text_selected);
                             var p1 = this.SelBegin;
                             var p2 = this.SelEnd;
@@ -717,7 +715,6 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
                         if(this.edit && cInputbox.clipboard) {
                             //save text avant MAJ
                             this.stext = this.text;
-                            //
                             if(this.select) {
                                 var p1 = this.SelBegin;
                                 var p2 = this.SelEnd;

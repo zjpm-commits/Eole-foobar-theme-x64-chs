@@ -193,7 +193,7 @@ function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, st
     this.w = w;
     this.h = h;
     this.text = text;
-    /* Stable identifier: the caption is localized (暂停 / 随机) and must not decide visibility */
+    /* Stable identifier: the caption is localized and must not decide visibility */
     this.id = id || text;
     this.fonClick = fonClick;
     this.fonDbleClick = fonDbleClick;
@@ -213,7 +213,7 @@ function SimpleButton(x, y, w, h, text, fonClick, fonDbleClick, N_img, H_img, st
         b_img = this.N_img;
         var opacity = 255;
         /* Decide visibility by id, never by the translated caption. The labels are
-           暂停 / 随机 here, so the old text=='Pause' / text=='Random' tests never matched
+           the localized caption here, so the old text=='Pause' / text=='Random' tests never matched
            and both overlay icons were painted on every repaint - each one adding a
            full panel FillGradRect over the artwork, which blacked out the cover and
            left a stuck ring + pause bars sitting on top of it. */

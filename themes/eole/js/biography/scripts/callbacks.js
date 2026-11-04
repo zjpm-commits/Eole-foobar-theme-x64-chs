@@ -306,6 +306,12 @@ function on_notify_data(name, info) {
 		on_cui_notify(name, clone);
 	}
 	switch (name) {
+		case 'fullscreenWallpaper':
+		case 'fullscreenWallpaperCfg':
+		case 'fullscreenWallpaperRepaint':
+			// 统一处理：写本面板自己的属性仓库 + 更新缓存 + 重绘
+			if (typeof fw_syncNotify === 'function') fw_syncNotify(name, info);
+			break;
 		case 'show_lyrics_btns':
 			show_lyrics_btns = info;
 			window.SetProperty("show lyrics btns", show_lyrics_btns);

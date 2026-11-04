@@ -22,8 +22,8 @@ var properties = {
     ParentName:  window.GetProperty("属性·父面板", ""),
     followFocusChange: window.GetProperty("属性·跟随焦点变化", false), // only in source mode = Playlist
     sourceMode: window.GetProperty("属性·来源模式", 0), // 0 = Library, 1 = Playlist, 2 = Playlist named like below, 3 = Filter selection from a lower filter order
-    sourcePlaylist: globalProperties.selection_playlist,//window.GetProperty("属性·来源播放列表", globalProperties.selection_playlist),
-    selectionPlaylist: globalProperties.selection_playlist,//window.GetProperty("属性·选择的播放列表", globalProperties.selection_playlist),
+    sourcePlaylist: globalProperties.selection_playlist,
+    selectionPlaylist: globalProperties.selection_playlist,
     playingPlaylist: globalProperties.playing_playlist,
     filterPlaylist: globalProperties.filter_playlist,	
     filterOrder: window.GetProperty("属性·筛选顺序", 0),
@@ -494,7 +494,7 @@ oPlaylistManager = function(name) {
             };
 
 			//Overlay
-			height_top_fix = (properties.showHeaderBar ? (properties.showTagSwitcherBar ? g_tagswitcherbar.default_height+properties.headerBarHeight : properties.headerBarHeight) : 0)
+			var height_top_fix = (properties.showHeaderBar ? (properties.showTagSwitcherBar ? g_tagswitcherbar.default_height+properties.headerBarHeight : properties.headerBarHeight) : 0)
             gr.FillSolidRect(0, height_top_fix+1, ww, wh-height_top_fix-1, colors.pm_overlay);
 
 			//Shadows
@@ -1052,7 +1052,8 @@ oTagSwitcherBar = function() {
 		var prev_text_width=0;
 
 		// draw background part above playlist (headerbar)
-		gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+
 		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((brw.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
@@ -1312,7 +1313,8 @@ oTagSwitcherBar_old = function() {
 		var prev_text_width=0;
 
 		// draw background part above playlist (headerbar)
-		gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
+
 		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((brw.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
@@ -1785,7 +1787,6 @@ oGroup = function(index, start, handle, groupkey, sortkey) {
         this.cachekey = null;
         this.tracktype = 0;
     };
-    //
     this.cover_img = null;
     this.cover_type = null;
     this.load_requested = 0;
@@ -1960,7 +1961,6 @@ oBrowser = function(name) {
         this.totalRowsVis = Math.floor(this.h / this.rowHeight);
         properties.rowHeight = this.rowHeight;
 
-        //
         scroll = Math.round(scroll / this.rowHeight) * this.rowHeight;
         scroll = check_scroll(scroll);
         scroll_ = scroll;
@@ -2647,6 +2647,8 @@ oBrowser = function(name) {
 		var im_w = coverWidth;
 		var im_h = coverWidth;
 
+        scroll_ = snapScrollToRow(scroll_, this.rowHeight);
+
         this.getlimits();
 
         if(repaint_main || !repaintforced){
@@ -2655,7 +2657,6 @@ oBrowser = function(name) {
 				repaintforced = false;
 				gr.SetTextRenderingHint(globalProperties.TextRendering);
 				// draw visible stamps (loop)
-				// 只画在顶栏以下，滚出上边界的内容裁掉（顶栏绘制前解除）
 				clipListArea(gr, this.y);
 				for(var i = g_start_; i < g_end_; i++) {
 
@@ -2665,6 +2666,8 @@ oBrowser = function(name) {
 
 					this.groups[i].x = ax;
 					this.groups[i].y = ay;
+
+					if(ay < this.y && properties.first_item_top_margin >= 0) continue;
 
 					//Request Image
 					if(properties.displayMode > 0) {
@@ -3314,15 +3317,7 @@ oBrowser = function(name) {
                 var boxText = nb_groups+" "+item_txt[txt_id]+(nb_groups > 1 ? "  " : "  ");
 
                 // draw background part above playlist (headerbar)
-				height_top_fix1 = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height-1 : 0;
-				height_top_fix2 = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height : 0;
-				// 顶栏底色原本全透明，这里把面板背景重画一遍，视觉不变但能盖住溢出内容
-				paintHeaderBarBackdrop(gr, this.x, height_top_fix1,
-					this.w + (cScrollBar.enabled ? cScrollBar.width : 0),
-					properties.headerBarHeight+(properties.showTagSwitcherBar ? 1 : 0),
-					colors.lightgrey_bg, properties.showwallpaper ? g_wallpaperImg : null,
-					wh + PanelToggleButtons_height,
-					(properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
+				var height_top_fix2 = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height : 0;
                 gr.FillSolidRect(this.x, height_top_fix2+properties.headerBarHeight, this.w - this.x -((this.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 				if(g_filterbox.inputbox.text.length==0) {
@@ -3452,7 +3447,6 @@ oBrowser = function(name) {
 				plman.ClearPlaylistSelection(g_active_playlist);
 				this.selectAtoB(this.groups[this.activeIndex].start, this.groups[this.activeIndex].start )//+ this.groups[this.activeIndex].count - 1);
 				g_avoid_on_item_focus_change = true;
-				//*/
 			};
 		};
 	}
@@ -3686,18 +3680,16 @@ oBrowser = function(name) {
         };
 
         scroll = check_scroll(scroll);
-        if(Math.abs(scroll - scroll_) >= 5){
-            scroll_ += (scroll - scroll_) / properties.scrollSmoothness;
-            isScrolling = true;
+        var rh_snap = rowHeightForSnap();
+        var scroll_tgt = snapScrollToRow(scroll, rh_snap);
+        if(scroll_ != scroll_tgt){
+            scroll_ = stepScrollToRow(scroll_, scroll_tgt, rh_snap, properties.scrollSmoothness);
+            isScrolling = (scroll_ != scroll_tgt);
             repaint_1 = true;
             if(scroll_prev != scroll) brw.scrollbar.updateScrollbar();
         } else {
-            if(scroll_ != scroll) {
-                scroll_ = scroll; // force to scroll_ value to fixe the 5.5 stop value for expanding album action
-                repaint_1 = true;
-            };
+            if(scroll_ < 1) scroll_ = 0;
             if(isScrolling) {
-                if(scroll_< 1) scroll_ = 0;
                 isScrolling = false;
                 repaint_1 = true;
             };
@@ -3926,11 +3918,8 @@ oBrowser = function(name) {
             _menu3A.CheckMenuItem(222, properties.wallpaperdisplay==1);
             _menu3A.AppendMenuItem(MF_STRING, 223, "拉伸");
             _menu3A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-			_menu3A.AppendTo(_menu3,MF_STRING, "壁纸尺寸");
 
-            _menu3.AppendTo(_menu,MF_STRING, "背景壁纸");
 
-            //_menu.AppendMenuItem(MF_STRING, 992, "配置...");
 
 			_menu.AppendMenuItem(MF_STRING, 2997, "拖放时显示播放列表面板");
 			_menu.CheckMenuItem(2997, properties.DropInplaylist);
@@ -4071,6 +4060,7 @@ oBrowser = function(name) {
                     window.SetProperty("系统·壁纸模式", properties.wallpapermode);
 					on_colours_changed();
                     break;
+
                 case (idx == 220):
                     properties.wallpaperblurred = !properties.wallpaperblurred;
                     window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
@@ -4387,7 +4377,6 @@ var g_avoid_on_playlist_items_reordered = false;
 // mouse actions
 var g_lbtn_click = false;
 var g_rbtn_click = false;
-//
 var g_total_duration_text = "";
 var g_first_populate_done = false;
 var g_first_populate_launched = false;
@@ -4445,7 +4434,12 @@ function set_update_function(string){
 	else Update_Required_function=string;
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
     if(!ww || !wh || ww < 10 || wh < 10) return;
 	if(update_size) on_size(window.Width, window.Height);
 	if(update_wallpaper && properties.showwallpaper && properties.wallpapermode == 0){
@@ -4455,14 +4449,7 @@ function on_paint(gr) {
 
     if(!g_1x1) {
         // draw background under playlist
-		gr.FillSolidRect(0, 0, ww, wh+PanelToggleButtons_height, colors.lightgrey_bg);
-        if(fb.IsPlaying && g_wallpaperImg && properties.showwallpaper) {
-            gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh+PanelToggleButtons_height, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-            gr.FillSolidRect(0, 0, ww, wh+PanelToggleButtons_height, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-        } else if(g_wallpaperImg && properties.showwallpaper) {
-			gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh+PanelToggleButtons_height, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-			gr.FillSolidRect(0, 0, ww, wh+PanelToggleButtons_height, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-        }
+
 
         brw && brw.draw(gr);
 
@@ -4474,8 +4461,8 @@ function on_paint(gr) {
             // inputBox
             if(cFilterBox.enabled && g_filterbox) {
                 if(g_filterbox.inputbox.visible) {
-					height_top_fix = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height : 0;
-                    g_filterbox.draw(gr, 8, Math.round(properties.headerBarHeight/2-cFilterBox.h/2)-2+height_top_fix);
+					var htfix = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height : 0;
+                    g_filterbox.draw(gr, 8, Math.round(properties.headerBarHeight/2-cFilterBox.h/2)-2+htfix);
                 };
             };
         };
@@ -4945,7 +4932,6 @@ function get_colors() {
 		colors.grad_bottom_color2 = GetGrey(0,0);
 		colors.fading_bottom_height = 30;
 
-		// 顶栏保持透明（与 JStheme_common 一致），溢出由裁剪 + 顶栏背景重绘处理。
 		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		if(properties.showwallpaper) {
 			colors.headerbar_line = GetGrey(0,40);
@@ -4978,7 +4964,6 @@ function on_colours_changed() {
 	if(properties.showwallpaper || properties.darklayout) {
 		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 	};
-    // 通知可能在 on_init 完成前到达（brw 还没建好），这里补一层保护
     if(brw) brw.repaint();
 };
 
@@ -5313,14 +5298,6 @@ function on_library_items_removed() {
 		timers.avoid_on_library_items_added = false;
 	}, 200);
 };
-/*
-function on_library_items_changed() {
-	playing_track_new_count = parseInt(playing_track_playcount,10)+1
-
-    if(window.IsVisible && brw.current_sourceMode==0) brw.populate(is_first_populate = false,6);
-	else if(brw.current_sourceMode==0) set_update_function("brw.populate(false,6)");
-};
-*/
 //=================================================// Playlist Callbacks
 function on_playlists_changed() {
 	if(!g_avoid_on_playlists_changed){
@@ -5413,28 +5390,6 @@ function on_playlist_items_removed(playlist_idx, new_count) {
 function on_playlist_items_reordered(playlist_idx) {
 };
 
-/*
-function on_item_focus_change(playlist_idx, from, to) {
-    if(window.IsVisible) {
-		if(g_avoid_on_item_focus_change) {
-			g_avoid_on_item_focus_change = false;
-			return;
-		};
-
-		if(brw.list && brw.current_sourceMode == 1) {
-			if(playlist_idx == g_active_playlist) {
-				if(properties.followFocusChange) {
-					if(to > -1 && to < brw.list.Count) {
-						var gid = brw.getItemIndexFromTrackIndex(to);
-						if(gid > -1) {
-							brw.showItemFromItemIndex(gid);
-						};
-					};
-				};
-			};
-		};
-	}
-}; */
 
 function on_metadb_changed(metadbs, fromhook) {
 	playing_track_new_count = parseInt(playing_track_playcount,10)+1
@@ -5508,6 +5463,14 @@ function g_sendResponse() {
 
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;			
@@ -5669,10 +5632,6 @@ function on_notify_data(name, info) {
 			}
 		break;
 		case"library_dark_theme":
-			// 原来这里是 if(properties.ParentName=="媒体库")。「筛选器」面板的父面板属性
-			// 往往是空的（fcl 里没填），条件不成立 → 深色通知被直接丢掉 → 面板一直用
-			// 浅色分支的配色，而浅色的 lightgrey_bg 是纯白，于是切到筛选器就是一片白底。
-			// 改成排除法：只有明确属于播放列表侧的实例才不理媒体库主题。
 			if(properties.ParentName!="Playlists"){
 				properties.darklayout = info;
 				window.SetProperty("显示·深色布局", properties.darklayout);
@@ -5680,7 +5639,6 @@ function on_notify_data(name, info) {
 			}
 		break;
 		case"global_dark_theme":
-			// 标题栏双击切换发的全局通知，不分侧别，直接跟随。
 			properties.darklayout = info;
 			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
@@ -5702,11 +5660,6 @@ function on_notify_data(name, info) {
 			if(!info) brw.clearSelectedItem();
 			break;
 		case "cover_cache_finalized":
-			/*
-			for (var i in info) {
-				g_image_cache.cachelist = new GdiBitmap(info[i]);
-			}
-			window.Repaint();*/
 		break;
 		case "layout_state":
 			layout_state.value=info;
@@ -5950,8 +5903,6 @@ function on_init() {
 	g_image_cache = new oImageCache();
 	g_filterbox.reset_layout();
     g_active_playlist = plman.ActivePlaylist;
-	// 深色状态在 JSpss_switch.js 里是文件级的（DARKLIB_0/1），各面板都能读；
-	// 这里在首次绘制前就对齐一次，免得标题栏 800ms 那次广播到达之前闪一帧纯白。
 	try {
 		if (typeof darklib_state !== 'undefined' && (darklib_state.value == 1) !== properties.darklayout) {
 			properties.darklayout = (darklib_state.value == 1);

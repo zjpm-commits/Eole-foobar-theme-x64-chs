@@ -193,7 +193,14 @@ class UserInterface {
 	}
 
 	draw(gr) {
-		if (this.style.bg) gr.FillSolidRect(0, 0, panel.w, panel.h, this.col.bg);
+		// 透明：本面板勾了「背景壁纸 → 透明」、且宿主的全屏壁纸开着时不画底色，
+		// 让宿主铺的那一整张图透下来。读的是本面板自己的属性，不依赖跨面板同步。
+		let fwGlass = false;
+		try {
+			fwGlass = (typeof fw_transparent === 'function') &&
+				fw_transparent(!!window.GetProperty("背景壁纸·透明", false));
+		} catch (e) { fwGlass = false; }
+		if (this.style.bg && !fwGlass) gr.FillSolidRect(0, 0, panel.w, panel.h, this.col.bg);
 	}
 	
 	getAccentColour() {

@@ -154,7 +154,6 @@ function DeletePlaylist(delete_pid) {
 				timers.deletePlaylist && clearTimeout(timers.deletePlaylist);
 				timers.deletePlaylist = false;
 			}, 150);
-			//
 			var updateActivePlaylist = (brw.selectedRow == plman.ActivePlaylist || plman.ActivePlaylist == parent.delete_pid);
 			var row = brw.getRowIdFromIdx(parent.delete_pid);
 			plman.RemovePlaylistSwitch(parent.delete_pid);
@@ -1050,7 +1049,7 @@ oBrowser = function(name) {
                     ay = Math.floor(this.y + (i * ah) - scroll_);
                     this.rows[i].x = ax;
                     this.rows[i].y = ay;
-					if(ay > this.y - properties.headerBarHeight - ah && ay < this.y + this.h) {
+					if(ay >= this.y && ay < this.y + this.h) {
                         // =========
                         // row bg
                         // =========
@@ -1212,10 +1211,6 @@ oBrowser = function(name) {
                 if(globalProperties.fontAdjustement>=globalProperties.fontAdjustement_max-2) var boxText = this.rows.length;
 				else var boxText = this.rows.length+"个";
 
-                // 顶栏底色原本全透明，列表滚动的行会透上来；重画面板背景挡住它
-                paintHeaderBarBackdrop(gr, this.x, 0, this.w - this.x -1, properties.headerBarHeight,
-                    colors.lightgrey_bg, properties.showwallpaper ? g_wallpaperImg : null, wh,
-                    (properties.wallpaperblurred) ? colors.wallpaper_overlay_blurred : colors.wallpaper_overlay);
                 gr.FillSolidRect(this.x, properties.headerBarHeight, this.w - this.x -1, 1, colors.headerbar_line);
 
 				if(g_filterbox.inputbox.text.length==0) {
@@ -1597,7 +1592,6 @@ oBrowser = function(name) {
             scroll_ += (scroll - scroll_) / properties.scrollSmoothness;
             repaint_1 = true;
             isScrolling = true;
-            //
             if(scroll_prev != scroll) brw.scrollbar.updateScrollbar();
         } else {
             if(isScrolling) {
@@ -1847,9 +1841,7 @@ oBrowser = function(name) {
 		_menu2A.CheckMenuItem(222, properties.wallpaperdisplay==1);
 		_menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
 		_menu2A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-		_menu2A.AppendTo(_menu2,MF_STRING, "壁纸尺寸");
 
-		_menu2.AppendTo(_menu,MF_STRING, "背景壁纸");
 
         idx = _menu.TrackPopupMenu(x,y);
 
@@ -1869,6 +1861,7 @@ oBrowser = function(name) {
 				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				brw.repaint();
 				break;
+
 			case (idx == 220):
 				properties.wallpaperblurred = !properties.wallpaperblurred;on_colours_changed();
 				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
@@ -1979,7 +1972,6 @@ var g_dragndrop_y = -1;
 var g_dragndrop_trackId = -1;
 var g_dragndrop_rowId = -1;
 var g_dragndrop_targetPlaylistId = -1;
-//
 var ww = 0, wh = 0;
 var g_metadb = null;
 var g_focus = false;
@@ -2063,7 +2055,12 @@ function get_update_function(){
 	Update_Required_function = '';
 	return to_return;
 }
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	update_size && on_size(window.Width, window.Height);
 	Update_Required_function !== '' && eval(get_update_function());
 
@@ -2078,18 +2075,7 @@ function on_paint(gr) {
 
     if (!g_1x1) {
         // draw background under playlist
-		gr.FillSolidRect(0, 0, ww, wh, colors.lightgrey_bg)
-        if(fb.IsPlaying && g_wallpaperImg && properties.showwallpaper) {
-            gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-            gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-        } else {
-            if(g_wallpaperImg && properties.showwallpaper) {
-                gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-                gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-            } else {
-                gr.FillSolidRect(0, 0, ww, wh, colors.lightgrey_bg);
-            }
-        }
+
 
         brw && brw.draw(gr);
     };
@@ -2657,27 +2643,6 @@ function on_key_down(vkey) {
                         if(brw.selectedRow > -1 && brw.selectedRow < brw.rowsCount && brw.rowsCount > 0) {
 							var id = brw.selectedRow;
                             DeletePlaylist(brw.rows[id].idx);
-							/*
-                            timers.deletePlaylist = setTimeout(function(){
-                                timers.deletePlaylist && clearTimeout(timers.deletePlaylist);
-                                timers.deletePlaylist = false;
-                            }, 150);
-                            //
-                            var updateActivePlaylist = (brw.selectedRow == plman.ActivePlaylist);
-                            var row = brw.getRowIdFromIdx(id);
-                            plman.RemovePlaylistSwitch(id);
-                                if(row < brw.rowsCount - 1) {
-                                    brw.selectedRow = id;
-                                } else if(row > 0) {
-                                    brw.selectedRow = id - 1;
-                                };
-                            if(updateActivePlaylist) {
-                                if(row < brw.rowsCount - 1) {
-                                    plman.ActivePlaylist = id;
-                                } else if(row > 0) {
-                                    plman.ActivePlaylist = id - 1;
-                                };
-                            };*/
                         };
                     };
                     break;
@@ -2889,6 +2854,14 @@ function g_sendResponse() {
 
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
             window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);

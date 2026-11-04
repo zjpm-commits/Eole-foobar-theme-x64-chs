@@ -561,17 +561,10 @@ function build_buttons(){
 		},false,stop_img,stop_img_hover)
 	}
 	buttons_mini = {
-		/*Volume: new SimpleButton(mini_btns.button_left_m, mini_btns.button_top_m, 15, 15, "下一首", "",false, function () {
-			showVolumeSlider();
-		},false,mini_volume_img,mini_volume_img_hover),	*/
 		Prev: new SimpleButton(-75-mini_btns.button_width-2, mini_btns.button_top_m, 21, 21, "Prev", "上一首",false, function () {
 			fb_play_from_playing(-1) //fb.Prev();
 			g_tooltip.Deactivate();
 		},false,mini_prev_img,mini_prev_img_hover),
-		/*Pause: new SimpleButton(mini_btns.button_width*2+mini_btns.button_left_m, mini_btns.button_top_m, 15, 15, "Playmini", "",false, function () {
-			if(!fb.IsPlaying) fb.Play();
-			else fb.Pause();
-		},false,mini_play_img,mini_play_img_hover),*/
 		Next: new SimpleButton(-75, mini_btns.button_top_m, 21, 21, "下一首", "下一首",false, function () {
 			fb_play_from_playing(1) //fb.Next();
 			g_tooltip.Deactivate();
@@ -838,19 +831,16 @@ function calculate_onsize_vars(w, h){
     ww_progress = w-progress_margin_left-progress_margin_right;
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 	gr.SetTextRenderingHint(globalProperties.TextRendering);
 
     //BG
-	gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
-    // BG wallpaper
-    if(properties.showwallpaper && (typeof(g_wallpaperImg) == "undefined" || !g_wallpaperImg || update_wallpaper)) {
-        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-    };
-	if(properties.showwallpaper && g_wallpaperImg) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	}
+
 
 	switch(true){
 		case (layout_state.isEqual(1) && properties.minimode_dark_theme && properties.darklayout):
@@ -1673,6 +1663,14 @@ function on_key_down(vkey) {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
@@ -2106,22 +2104,16 @@ function draw_menu() {
 		library_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		library_menu.AppendMenuItem(MF_STRING, 4000, "启用深色主题");
 		library_menu.CheckMenuItem(4000, properties.library_dark_theme);
-		wallpaper_visibility.AppendTo(library_menu,MF_STRING, "壁纸可见性");
-		wallpaper_blur.AppendTo(library_menu,MF_STRING, "壁纸模糊");
 	} else if(main_panel_state.isEqual(1)){
 		basemenu.AppendMenuSeparator();
 		playlists_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		playlists_menu.AppendMenuItem(MF_STRING, 4001, "启用深色主题");
 		playlists_menu.CheckMenuItem(4001, properties.playlists_dark_theme);
-		wallpaper_visibility.AppendTo(playlists_menu,MF_STRING, "壁纸可见性");
-		wallpaper_blur.AppendTo(playlists_menu,MF_STRING, "壁纸模糊");
 	} else if(main_panel_state.isEqual(2)){
 		basemenu.AppendMenuSeparator();
 		bio_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		bio_menu.AppendMenuItem(MF_STRING, 4002, "启用深色主题");
 		bio_menu.CheckMenuItem(4002, properties.bio_dark_theme);
-		wallpaper_visibility.AppendTo(bio_menu,MF_STRING, "壁纸可见性");
-		wallpaper_blur.AppendTo(bio_menu,MF_STRING, "壁纸模糊");
 	} else if(main_panel_state.isEqual(3)){
 		basemenu.AppendMenuSeparator();
 		visu_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
@@ -3056,9 +3048,7 @@ function draw_settings_menu(x,y){
 		_menu3A.CheckMenuItem(222, properties.wallpaperdisplay==1);
 		_menu3A.AppendMenuItem(MF_STRING, 223, "拉伸");
 		_menu3A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-		_menu3A.AppendTo(_menu3,MF_STRING, "壁纸尺寸");
 
-		_menu3.AppendTo(_menu,MF_STRING, "背景壁纸");
 
 		_menu_slider.AppendMenuItem(MF_STRING, 3024, "圆形");
 		_menu_slider.CheckMenuItem(3024, properties.cursor_style==0);
@@ -3711,7 +3701,6 @@ oSlider = function(parentObjectName, min, max) {
 			this.buttons[0].checkstate(event, x, y);
 			break;
 		default:
-			//
         }
     }
 

@@ -301,7 +301,12 @@ function calculate_visu_margin_left(){
 		visu_margin_left = ww/2 - 2 - bar_margin;
 }
 
+
 function on_paint(gr) {
+	try {
+		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
+			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
+	} catch (ePT) {}
 
 	if(Update_Required_function!="") {
 		eval(Update_Required_function);
@@ -313,14 +318,7 @@ function on_paint(gr) {
 	}
 
 	// draw background under playlist
-	gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
-	if(fb.IsPlaying && g_wallpaperImg && properties.showwallpaper) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	} else if(g_wallpaperImg && properties.showwallpaper) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	}
+
 
 	if(!g_cover.isSetArtwork()) {
 		try{
@@ -980,6 +978,14 @@ function on_layout_change() {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "fullscreenWallpaper":
+			fw_setOn(info);
+			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			window.Repaint();
+		break;
+		case "fullscreenWallpaperRepaint":
+			window.Repaint();
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;	
@@ -1792,8 +1798,6 @@ function draw_settings_menu(x,y){
 		wallpapper_menub.CheckMenuItem(222, properties.wallpaperdisplay==1);
 		wallpapper_menub.AppendMenuItem(MF_STRING, 223, "拉伸");
 		wallpapper_menub.CheckMenuItem(223, properties.wallpaperdisplay==2);
-		wallpapper_menub.AppendTo(wallpapper_menu,MF_STRING, "壁纸尺寸");
-		wallpapper_menu.AppendTo(_menu,MF_STRING, "背景壁纸");
 
         idx = _menu.TrackPopupMenu(x,y);
         switch(true) {
@@ -1937,6 +1941,7 @@ function draw_settings_menu(x,y){
 				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
 				toggleWallpaper(properties.showwallpaper);
 				break;
+
 			case (idx == 220):
 				toggleBlurWallpaper();
 				break;
