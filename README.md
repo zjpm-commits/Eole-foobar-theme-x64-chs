@@ -10,9 +10,14 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 ## 📖 截图展示
 
-<img width="1127" height="683" alt="image" src="https://github.com/user-attachments/assets/31e287cb-3ffe-49fe-99be-9db1fbfb32b7" />
+<img width="1127" height="660" alt="image" src="https://github.com/user-attachments/assets/67e9080b-f9b6-4fd4-8ba6-fab2cb741599" />
 
-<img width="1127" height="683" alt="image" src="https://github.com/user-attachments/assets/801bf967-2dba-46aa-8cc8-e1378262dfad" />
+<img width="1127" height="660" alt="image" src="https://github.com/user-attachments/assets/021279b8-0373-4b3c-b0e1-3000d4fc2aac" />
+
+<img width="1127" height="660" alt="image" src="https://github.com/user-attachments/assets/a7e2aee5-f8e8-4881-868d-b2dbb3a32d25" />
+
+<img width="1127" height="660" alt="image" src="https://github.com/user-attachments/assets/31ddd580-945f-4090-a32b-cd12f4ce0990" />
+
 
 ## 🛠️ 依赖环境
 
@@ -45,6 +50,7 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 增加4K屏适配，标题栏右键—设置—高分屏自动适配；
 - 字体调整为更利于中文显示的Microsoft YaHei UI；
 - 面板属性改为中文以便个性化设置看不懂；
+- 将原来模块化壁纸替换为宿主画壁纸模块伪透明的样式；
 
 ## 🙏 致谢
 - 感谢 **Ottodix** 及所有贡献者开发了如此精美的 Eole 主题。
