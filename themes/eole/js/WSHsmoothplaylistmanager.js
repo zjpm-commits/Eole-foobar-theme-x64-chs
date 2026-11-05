@@ -186,10 +186,10 @@ function DeletePlaylist(delete_pid) {
     Objects
 ===================================================================================================
 */
-oPlaylist = function(idx, rowId, name) {
+var oPlaylistRow = function(idx, rowId, name) {
     this.idx = idx;
     this.rowId = rowId;
-    this.name = name;
+    this.name = (name !== undefined && name !== null) ? name : ((idx >= 0) ? plman.GetPlaylistName(idx) : "");
 	this.update_count_flag = false;
 	try {
 		if(idx>=0)
@@ -919,7 +919,7 @@ oBrowser = function(name) {
 
 		// draw Create playlist Button
 		if(properties.showNewPlaylistButton) {
-			this.rows.push(new oPlaylist(-1, rowId, globalProperties.create_playlist));
+			this.rows.push(new oPlaylistRow(-1, rowId, globalProperties.create_playlist));
 			rowId++;
 		}
 		
@@ -934,7 +934,7 @@ oBrowser = function(name) {
 				var toAdd = true;
 			};
 			if(toAdd) {
-				this.rows.push(new oPlaylist(i, rowId, name));
+				this.rows.push(new oPlaylistRow(i, rowId, name));
 				rowId++;
 			};
 		};
@@ -1211,7 +1211,6 @@ oBrowser = function(name) {
                 if(globalProperties.fontAdjustement>=globalProperties.fontAdjustement_max-2) var boxText = this.rows.length;
 				else var boxText = this.rows.length+"个";
 
-                gr.FillSolidRect(this.x, properties.headerBarHeight, this.w - this.x -1, 1, colors.headerbar_line);
 
 				if(g_filterbox.inputbox.text.length==0) {
 					if(g_filterbox.empty_txt_width < 0) g_filterbox.empty_txt_width = gr.CalcTextWidth(g_filterbox.inputbox.empty_text, g_filterbox.inputbox.font_empty);
@@ -1235,7 +1234,6 @@ oBrowser = function(name) {
 				brw.scrollbar && brw.scrollbar.draw(gr);
 			};
 			if(g_resizing.isResizing()) gr.FillSolidRect(ww-1, 0, 1, wh, colors.dragdrop_marker_line);
-			else gr.FillSolidRect(ww-1, 0, 1, wh, colors.sidesline);
 
         };
     };

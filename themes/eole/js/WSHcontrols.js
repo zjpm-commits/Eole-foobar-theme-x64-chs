@@ -839,29 +839,6 @@ function on_paint(gr) {
 	} catch (ePT) {}
 	gr.SetTextRenderingHint(globalProperties.TextRendering);
 
-    //BG
-
-
-	switch(true){
-		case (layout_state.isEqual(1) && properties.minimode_dark_theme && properties.darklayout):
-		case (main_panel_state.isEqual(0) && properties.library_dark_theme && layout_state.isEqual(0) && properties.darklayout):
-		case (main_panel_state.isEqual(1) && properties.playlists_dark_theme && layout_state.isEqual(0) && properties.darklayout):
-		case (main_panel_state.isEqual(2) && (properties.bio_dark_theme || properties.bio_stick_to_dark_theme) && layout_state.isEqual(0) && properties.darklayout):
-		case (main_panel_state.isEqual(3) && layout_state.isEqual(0) && properties.darklayout):
-			gr.FillSolidRect(0, 0, ww, 1,colors.line_top_light);
-		break;
-		case (properties.darklayout):
-		break;
-		case (layout_state.isEqual(1) && !properties.minimode_dark_theme && !properties.darklayout):
-		case (main_panel_state.isEqual(0) && !properties.library_dark_theme && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(1) && !properties.playlists_dark_theme && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(2) && !(properties.bio_dark_theme || properties.bio_stick_to_dark_theme) && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(3) && !properties.visualization_dark_theme && layout_state.isEqual(0)):
-			gr.FillSolidRect(0, 0, ww, 1, colors.line_top_dark);
-		break;
-	}
-	gr.FillGradRect(ww, 0, 1, wh, 90,colors.line_bottom,colors.line_bottom);
-	gr.FillGradRect(0, wh-1, ww, 1, 0,colors.line_bottom,colors.line_bottom);
 
 	//Progress
     //Dynamic place the progress bar

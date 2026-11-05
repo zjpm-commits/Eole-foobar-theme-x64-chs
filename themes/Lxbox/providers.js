@@ -350,7 +350,7 @@
 
   function txApiBase() {
     var custom = '';
-    try { custom = String(global.GetProperty('lx.txApi', '') || '').trim(); } catch (e) { custom = ''; }
+    try { custom = String(getP('lx.txApi', '') || '').trim(); } catch (e) { custom = ''; }
     return custom || TX_API_DEFAULT;
   }
 

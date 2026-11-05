@@ -478,11 +478,6 @@ oPlaylistManager = function (parentObjName) {
         this.h = wh
         gr.FillSolidRect(this.x, 0, this.w, this.h, colors.pm_bg);
 
-        if(this.side=="right") {
-            gr.DrawLine(this.x, 0, this.x-0, this.y + this.h, 1.0, colors.pm_border);
-        } else {
-            gr.DrawLine(this.x+this.w, 0, this.x+0+this.w, this.y + this.h, 1.0, colors.pm_border);
-        }
 
         gr.DrawLine(this.x+20, this.y + this.headerHeight-6, this.x+this.w-25, this.y+this.headerHeight-6, 1.0, colors.pm_item_separator_line);
 
@@ -1954,7 +1949,6 @@ oHeaderbar = function(name) {
 		gr.FillSolidRect(0, 0, ww, this.h,colors.headerbar_bgcolor);
 
 		//bottom line
-		gr.FillSolidRect(0, this.h, ww, 1,colors.border);
 		this.SettingsButton.draw(gr,this.MarginLeft-7,this.padding_top-1,255);
 		brw.drawResizeButton(gr,ww-this.rightpadding-5-this.MarginRight,Math.round((this.h-brw.resize_bt.img[0].Height)/2));
 

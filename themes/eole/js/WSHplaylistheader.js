@@ -828,7 +828,6 @@ function on_paint(gr) {
 	}
 
 
-	gr.FillSolidRect(0, wh-1, ww, 1, colors.headerbar_line);
 
 	if(g_pinfo.items_width < 0) {
 		g_pinfo.items_width = gr.CalcTextWidth(`${g_pinfo.time_txt} ${g_pinfo.items_txt}`, g_font.italic);
@@ -852,7 +851,6 @@ function on_paint(gr) {
 
 	drawAllButtons(gr);
 
-	filters_panel_state.isActive() && gr.FillSolidRect(0, 0, ww, 1, colors.headerbar_line);
 }
 var callback_avoid_populate=false;
 function on_playlist_items_added(playlist){

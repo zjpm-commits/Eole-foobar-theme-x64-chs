@@ -335,16 +335,7 @@ function on_paint(gr) {
 	drawAllButtons(gr);
 
 	if(trackinfostext_state.isActive()) g_infos.draw(gr, 0, wh-track_infos_height-(properties.showRating?rating_height:0));
-	if(getTrackInfosState()==1){
-		var side_padding = 10;
-		gr.FillGradRect(side_padding, wh - 1, ww - side_padding*2, 1, 0, RGBA(0, 0, 0, 0), colors.border, 0.5);
-	} else {
-		var side_padding = 5;
-		gr.FillGradRect(side_padding, 0, ww - side_padding*2, 1, 0, RGBA(0, 0, 0, 0), colors.border, 0.5);		
-	}
-
 	if(g_resizing.showResizeBorder()) gr.FillSolidRect(0, 0, 1, wh, colors.dragdrop_marker_line);
-	else gr.FillSolidRect(0, 0, 1, wh, colors.sidesline);
 }
 function on_size(w, h) {
     ww = w;
@@ -940,7 +931,7 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
 		g_cover.setArtwork(image,true,false);
 		g_image_cache.addToCache(image,cachekey,globalProperties.thumbnailWidthMax);
 	}
-	else g_cover.reset();
+	else if(!(TrackType(metadb) == 3 && g_cover.isSetArtwork())) g_cover.reset();
     window.Repaint();
 }
 function setDarkLayout(){
@@ -978,6 +969,22 @@ function on_layout_change() {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "lx_cover_ready":
+		case "lx_cover_path":
+			/* Lxbox 把流播封面挂到了播放项的 metadb handle 上，这里直接吃图。
+			   不走 get_albumArt_async，免得被本地封面缓存和 metadb.Compare 早退挡住；
+			   顺带把图写进 g_image_cache，后续 getArtwork 早退也有图可用。 */
+			try {
+				var lxPath = (typeof info === "string") ? info : ((info && info.path) || "");
+				var lxImg = lxPath ? gdi.Image(String(lxPath)) : null;
+				var lxMd = fb.GetNowPlaying();
+				if (lxImg && lxMd) {
+					g_cover.setArtwork(lxImg, true, false, fb.IsPlaying, lxMd,
+						process_cachekey(lxMd), plman.PlayingPlaylist);
+					window.Repaint();
+				}
+			} catch (eLxCover) {}
+		break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

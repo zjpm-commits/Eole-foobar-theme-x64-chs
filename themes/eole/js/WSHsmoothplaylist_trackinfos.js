@@ -647,8 +647,6 @@ oPlaylistManager = function(name) {
 			gr.FillGradRect(cx,this.y + this.h + cPlaylistManager.botbarHeight,ww-(draw_right_line?1:0),gradient_size,90,colors.pm_shadow_on,colors.pm_shadow_off,1.0)
 			//Main BG
 			gr.FillSolidRect(cx, this.y, this.w, this.h + cPlaylistManager.botbarHeight + 1, colors.pm_bg);
-			gr.FillSolidRect(cx, this.y, ww-(draw_right_line?1:0), 1, colors.pm_border);
-			gr.FillSolidRect(cx, this.y + this.h + cPlaylistManager.botbarHeight, ww-(draw_right_line?1:0), 1, colors.pm_border);
 
             // ** items **
             var rowIdx = 0;
@@ -3268,7 +3266,6 @@ oBrowser = function(name) {
                 var boxText = (this.totaltracks > 1 ? this.totaltracks+"张专辑" : this.totaltracks+"张专辑");
                 // draw background part above playlist (headerbar)
 
-				gr.FillGradRect(this.x+(this.drawLeftLine?1:0), properties.headerBarHeight, ww, 1, 0, colors.headerbar_line, colors.headerbar_line, 1.0);
 
 				if(g_filterbox.inputbox.text.length>0) {
 					var text_width = gr.CalcTextWidth(boxText,g_font.min1)
@@ -3287,7 +3284,6 @@ oBrowser = function(name) {
 				}
             };
 			if(g_resizing.showResizeBorder()) gr.FillSolidRect(0, 0, 1, wh, colors.dragdrop_marker_line);
-			else if(this.drawLeftLine) gr.FillSolidRect(0, 0, 1, wh, colors.sidesline);
 
 			if(cScrollBar.enabled && pman.state !=1)  {
 				brw.scrollbar && brw.scrollbar.draw(gr);
@@ -4881,7 +4877,8 @@ function on_size() {
 		// set wallpaper
 		update_wallpaper = !(properties.showwallpaper && window.IsVisible);
 
-		brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
+		/* on_size 有可能比 on_init 里的 brw 构造更早跑到，判空免得每次尺寸变化都抛异常 */
+		if (brw) brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
 		update_size = false;
 		first_on_size = false;
 	} else {
@@ -4889,20 +4886,24 @@ function on_size() {
     }
 };
 function set_update_function(string){
-	if (Update_Required_function.indexOf("on_playback_new_track(") !== -1) {
-		repopulate = string.indexOf("brw.populate") !== -1;
+	/* 排队原则：全量刷新 brw.populate(true 最强，见到它就不再加别的；
+	   其余请求互相覆盖，但绝不"整条丢弃"。
+	   原来的写法在队列里已有 on_playback_new_track 时，会把后面来的
+	   换列表 / 换曲请求直接扔掉，那些更新就再也补不回来——这是偶发
+	   "面板内容不跟手"的另一个来源。 */
+	var cur = Update_Required_function;
+	if (cur === "") {
+		Update_Required_function = string;
 		return;
-	} else if (Update_Required_function.indexOf("brw.populate(true") !== -1) {
-        return;
-    }
-	else if(Update_Required_function.indexOf("brw.populate(false") !== -1) {
-		if (string.indexOf("brw.populate(true") !== -1) {
-            Update_Required_function = string;
-        }
 	}
-	else {
-        Update_Required_function = string;
-    }
+	if (cur.indexOf("brw.populate(true") !== -1) return;
+	if (string.indexOf("brw.populate(true") !== -1) {
+		Update_Required_function = string;
+		return;
+	}
+	if (cur === string) return;
+	repopulate = repopulate || (string.indexOf("brw.populate") !== -1);
+	Update_Required_function = string;
 }
 
 
@@ -4912,8 +4913,17 @@ function on_paint(gr) {
 			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
 	} catch (ePT) {}
 	if(Update_Required_function!="") {
-		eval(Update_Required_function);
+		/* 先清空再执行：被 eval 的这段代码有可能因为面板此刻仍不可见，
+		   又把自己 set_update_function 排回队列（on_playback_new_track /
+		   on_playlist_switch 都是这样）。原来"先执行、后清空"会把这条件
+		   重排的请求立刻抹掉，那次更新就永久丢失了，表现是偶发的"没反应"。 */
+		var pending_update = Update_Required_function;
 		Update_Required_function = "";
+		try {
+			eval(pending_update);
+		} catch (ePending) {
+			if (typeof console !== 'undefined') console.log('ERROR:deferred update: ' + (ePending && ePending.message));
+		}
 	}
 
 	if((typeof(g_wallpaperImg) == "undefined" || !g_wallpaperImg || update_wallpaper) && properties.showwallpaper){
@@ -4927,12 +4937,20 @@ function on_paint(gr) {
 
     if(!g_1x1) {
         // draw background under playlist
+        /* 单帧绘制异常不能连累整帧：否则 on_paint 每次都断在这里，
+           面板就一直停在上一帧，看起来像"卡住不动"。 */
+        if (brw) {
+            try { brw.draw(gr); }
+            catch (eDraw) {
+                if (typeof console !== 'undefined') console.log('ERROR:brw.draw: ' + (eDraw && eDraw.message));
+            }
+        }
 
-
-        brw && brw.draw(gr);
-
-        if(properties.DropInplaylist && pman.offset > 0) {
-            pman.draw(gr);
+        if(properties.DropInplaylist && pman && pman.offset > 0) {
+            try { pman.draw(gr); }
+            catch (ePman) {
+                if (typeof console !== 'undefined') console.log('ERROR:pman.draw: ' + (ePman && ePman.message));
+            }
         };
 
 		if(g_dragndrop_drop_forbidden){
@@ -4951,6 +4969,7 @@ function on_paint(gr) {
 };
 
 function on_mouse_lbtn_down(x, y, m) {
+  try {   /* 点击流程的第一步，抛异常会让整次点击作废（表现就是点了没反应） */
     g_lbtn_click = true;
     g_rbtn_click = false;
 	focus_changes.collapse = true;
@@ -4969,7 +4988,7 @@ function on_mouse_lbtn_down(x, y, m) {
 	if(!isResizing){
 		var is_scroll_enabled = brw.rowsCount > brw.totalRowsVis;
 		if(properties.enableTouchControl && is_scroll_enabled) {
-			if(brw._isHover(x, y) && !brw.scrollbar._isHover(x, y)) {
+			if(brw._isHover(x, y) && !(brw.scrollbar && brw.scrollbar._isHover(x, y))) {
 				if(!timers.mouseDown) {
 					cTouch.y_prev = y;
 					cTouch.y_start = y;
@@ -4981,7 +5000,7 @@ function on_mouse_lbtn_down(x, y, m) {
 					timers.mouseDown = setTimeout(function() {
 						clearTimeout(timers.mouseDown);
 						timers.mouseDown = false;
-						if(Math.abs(cTouch.y_start - g_cursor.y) > 015) {
+						if(Math.abs(cTouch.y_start - g_cursor.y) > 15) {
 							cTouch.down = true;
 						} else {
 							brw.on_mouse("down", x, y);
@@ -4998,7 +5017,7 @@ function on_mouse_lbtn_down(x, y, m) {
 			}
 		} else {
 			// scrollbar
-			if(brw.scrollbar._isHover(x, y) && cScrollBar.enabled && cScrollBar.visible) {
+			if(brw.scrollbar && brw.scrollbar._isHover(x, y) && cScrollBar.enabled && cScrollBar.visible) {
 				brw.scrollbar && brw.scrollbar.on_mouse("down", x, y);
 			} else {
                 brw.on_mouse("down", x, y);
@@ -5008,9 +5027,14 @@ function on_mouse_lbtn_down(x, y, m) {
 		// inputBox
 		properties.showHeaderBar && properties.showFilterBox && g_filterbox.inputbox.visible && g_filterbox.on_mouse("lbtn_down", x, y);
 	}
+  } catch (eDown) {
+    g_lbtn_click = false;
+    if (typeof console !== 'undefined') console.log('ERROR:on_mouse_lbtn_down: ' + (eDown && eDown.message));
+  }
 }
 
 function on_mouse_lbtn_up(x, y, m) {
+  try {   /* 整段包起来：任何一处抛异常都不许把下面的抑制标志留在 true */
     // inputBox
     properties.showHeaderBar && properties.showFilterBox && g_filterbox.inputbox.visible && g_filterbox.on_mouse("lbtn_up", x, y);
 
@@ -5070,7 +5094,7 @@ function on_mouse_lbtn_up(x, y, m) {
     if(timers.mouseDown) {
         clearTimeout(timers.mouseDown);
         timers.mouseDown = false;
-        if(Math.abs(cTouch.y_start - g_cursor.y) <= 030) {
+        if(Math.abs(cTouch.y_start - g_cursor.y) <= 30) {
             brw.on_mouse("down", x, y);
         };
     };
@@ -5080,9 +5104,9 @@ function on_mouse_lbtn_up(x, y, m) {
         cTouch.down = false;
         cTouch.y_end = y;
         cTouch.scroll_delta = scroll - scroll_;
-        if(Math.abs(cTouch.scroll_delta) > 030 ) {
+        if(Math.abs(cTouch.scroll_delta) > 30 ) {
             cTouch.multiplier = ((1000 - cTouch.t1.Time) / 20);
-            cTouch.delta = Math.round((cTouch.scroll_delta) / 030);
+            cTouch.delta = Math.round((cTouch.scroll_delta) / 30);
             if(cTouch.multiplier < 1) cTouch.multiplier = 1;
             if(cTouch.timer) window.ClearInterval(cTouch.timer);
             cTouch.timer = setInterval(function() {
@@ -5099,6 +5123,16 @@ function on_mouse_lbtn_up(x, y, m) {
     }
 
     g_lbtn_click = false;
+  } catch (eUp) {
+    if (typeof console !== 'undefined') console.log('ERROR:on_mouse_lbtn_up: ' + (eUp && eUp.message));
+  } finally {
+    /* 无论正常走完、提前 return 还是中途抛异常，这两个抑制标志都必须复位。
+       否则 on_item_focus_change / on_playlist_items_reordered 会被永久忽略，
+       之后的选中、添加、移动都不再刷新列表——就是"点什么都没反应"。 */
+    g_avoid_on_item_focus_change = false;
+    g_avoid_on_playlist_items_reordered = false;
+    g_lbtn_click = false;
+  }
 }
 
 function on_mouse_lbtn_dblclk(x, y, mask) {
@@ -5196,7 +5230,7 @@ function on_mouse_move(x, y, m) {
 				if(x < brw.w) {
 						scroll -= cTouch.y_move;
 						cTouch.scroll_delta = scroll - scroll_;
-						if(Math.abs(cTouch.scroll_delta) < 030) cTouch.y_start = cTouch.y_current;
+						if(Math.abs(cTouch.scroll_delta) < 30) cTouch.y_start = cTouch.y_current;
 						cTouch.y_prev = cTouch.y_current;
 				};
 			} else {
@@ -6514,7 +6548,16 @@ function on_notify_data(name, info) {
 			on_font_changed();
 		break;
 		case "g_avoid_on_metadb_changed":
+			/* 这个标志只有 on_metadb_changed 会复位。如果发消息的一方后面
+			   并没有真的触发 metadb 变化，标志就永远为 true，之后所有元数据
+			   更新都会被吞掉。加个超时兜底，最多抑制 1.5 秒。 */
 			g_avoid_on_metadb_changed = true;
+			if (timers.avoidMetaChanged) clearTimeout(timers.avoidMetaChanged);
+			timers.avoidMetaChanged = setTimeout(function() {
+				g_avoid_on_metadb_changed = false;
+				clearTimeout(timers.avoidMetaChanged);
+				timers.avoidMetaChanged = false;
+			}, 1500);
 			break;
 		case "libraryfilter_width":
 			libraryfilter_width.value = info;
@@ -6522,11 +6565,6 @@ function on_notify_data(name, info) {
 		case "rightplaylist_width":
 			rightplaylist_width.value = info;
 			break;
-		case "set_font":
-			globalProperties.fontAdjustement = info;
-			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-			on_font_changed();
-		break;
         case "FocusOnNowPlayingForce":
         case "FocusOnNowPlaying":
 			if (!window.IsVisible && avoidShowNowPlaying) {
@@ -7084,10 +7122,16 @@ function on_init() {
 	g_cursor = new oCursor();
 	g_tooltip = new oTooltip();
 
-    g_focus_id = getFocusId(g_active_playlist);
+    /* g_active_playlist 这时候还是 null，直接拿它去问 plman 焦点索引、或者丢给
+       oBrowser 构造函数里的 GetPlaylistSelectedItems，一旦抛异常 on_init 就断在
+       这里，brw 永远建不出来——整个面板会彻底没反应。先兜一个有效值。 */
+    if (g_active_playlist === null || g_active_playlist < 0) {
+        g_active_playlist = (plman.ActivePlaylist >= 0) ? plman.ActivePlaylist : 0;
+    }
 
     brw = new oBrowser("brw");
 	brw.setActivePlaylist();
+    try { g_focus_id = getFocusId(g_active_playlist); } catch (eFocus) { g_focus_id = 0; }
 	brw.startTimer();
     pman = new oPlaylistManager("pman");
 

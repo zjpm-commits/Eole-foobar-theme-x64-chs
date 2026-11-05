@@ -751,7 +751,7 @@
        v1.9.9 起音源脚本统一放在 <模块目录>\resources\ 下 —— 和面板自己的
        模块文件分开，目录一眼能看清哪些是「面板」、哪些是「音源」；
        老安装（脚本直接躺在模块目录或 .\sources）继续认，不用搬家。 */
-    var mod = trimSlash(NM.moduleDir || window.GetProperty('lx.moduleDir', ''));
+    var mod = trimSlash(NM.moduleDir || getP('lx.moduleDir', ''));
     if (mod) {
       push(mod + '\\resources');
       pushDir(mod);
@@ -777,7 +777,7 @@
   }
 
   function resolveScriptDir() {
-    var custom = trimSlash(String(window.GetProperty('lx.scriptDir', '') || '').trim());
+    var custom = trimSlash(String(getP('lx.scriptDir', '') || '').trim());
     if (custom) {
       var cf = listFromManifest(custom);
       if (!cf.length) cf = listFromGlob(custom);
@@ -964,10 +964,10 @@
   function scriptPrefFor(source) {
     var v = '';
     if (source) {
-      try { v = String(window.GetProperty('lx.script.' + source, '') || ''); } catch (e) { v = ''; }
+      try { v = String(getP('lx.script.' + source, '') || ''); } catch (e) { v = ''; }
     }
     if (v) return v;
-    try { v = String(window.GetProperty('lx.preferredScript', '') || ''); } catch (e2) { v = ''; }
+    try { v = String(getP('lx.preferredScript', '') || ''); } catch (e2) { v = ''; }
     return v;
   }
 

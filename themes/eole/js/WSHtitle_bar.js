@@ -553,7 +553,7 @@ function build_buttons(){
 			btn.height = btn.height_small;			
 		}
 		buttons = {
-			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "媒体库", "Library", "", function () {
+			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "本地音乐", "Library", "", function () {
 				main_panel_state.setValue(0);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.library_img,images.library_img,0, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
@@ -561,7 +561,7 @@ function build_buttons(){
 				main_panel_state.setValue(1);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.playlist_img,images.playlist_img,1, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
-			Artist_Bio: new JSButton(btn.left_m+btn.width+btn.width+btn.margin*2, btn.top_m, btn.width, btn.height, "正在播放", "Now playing", "", function () {
+			Artist_Bio: new JSButton(btn.left_m+btn.width+btn.width+btn.margin*2, btn.top_m, btn.width, btn.height, "简介歌词", "Now playing", "", function () {
 				main_panel_state.setValue(2);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.artist_bio_img,images.artist_bio_img,2, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
@@ -655,7 +655,6 @@ function toggleSearch(new_search_state){
 	g_searchbox.toggleVisibility();
 	if(!g_searchbox.hide) g_searchbox.inputbox.activate(0,0);
 }
-// ---------------------------------------------------------------------------
 // ---------------------------------------------------------------------------
 var MINI_MODE_WIDTH = 300;
 
@@ -947,8 +946,6 @@ function on_size(w, h) {
     if(fb.IsPlaying && properties.showwallpaper) {
     }
 }
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
 var PSEUDO_CAPTION_TOP = 4;
 var PSEUDO_CAPTION_ROW1_H = 27;
 var PSEUDO_CAPTION_USE_GAP = true;
@@ -1051,17 +1048,6 @@ function on_paint(gr) {
 	gr.SetTextRenderingHint(globalProperties.TextRendering);
 
 
-	switch(true){
-		case (main_panel_state.isEqual(0) && ((properties.library_dark_theme && !properties.darklayout) || (!properties.library_dark_theme && properties.darklayout)) && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(1) && ((properties.playlists_dark_theme && !properties.darklayout) || (!properties.playlists_dark_theme && properties.darklayout)) && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(2) && ((properties.bio_dark_theme && !properties.darklayout) || (!properties.bio_dark_theme && (properties.darklayout || (properties.bio_stick2darklayout && !nowplayingbio_state.isActive())))) && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(3) && layout_state.isEqual(0) && !nowplayingvisu_state.isActive()):
-		case (((properties.minimode_dark_theme && !properties.darklayout) || (!properties.minimode_dark_theme && properties.darklayout)) && layout_state.isEqual(1)):
-		break;
-		default:
-			gr.FillSolidRect(0, wh-1, ww, 2, colors.bottom_line);
-		break;
-	}
     drawAllButtons(gr);
 	g_panel.draw();
 
@@ -1169,13 +1155,13 @@ function on_mouse_rbtn_up(x, y){
 		_menu.AppendMenuSeparator();
 
 		if(layout_state.isEqual(0)) {
-			_menu.AppendMenuItem(MF_STRING, 1, "媒体库");
+			_menu.AppendMenuItem(MF_STRING, 1, "本地音乐");
 			_menu.AppendMenuItem(MF_STRING, 2, "播放列表");
-			_menu.AppendMenuItem(MF_STRING, 3, "正在播放");
+			_menu.AppendMenuItem(MF_STRING, 3, "简介歌词");
 			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "洛雪音源");
 			_menu.CheckMenuRadioItem(1, 4, (parseInt(main_panel_state.value)+1));
 			_menu.AppendMenuSeparator();
-			_menu.AppendMenuItem(MF_STRING, 6, "紧凑播放器");
+			_menu.AppendMenuItem(MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
 				_menu.AppendMenuItem(MF_STRING, 5, "退出全屏");
 			else
@@ -1899,7 +1885,7 @@ function draw_main_menu(x,y){
 	nowplayinglobal.AppendMenuItem(MF_STRING, 4033, "自定义宽度...");
 	nowplayinglobal.AppendMenuItem(MF_STRING, 4032, "重置");
 	nowplayinglobal.AppendTo(appearance_menu,MF_STRING, "右侧播放列表");
-	appearance_menu.AppendMenuItem(MF_STRING, 4046, "启用可调整大小的边框");
+	appearance_menu.AppendMenuItem(MF_STRING, 4046, "边框尺寸可调");
 	appearance_menu.CheckMenuItem(4046, globalProperties.enableResizableBorders);
 
 	wallpaper_visibility_global = window.CreatePopupMenu();
@@ -2011,7 +1997,7 @@ function draw_main_menu(x,y){
 	fwGetMenu().AppendTo(skin_settings_menu, MF_STRING, "全屏壁纸");
 
 	if(layout_state.isEqual(0)) {
-		skin_settings_menu.AppendMenuItem(MF_STRING, 4010, "紧凑播放器");
+		skin_settings_menu.AppendMenuItem(MF_STRING, 4010, "迷你播放器");
 		if(g_uihacks.getFullscreenState())
 			skin_settings_menu.AppendMenuItem(MF_STRING, 4009, "退出全屏");
 		else
@@ -2022,7 +2008,7 @@ function draw_main_menu(x,y){
 	skin_settings_menu.AppendMenuSeparator();
 	skin_settings_menu.AppendMenuItem(MF_GRAYED, 0, "Eole v"+globalProperties.theme_version);
 
-	skin_settings_menu.AppendTo(basemenu, MF_STRING, "皮肤设置");
+	skin_settings_menu.AppendTo(basemenu, MF_STRING, "主题...");
 
     menuman1.Init("file");
     menuman2.Init("edit");
@@ -3029,9 +3015,6 @@ function toggleBlurWallpaper(wallpaper_blur_state){
 	window.Repaint();
 }
 
-// ===================================================================================
-// -----------------------------------------------------------------------------------
-// ===================================================================================
 var fw_menu = null;
 
 function fwGetMenu() {

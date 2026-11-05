@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    Lxbox · 洛雪音源 JSplitter 面板
    发布页：https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter
 
@@ -18,7 +18,7 @@
         - 推荐内容随当前平台切换；播客推荐仅网易云提供，其它平台会提示。
      2. 播放与曲目管理
         - 双击曲目播放；曲目行首方框支持多选，Shift 可连续选择。
-        - 右键可把选中的曲目批量加入「洛雪音源」播放列表。
+        - 右键可把选中的曲目批量加入「洛雪音源」播放列表，或批量下载到缓存并写标签。
         - 播放列表中已有同一缓存文件时直接播放该条目，不重复添加。
      3. 评论与艺人资料
         - 顶栏「评论」或 F3：打开 / 关闭当前歌曲评论浮层。
@@ -26,11 +26,12 @@
         - 浮层打开时，F3 / F4 可在评论与艺人介绍之间切换，Esc 关闭。
      4. 外观与背景
         - 字体、字号、文字颜色默认跟随 foobar2000 的显示设置。
-        - 可调整配色、曲目清单行数、行距、背景封面、模糊、遮罩和不透明度。
+        - 可调整配色、曲目清单行数、行距，以及背景效果 / 四个区块 / 浮层三段设置。
         - 面板内容较宽时曲目可排成两列；设置项修改后即时生效并写入属性。
      5. 缓存与音源维护
         - mp3 / flac 分目录缓存，缓存目录和音源目录均可修改。
-        - 支持封面写入音频标签、额外保存同名 jpg、播放前缓存开关。
+        - 播放方式三选一：在线流播 / 边下边播 / 下完再播。
+        - 支持封面写入音频标签、额外保存同名 jpg。
         - 支持导入 / 重载音源、重嵌封面、清理缓存、音质检测和诊断日志。
         - 可填写在线音源 .js 直链：启动时检查，有变化则下载覆盖并重载。
 
@@ -50,7 +51,7 @@
    四、基本使用
      1. 在顶栏选择数据平台，再进入排行榜、搜索、歌单、播客或歌手页面。
      2. 搜索框中直接输入关键词；中文输入法不便输入时可 Ctrl+V 粘贴。
-     3. 双击曲目播放；需要批量加入播放列表时，先勾选再使用右键菜单。
+     3. 双击曲目播放；需要批量加入播放列表 / 批量下载时，先勾选再使用右键菜单。
      4. 顶栏「简介」「评论」查看当前艺人资料和歌曲评论。
      5. 顶栏「设置」调整外观、背景、音源、标签、检测与维护选项。
      6. 设置 → 维护 底部的「Lxbox 界面发布页」可打开本面板发布页。
@@ -75,11 +76,18 @@
    六、设置面板速查
      外观           缩放、字号、配色、曲目清单行数、第二排平台（以及
                     隐藏第二排时单独用的音质）。
-     背景           封面背景开关、模糊、遮罩、不透明度、染色等效果。
-     音源           mp3 / flac / 缓存目录、扩展名检测、音源目录、播放音源、
-                    全局音质（自动 / 128K / 320K / FLAC / FLAC 24 / Hi-Res /
-                    全景声 / 全景声+ / 母带，下拉选）、在线音源网址。
-     标签           封面嵌入音频、同时写同名 jpg、播放前缓存；
+     背景           分三段：
+                    ① 背景效果 —— 全屏透明、封面背景、调色、遮罩、模糊、亮度、饱和度。
+                    ② 四个区块 —— 标题栏 / 搜索栏 / 左侧栏 / 内容区各一条透明度（内容区 = 左侧栏
+                       右边那整块，状态栏不在内），内容区还能染色。
+                    ③ 浮层 —— 设置界面 / 简介界面 / 评论界面共用浮层遮罩（底下垫一张虚化封面）
+                       与浮层不透明度（无图时的实色浓度，0~100）。
+     音源           mp3 / flac / 缓存目录、扩展名检测、播放方式（在线流播 /
+                    边下边播 / 下完再播，三选一按钮）、流播封面推送（流播时
+                    把封面写成 nowplaying\cover.jpg 给 foobar 读）、音源目录、
+                    播放音源、全局音质（自动 / 128K / 320K / FLAC / FLAC 24 /
+                    Hi-Res / 全景声 / 全景声+ / 母带，下拉选）、在线音源网址。
+     标签           封面嵌入音频、同时写同名 jpg；
                     苹果标签源（可选）：总开关、逐字段勾选、1200px封面、
                     播放后自动补、补当前 / 选中 / 整张列表、清缓存。
      检测           音源音质检测（右栏内嵌，左栏不关闭：勾平台 / 档位
@@ -105,8 +113,44 @@
        确认覆盖的是面板实际加载目录中的 main.js，并重新加载脚本 / 面板。
 
    ========================================================================== */
-var APP_VERSION = '2.1.5';
+var APP_VERSION = '2.1.6';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
+
+/* 2.2.0 试过把属性名写成「原名·中文」，2.2.2 撤回：属性名回到纯英文。
+   这段只在升级那一次，把值从带中文的旧键搬回英文键，搬完就不再执行。 */
+function revertPropLabels() {
+  try { if (String(window.GetProperty('Lxbox·属性还原', '0')) === '1') return; } catch (e) { return; }
+
+  var names = null;
+  try { if (typeof window.GetPropertyNames === 'function') names = window.GetPropertyNames(); } catch (e) { names = null; }
+  var canRemove = false;
+  try { canRemove = (typeof window.RemoveProperty === 'function'); } catch (e) { canRemove = false; }
+
+  try { window.SetProperty('Lxbox·属性还原', '1'); } catch (e) {}
+  if (!names) return;                 // 拿不到属性清单就只能手改回来
+
+  for (var i = 0; i < names.length; i++) {
+    var n = String(names[i]);
+    if (n.indexOf('lx.') !== 0) continue;
+    var p = n.indexOf('·');
+    if (p < 0) continue;
+    try {
+      window.SetProperty(n.slice(0, p), window.GetProperty(n, ''));
+      if (canRemove) window.RemoveProperty(n);   // 有删除接口就顺手清掉旧项
+      else window.SetProperty(n, '');
+    } catch (e) {}
+  }
+}
+
+revertPropLabels();
+
+function getP(k, d) {
+  try { return window.GetProperty(k, d); } catch (e) { return d; }
+}
+
+function setP(k, v) {
+  try { window.SetProperty(k, v); } catch (e) {}
+}
 
 var MODULE_DIRS = [];
 var MODULE_NAMES = ['crypto.js', 'tagwriter.js', 'apple-tags.js', 'lx.js', 'providers.js', 'main.js'];
@@ -125,7 +169,7 @@ function joinPath(a, b) {
 }
 
 function collectModuleDirs() {
-  addModuleDir(window.GetProperty('lx.moduleDir', ''));
+  addModuleDir(getP('lx.moduleDir', ''));
   try { if (fb.ComponentPath) addModuleDir(joinPath(fb.ComponentPath, 'net')); } catch (e) {}
   try { if (fb.ComponentPath) addModuleDir(joinPath(fb.ComponentPath, 'net\\sources')); } catch (e) {}
 
@@ -236,7 +280,7 @@ if (!NM) {
 
 if (!moduleDir) moduleDir = detectModuleDir();
 if (moduleDir) {
-  try { window.SetProperty('lx.moduleDir', moduleDir); } catch (e) {}
+  try { setP('lx.moduleDir', moduleDir); } catch (e) {}
   NM.moduleDir = moduleDir;
 }
 
@@ -291,10 +335,6 @@ function clampTab(n) {
   return n > TAB_DEFS.length - 1 ? TAB_DEFS.length - 1 : n;
 }
 
-function tabKey() {
-  return (TAB_DEFS[tab] || TAB_DEFS[0]).key;
-}
-
 function isBrowseTab() {
   return tab >= 2;
 }
@@ -303,7 +343,7 @@ var rowLinesCache = 0;
 
 function rowLines() {
   if (!rowLinesCache) {
-    rowLinesCache = Number(window.GetProperty('lx.rowLines', 2)) === 1 ? 1 : 2;
+    rowLinesCache = Number(getP('lx.rowLines', 2)) === 1 ? 1 : 2;
   }
   return rowLinesCache;
 }
@@ -314,7 +354,7 @@ var rowGapCache = null;
 
 function rowGap() {
   if (rowGapCache === null) {
-    var v = parseInt(window.GetProperty('lx.rowGap', 0), 10);
+    var v = parseInt(getP('lx.rowGap', 0), 10);
     if (isNaN(v)) v = 0;
     rowGapCache = clamp(v, ROW_GAP_MIN, ROW_GAP_MAX);
   }
@@ -377,7 +417,7 @@ function multiSelectAll() {
   multiSel = {};
   for (var i = 0; i < tracks.length; i++) multiSel[i] = true;
   multiAnchor = tracks.length ? 0 : -1;
-  setStatus(tracks.length ? ('已勾选 ' + tracks.length + ' 首，右键可批量加入播放列表') : '列表是空的');
+  setStatus(tracks.length ? ('已勾选 ' + tracks.length + ' 首，右键可批量加入播放列表 / 下载') : '列表是空的');
   repaint();
 }
 
@@ -413,7 +453,7 @@ function multiToggle(i, range) {
   }
   multiAnchor = i;
   var n = multiCount();
-  setStatus(n ? ('已勾选 ' + n + ' 首，右键可批量加入播放列表') : '已取消勾选');
+  setStatus(n ? ('已勾选 ' + n + ' 首，右键可批量加入播放列表 / 下载') : '已取消勾选');
   repaint();
 }
 
@@ -556,9 +596,9 @@ var W = 0;
 var H = 0;
 var L = {};
 
-var tab = clampTab(window.GetProperty('lx.tab', 0));
-var hidePlatformRow = !!Number(window.GetProperty('lx.hidePlatformRow', 0) || 0);
-var fixedPlatform = String(window.GetProperty('lx.fixedPlatform', 'wy') || 'wy');
+var tab = clampTab(getP('lx.tab', 0));
+var hidePlatformRow = !!Number(getP('lx.hidePlatformRow', 0) || 0);
+var fixedPlatform = String(getP('lx.fixedPlatform', 'wy') || 'wy');
 
 function platformKnown(p) {
   var order = (NM && NM.providers && NM.providers.order) || [];
@@ -570,12 +610,12 @@ function platformKnown(p) {
 
 var platform = platformKnown(hidePlatformRow
   ? fixedPlatform
-  : String(window.GetProperty('lx.platform', 'tx') || 'tx'));
+  : String(getP('lx.platform', 'tx') || 'tx'));
 fixedPlatform = platformKnown(fixedPlatform);
 // 音质分两份：全局（顶栏音质条、「音源」页里的设置）与「隐藏第二排平台」时的专用值。
 // qualityHidden 为空 = 跟全局一致；quality 始终是当前生效值，播放链路只认它。
-var qualityAll = String(window.GetProperty('lx.quality', 'auto') || 'auto');
-var qualityHidden = String(window.GetProperty('lx.qualityHidden', '') || '');
+var qualityAll = String(getP('lx.quality', '320k') || '320k');
+var qualityHidden = String(getP('lx.qualityHidden', '') || '');
 var quality = qualityEff();
 
 function qualityEff() {
@@ -613,7 +653,7 @@ var hoverKind = '';
 var hoverBtn = '';
 var mouseX = 0;
 
-var sideCollapsed = !!Number(window.GetProperty('lx.sideCollapsed', 0));
+var sideCollapsed = !!Number(getP('lx.sideCollapsed', 0));
 var sideTogHot = false;
 var mouseY = 0;
 var cursorHand = false;
@@ -660,7 +700,7 @@ var HOT_BOARDS = {
   kg: [{ id: '8888', name: '酷狗TOP500' }, { id: '6666', name: '酷狗飙升榜' }, { id: '52144', name: '酷狗抖音热歌榜' }],
   mg: [{ id: '27186466', name: '咪咕尖叫热歌榜' }, { id: '27553319', name: '咪咕尖叫新歌榜' }, { id: '27553408', name: '咪咕尖叫原创榜' }]
 };
-var hotBoardIndex = parseInt(window.GetProperty('lx.hotBoard', 0), 10);
+var hotBoardIndex = parseInt(getP('lx.hotBoard', 0), 10);
 var hotTracks = [];
 var hotPlatform = '';
 var hotAt = 0;
@@ -734,13 +774,6 @@ function qualityHint(q) {
 }
 
 /* 音质选项（设置页里的两处段控共用），顺序跟 QUALITIES 一致 */
-function qualityOptions() {
-  var out = [];
-  for (var i = 0; i < QUALITIES.length; i++) {
-    out.push([QUALITIES[i], QUALITY_LABEL[QUALITIES[i]] || QUALITIES[i]]);
-  }
-  return out;
-}
 var UI_S = 1;
 var UI_AUTO = 1;
 
@@ -779,7 +812,7 @@ function detectUiScale() {
 }
 
 function uiScaleProp() {
-  var v = String(window.GetProperty('lx.uiScale', 'auto') || 'auto').toLowerCase();
+  var v = String(getP('lx.uiScale', 'auto') || 'auto').toLowerCase();
   if (v === 'auto') return 'auto';
   var n = parseFloat(v);
   if (!(n >= 80 && n <= 300)) return 'auto';
@@ -824,17 +857,17 @@ function fbFontLogical() {
 
 function fontSizeFollow() {
   var v = '', old = '';
-  try { v = String(window.GetProperty('lx.fontSize', '') || '').trim().toLowerCase(); } catch (e) { v = ''; }
+  try { v = String(getP('lx.fontSize', '') || '').trim().toLowerCase(); } catch (e) { v = ''; }
   if (v !== '' && v !== 'auto') return false;
-  try { old = String(window.GetProperty('lx.fontScale', '') || '').trim(); } catch (e2) { old = ''; }
+  try { old = String(getP('lx.fontScale', '') || '').trim(); } catch (e2) { old = ''; }
   return old === '';
 }
 
 function fontSizeProp() {
   if (fontSizeFollow()) return fbFontLogical();
-  var n = parseInt(window.GetProperty('lx.fontSize', -1), 10);
+  var n = parseInt(getP('lx.fontSize', -1), 10);
   if (n >= FONT_MIN && n <= FONT_MAX) return n;
-  var f = parseInt(window.GetProperty('lx.fontScale', 100), 10);
+  var f = parseInt(getP('lx.fontScale', 100), 10);
   if (!(f >= 85 && f <= 130)) f = 100;
   return clamp(Math.round(FONT_DEF * f / 100), FONT_MIN, FONT_MAX);
 }
@@ -991,7 +1024,7 @@ function uiBackgroundColour() {
 }
 
 function themeMode() {
-  var m = String(window.GetProperty('lx.theme', 'auto') || 'auto').toLowerCase();
+  var m = String(getP('lx.theme', 'auto') || 'auto').toLowerCase();
   return (m === 'dark' || m === 'light') ? m : 'auto';
 }
 
@@ -1124,44 +1157,44 @@ var bgBackdropKey = '';
 var bgArtKey = '';
 
 function bgArtEnabled() {
-  return String(window.GetProperty('lx.bgArt', '1')) !== '0';
+  return String(getP('lx.bgArt', '1')) !== '0';
 }
 
 function bgHue() {
-  var v = parseInt(window.GetProperty('lx.bgHue', -1), 10);
+  var v = parseInt(getP('lx.bgHue', -1), 10);
   if (!(v >= 0 && v <= 359)) return -1;
   return v;
 }
 
 function bgArtAlpha() {
-  var v = parseInt(window.GetProperty('lx.bgArtAlpha', -1), 10);
+  var v = parseInt(getP('lx.bgArtAlpha', -1), 10);
   if (!(v >= 0)) return -1;
   return clamp(v, 0, 255);
 }
 
 function bgVeil() {
-  var v = parseInt(window.GetProperty('lx.bgVeil', -1), 10);
+  var v = parseInt(getP('lx.bgVeil', -1), 10);
   if (v >= 0) return clamp(v, 0, 100);
   var old = bgArtAlpha();
   if (old >= 0) return clamp(Math.round(100 - old / 255 * 100), 0, 100);
-  return 22;
+  return 50;
 }
 
 function bgBlur() {
-  var v = parseInt(window.GetProperty('lx.bgBlur', 24), 10);
-  if (!(v >= 0)) v = 24;
+  var v = parseInt(getP('lx.bgBlur', 20), 10);
+  if (!(v >= 0)) v = 20;
   return clamp(v, 0, 40);
 }
 
 function bgLum() {
-  var v = parseInt(window.GetProperty('lx.bgLum', 100), 10);
+  var v = parseInt(getP('lx.bgLum', 100), 10);
   if (!(v >= 40)) v = 100;
   return clamp(v, 40, 160);
 }
 
 function bgSat() {
-  var v = parseInt(window.GetProperty('lx.bgSat', 100), 10);
-  if (!(v >= 0)) v = 100;
+  var v = parseInt(getP('lx.bgSat', 50), 10);
+  if (!(v >= 0)) v = 50;
   return clamp(v, 0, 100);
 }
 
@@ -1169,20 +1202,16 @@ function bgSat() {
    旧属性 lx.bgGlass（0~100 的「不透明度」，内部映射成 0.35~1.0 的玻璃系数）仍然认：
    没设过新属性时按它换算过来，老面板看起来跟以前一模一样。 */
 function bgClear() {
-  var v = parseInt(window.GetProperty('lx.bgClear', -1), 10);
+  var v = parseInt(getP('lx.bgClear', -1), 10);
   if (v >= 0) return clamp(v, 0, 100);
-  var g = parseInt(window.GetProperty('lx.bgGlass', 92), 10);
-  if (!(g >= 0)) g = 92;
+  var g = parseInt(getP('lx.bgGlass', -1), 10);
+  if (!(g >= 0)) return 0;           // 新面板：内容区不额外压暗
   var glass = 0.35 + clamp(g, 0, 100) / 100 * 0.65;
   return clamp(Math.round((1 - glass) * 100), 0, 100);
 }
 
-function bgGlass() {
-  return 1 - bgClear() / 100;
-}
-
 function bgTint() {
-  var v = parseInt(window.GetProperty('lx.bgTint', 0), 10);
+  var v = parseInt(getP('lx.bgTint', 0), 10);
   if (!(v >= 0)) return 0;
   return clamp(v, 0, 30);
 }
@@ -1354,6 +1383,7 @@ function buildBackdrop() {
     bgBackdropKey = backdropKeyOf();
     bmp = null;
     disposeObj(prevBmp);
+    buildOverlayArt();
   } catch (e) {
     try { console.log('[LX-UI] 生成背景失败：' + ((e && e.message) || e)); } catch (e2) {}
   } finally {
@@ -1392,6 +1422,7 @@ function dropBackdrop() {
   bgBackdrop = null;
   bgBackdropKey = '';
   disposeObj(prev);
+  dropOverlayArt();
 }
 
 function ensureBackdrop() {
@@ -1700,15 +1731,30 @@ function coverDownload(url, target) {
   return p;
 }
 
+/* coverFile 是全局共用的，切歌时会先清空再异步赋值；这里给每次 rememberCover 发一个
+   递增 token，并记在曲目对象上。挂封面时比对 token，才能确认「这张图就是这首歌的」，
+   不然网络慢的时候容易把上一首的图挂到新播放项上。 */
+var coverToken = 0;
+var coverFileToken = 0;
+
 function rememberCover(track, audioPath) {
   if (audioPath) coverPath = String(audioPath).toLowerCase();
   coverTitle = String((track && track.title) || '');
+
+  var tok = ++coverToken;
+  if (track) {
+    /* 不可枚举：track 有时会整对象丢给音源脚本，别多带一个字段出去 */
+    try {
+      Object.defineProperty(track, '__coverToken',
+        { value: tok, writable: true, configurable: true, enumerable: false });
+    } catch (e) { try { track.__coverToken = tok; } catch (e2) {} }
+  }
 
   trackCoverUrl(track).then(function (url) {
     if (!url) return;
     if (lastTrack && lastTrack !== track) return;
     if (url === coverUrl) {
-      if (coverFile) refreshBackground(true);
+      if (coverFile) { coverFileToken = tok; refreshBackground(true); }
       return;
     }
     coverUrl = url;
@@ -1717,9 +1763,213 @@ function rememberCover(track, audioPath) {
       if (!f) return;
       if (url !== coverUrl) return;
       coverFile = f;
+      coverFileToken = tok;
       refreshBackground(true);
     });
   });
+}
+
+/* 只有确认是这首歌的图才返回，否则空串 */
+function coverFileForTrack(track) {
+  if (!track || !coverFile || !fileReady(coverFile)) return '';
+  var tok = track.__coverToken || 0;
+  if (!tok || tok !== coverFileToken) return '';
+  return coverFile;
+}
+
+/* ===========================================================================
+ * 流播封面推送（在线流播 / 边下边播时用）
+ * 播的是 http 直链，foobar2000 手上没有文件、也没有内嵌图，它自带的封面读取一律空着。
+ * 做法：把当前曲目的封面固定写成 <缓存目录>\nowplaying\cover.jpg，
+ * 再在 fb2k「首选项 → 显示 → 专辑封面 → 前封面」里加上这个完整路径，
+ * 之后任何播放项（包括流）都能读到这里最新的封面。
+ * 播本地文件时把这个文件撤掉，免得盖到没有内嵌封面的本地曲目上。
+ * =========================================================================== */
+var NOWPLAY_KEY = '';
+
+function streamCoverOn() {
+  return propStr('lx.streamCover', '1') !== '0';
+}
+
+function nowPlayDir() {
+  var d = '';
+  try { d = cacheDir(); } catch (e) { d = ''; }
+  if (!d) return '';
+  d = d + '\\nowplaying';
+  try { utils.CreateFolder(d); } catch (e2) {}
+  return d;
+}
+
+function nowPlayCoverFile() {
+  var d = nowPlayDir();
+  return d ? (d + '\\cover.jpg') : '';
+}
+
+function streamCoverKey(track) {
+  if (!track) return '';
+  return String(track.source || '') + '|' +
+         String(track.songmid || track.hash || track.rid || track.id || '') + '|' +
+         String(track.title || '');
+}
+
+function pushStreamCover(track) {
+  if (!streamCoverOn()) return;
+  var dest = nowPlayCoverFile();
+  if (!dest) return;
+
+  if (!track) {                       /* 回到本地播放：撤掉，别盖住别人的封面 */
+    ATTACH_KEY = '';
+    if (!NOWPLAY_KEY) return;
+    NOWPLAY_KEY = '';
+    try { utils.RemovePath(dest); } catch (e) {}
+    return;
+  }
+
+  var key = streamCoverKey(track);
+  if (key === NOWPLAY_KEY) return;
+  NOWPLAY_KEY = key;
+
+  ensureCoverFile(track).then(function (cf) {
+    if (!cf || key !== NOWPLAY_KEY) return;
+    if (copyBytesFile(cf, dest)) {
+      NM.lx.pushLog('info', '流播封面已推送：' + baseName(dest) + ' ← ' + baseName(cf));
+      attachToHandle(nowPlayingHandle(), dest, '推送后');
+    } else {
+      NOWPLAY_KEY = '';
+      NM.lx.pushLog('warn', '流播封面推送失败（写不进 ' + dest + '）');
+    }
+  }, function () {});
+}
+
+/* ---------------------------------------------------------------------------
+ * 流播封面挂载（metadb 附着）
+ *
+ * 纯流播的播放项就是一个 http 直链：没有目录、没有内嵌标签，fb2k 自带的封面
+ * 读取一律是空的。以前的办法是写一张固定的 cover.jpg，再让人去
+ * 「首选项 → 显示 → 专辑封面 → 前封面」里加这个路径 —— 那是全局单图，属于
+ * album art 优先级链最弱的一档，会盖住本地曲目自己的封面，还得手动配一次。
+ *
+ * 这里改成把图挂到播放项的 metadb handle 上（attached image，优先级链第一档）：
+ * 图跟着这一条播放项走，不是全局图；之后任何 JSplitter 面板读 album art
+ * 都能直接拿到（Eole、播放列表缩略图、系统媒体控制都一样），
+ * 不用在 fb2k 里填任何地址，也不用改任何面板的代码。
+ *
+ * 本地曲目一律不挂 —— 它们自己有内嵌图和 sidecar，挂了反而串图。
+ * ------------------------------------------------------------------------- */
+var ATTACH_KEY = '';
+var LAST_PLAY_URL = '';
+
+function attachOn() {
+  return propStr('lx.streamAttach', '1') !== '0';
+}
+
+function pathIsStream(p) {
+  var s = String(p || '').toLowerCase();
+  return s.indexOf('http://') === 0 || s.indexOf('https://') === 0 ||
+         s.indexOf('rtsp://') === 0 || s.indexOf('mms://') === 0;
+}
+
+/* 流播判定：URL 前缀最直接；%length% 为空兜底（流没有总时长） */
+function isStreamHandle(handle) {
+  if (!handle) return false;
+  var p = '';
+  try { p = String(handle.Path || ''); } catch (e) { p = ''; }
+  if (p && pathIsStream(p)) return true;
+  var len = null;
+  try { len = fb.TitleFormat('%length%').EvalWithMetadb(handle); } catch (e) { return false; }
+  return String(len || '') === '';
+}
+
+function attachToHandle(handle, file, why) {
+  if (!attachOn() || !handle || !file) return;
+  if (!fileReady(file)) return;
+  if (!isStreamHandle(handle)) return;
+
+  var hp = '';
+  try { hp = String(handle.Path || ''); } catch (e) { hp = ''; }
+  var key = String(file).toLowerCase() + '|' + hp;
+  if (key === ATTACH_KEY) return;
+  ATTACH_KEY = key;
+
+  /* 先广播：Eole 的子面板和宿主壁纸都是直接读这个文件，不依赖 attach 成不成功；
+     attach 只是让 foobar2000 自己的 album art（播放列表缩略图、系统媒体控制）也有。 */
+  notifyCoverReady(file);
+
+  attachImageAsync(handle, file, why || '').then(function (r) {
+    if (r && r.ok) {
+      NM.lx.pushLog('info', '封面已挂到播放项（' + (r.how || 'AttachImage') + '）：' + baseName(file));
+    } else {
+      NM.lx.pushLog('warn', '封面挂载失败：' + ((r && r.reason) || '未知原因') + '（面板仍可直接读文件）');
+    }
+  }, function () {});
+}
+
+/* 通用广播：别的面板实现了 on_notify_data('lx_cover_ready') 就能自己刷新，
+   没实现的直接忽略，不会有副作用。 */
+function notifyCoverReady(file) {
+  var p = String(file || '');
+  try { window.NotifyOthers('lx_cover_ready', { path: p, how: 'attach' }); } catch (e) {}
+  /* 再发一条纯字符串：跨组件传对象不一定通，字符串一定通 */
+  try { window.NotifyOthers('lx_cover_path', p); } catch (e2) {}
+  if (propStr('lx.streamWake', '0') !== '1') return;
+  /* 可选唤醒：有些面板（比如 Eole 的右侧栏）只在切歌事件里取一次图，
+     流播换曲时 handle 不变就不会重取。这里借它已有的消息名让它重走一遍，
+     不改它代码；代价是可能有界面跳动，所以默认关，需要时把 lx.streamWake 设 1。 */
+  try { window.NotifyOthers('rigthsidebar_shownowplaying', true); } catch (e2) {}
+}
+
+/* 抢跑：播放列表项刚加好、fb.Play() 还没发出去时先挂。
+   别的面板在 on_playback_new_track 里是同步取图的，晚一步就赶不上。 */
+function preAttachCover(track, handle) {
+  if (!attachOn() || !handle) return;
+  var f = coverFileForTrack(track);
+  if (!f) return;
+  attachToHandle(handle, f, '抢跑');
+}
+
+/* 兜底：当前播放项是流播、封面要现取，取到了再挂（手动开关也会用它）。
+   必须先确认播放项确实是 Lxbox 刚点的这首，否则手动在 fb2k 里播别的流会串图。 */
+function attachLastTrack(why) {
+  if (!attachOn()) return;
+  var tr = lastTrack;
+  var h = nowPlayingHandle();
+  if (!h || !isStreamHandle(h)) return;
+
+  var want = String((tr && tr.title) || '');
+  var own = (!!tr && !!NOWPLAY_KEY && NOWPLAY_KEY === streamCoverKey(tr));
+
+  /* 最准的一条：这条播放项的地址就是上次点播的直链 */
+  var hp = '';
+  try { hp = String(h.Path || ''); } catch (e) { hp = ''; }
+  var urlOk = !!LAST_PLAY_URL && !!hp &&
+              (hp === LAST_PLAY_URL || hp.indexOf(LAST_PLAY_URL) >= 0 ||
+               LAST_PLAY_URL.indexOf(hp) >= 0);
+
+  var t = '';
+  try { t = String(fb.TitleFormat('%title%').EvalWithMetadb(h) || ''); } catch (e) { t = ''; }
+  var titleOk = !!want && !!t && (t === want || t.indexOf(want) >= 0);
+
+  if (!own && !urlOk && !titleOk) return;
+
+  var f = own ? nowPlayCoverFile() : '';
+  if (f && fileReady(f)) { attachToHandle(h, f, why || ''); return; }
+  var cf0 = coverFileForTrack(tr);
+  if (cf0) { attachToHandle(h, cf0, why || ''); return; }
+  if (!tr) return;
+  ensureCoverFile(tr).then(function (cf) {
+    if (!cf) return;
+    attachToHandle(h, cf, why || '');
+  }, function () {});
+}
+
+function openNowPlayDir() {
+  var dir = nowPlayDir();
+  if (!dir) { setStatus('缓存目录还没确定，先在「音源」页选缓存目录', true); return; }
+  if (openDirWithShell(dir)) {
+    setStatus('已打开流播封面文件夹：' + dir + '（封面由面板自动挂到播放项，这里只是留档）');
+    return;
+  }
+  setStatus('打不开目录：' + dir, true);
 }
 
 var AUDIO_EXT = ['mp3', 'flac', 'm4a', 'aac', 'ogg', 'wav', 'ape'];
@@ -1788,12 +2038,6 @@ function hasEmbeddedCover(path) {
   if (!TAG_WRITER) return false;
   return TAG_WRITER.hasEmbeddedCover(path);
 }
-
-function extOfPath(p) {
-  var m = /\.([A-Za-z0-9]+)$/.exec(String(p || ''));
-  return m ? '.' + m[1].toLowerCase() : '';
-}
-
 
 function pushCoverTo(track, dest, handle) {
   if (!PUSH_COVER || !dest) return Promise.resolve(0);
@@ -1891,31 +2135,25 @@ function reembedCurrentCover() {
 
 var BG_A = {
   header: 112,
-  footer: 126,
   side: 108,
   field: 116,
   fieldHot: 150,
-  tabOn: 150,
   tabHot: 116,
   chip: 140,
-  chipOn: 175,
-  btn: 175,
   btnHot: 208,
   rowSel: 186,
   rowHot: 140
 };
 
-var FR = { art: false, tint: 0, glass: 1, hover: false };
+var FR = { art: false, hover: false };
 
 function beginFrame() {
   FR.art   = bgArtEnabled() && !!bgBackdrop;
-  FR.tint  = bgTint();
-  FR.glass = bgGlass();
   FR.hover = hoverPaintProp();
 }
 
 function hoverPaintProp() {
-  try { return String(window.GetProperty('lx.hoverPaint', '0')) === '1'; } catch (e) { return false; }
+  try { return String(getP('lx.hoverPaint', '0')) === '1'; } catch (e) { return false; }
 }
 
 function hoverOn(r) {
@@ -1924,30 +2162,52 @@ function hoverOn(r) {
 }
 
 function tint(colour, alpha) {
-  if (!FR.art) return colour;
-
-  var c = colour;
-  var k = FR.tint;
-  if (k > 0) {
-    var a0 = (c >>> 24) & 0xFF;
-    c = mixColour(c & 0xFFFFFF, artAvg, k / 100);
-    if (a0) c = A(c, a0);
-  }
-
-  return A(c, Math.round(alpha * FR.glass));
+  if (!FR.art) return colour;      // 没封面背景时这些块本来就是实心
+  return A(colour, clamp(Math.round(alpha), 0, 255));
 }
 
 function solidTint(colour, alpha) {
-  var c = colour;
-  if (FR.art) {
-    var k = FR.tint;
-    if (k > 0) {
-      var a0 = (c >>> 24) & 0xFF;
-      c = mixColour(c & 0xFFFFFF, artAvg, k / 100);
-      if (a0) c = A(c, a0);
-    }
-  }
-  return A(c, clamp(Math.round(alpha), 0, 255));
+  return A(colour, clamp(Math.round(alpha), 0, 255));
+}
+
+/* 列表选中项：不铺色块，只画上下两条两端渐隐的细线（与 Eole 的列表同一种模式）。
+   中间实色，左右各 SEL_FADE 像素从同色透明渐变过来，视觉上是把这一行"框"住。 */
+var SEL_FADE = 13;
+var SEL_LINE_A = 150;
+
+function selLine(gr, x, y, w, col) {
+  if (!(w > 0)) return;
+  var c = A(col, SEL_LINE_A), t = A(col, 0);
+  var f = Math.min(SEL_FADE, Math.floor(w / 3));
+  if (f < 3) { gr.FillSolidRect(x, y, w, 1, c); return; }
+  gr.FillGradRect(x, y, f, 1, 0, t, c, 1.0);
+  gr.FillSolidRect(x + f, y, w - f * 2, 1, c);
+  gr.FillGradRect(x + w - f, y, f, 1, 0, c, t, 1.0);
+}
+
+function drawSelFrame(gr, x, y, w, h, col) {
+  selLine(gr, x, y, w, col);
+  selLine(gr, x, y + h - 1, w, col);
+}
+
+/* 内容区那层底：左侧栏右边这一整块，底部状态栏不算。
+   内容区透明度 0% = 原样（实心），越大越透，100% = 完全不盖；
+   内容区染色只掺这一层，标题栏 / 搜索栏 / 左侧栏 / 状态栏都不跟着变色。 */
+function contentVeil() {
+  var r = L.content;
+  if (!r || r.w <= 0 || r.h <= 0) return null;
+  var a = Math.round(255 * (1 - bgClear() / 100));
+  if (a <= 0) return null;
+  var col = C.bg & 0xFFFFFF;
+  var k = bgTint();
+  if (k > 0 && FR.art) col = mixColour(col, artAvg, k / 100);
+  return { x: r.x, y: r.y, w: r.w, h: r.h, colour: A(col, a) };
+}
+
+function paintContentVeil(gr) {
+  var v = contentVeil();
+  if (!v) return;
+  gr.FillSolidRect(v.x, v.y, v.w, v.h, v.colour);
 }
 
 /* 三块分区蒙版：标题栏 / 搜索栏 / 左侧栏各盖着一层，各自一条透明度滑杆，
@@ -1962,8 +2222,8 @@ var SURF_CLEAR_PROPS = {
 function surfClear(surf) {
   var k = SURF_CLEAR_PROPS[surf];
   if (!k) return 0;
-  var v = parseInt(window.GetProperty(k, 0), 10);
-  if (!(v >= 0)) return 0;
+  var v = parseInt(getP(k, 50), 10);
+  if (!(v >= 0)) return 50;
   return clamp(v, 0, 100);
 }
 
@@ -1972,20 +2232,20 @@ function surfA(surf, alpha) {
 }
 
 function bgOverlayPct() {
-  var v = parseInt(window.GetProperty('lx.bgOverlay', 98), 10);
-  if (!(v >= 0)) v = 98;
-  return clamp(v, 80, 100);
+  var v = parseInt(getP('lx.bgOverlay', 90), 10);
+  if (!(v >= 0)) v = 90;
+  return clamp(v, 0, 100);          // 0 = 完全透，100 = 和面板外同色
 }
 
 function overlayFill(colour, alpha) {
-  var pct = bgOverlayPct() / 98;
+  var pct = bgOverlayPct() / 100;
   var a = (alpha === undefined || !(alpha >= 0)) ? 252 : alpha;
   return solidTint(colour === undefined ? C.bg : colour, Math.round(a * pct));
 }
 
 function bgOverlayScrimPct() {
-  var v = parseInt(window.GetProperty('lx.bgOverlayScrim', 62), 10);
-  if (!(v >= 0)) v = 62;
+  var v = parseInt(getP('lx.bgOverlayScrim', 80), 10);
+  if (!(v >= 0)) v = 80;
   return clamp(v, 0, 100);
 }
 
@@ -1993,18 +2253,67 @@ function overlayScrim(colour) {
   return solidTint(colour, Math.round(bgOverlayScrimPct() * 2.55));
 }
 
+/* 浮层遮罩底下垫的那张图：把封面重度虚化后铺满整块浮层（拿不到宿主壁纸，
+   封面就是壁纸的默认来源）。和背景那张分开存 —— 背景带遮罩 / 亮度 / 饱和度
+   和调色，浮层只要一张糊成色块的底，遮罩浓度自己控。 */
+var ovArt = null;
+var ovArtKey = '';
+
+function ovArtKeyOf() {
+  return bgArtKey + '@' + W + 'x' + H + '#' + THEME + '|b' + bgBlur();
+}
+
+function buildOverlayArt() {
+  var prev = ovArt, small = null, big = null;
+  try {
+    if (!bgArt || W <= 0 || H <= 0) { ovArt = null; ovArtKey = ''; disposeObj(prev); return; }
+    var key = ovArtKeyOf();
+    if (ovArt && key === ovArtKey) return;
+
+    var size = imageSize(bgArt);
+    var iw = size[0], ih = size[1];
+    if (!(iw > 0 && ih > 0)) { ovArt = null; ovArtKey = ''; disposeObj(prev); return; }
+
+    // 先缩到 96px 见方再放大：糊度主要来自这一步，StackBlur 只补一点
+    var sc = 96 / Math.max(iw, ih);
+    small = bgArt.Resize(Math.max(16, Math.round(iw * sc)),
+                         Math.max(16, Math.round(ih * sc)), 2);
+    if (!small) return;
+    try { small.StackBlur(clamp(Math.round(bgBlur() * 1.5) + 14, 14, 40)); } catch (eB) {}
+
+    big = small.Resize(W, H, 2);
+    if (!big) return;
+    ovArt = big; big = null;
+    ovArtKey = key;
+    disposeObj(prev);
+  } catch (e) {
+    try { console.log('[LX-UI] 生成浮层底图失败：' + ((e && e.message) || e)); } catch (e2) {}
+  } finally {
+    disposeObj(small);
+    disposeObj(big);
+  }
+}
+
+function dropOverlayArt() {
+  var prev = ovArt;
+  ovArt = null;
+  ovArtKey = '';
+  disposeObj(prev);
+}
+
 function overlayArtOn() {
-  return !!FR.art;
+  return !!(ovArt || bgBackdrop);
 }
 
 function blitBackdropRect(gr, x, y, w, h) {
-  if (!bgBackdrop || w <= 0 || h <= 0) return false;
+  var src = ovArt || bgBackdrop;      // 浮层优先用虚化那张
+  if (!src || w <= 0 || h <= 0) return false;
   try {
-    gr.GdiDrawBitmap(bgBackdrop, x, y, w, h, x, y, w, h);
+    gr.GdiDrawBitmap(src, x, y, w, h, x, y, w, h);
     return true;
   } catch (e) {}
   try {
-    gr.DrawImage(bgBackdrop, x, y, w, h, x, y, w, h, 0, 255);
+    gr.DrawImage(src, x, y, w, h, x, y, w, h, 0, 255);
     return true;
   } catch (e2) {}
   return false;
@@ -2019,10 +2328,10 @@ function blitBackdropRect(gr, x, y, w, h) {
 // ---------------------------------------------------------------------------
 var FW_LXB_PROP = 'Lxbox·全屏透明';
 function lxFwOn() {
-  try { return !!window.GetProperty(FW_LXB_PROP, false); } catch (e) { return false; }
+  try { return !!getP(FW_LXB_PROP, false); } catch (e) { return false; }
 }
 function lxSetFwOn(v) {
-  try { window.SetProperty(FW_LXB_PROP, !!v); } catch (e) {}
+  try { setP(FW_LXB_PROP, !!v); } catch (e) {}
   setVer++;
   setLayoutCache = null;
   repaint();
@@ -2054,7 +2363,7 @@ function sideToggleRect() {
 
 function toggleSide() {
   sideCollapsed = !sideCollapsed;
-  try { window.SetProperty('lx.sideCollapsed', sideCollapsed ? 1 : 0); } catch (e) {}
+  try { setP('lx.sideCollapsed', sideCollapsed ? 1 : 0); } catch (e) {}
   computeLayout();
   clampScroll();
   sbGeom = {};
@@ -2117,6 +2426,11 @@ function computeLayout() {
       };
     }
   }
+
+  // 内容区：左侧栏右边那一整块（底部状态栏不归它管）
+  var cx0 = (L.board ? L.board.x + L.board.w : 0);
+  var cy0 = (tab === 0) ? L.bodyTop : L.bodyTop + L.search.h;
+  L.content = { x: cx0, y: cy0, w: Math.max(0, W - cx0), h: Math.max(0, L.bodyBottom - cy0) };
 
   L.overlay = { x: 0, y: L.bodyTop, w: Math.max(80, W), h: Math.max(0, L.bodyBottom - L.bodyTop) };
 }
@@ -2299,7 +2613,7 @@ function loadHot(force) {
 
 function switchHotBoard() {
   hotBoardIndex = (hotBoardIndex + 1) % hotBoardList().length;
-  try { window.SetProperty('lx.hotBoard', String(hotBoardIndex)); } catch (e) {}
+  try { setP('lx.hotBoard', String(hotBoardIndex)); } catch (e) {}
   hotTracks = [];
   hotAt = 0;
   loadHot(true);
@@ -2340,7 +2654,7 @@ function startEdit(kind) {
   if (editKind === 'search') {
     if (tab !== 1) {
       tab = 1;
-      try { window.SetProperty('lx.tab', tab); } catch (e) {}
+      try { setP('lx.tab', tab); } catch (e) {}
       tracks = [];
       trackTitle = '';
       selected = -1;
@@ -2545,7 +2859,7 @@ function editKey(vkey) {
 function runSearch(kw) {
   tab = 1;
   hotMode = false;
-  try { window.SetProperty('lx.tab', tab); } catch (e) {}
+  try { setP('lx.tab', tab); } catch (e) {}
   computeLayout();
   tracks = [];
   trackTitle = '';
@@ -2901,14 +3215,34 @@ var CACHE_ROOT = '';
 var CACHE_DIR = '';
 var CACHE_INDEX = null;
 
+/* 播放方式三选一（lx.playMode）：
+     stream = 在线流播：只播直链，不落盘、不写标签
+     hybrid = 边下边播：立刻播直链（foobar 自己边缓冲边放），后台再落一份缓存并补标签
+     cache  = 下完再播：先缓存到本地、写完标签再播（原来的行为）
+   旧属性 lx.download（1 / 0）仍然认：1 → cache，0 → stream。 */
+var PLAY_MODES = ['stream', 'hybrid', 'cache'];
+
+function playMode() {
+  var v = '';
+  try { v = String(getP('lx.playMode', '') || '').trim(); } catch (e) { v = ''; }
+  if (PLAY_MODES.indexOf(v) >= 0) return v;
+  return String(getP('lx.download', '0')) !== '0' ? 'cache' : 'stream';
+}
+
+function playModeName(v) {
+  v = v || playMode();
+  return v === 'stream' ? '在线流播' : (v === 'hybrid' ? '边下边播' : '下完再播');
+}
+
+/* 会落盘（缓存 + 写标签）的模式：取链失败回退本地缓存、清缓存等处按它判断 */
 function downloadEnabled() {
-  return String(window.GetProperty('lx.download', '1')) !== '0';
+  return playMode() !== 'stream';
 }
 
 function cacheRoot() {
   if (CACHE_ROOT) return CACHE_ROOT;
 
-  var custom = String(window.GetProperty('lx.cacheDir', '') || '').trim();
+  var custom = String(getP('lx.cacheDir', '') || '').trim();
   if (custom) {
     CACHE_ROOT = custom.replace(/[\\\/]+$/, '');
   } else {
@@ -2922,7 +3256,7 @@ function cacheRoot() {
 function cacheDir() {
   if (CACHE_DIR) return CACHE_DIR;
 
-  var custom = String(window.GetProperty('lx.cacheDir', '') || '').trim();
+  var custom = String(getP('lx.cacheDir', '') || '').trim();
   if (custom) {
     CACHE_DIR = custom.replace(/[\\\/]+$/, '');
   } else {
@@ -2950,7 +3284,7 @@ function audioDir(kind) {
   kind = (kind === 'flac') ? 'flac' : 'mp3';
   if (AUDIO_DIRS[kind]) return AUDIO_DIRS[kind];
 
-  var custom = String(window.GetProperty(audioDirProp(kind), '') || '').trim();
+  var custom = String(getP(audioDirProp(kind), '') || '').trim();
   var dir = '';
   if (custom) {
     dir = custom.replace(/[\\\/]+$/, '');
@@ -3688,7 +4022,7 @@ function tagScriptPath() {
   if (TAG_TOOL !== null) return TAG_TOOL;
   var dirs = [];
   if (moduleDir) dirs.push(moduleDir);
-  var md = String(window.GetProperty('lx.moduleDir', '') || '').replace(/[\\\/]+$/, '');
+  var md = String(getP('lx.moduleDir', '') || '').replace(/[\\\/]+$/, '');
   if (md && dirs.indexOf(md) < 0) dirs.push(md);
   for (var i = 0; i < dirs.length; i++) {
     var cands = [dirs[i] + '\\tools\\lx_tag.ps1', dirs[i] + '\\lx_tag.ps1'];
@@ -3771,13 +4105,6 @@ var TAG_FIELD_LABEL = {
   composer: '作曲', classical: '作品/乐章（古典）', copyright: '版权',
   album: '专辑', date: '年份', title: '标题', artist: '歌手'
 };
-
-function propStr(name, def) {
-  try {
-    var v = window.GetProperty(name, def);
-    return v == null ? def : String(v);
-  } catch (e) { return def; }
-}
 
 function appleOn() { return !!APPLE && propStr('lx.appleTags', '0') !== '0'; }
 function appleAuto() { return !!APPLE && propStr('lx.appleAuto', '0') !== '0'; }
@@ -3865,8 +4192,6 @@ function txMetaOf(track) {
   p.then(function () { delete txMetaInflight[key]; }, function () { delete txMetaInflight[key]; });
   return p;
 }
-
-function txMetaCount() { return Object.keys(txMetaCache).length; }
 
 /* ---------------- 进度与批量 ---------------- */
 var appleJob = null;
@@ -4311,12 +4636,12 @@ function writeTags(track, dest, preset) {
 }
 
 function embedCoverEnabled() {
-  try { return Number(window.GetProperty('lx.embedCover', 1)) !== 0; } catch (e) { return true; }
+  try { return Number(getP('lx.embedCover', 1)) !== 0; } catch (e) { return true; }
 }
 var EMBED_COVER = embedCoverEnabled();
 
 function pushCoverEnabled() {
-  try { return Number(window.GetProperty('lx.pushCover', 0)) !== 0; } catch (e) { return false; }
+  try { return Number(getP('lx.pushCover', 0)) !== 0; } catch (e) { return false; }
 }
 var PUSH_COVER = pushCoverEnabled();
 
@@ -4338,12 +4663,8 @@ function fbTagName(k) {
   return k;
 }
 
-function writeTagsByFoobar(handle, track, data) {
-  if (!handle) return { ok: false, reason: '还没进播放列表' };
-  if (typeof FbMetadbHandleList === 'undefined') {
-    return { ok: false, reason: '当前 JSplitter 没有 FbMetadbHandleList' };
-  }
-
+/* 标签字段：写文件（内置写入器）和写 metadb 两边共用，避免两处对不上 */
+function buildTagFields(track, data) {
   var fields = {};
   var title = String((track && track.title) || '').trim();
   var artist = artistText(track).trim();
@@ -4369,6 +4690,16 @@ function writeTagsByFoobar(handle, track, data) {
     });
   }
 
+  return fields;
+}
+
+function writeTagsByFoobar(handle, track, data) {
+  if (!handle) return { ok: false, reason: '还没进播放列表' };
+  if (typeof FbMetadbHandleList === 'undefined') {
+    return { ok: false, reason: '当前 JSplitter 没有 FbMetadbHandleList' };
+  }
+
+  var fields = buildTagFields(track, data);
   var keys = Object.keys(fields);
   if (!keys.length) return { ok: false, reason: '没有可写的字段' };
 
@@ -4513,8 +4844,10 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
   var before = 0;
   try { before = plman.PlaylistItemCount(idx); } catch (e) {}
 
+  /* 只记真正要播的那条；纯入队不算，免得兜底时认错播放项 */
+  if (!enqueue) LAST_PLAY_URL = local ? String(url) : safeUrl(url);
   try {
-    plman.AddLocations(idx, [local ? String(url) : safeUrl(url)], !enqueue);
+    plman.AddLocations(idx, [LAST_PLAY_URL], !enqueue);
   } catch (e) {
     setStatus('加入播放列表失败：' + ((e && e.message) || e), true);
     finishOnce(opts, false, '加入播放列表失败');
@@ -4564,6 +4897,11 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
       setTimeout(function () { refreshBackground(false); }, 80);
       finishOnce(opts, true);
     }
+
+    /* 抢跑：列表项已就位、fb.Play() 还没发出去，先把封面挂上。
+       别的面板是在 on_playback_new_track 里同步取图的，晚一步就赶不上；
+       这里提前挂好，它那一问就有图。 */
+    try { preAttachCover(track, handle); } catch (ePA) {}
 
     if (!opts.prep) { playNow(); return; }
 
@@ -4628,6 +4966,7 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
 }
 
 function playCachedFile(track, dest, quality, enqueue, token, onDone) {
+  if (!enqueue) pushStreamCover(null);   /* 真的在播本地文件才撤掉流播那张封面 */
   var key = cacheKeyOf(track, quality);
   var hit = indexGet(key);
   var rel = relCachePath(dest);
@@ -4661,11 +5000,11 @@ function playCachedFile(track, dest, quality, enqueue, token, onDone) {
 }
 
 function txNativeEnabled() {
-  return String(window.GetProperty('lx.txNative', '1')) !== '0';
+  return String(getP('lx.txNative', '1')) !== '0';
 }
 
 function txTrialEnabled() {
-  return String(window.GetProperty('lx.txTrial', '1')) !== '0';
+  return String(getP('lx.txTrial', '1')) !== '0';
 }
 
 function raceTimeout(pr, ms) {
@@ -4796,6 +5135,18 @@ function playTrack(track, enqueue, opts) {
         setStatus('VIP 歌曲：只播放 30 秒试听（换平台可听完整版）', true);
       }
       addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+      if (!enqueue) pushStreamCover(track);
+      return;
+    }
+
+    if (playMode() === 'hybrid') {
+      /* 边下边播：直链先丢进列表立刻响（foobar 对 http 源本来就是边缓冲边放），
+         后台再落一份缓存 + 补标签，下次播这首就走本地文件。
+         本次播放不受后台下载失败影响。 */
+      NM.lx.pushLog('info', '边下边播，后台缓存：' + (track.title || ''));
+      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+      if (!enqueue) pushStreamCover(track);
+      bgCacheTrack(track, res.url, dest, res.quality);
       return;
     }
 
@@ -4861,19 +5212,251 @@ function playTrack(track, enqueue, opts) {
   });
 }
 
+/* ===========================================================================
+ * 后台缓存（边下边播用）
+ * 播的是直链，下载器不支持进度/取消，所以这里只做「下完 → 校验 → 入索引 → 补标签」，
+ * 不参与本次播放。同时最多两个任务，切歌再快也不会把带宽和硬盘拖死。
+ * =========================================================================== */
+var BG_CACHE_MAX = 2;
+var bgActive = 0;
+var bgQueue = [];
+var bgInflight = {};
+
+function bgCacheTrack(track, url, dest, quality, cb) {
+  if (!track || !url || !dest) return false;
+  var k = String(dest).toLowerCase();
+  if (bgInflight[k]) return false;    /* 同一首连点两次，排一个就够了 */
+  bgInflight[k] = 1;
+  bgQueue.push({ track: track, url: url, dest: dest, quality: quality, cb: cb });
+  bgPump();
+  return true;
+}
+
+function bgPump() {
+  while (bgActive < BG_CACHE_MAX && bgQueue.length) {
+    bgActive++;
+    (function (job) {
+      // 成功、失败、甚至同步抛错都要把名额还回去，否则队列会卡死
+      function release() {
+        bgActive--;
+        try { delete bgInflight[String(job.dest).toLowerCase()]; } catch (e) {}
+        bgPump();
+      }
+      var pr;
+      try { pr = bgRun(job); } catch (e) { pr = Promise.resolve(); }
+      pr.then(release, release);
+    })(bgQueue.shift());
+  }
+}
+
+function bgRun(job) {
+  var track = job.track, dest = job.dest;
+  var key = cacheKeyOf(track, job.quality);
+  var part = dest + '.bgpart';
+  try { ensureFolder(dirOfFile(dest)); } catch (eE) {}
+
+  return NM.lx.download(safeUrl(job.url), part).then(function () {
+    var ok = false;
+    try { ok = utils.RenamePath(part, dest); } catch (e) {}
+    if (!ok) {
+      try { utils.RemovePath(part); } catch (e2) {}
+      NM.lx.pushLog('warn', '缓存文件改名失败：' + (track.title || ''));
+      if (job.cb) job.cb(false, '改名失败');
+      return;
+    }
+
+    var sn = sniffAudio(dest);
+    if (!sn.ok) {
+      dropCacheFile(dest, key);
+      NM.lx.pushLog('warn', '缓存的不是音频（' + sn.why + '）：' + (track.title || ''));
+      if (job.cb) job.cb(false, sn.why);
+      return;
+    }
+
+    var path = ensureAudioExt(track, dest, sn.kind, job.quality);
+    var rel = relCachePath(path);
+    indexPut(key, rel, 0, 0);          // 先登记「文件在」，标签随后补
+    NM.lx.pushLog('ok', '已缓存：' + baseName(path));
+    setStatus('已缓存：' + (track.title || '') + '（下次直接播本地）');
+    bgTagFile(track, path, key, rel, job.cb);
+  }, function (e) {
+    var msg = (e && e.message) || String(e);
+    /* 别人正在下同一条时别去删它的临时文件，否则那边改名必然失败 */
+    if (msg.indexOf('正在下载') < 0) {
+      try { utils.RemovePath(part); } catch (e2) {}
+    }
+    NM.lx.pushLog('warn', '缓存失败（' + msg + '）：' + (track.title || ''));
+    if (job.cb) job.cb(false, msg);
+  });
+}
+
+/* 播的是直链，手上没有 metadb handle，所以走内置写入器直接改文件；
+   内置写入器不认的格式（m4a 等）就留 tagged=0，下次播这首时用原来的链路补。 */
+function bgTagFile(track, path, key, rel, cb) {
+  function fin() { if (cb) { var f = cb; cb = null; f(true); } }
+  if (!EMBED_COVER && !PUSH_COVER) { fin(); return; }
+  prepareTagData(track).then(function (d) {
+    if (PUSH_COVER && d && d.cover) {
+      try { writeCoverSidecar(path, d.cover); } catch (eS) {}
+    }
+    if (!EMBED_COVER || !d || !d.cover) { fin(); return; }
+
+    var r = null;
+    try { r = embedCoverToFile(track, path, d.cover, buildTagFields(track, d)); }
+    catch (e) { r = { ok: false, reason: (e && e.message) || String(e) }; }
+
+    if (r && r.ok) {
+      indexPut(key, rel, 1, 1);
+      NM.lx.pushLog('ok', '已写入标签 + 封面：' + baseName(path));
+    } else {
+      NM.lx.pushLog('warn', '标签没写成（' + ((r && r.reason) || '内置写入器不支持') +
+                    '），下次播放时再补：' + baseName(path));
+    }
+    fin();
+  }, function () { fin(); });
+}
+
+/* ===========================================================================
+ * 右键「下载」：把曲目存进缓存目录并补标签，不播放、不动播放列表。
+ * 和边下边播的后台缓存共用一条流水线（排队 / 最多两路 / 同名去重），
+ * 区别只是不需要先把直链丢进播放列表。
+ * =========================================================================== */
+/* 右键「下载」之前先挑一档音质：只影响这一次下载，不动全局音质设置；
+   上次挑的那档会记住（lx.dlQuality），下次默认勾在它上面。 */
+function pickDownloadQuality(x, y, cb) {
+  var last = propStr('lx.dlQuality', '');
+  if (QUALITIES.indexOf(last) < 0) last = '';
+  var cur = last || quality;
+
+  var m = window.CreatePopupMenu();
+  m.AppendMenuItem(MF_STRING | MF_GRAYED, 0, '选择下载音质（只影响这次下载）');
+  for (var i = 0; i < QUALITIES.length; i++) {
+    var q = QUALITIES[i];
+    var label = (q === 'auto')
+      ? '自动（按脚本能力挑最高的）'
+      : (qualityName(q) + (qualityHint(q) ? '　' + qualityHint(q) : ''));
+    if (q === qualityAll) label += '　← 跟全局一样';
+    m.AppendMenuItem(MF_STRING | (q === cur ? MF_CHECKED : 0), 10 + i, label);
+  }
+  var sel = m.TrackPopupMenu(x, y);
+  var idx = sel - 10;
+  if (idx < 0 || idx >= QUALITIES.length) return false;
+  var pick = QUALITIES[idx];
+  setProp('lx.dlQuality', pick);
+  cb(pick);
+  return true;
+}
+
+function downloadTracks(list, wantQ) {
+  var q0 = wantQ || quality;
+  list = (list || []).filter(function (t) { return t && t.title; });
+  if (!list.length) { setStatus('没有可下载的曲目', true); return; }
+
+  var todo = [], skipped = 0;
+  list.forEach(function (t) {
+    var hit = null;
+    try { hit = cachedFileFor(t, q0) || cachedByName(t); } catch (e) { hit = null; }
+    if (hit) {
+      skipped++;
+      NM.lx.pushLog('info', '缓存里已有，跳过：' + (t.title || ''));
+      return;
+    }
+    todo.push(t);
+  });
+
+  if (!todo.length) {
+    setStatus('已在缓存里，不用再下：' + skipped + ' 首');
+    return;
+  }
+
+  var total = todo.length, done = 0, okN = 0, failN = 0;
+
+  function finishOne(ok) {
+    if (ok) okN++; else failN++;
+    done++;
+    if (done < total) {
+      setStatus('下载中 ' + done + '/' + total + '（成功 ' + okN + '，失败 ' + failN + '）…');
+      return;
+    }
+    var msg = '下载完成（' + qualityName(q0) + '）：成功 ' + okN + ' 首' +
+              (failN ? '，失败 ' + failN + ' 首' : '') +
+              (skipped ? '，已在缓存 ' + skipped + ' 首' : '');
+    NM.lx.pushLog(failN ? 'warn' : 'ok', msg + '（' + (cacheDir() || '?') + '）');
+    setStatus(msg, failN > 0);
+  }
+
+  var i = 0;
+  function next() {
+    if (i >= todo.length) return;
+    var t = todo[i++];
+    var fired = false;
+    function once(ok) {
+      if (fired) return;
+      fired = true;
+      finishOne(ok);
+    }
+    /* 进队列之前就失败的（取链 / 试听 / 加密 / 没目录）在这里记一笔；
+       真正下载失败的日志由后台缓存那边写，别重复 */
+    function fail(why) {
+      NM.lx.pushLog('warn', '下载失败（' + why + '）：' + (t.title || ''));
+      once(false);
+    }
+
+    function queue(url, q) {
+      var dest = '';
+      try { dest = cachePathFor(t, q, url); } catch (e) { dest = ''; }
+      if (!dest) { fail('缓存目录没定'); next(); return; }
+      try { ensureFolder(dirOfFile(dest)); } catch (e2) {}
+      if (!bgCacheTrack(t, url, dest, q, once)) {
+        /* 这首正好已经在下载队列里了，不用再排一次 */
+        NM.lx.pushLog('info', '这首正在下载，跳过：' + (t.title || ''));
+        once(true);
+      }
+      next();
+    }
+
+    txResolve(t, q0).then(function (res) {
+      if (!res || !res.url) { fail('没取到直链'); next(); return; }
+      if (looksTrialUrl(res.url)) { fail('VIP 只有 30 秒试听'); next(); return; }
+      var enc = (NM.lx && typeof NM.lx.encryptedExt === 'function') ? NM.lx.encryptedExt(res.url) : '';
+      if (enc) { fail('加密格式 ' + enc); next(); return; }
+      if (urlLacksTicket(res.url)) { fail('平台没下发 vkey'); next(); return; }
+      queue(res.url, res.quality);
+    }, function (e) {
+      fail((e && e.message) || String(e));
+      next();
+    });
+  }
+
+  setStatus('开始下载 ' + total + ' 首到缓存（' + qualityName(q0) + '）' +
+            (skipped ? '，另 ' + skipped + ' 首已在缓存' : '') + ' …');
+  NM.lx.pushLog('info', '手动下载 ' + total + ' 首（' + qualityName(q0) + '）→ ' + (cacheDir() || '?'));
+  next();
+}
+
+/* 行内「下载」按钮：一曲一按，直接开下。
+   音质优先用右键下载时记住的那一档，没记过就跟全局音质；
+   想临时换档仍走右键「下载到缓存」那条（会先弹音质菜单）。 */
+function downloadOne(t) {
+  if (!t || !t.title) { setStatus('这首没有歌名，下不了', true); return; }
+  var q = propStr('lx.dlQuality', '');
+  if (QUALITIES.indexOf(q) < 0) q = quality;
+  downloadTracks([t], q);
+}
+
 function sourcesFailText() {
   var st = (NM.lx && NM.lx.state) || {};
   var out = [];
   out.push('音源脚本目录：' + (st.dir || '（没找到）'));
   try {
-    out.push('模块目录：' + (NM.moduleDir || window.GetProperty('lx.moduleDir', '') || '（没找到）'));
+    out.push('模块目录：' + (NM.moduleDir || getP('lx.moduleDir', '') || '（没找到）'));
   } catch (e) {}
   if (st.error) out.push('加载错误：' + st.error);
   (st.runtimes || []).forEach(function (r) {
     if (!r.sources) out.push('× ' + r.name + '：' + (r.error || r.status || '未初始化'));
   });
   out.push('');
-  out.push('排查：面板属性 lx.scriptDir / lx.moduleDir 可手动指定目录；');
+  out.push('排查：面板属性 lx.scriptDir / lx.moduleDir 可手动指定；');
   out.push('或把音源脚本放到「模块目录\resources」下，再右键「重新加载音源脚本」。');
   return out.join('\n');
 }
@@ -4899,7 +5482,7 @@ function trimDirPath(p) {
 }
 
 function importTargetDir() {
-  var custom = trimDirPath(String(window.GetProperty('lx.scriptDir', '') || '').trim());
+  var custom = trimDirPath(String(getP('lx.scriptDir', '') || '').trim());
   if (custom) return custom;
   var active = trimDirPath(NM.lx.state && NM.lx.state.dir);
   if (active && /[\\\/](resources|sources)$/i.test(active)) return active;
@@ -4916,7 +5499,7 @@ function scriptDirForOpen() {
     if (v && cands.indexOf(v) < 0) cands.push(v);
   };
   try { add(NM.lx && NM.lx.state && NM.lx.state.dir); } catch (e) {}
-  try { add(window.GetProperty('lx.scriptDir', '')); } catch (e2) {}
+  try { add(getP('lx.scriptDir', '')); } catch (e2) {}
   try { add(importTargetDir()); } catch (e3) {}
   for (var i = 0; i < cands.length; i++) {
     var ok = false;
@@ -5503,7 +6086,7 @@ function probeReady() {
 }
 
 function probeScriptId() {
-  try { return String(window.GetProperty('lx.probeScript', '') || ''); } catch (e) { return ''; }
+  try { return String(getP('lx.probeScript', '') || ''); } catch (e) { return ''; }
 }
 
 function probeScriptRuntime() {
@@ -5867,13 +6450,6 @@ function probeStart() {
 }
 
 // 浮层版检测：设置里的「检测」已改为右栏内嵌，这里保留一个独立入口备用
-function openProbe() {
-  openOverlay('probe', '音源音质检测',
-              probeScriptId() ? ('只测：' + probeScriptLabel()) : '全部脚本');
-  overlayLoading = false;
-  repaint();
-}
-
 function openProbeScriptMenu(x, y) {
   var list = scriptRuntimes();
   var cur = probeScriptId();
@@ -6388,7 +6964,7 @@ function applyPlatformMode() {
   if (hidePlatformRow) {
     switchPlatform(fixedPlatform);
   } else {
-    var back = String(window.GetProperty('lx.platform', '') || '');
+    var back = String(getP('lx.platform', '') || '');
     switchPlatform(back || platform);
   }
   repaint();
@@ -6519,24 +7095,37 @@ function trackAt(x, y) {
   return i >= 0 && i < tracks.length ? i : -1;
 }
 
+var ROWBTN_THREE_W = 210;   /* 放得下三个按钮的最小列宽 */
+var ROWBTN_TWO_W   = 154;   /* 放得下两个按钮的最小列宽 */
+
 function rowButtonRects(i) {
   var rh = rowH();
   var cr = trackColRect(trackColOf(i));
   var ry = L.track.y + (trackRowOf(i) - trackScroll) * rh;
   var bh = 22;
   var by = ry + Math.round((rh - bh) / 2);
-  return {
-    play: { x: cr.x + cr.w - 96, y: by, w: 42, h: bh },
-    queue: { x: cr.x + cr.w - 50, y: by, w: 42, h: bh }
-  };
+  var out = {};
+  if (cr.w >= ROWBTN_THREE_W) {
+    /* 够宽：播放 / 队列 / 下载 三连 */
+    out.play = { x: cr.x + cr.w - 142, y: by, w: 42, h: bh };
+    out.queue = { x: cr.x + cr.w - 96, y: by, w: 42, h: bh };
+    out.download = { x: cr.x + cr.w - 50, y: by, w: 42, h: bh };
+  } else if (cr.w >= ROWBTN_TWO_W) {
+    /* 中等宽：只留播放 / 队列，别把歌名挤没 */
+    out.play = { x: cr.x + cr.w - 96, y: by, w: 42, h: bh };
+    out.queue = { x: cr.x + cr.w - 50, y: by, w: 42, h: bh };
+  }
+  /* 再窄就一个按钮都不放，整行留给歌名 */
+  return out;
 }
 
 function buttonAt(x, y) {
   var i = trackAt(x, y);
   if (i < 0) return '';
   var r = rowButtonRects(i);
-  if (inRect(r.play, x, y)) return 'play';
-  if (inRect(r.queue, x, y)) return 'queue';
+  if (r.play && inRect(r.play, x, y)) return 'play';
+  if (r.queue && inRect(r.queue, x, y)) return 'queue';
+  if (r.download && inRect(r.download, x, y)) return 'download';
   return '';
 }
 
@@ -7063,7 +7652,7 @@ function buildDiagnosticLines(out, width) {
 
   out.push({ t: '【环境】', c: 'head' });
   out.push({ t: '音源脚本目录：' + (st.dir || '（没找到）'), c: st.dir ? 'text' : 'err' });
-  out.push({ t: '模块目录：' + (NM.moduleDir || window.GetProperty('lx.moduleDir', '') || '（没找到）'), c: 'text' });
+  out.push({ t: '模块目录：' + (NM.moduleDir || getP('lx.moduleDir', '') || '（没找到）'), c: 'text' });
   out.push({ t: '缓存目录：' + (cacheDir() || '（不可用）') + '（索引 / 评论 / 封面）', c: 'text' });
   out.push({ t: 'MP3 缓存：' + (audioDir('mp3') || '（不可用）'), c: 'text' });
   out.push({ t: 'FLAC 缓存：' + (audioDir('flac') || '（不可用）'), c: 'text' });
@@ -7166,7 +7755,8 @@ function drawHeaderButtons(gr) {
     if (!headerButtonVisible(btn.key)) continue;
     var b = headerButtonRect(btn.key);
     var hot = hoverOn(b);
-    gr.FillSolidRect(b.x, b.y, b.w, b.h, hot ? tint(C.btnHot, BG_A.btnHot) : tint(C.btn, BG_A.btn));
+    /* 背景透明：常态不铺底，直接用标题栏自己的底；只有悬停时补一层淡色 */
+    if (hot) gr.FillSolidRect(b.x, b.y, b.w, b.h, tint(C.hover, BG_A.rowHot));
     gr.DrawRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 1, A(C.line, hot ? 235 : 190));
     if (btn.icon) {
       drawButtonIcon(gr, btn.icon, b, hot ? C.accent : C.text);
@@ -7209,7 +7799,7 @@ function brandLogoPath() {
   }
   try { add(NM && NM.moduleDir); } catch (e) {}
   add(moduleDir);
-  try { add(window.GetProperty('lx.moduleDir', '')); } catch (e) {}
+  try { add(getP('lx.moduleDir', '')); } catch (e) {}
 
   var names = ['lxbox-logo.png', 'Lxbox.png', 'logo.png'];
   for (var i = 0; i < dirs.length; i++) {
@@ -7266,8 +7856,8 @@ function drawHeader(gr) {
     var r = tabRect(i);
     var active = tab === i;
     var hot = hoverOn(r);
-    if (active) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel2, BG_A.tabOn));
-    else if (hot) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.hover, BG_A.tabHot));
+    /* 标签页背景透明：当前页靠文字强调色 + 底部 2px 条区分，不铺底 */
+    if (!active && hot) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.hover, BG_A.tabHot));
     gr.GdiDrawText(TAB_DEFS[i].label, F.hdrB, active ? C.accent : (hot ? C.text : C.dim),
                    r.x, r.y, r.w, r.h, FLAG_CENTER);
     if (active) gr.FillSolidRect(r.x, r.y + r.h - 2, r.w, 2, C.accent);
@@ -7280,8 +7870,8 @@ function drawHeader(gr) {
     if (!pr) break;
     var on = platform === p;
     var phot = hoverOn(pr);
-    if (on) gr.FillSolidRect(pr.x, pr.y, pr.w, pr.h, tint(C.accentDim, BG_A.chipOn));
-    else if (phot) gr.FillSolidRect(pr.x, pr.y, pr.w, pr.h, tint(C.panel2, BG_A.chip));
+    /* 背景透明：选中只靠文字变强调色 */
+    if (!on && phot) gr.FillSolidRect(pr.x, pr.y, pr.w, pr.h, tint(C.hover, BG_A.chip));
     var meta = NM.providers.meta[p] || { short: p };
     gr.GdiDrawText(meta.short || p, F.hdr, on ? C.accent : (phot ? C.text : C.dim),
                    pr.x, pr.y, pr.w, pr.h, FLAG_CENTER);
@@ -7291,8 +7881,6 @@ function drawHeader(gr) {
   drawScriptBar(gr);
 
   drawHeaderButtons(gr);
-
-  gr.DrawLine(0, HEAD_H - 1, W, HEAD_H - 1, 1, C.line);
 }
 
 var sbGeom = {};        /* id -> { x, y, h, total, visible, offset } */
@@ -7411,9 +7999,8 @@ function drawBoardList(gr) {
     var ry = L.boardListY + (i - boardScroll) * rh;
     var on = i === boardIndex;
     var hot = i === hoverRow && hoverKind === 'board';
-    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.sel, BG_A.rowSel));
+    if (on) drawSelFrame(gr, L.board.x, ry, L.board.w, rh, C.accent);
     else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.hover, BG_A.rowHot));
-    if (on) gr.FillSolidRect(L.board.x, ry, 2, rh, C.accent);
     gr.GdiDrawText(boards[i].name, F.normal, on ? C.accent : C.text,
                    L.board.x + 10, ry, L.board.w - 20, rh, FLAG_LEFT);
   }
@@ -7455,9 +8042,8 @@ function drawCollList(gr) {
     var ry = L.boardListY + (i - collScroll) * rh;
     var on = i === collIndex;
     var hot = i === hoverRow && hoverKind === 'coll';
-    if (on) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.sel, BG_A.rowSel));
+    if (on) drawSelFrame(gr, L.board.x, ry, L.board.w, rh, C.accent);
     else if (hot) gr.FillSolidRect(L.board.x, ry, L.board.w, rh, tint(C.hover, BG_A.rowHot));
-    if (on) gr.FillSolidRect(L.board.x, ry, 2, rh, C.accent);
     var label = String(it.name || '(未命名)');
     var tip = String(it.artist || '');
     if (!tip && it.count) tip = it.count + ' 首';
@@ -7493,10 +8079,10 @@ function drawSearchBox(gr) {
   var r = L.search;
   var hot = hoverOn(r);
   var editing = !!editKind;
+  // 静止态和标题栏同色（C.bg），中间没有线，融成一片；指上去 / 打字时才浮起一层
   gr.FillSolidRect(r.x, r.y, r.w, r.h,
                    (hot || editing) ? tint(C.panel2, surfA('search', BG_A.fieldHot))
-                                    : tint(C.panel, surfA('search', BG_A.field)));
-  gr.DrawLine(r.x, r.y + r.h - 1, r.x + r.w, r.y + r.h - 1, 1, (hot || editing) ? C.accent : C.line);
+                                    : tint(C.bg, surfA('search', BG_A.field)));
 
   if (editing) {
     var ph = tab === 1 ? '输入关键词，回车搜索'
@@ -7531,23 +8117,30 @@ function drawSearchBox(gr) {
                  r.x + r.w - 60, r.y, 50, r.h, FLAG_RIGHT);
 }
 
-function browseLabelOr() {
-  return isBrowseTab() ? browseLabel() : '';
-}
-
 function drawButtons(gr, i) {
   var r = rowButtonRects(i);
   var isHover = hoverRow === i && hoverKind === 'track';
   var playHot = isHover && hoverBtn === 'play';
   var queueHot = isHover && hoverBtn === 'queue';
+  var dlHot = isHover && hoverBtn === 'download';
 
-  gr.FillSolidRect(r.play.x, r.play.y, r.play.w, r.play.h, playHot ? tint(C.btnHot, BG_A.btnHot) : tint(C.btn, BG_A.btn));
-  gr.GdiDrawText('播放', F.tiny, playHot ? C.accent : C.dim,
-                 r.play.x, r.play.y, r.play.w, r.play.h, FLAG_CENTER);
+  if (r.play) {
+    if (playHot) gr.FillSolidRect(r.play.x, r.play.y, r.play.w, r.play.h, tint(C.hover, BG_A.rowHot));
+    gr.GdiDrawText('播放', F.tiny, playHot ? C.accent : C.dim,
+                   r.play.x, r.play.y, r.play.w, r.play.h, FLAG_CENTER);
+  }
 
-  gr.FillSolidRect(r.queue.x, r.queue.y, r.queue.w, r.queue.h, queueHot ? tint(C.btnHot, BG_A.btnHot) : tint(C.btn, BG_A.btn));
-  gr.GdiDrawText('队列', F.tiny, queueHot ? C.accent : C.dim,
-                 r.queue.x, r.queue.y, r.queue.w, r.queue.h, FLAG_CENTER);
+  if (r.queue) {
+    if (queueHot) gr.FillSolidRect(r.queue.x, r.queue.y, r.queue.w, r.queue.h, tint(C.hover, BG_A.rowHot));
+    gr.GdiDrawText('队列', F.tiny, queueHot ? C.accent : C.dim,
+                   r.queue.x, r.queue.y, r.queue.w, r.queue.h, FLAG_CENTER);
+  }
+
+  if (r.download) {
+    if (dlHot) gr.FillSolidRect(r.download.x, r.download.y, r.download.w, r.download.h, tint(C.hover, BG_A.rowHot));
+    gr.GdiDrawText('下载', F.tiny, dlHot ? C.accent : C.dim,
+                   r.download.x, r.download.y, r.download.w, r.download.h, FLAG_CENTER);
+  }
 }
 
 function drawCheckbox(gr, i, checked) {
@@ -7581,14 +8174,14 @@ function drawTrackList(gr) {
       var checked = !!multiSel[i];
       var hot = i === hoverRow && hoverKind === 'track';
 
-      if (on) gr.FillSolidRect(cx, ry, cw, rh, tint(C.sel, BG_A.rowSel));
-      else if (checked) gr.FillSolidRect(cx, ry, cw, rh, tint(C.accentDim, 170));
+      if (checked) gr.FillSolidRect(cx, ry, cw, rh, tint(C.accentDim, 170));
       else if (hot) gr.FillSolidRect(cx, ry, cw, rh, tint(C.hover, BG_A.rowHot));
-      if (on) gr.FillSolidRect(cx, ry, 2, rh, C.accent);
+      if (on) drawSelFrame(gr, cx + 2, ry, cw - 4, rh, C.accent);
       drawCheckbox(gr, i, checked);
 
       var t = tracks[i];
-      var textW = Math.max(40, cw - 132);
+      var textW = Math.max(40, cw - (cw >= ROWBTN_THREE_W ? 178
+                                   : (cw >= ROWBTN_TWO_W ? 132 : 34)));
       var title = t.title || '(未知曲目)';
       var tx = cx + 26;
 
@@ -7676,7 +8269,7 @@ function scriptRuntimes() {
 
 function scriptPrefId(source) {
   var v = '';
-  try { v = String(window.GetProperty('lx.script.' + (source || platform), '') || ''); } catch (e) { v = ''; }
+  try { v = String(getP('lx.script.' + (source || platform), '') || ''); } catch (e) { v = ''; }
   return v;
 }
 
@@ -7704,7 +8297,7 @@ function drawQualityBar(gr) {
   var r = qualityRect();
   if (!r) return;
   var hot = qBarHot || hoverOn(r);
-  gr.FillSolidRect(r.x, r.y, r.w, r.h, hot ? tint(C.btnHot, BG_A.btnHot) : tint(C.btn, BG_A.btn));
+  if (hot) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.hover, BG_A.rowHot));
   gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1, A(C.line, hot ? 235 : 190));
 
   var col = hot ? C.accent : C.text;
@@ -7775,9 +8368,8 @@ function drawScriptBar(gr) {
   var pin = scriptPrefId(platform);
   var hot = scriptHot || hoverOn(r);
 
-  if (pin) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.accentDim, BG_A.chipOn));
-  else if (hot) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.btnHot, BG_A.btnHot));
-  else gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.btn, BG_A.btn));
+  /* 背景透明：固定（pin）与悬停都只改描边和文字色 */
+  if (hot && !pin) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.hover, BG_A.rowHot));
 
   gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1,
               A(C.line, pin ? 220 : (hot ? 235 : 190)));
@@ -7913,7 +8505,7 @@ function drawBioLeft(gr, g) {
     if (!t) continue;
     var ry = rowsTop + (i - bioSongScroll) * BIO_ROW_H;
     var on = i === bioSongSel;
-    if (on) gr.FillSolidRect(g.listX, ry, g.listW, BIO_ROW_H, tint(C.sel, BG_A.rowSel));
+    if (on) drawSelFrame(gr, g.listX, ry, g.listW, BIO_ROW_H, C.accent);
 
     var num = (i + 1 < 10 ? '0' : '') + (i + 1);
     gr.GdiDrawText(num, F.small, on ? C.accent : C.dim, g.listX + 2, ry, 22, BIO_ROW_H, FLAG_RIGHT);
@@ -8246,7 +8838,7 @@ var setLayoutCache = null;
 var setLayoutKey = '';
 
 function setProp(k, v) {
-  try { window.SetProperty(k, String(v)); } catch (e) {}
+  try { setP(k, String(v)); } catch (e) {}
   setVer++;
   setLayoutCache = null;
   rowLinesCache = 0;
@@ -8313,16 +8905,16 @@ var HUE_PRESETS = [
 
 var SET_CATS = [
   { id: 'look', name: '外观', hint: '缩放、字号、配色、曲目清单行数、第二排平台、隐藏时的音质。改完立刻生效。' },
-  { id: 'bg', name: '背景', hint: '封面背景开关与背景效果：遮罩越小封面越清楚；页面最底部四条透明度，分别是标题栏 / 搜索栏 / 左侧栏 / 内容区，越大越透，内容区那条还能再染色。' },
-  { id: 'src', name: '音源', hint: '缓存 / 音源目录、扩展名检测、播放音源、全局音质、在线音源网址。目录留空用默认。' },
-  { id: 'tag', name: '标签', hint: '封面嵌入音频、同时写同名 jpg、播放前缓存；苹果标签源（可选，逐字段勾选，含古典作品 / 乐章）。' },
+  { id: 'bg', name: '背景', hint: '三段：背景效果（底图）、四个区块（标题栏 / 搜索栏 / 左侧栏 / 内容区的蒙版）、浮层（设置 / 简介 / 评论三个整屏界面）。' },
+  { id: 'src', name: '音源', hint: '播放方式（在线流播 / 边下边播 / 下完再播）、流播封面推送、缓存 / 音源目录、扩展名检测、播放音源、全局音质、在线音源网址。目录留空用默认。' },
+  { id: 'tag', name: '标签', hint: '封面嵌入音频、同时写同名 jpg；苹果标签源（可选，逐字段勾选，含古典作品 / 乐章）。播放方式与流播封面推送在「音源」页。' },
   { id: 'probe', name: '检测', hint: '音源音质检测：各平台到底能出哪几档。左栏不用关，右栏勾平台 / 档位、选脚本、开始 / 停止检测。' },
   { id: 'maint', name: '维护', hint: '刷新列表 / 重载音源 / 导入音源 / 重嵌封面 / 清缓存 / 诊断日志 / 界面发布页地址。' }
 ];
 
 function propStr(k, d) {
   var v = '';
-  try { v = window.GetProperty(k, d); } catch (e) { v = d; }
+  try { v = getP(k, d); } catch (e) { v = d; }
   return v == null ? String(d) : String(v);
 }
 
@@ -8382,9 +8974,30 @@ function openReleasePage() {
   repaint();
 }
 
-function settingsSections() {
-  var hue = bgHue();
+// 设置页滑杆：value 取当前值，拖动时写属性再重绘；after 用来替换重绘动作
+function setSlider(o) {
+  return { kind: 'slider', inline: true, id: o.id, label: o.label,
+           min: o.min === undefined ? 0 : o.min,
+           max: o.max === undefined ? 100 : o.max,
+           value: o.value(),
+           fmt: o.fmt || function (v) { return v + '%'; },
+           onSet: function (v) { setProp(o.key, v); if (o.after) o.after(); else repaint(); } };
+}
 
+// 设置页按分类拆开写，settingsSections() 只负责按顺序拼起来（同一分类可以有多段）
+function settingsSections() {
+  return [].concat(
+    lookSections(),
+    bgSections(),
+    srcSections(),
+    tagSections(),
+    [{ cat: 'probe', title: '检测', rows: [] }],
+    maintSections()
+  );
+}
+
+// 外观：缩放、字号、配色、行数、第二排平台
+function lookSections() {
   var secs = [
     { cat: 'look', title: '外观', rows: [
       { kind: 'seg', id: 'uiscale', label: '界面缩放', value: uiScaleProp(),
@@ -8457,9 +9070,35 @@ function settingsSections() {
                  ' · 缩放 ' + Math.round(UI_S * 100) + '%（探测 ' + Math.round(UI_AUTO * 100) + '%）';
         } },
       { kind: 'note', text: '字号只动字；整体放大调「界面缩放」。文字色跟 foobar2000 走。' }
-    ] },
+    ] }
+  ];
 
-    { cat: 'bg', title: '封面背景', rows: [
+  // 隐藏第二排时，补一行「数据来自」放在那组开关后面
+  if (hidePlatformRow) {
+    var rows = secs[0].rows;
+    var platRow = {
+      kind: 'seg', id: 'fixedplat', label: '数据来自', value: fixedPlatform,
+      options: platformChipOptions(),
+      onPick: function (v) {
+        setProp('lx.fixedPlatform', v);
+        fixedPlatform = v;
+        switchPlatform(v);
+        setStatus('第二排已隐藏：各页数据来自 ' + platformName(v));
+        repaint();
+      }
+    };
+    var at = 0;
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === 'hideplat') { at = i + 1; break; }
+    rows.splice(at, 0, platRow);
+  }
+  return secs;
+}
+
+// 背景三段：背景效果（底图）→ 四个区块（各自蒙版）→ 浮层（设置 / 简介 / 评论）
+function bgSections() {
+  var hue = bgHue();
+  return [
+    { cat: 'bg', title: '背景效果', rows: [
       { kind: 'seg', id: 'fwall', label: '全屏透明', value: lxFwOn() ? '1' : '0',
         options: [['1', '开'], ['0', '关']],
         onPick: function (v) {
@@ -8467,10 +9106,12 @@ function settingsSections() {
           setStatus(v === '1' ? '已开启全屏透明（需 Eole主题 的[显示·全屏壁纸]同时打开）'
                               : '已关闭全屏透明');
         } },
-      { kind: 'note', text: '[全屏透明即伪透明] 此设置项打开后与其他伪透明的主题界面搭配使用效果协调。' },
+      { kind: 'note', text: '[全屏透明即伪透明] 打开后与其他伪透明的主题界面搭配使用效果协调。' },
       { kind: 'seg', id: 'bgart', label: '封面背景', value: bgArtEnabled() ? '1' : '0',
         options: [['1', '开'], ['0', '关']],
         onPick: function (v) { setBgArt(v === '1'); } },
+      { kind: 'note', text: '上面两项是总闸。下面六项调的是铺在整块面板底下的那张封面图——' +
+                            '四个区块和浮层都盖在它上面，所以图一变，全局都跟着变。' },
       { kind: 'swatch', id: 'hue', label: '背景调色', value: hue,
         options: HUE_PRESETS,
         onPick: function (v) {
@@ -8478,86 +9119,103 @@ function settingsSections() {
           refreshBgFx(true);
           setStatus('背景调色：' + hueName(v));
         } },
-      { kind: 'slider', inline: true, id: 'veil', label: '背景遮罩', min: 0, max: 100, value: bgVeil(),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgVeil', v);
-          queueBackdrop(90);
-        } },
-      { kind: 'slider', inline: true, id: 'blur', label: '背景模糊', min: 0, max: 40, value: bgBlur(),
-        fmt: function (v) { return v === 0 ? '不模糊' : v + ' px'; },
-        onSet: function (v) {
-          setProp('lx.bgBlur', v);
-          queueBackdrop(90);
-        } },
-      { kind: 'slider', inline: true, id: 'lum', label: '背景亮度', min: 40, max: 160, value: bgLum(),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgLum', v);
-          queueBackdrop(90);
-        } },
-      { kind: 'slider', inline: true, id: 'sat', label: '背景饱和度', min: 0, max: 100, value: bgSat(),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgSat', v);
-          queueBackdrop(90);
-        } },
-      { kind: 'slider', inline: true, id: 'ovscrim', label: '浮层遮罩', min: 0, max: 100, value: bgOverlayScrimPct(),
-        fmt: function (v) { return v === 0 ? '透出封面' : v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgOverlayScrim', v);
-          repaint();
-        } },
-      { kind: 'slider', inline: true, id: 'overlay', label: '浮层不透明度', min: 80, max: 100, value: bgOverlayPct(),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgOverlay', v);
-          repaint();
-        } },
-      { kind: 'note', text: '遮罩越小封面越清楚。评论 / 艺人浮层也铺封面背景，『浮层遮罩』管它盖多厚；关掉封面背景时用『浮层不透明度』的实色（98% = 设置面板同款）。' },
-      { kind: 'slider', inline: true, id: 'clearhead', label: '标题栏透明度', min: 0, max: 100,
-        value: surfClear('head'),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.clearHead', v);
-          repaint();
-        } },
-      { kind: 'slider', inline: true, id: 'clearsearch', label: '搜索栏透明度', min: 0, max: 100,
-        value: surfClear('search'),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.clearSearch', v);
-          repaint();
-        } },
-      { kind: 'slider', inline: true, id: 'clearside', label: '左侧栏透明度', min: 0, max: 100,
-        value: surfClear('side'),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.clearSide', v);
-          repaint();
-        } },
-      { kind: 'slider', inline: true, id: 'clear', label: '内容区透明度', min: 0, max: 100,
-        value: bgClear(),
-        fmt: function (v) { return v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgClear', v);
-          repaint();
-        } },
-      { kind: 'slider', inline: true, id: 'tint', label: '内容区染色', min: 0, max: 30, value: bgTint(),
-        fmt: function (v) { return v === 0 ? '不染色' : v + '%'; },
-        onSet: function (v) {
-          setProp('lx.bgTint', v);
-          repaint();
-        } },
+      setSlider({ id: 'veil', label: '背景遮罩', key: 'lx.bgVeil', value: bgVeil,
+                  after: function () { queueBackdrop(90); } }),
+      setSlider({ id: 'blur', label: '背景模糊', key: 'lx.bgBlur', value: bgBlur, max: 40,
+                  fmt: function (v) { return v === 0 ? '不模糊' : v + ' px'; },
+                  after: function () { queueBackdrop(90); } }),
+      setSlider({ id: 'lum', label: '背景亮度', key: 'lx.bgLum', value: bgLum, min: 40, max: 160,
+                  after: function () { queueBackdrop(90); } }),
+      setSlider({ id: 'sat', label: '背景饱和度', key: 'lx.bgSat', value: bgSat,
+                  after: function () { queueBackdrop(90); } })
+    ] },
+
+    { cat: 'bg', title: '四个区块（标题栏 / 搜索栏 / 左侧栏 / 内容区）', rows: [
+      { kind: 'note', text: '对应主界面的四块：最上面一条是标题栏，标题栏下面一条是搜索栏，' +
+                            '左下那一列是左侧栏，左侧栏右边那整片是内容区。四条各管自己那层蒙版，互不影响；' +
+                            '最底下的状态栏（点一下看诊断日志那行）没有单独的滑杆，它和标题栏同色，' +
+                            '跟着「标题栏透明度」一起变。' },
+      setSlider({ id: 'clearhead', label: '标题栏透明度', key: 'lx.clearHead',
+                  value: function () { return surfClear('head'); } }),
+      setSlider({ id: 'clearsearch', label: '搜索栏透明度', key: 'lx.clearSearch',
+                  value: function () { return surfClear('search'); } }),
+      setSlider({ id: 'clearside', label: '左侧栏透明度', key: 'lx.clearSide',
+                  value: function () { return surfClear('side'); } }),
+      setSlider({ id: 'clear', label: '内容区透明度', key: 'lx.bgClear', value: bgClear }),
+      setSlider({ id: 'tint', label: '内容区染色', key: 'lx.bgTint', value: bgTint, max: 30,
+                  fmt: function (v) { return v === 0 ? '不染色' : v + '%'; } }),
       { kind: 'note', text: function () {
-          return '四条透明度一套算法：0% = 原样，越大越透，100% = 这一层完全不盖' +
-                 '（字、按钮、列表照旧，只有底没了）。标题栏 / 搜索栏 / 左侧栏各管自己那层蒙版；' +
-                 '内容区那层是整块玻璃底，会连带这三块一起透，三块自己的透明度再叠在它上面。' +
-                 '染色只给内容区。' +
-                 (bgArtEnabled() ? '' : '（封面背景关着，这四条要开了封面背景才看得出来）');
+          return '四条同一套算法：0% = 原样，越大越透，100% = 这一层完全不盖（字、按钮、列表照旧，只没了底）。' +
+                 '内容区只盖左侧栏右边那一块，和状态栏、前面三块都互不影响；染色也只掺内容区这一层。' +
+                 (bgArtEnabled() ? '' : '（封面背景关着，四条和染色都看不出效果）');
         } }
     ] },
 
+    { cat: 'bg', title: '浮层（设置界面 / 简介界面 / 评论界面）', rows: [
+      { kind: 'note', text: '浮层指的是整块盖住面板的三个界面：面板设置、歌曲简介（F4）、歌曲评论（F3）。' +
+                            '它们共用下面两项，和四个区块的位置、透明度都无关。' },
+      setSlider({ id: 'ovscrim', label: '浮层遮罩', key: 'lx.bgOverlayScrim', value: bgOverlayScrimPct,
+                  fmt: function (v) { return v === 0 ? '透出底图' : v + '%'; } }),
+      { kind: 'note', text: '浮层遮罩：浮层底下垫一张重度虚化的封面（壁纸，没有就拿封面），' +
+                            '这一项调上面盖多厚。越小越透出那张虚化图，0% 就只剩字浮在图上。' },
+      setSlider({ id: 'overlay', label: '浮层不透明度', key: 'lx.bgOverlay', value: bgOverlayPct }),
+      { kind: 'note', text: '浮层不透明度：手上没有封面图时，浮层底的实色浓度。' +
+                            '0% 完全透明、100% 和面板外同色；有虚化底图时这一项不参与。' }
+    ] }
+  ];
+}
+
+// 标签：封面嵌入音频 / 写同名 jpg，苹果标签源单独一组
+function tagSections() {
+  return [
+    { cat: 'tag', title: '标签', rows: [
+      { kind: 'seg', id: 'embed', label: '封面嵌入音频', value: propOn('lx.embedCover', 1) ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.embedCover', v);
+          EMBED_COVER = embedCoverEnabled();
+          setStatus(v === '1' ? '封面会写进 mp3 / flac 标签' : '封面只写同名 jpg，不写进音频');
+          repaint();
+        } },
+      { kind: 'seg', id: 'push', label: '同时写同名 jpg', value: propOn('lx.pushCover', 0) ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.pushCover', v);
+          PUSH_COVER = pushCoverEnabled();
+          setStatus(v === '1' ? '缓存目录里额外放一份同名 jpg' : '不再写同名 jpg');
+          repaint();
+        } },
+      { kind: 'note', text: '嵌入 / 写 jpg 都改缓存目录里的文件；同名同扩展名的音频已在缓存里时直接播，不再下载。' }
+    ].concat(tagSourceRows()) }
+  ];
+}
+
+// 维护：一排排按钮 + 说明
+function maintSections() {
+  return [
+    { cat: 'maint', title: '维护', rows: [
+      { kind: 'btns', items: [
+        { id: 'refresh', label: '刷新列表' },
+        { id: 'reload', label: '重载音源', close: true }
+      ] },
+      { kind: 'btns', items: [
+        { id: 'import', label: '导入音源…', close: true },
+        { id: 'reembed', label: '重嵌封面' }
+      ] },
+      { kind: 'btns', items: [
+        { id: 'clearcache', label: '清空缓存' },
+        { id: 'logs', label: '诊断 / 日志', close: true }
+      ] },
+      { kind: 'btn', id: 'clearhw', label: '清空搜索历史（关键词记录）' },
+      { kind: 'note', text: '清空缓存只删音频与 index.json（mp3 / flac 两个目录一起清），评论 / 艺人资料保留。' },
+      { kind: 'link', id: 'releasePage', label: 'Lxbox 界面发布页：', url: LXBOX_RELEASE_URL }
+    ] }
+  ];
+}
+
+// 音源：目录在前，播放音源 / 全局音质 / 在线网址挂在音源目录后面
+function srcSections() {
+  var secs = [
     { cat: 'src', title: '音源', rows: [
       { kind: 'text', id: 'cacheDir', label: '缓存目录',
         value: propStr('lx.cacheDir', ''),
@@ -8603,6 +9261,69 @@ function settingsSections() {
             ? '本地已有检测：要「艺人 - 曲名」和扩展名都对上才算命中，扩展名不同会当成新歌重新下载。'
             : '不检测扩展名：缓存里只要有「艺人 - 曲名」这个文件名（.mp3 / .flac / .m4a… 都算），直接播它，不再取链下载。';
         } },
+      { kind: 'seg', id: 'playmode', label: '播放方式', value: playMode(),
+        options: [['stream', '在线流播'], ['hybrid', '边下边播'], ['cache', '下完再播']],
+        onPick: function (v) {
+          setProp('lx.playMode', v);
+          setProp('lx.download', v === 'stream' ? 0 : 1);   // 旧属性跟着走，别处还在读
+          setStatus('播放方式：' + playModeName(v) + '（' +
+                    (v === 'stream' ? '不落盘、不写标签'
+                     : (v === 'hybrid' ? '先响，后台攒缓存，下次播本地'
+                                       : '缓存并写完标签再播')) + '）');
+          repaint();
+        } },
+      { kind: 'note', text: function () {
+          var m = playMode();
+          if (m === 'stream') {
+            return '在线流播：只播直链，不落盘，也就没有标签 / 封面（面板自己的封面照常显示）；' +
+                   '音源直链过期或断网就播不了，Lxbox将 http 直链交给foobar自己播放，没有本地缓存。';
+          }
+          if (m === 'hybrid') {
+            return '边下边播：点下去立刻响，同时后台落一份缓存并补标签，下次播这首直接走本地文件；' +
+                   '后台那条下载是另开的连接，会多花一份流量，网络差时也不影响本次播放。';
+          }
+          return '下完再播：先把整首缓存到本地、写完标签和封面再播，起播慢几秒，' +
+                 '换来断网能重播、播放列表里看到的就是整理好的曲目信息。';
+        } },
+      { kind: 'seg', id: 'streamattach', label: '流播封面自动挂载', value: attachOn() ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.streamAttach', v);
+          ATTACH_KEY = '';
+          if (v === '1') {
+            setStatus('已开启：封面会挂到当前播放项，所有面板自动读到，不用再填 fb2k 路径');
+            attachLastTrack('手动');
+          } else {
+            setStatus('已关闭流播封面自动挂载');
+          }
+          repaint();
+        } },
+      { kind: 'seg', id: 'streamcover', label: '同时写固定 cover.jpg（备用）', value: streamCoverOn() ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.streamCover', v);
+          NOWPLAY_KEY = '';
+          if (v === '1') {
+            NM.lx.pushLog('info', '流播封面另存到：' + nowPlayCoverFile());
+            setStatus('已开启：额外留一份 cover.jpg（自动挂载失灵时排查用）');
+            pushStreamCover(lastTrack);
+          } else {
+            try { utils.RemovePath(nowPlayCoverFile()); } catch (e) {}
+            setStatus('已关闭固定 cover.jpg');
+          }
+          repaint();
+        } },
+      { kind: 'note', text: function () {
+          if (!attachOn()) {
+            return '在线流播播的是直链，fb2k 手上没有文件，自带封面读取是空的。' +
+                   '开启自动挂载后，面板把封面挂到这条播放项上，所有面板按 album art 读就能拿到。';
+          }
+          return '自动挂载：每次播流把封面挂到播放项的 metadb handle 上（attached image，' +
+                 'album art 优先级最高），Eole、播放列表缩略图、系统媒体控制都能读到，' +
+                 '不需要在 fb2k 里填任何路径，也不会影响本地曲目。' +
+                 '下面那个 cover.jpg 只是备用留档，不开也不影响显示。';
+        } },
+      { kind: 'btn', id: 'openNowPlay', label: '打开流播封面文件夹（排查用）…', close: true, ctl: true },
       { kind: 'text', id: 'scriptDir', label: '音源目录',
         value: propStr('lx.scriptDir', ''),
         disp: function () {
@@ -8615,73 +9336,8 @@ function settingsSections() {
         },
         resetId: 'defScriptDir' },
       { kind: 'btn', id: 'openScriptDir', label: '打开音源目录（资源管理器）…', close: true, ctl: true }
-    ] },
-
-    { cat: 'tag', title: '标签', rows: [
-      { kind: 'seg', id: 'embed', label: '封面嵌入音频', value: propOn('lx.embedCover', 1) ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.embedCover', v);
-          EMBED_COVER = embedCoverEnabled();
-          setStatus(v === '1' ? '封面会写进 mp3 / flac 标签' : '封面只写同名 jpg，不写进音频');
-          repaint();
-        } },
-      { kind: 'seg', id: 'push', label: '同时写同名 jpg', value: propOn('lx.pushCover', 0) ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.pushCover', v);
-          PUSH_COVER = pushCoverEnabled();
-          setStatus(v === '1' ? '缓存目录里额外放一份同名 jpg' : '不再写同名 jpg');
-          repaint();
-        } },
-      { kind: 'seg', id: 'download', label: '播放前缓存', value: propOn('lx.download', 1) ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.download', v);
-          setStatus(v === '1' ? '先缓存到本地再播放' : '直接播网络地址，不落盘');
-          repaint();
-        } },
-      { kind: 'note', text: '嵌入 / 写 jpg 都改缓存目录里的文件；同名同扩展名的音频已在缓存里时直接播，不再下载。' }
-    ].concat(tagSourceRows()) },
-
-    { cat: 'probe', title: '检测', rows: [] },
-
-    { cat: 'maint', title: '维护', rows: [
-      { kind: 'btns', items: [
-        { id: 'refresh', label: '刷新列表' },
-        { id: 'reload', label: '重载音源', close: true }
-      ] },
-      { kind: 'btns', items: [
-        { id: 'import', label: '导入音源…', close: true },
-        { id: 'reembed', label: '重嵌封面' }
-      ] },
-      { kind: 'btns', items: [
-        { id: 'clearcache', label: '清空缓存' },
-        { id: 'logs', label: '诊断 / 日志', close: true }
-      ] },
-      { kind: 'btn', id: 'clearhw', label: '清空搜索历史（关键词记录）' },
-      { kind: 'note', text: '清空缓存只删音频与 index.json（mp3 / flac 两个目录一起清），评论 / 艺人资料保留。' },
-      { kind: 'link', id: 'releasePage', label: 'Lxbox 界面发布页：', url: LXBOX_RELEASE_URL }
     ] }
   ];
-
-  if (hidePlatformRow) {
-    var look = secs[0].rows;
-    var platRow = {
-      kind: 'seg', id: 'fixedplat', label: '数据来自', value: fixedPlatform,
-      options: platformChipOptions(),
-      onPick: function (v) {
-        setProp('lx.fixedPlatform', v);
-        fixedPlatform = v;
-        switchPlatform(v);
-        setStatus('第二排已隐藏：各页数据来自 ' + platformName(v));
-        repaint();
-      }
-    };
-    var at = 0;
-    for (var ri = 0; ri < look.length; ri++) if (look[ri].id === 'hideplat') { at = ri + 1; break; }
-    look.splice(at, 0, platRow);
-  }
 
   var playRow = {
     kind: 'pick', id: 'playScript', label: '播放音源',
@@ -8739,8 +9395,7 @@ function settingsSections() {
   };
 
   // 播放音源 / 全局音质 / 在线音源网址属于「音源」页，挂在音源目录后面
-  var srcRows = null;
-  for (var sk = 0; sk < secs.length; sk++) if (secs[sk].cat === 'src') srcRows = secs[sk].rows;
+  var srcRows = secs[0].rows;
   if (srcRows) {
     var atSrc = srcRows.length;
     for (var rj = 0; rj < srcRows.length; rj++) {
@@ -8749,6 +9404,7 @@ function settingsSections() {
     srcRows.splice(atSrc, 0, playRow, qualityRow, qualityNote, onlineRow, onlineNote);
     srcRows.push(dirNote);
   }
+
   return secs;
 }
 
@@ -8911,9 +9567,9 @@ function settingsLayout() {
   var catBarH = wide ? 0 : 32;
 
   var secs = settingsSections();
-  var cur = null, i;
-  for (i = 0; i < secs.length; i++) if (secs[i].cat === setCat) cur = secs[i];
-  if (!cur) { setCat = secs[0].cat; cur = secs[0]; }
+  var cur = [], i;
+  for (i = 0; i < secs.length; i++) if (secs[i].cat === setCat) cur.push(secs[i]);
+  if (!cur.length) { setCat = secs[0].cat; cur = [secs[0]]; }
 
   var availW = W - (padX + navW) - padX;
   var wantW = Math.min(900, Math.max(700, Math.round(availW * 0.66)));
@@ -8922,18 +9578,23 @@ function settingsLayout() {
   var top = SET_HEAD_H + catBarH + 8;
   var bottom = Math.max(top + 20, H - SET_FOOT_H);
 
-  var items = [], y = 0;
-  items.push({ kind: 'title', text: cur.title, h: SET_SEC_H, rel: y });
-  y += SET_SEC_H;
-  if (cur.cat === 'probe') {
-    // 检测页不再弹浮层：直接在右栏里排开检测界面
-    var ph = probeBlocks(contentX, contentW, 0, true).h;
-    items.push({ kind: 'probe', h: ph, rel: y });
-    y += ph + 4;
-  } else {
-    for (i = 0; i < cur.rows.length; i++) {
-      var row = cur.rows[i];
-      var rh = rowHeightOf(row, contentW);
+  var items = [], y = 0, k, sec, row, rh;
+  for (k = 0; k < cur.length; k++) {
+    sec = cur[k];
+    if (sec.title) {
+      items.push({ kind: 'title', text: sec.title, h: SET_SEC_H, rel: y });
+      y += SET_SEC_H;
+    }
+    if (sec.cat === 'probe') {
+      // 检测页不再弹浮层：直接在右栏里排开检测界面
+      var ph = probeBlocks(contentX, contentW, 0, true).h;
+      items.push({ kind: 'probe', h: ph, rel: y });
+      y += ph + 4;
+      continue;
+    }
+    for (i = 0; i < sec.rows.length; i++) {
+      row = sec.rows[i];
+      rh = rowHeightOf(row, contentW);
       items.push({ kind: 'row', row: row, h: rh, rel: y });
       y += rh + 4;
     }
@@ -8986,9 +9647,9 @@ function drawSettings(gr) {
   var P = settingsLayout();
   var i;
 
-  gr.FillSolidRect(0, 0, W, H, tint(C.bg, 252));
+  paintOverlayBg(gr, { x: 0, y: 0, w: W, h: H });      // 和简介 / 评论浮层同一套底
 
-  gr.FillSolidRect(0, 0, W, SET_HEAD_H, tint(C.panel, 244));
+  gr.FillSolidRect(0, 0, W, SET_HEAD_H, overlayFill(C.panel, 244));
   gr.DrawLine(0, SET_HEAD_H, W, SET_HEAD_H, 1, A(C.line, 220));
   gr.GdiDrawText('面板设置', F.head, C.accent, 16, 1, Math.max(60, W - 200), 24, FLAG_LEFT);
   gr.GdiDrawText('改动即时生效，并写进面板属性', F.tiny, C.dim, 17, 21, Math.max(60, W - 210), 24, FLAG_LEFT);
@@ -9050,7 +9711,6 @@ function drawSettings(gr) {
 
   var fy = H - SET_FOOT_H;
   gr.FillSolidRect(0, fy, W, SET_FOOT_H, tint(C.panel, 230));
-  gr.DrawLine(0, fy, W, fy, 1, A(C.line, 200));
   var hint = SET_CATS[catIndexOf(setCat)].hint;
   gr.GdiDrawText(hint, F.tiny, A(C.dim, 235), 16, fy, Math.max(40, W - 32), SET_FOOT_H, FLAG_LEFT);
 }
@@ -9405,18 +10065,18 @@ function resetSettingCat() {
   } else if (setCat === 'bg') {
     setProp('lx.bgArt', '1');
     setProp('lx.bgHue', -1);
-    setProp('lx.bgVeil', 22);
-    setProp('lx.bgBlur', 24);
+    setProp('lx.bgVeil', 50);
+    setProp('lx.bgBlur', 20);
     setProp('lx.bgLum', 100);
-    setProp('lx.bgSat', 100);
-    setProp('lx.bgClear', 5);
+    setProp('lx.bgSat', 50);
+    setProp('lx.bgClear', 0);
     setProp('lx.bgGlass', '');
     setProp('lx.bgTint', 0);
-    setProp('lx.clearHead', 0);
-    setProp('lx.clearSearch', 0);
-    setProp('lx.clearSide', 0);
-    setProp('lx.bgOverlay', 98);
-    setProp('lx.bgOverlayScrim', 62);
+    setProp('lx.clearHead', 50);
+    setProp('lx.clearSearch', 50);
+    setProp('lx.clearSide', 50);
+    setProp('lx.bgOverlay', 90);
+    setProp('lx.bgOverlayScrim', 80);
     setProp('lx.bgArtAlpha', '');
     bg = true;
   } else if (setCat === 'src') {
@@ -9428,16 +10088,22 @@ function resetSettingCat() {
     setProp('lx.scriptDir', '');
     setProp('lx.script.' + platform, '');
     setProp('lx.onlineScriptUrl', '');
-    setQuality('auto');              // 全局音质
+    setProp('lx.playMode', 'stream');
+    setProp('lx.download', 0);
+    setQuality('320k');              // 全局音质
     if (NM.lx && typeof NM.lx.clearResolveCache === 'function') NM.lx.clearResolveCache();
   } else if (setCat === 'tag') {
     setProp('lx.embedCover', 1);
     setProp('lx.pushCover', 0);
-    setProp('lx.download', 1);
+    setProp('lx.streamAttach', 1);
+    setProp('lx.streamCover', 1);
+    setProp('lx.streamWake', 0);
     setProp('lx.appleTags', 0);
     setProp('lx.appleAuto', 0);
     setProp('lx.appleCover', 0);
     setProp('lx.appleFields', '');
+    ATTACH_KEY = '';
+    NOWPLAY_KEY = '';
     EMBED_COVER = embedCoverEnabled();
     PUSH_COVER = pushCoverEnabled();
   } else if (setCat === 'probe') {
@@ -9462,6 +10128,7 @@ function runSettingsButton(id, close) {
   else if (id === 'clearcache') clearCache();
   else if (id === 'logs') openDiagnostics();
   else if (id === 'openScriptDir') openScriptDirAction();
+  else if (id === 'openNowPlay') openNowPlayDir();
   else if (id === 'appleNow') { appleTagCurrent(); }
   else if (id === 'appleSel') { appleTagBatch(true); }
   else if (id === 'appleBatch') { appleTagBatch(false); }
@@ -9510,8 +10177,8 @@ function runSettingsButton(id, close) {
 
 function drawFooter(gr) {
   var y = H - FOOT_H;
-  gr.FillSolidRect(0, y, W, FOOT_H, tint(C.bg, BG_A.footer));
-  gr.DrawLine(0, y, W, y, 1, C.line);
+  // 和标题栏同色：同一个表达式，拖动「标题栏透明度」时两处一起变
+  gr.FillSolidRect(0, y, W, FOOT_H, tint(C.bg, surfA('head', BG_A.header)));
 
   var isErr = statusIsError;
 
@@ -9546,6 +10213,7 @@ function on_paint(gr) {
   if (setOpen) { drawSettings(gr); return; }
 
   drawHeader(gr);
+  paintContentVeil(gr);
 
   if (tab === 0) {
     drawBoardList(gr);
@@ -9568,8 +10236,6 @@ function on_paint(gr) {
     rebuildOverlayLines(false);
     drawOverlay(gr);
   }
-
-  drawSettings(gr);
 }
 function setCursorHand(on) {
   if (on === cursorHand) return;
@@ -9641,7 +10307,7 @@ function selectTab(i) {
   if (i === tab) return;
   if (editKind) endEdit();
   tab = i;
-  try { window.SetProperty('lx.tab', tab); } catch (e) {}
+  try { setP('lx.tab', tab); } catch (e) {}
   trackScroll = 0;
   boardScroll = 0;
   collScroll = 0;
@@ -10009,7 +10675,7 @@ function on_mouse_lbtn_up(x, y) {
   for (var j = 0; j < order.length; j++) {
     if (inRect(platformRect(j), x, y)) {
       if (platform !== order[j]) {
-        window.SetProperty('lx.platform', order[j]);
+        setP('lx.platform', order[j]);
         switchPlatform(order[j]);
       } else repaint();
       return;
@@ -10076,6 +10742,12 @@ function on_mouse_lbtn_up(x, y) {
       selected = ti;
       repaint();
       playTrack(tracks[ti], true);
+      return;
+    }
+    if (b2 === 'download') {
+      selected = ti;
+      repaint();
+      downloadOne(tracks[ti]);
       return;
     }
     selected = ti;
@@ -10364,12 +11036,14 @@ function on_mouse_rbtn_up(x, y) {
   var m = window.CreatePopupMenu();
   if (mc > 0) {
     m.AppendMenuItem(MF_STRING, 3, '加入「' + PLAYLIST_NAME + '」：已勾选 ' + mc + ' 首');
+    m.AppendMenuItem(MF_STRING, 9, '下载已勾选的 ' + mc + ' 首（缓存 + 标签）');
     m.AppendMenuItem(MF_STRING, 4, '取消全部勾选');
     m.AppendMenuSeparator();
   }
   if (ti >= 0) {
     m.AppendMenuItem(MF_STRING, 1, '播放：' + tracks[ti].title);
     m.AppendMenuItem(MF_STRING, 2, '加入「' + PLAYLIST_NAME + '」');
+    m.AppendMenuItem(MF_STRING, 8, '下载到缓存（嵌入标签）：' + tracks[ti].title);
     m.AppendMenuItem(MF_STRING, 5, '勾选这一行（也可左键点行首方框）');
     m.AppendMenuSeparator();
   }
@@ -10393,6 +11067,8 @@ function on_mouse_rbtn_up(x, y) {
 
   if (id === 1) playTrack(tracks[ti], false);
   else if (id === 2) playTrack(tracks[ti], true);
+  else if (id === 8) pickDownloadQuality(x, y, function (q) { downloadTracks([tracks[ti]], q); });
+  else if (id === 9) pickDownloadQuality(x, y, function (q) { downloadTracks(multiList(), q); });
   else if (id === 3) addManyToPlaylist(multiList());
   else if (id === 4) multiClear(false);
   else if (id === 5) multiToggle(ti, false);
@@ -10435,7 +11111,7 @@ function openSearchAgain() {
 
 function init() {
   ['lx.keyword', 'lx.collKeyword.playlist', 'lx.collKeyword.podcast', 'lx.collKeyword.artist']
-    .forEach(function (k) { try { window.SetProperty(k, ''); } catch (e) {} });
+    .forEach(function (k) { try { setP(k, ''); } catch (e) {} });
 
   refreshUiScale();
   syncPanelSize();
@@ -10446,7 +11122,7 @@ function init() {
   logUiScale();
 
   if (NM.providers.order.indexOf(platform) < 0) platform = 'tx';
-  if (QUALITIES.indexOf(qualityAll) < 0) qualityAll = 'auto';
+  if (QUALITIES.indexOf(qualityAll) < 0) qualityAll = '320k';
   if (qualityHidden && QUALITIES.indexOf(qualityHidden) < 0) qualityHidden = '';
   syncQuality();
 
@@ -10492,8 +11168,13 @@ function init() {
 }
 
 function on_playback_new_track(handle) {
+  /* 每次切歌都允许重挂一次：列表项是新 handle，即使 path 和上次一样也得重挂 */
+  ATTACH_KEY = '';
   setTimeout(function () { refreshBackground(true); }, 0);
   try { pushCoverForHandle(handle); } catch (e) {}
+  /* 流播换歌时封面往往还在下载/还没落盘，隔一下再补挂一次。
+     已经挂上的会被 ATTACH_KEY 挡掉，不会重复写。 */
+  setTimeout(function () { try { attachLastTrack('切歌'); } catch (e2) {} }, 700);
   repaint();
 }
 

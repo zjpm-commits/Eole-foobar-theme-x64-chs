@@ -327,21 +327,6 @@ function on_paint(gr) {
 
 	drawAllButtons(gr);
 
-  if (
-    layout_state === 0 && 
-    (main_panel_state === 0 && properties.library_dark_theme ||
-    main_panel_state === 1 && properties.playlists_dark_theme ||
-    main_panel_state === 2 && properties.bio_dark_theme ||
-    main_panel_state === 3) ||
-    properties.minimode_dark_theme && layout_state === 1
-  ) {
-    gr.FillSolidRect(0, 0, ww, border_top, colors.border_light);
-  } else {
-    gr.FillSolidRect(0, 0, ww, border_top, colors.border_dark);
-  }
-
-	gr.FillSolidRect(0, wh-border_bottom, ww, border_right, colors.border_dark);
-	gr.FillGradRect(0, wh-1, ww, 1, 0,colors.line_bottom,colors.line_bottom);
 }
 
 function on_size(w, h) {
@@ -644,7 +629,7 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
 		g_cover.setArtwork(image,true,false);
 		g_image_cache.addToCache(image,cachekey,globalProperties.thumbnailWidthMax);
 	}
-	else g_cover.reset();
+	else if(!(TrackType(metadb) == 3 && g_cover.isSetArtwork())) g_cover.reset();
     window.Repaint();
 }
 
@@ -691,6 +676,18 @@ function on_layout_change() {
 }
 function on_notify_data(name, info) {
   switch(name) {
+		case "lx_cover_ready":
+		case "lx_cover_path":
+			/* Lxbox 流播封面：直接吃广播过来的图，不走 album art 查询 */
+			try {
+				var lxPath = (typeof info === "string") ? info : ((info && info.path) || "");
+				var lxImg = lxPath ? gdi.Image(String(lxPath)) : null;
+				if (lxImg) {
+					g_cover.setArtwork(lxImg, true, false);
+					window.Repaint();
+				}
+			} catch (eLxCover) {}
+		break;
 		case "setGlobalParameter":
 			setGlobalParameter(info[0],info[1]);
 		break;			

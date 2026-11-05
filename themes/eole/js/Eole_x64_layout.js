@@ -29,7 +29,10 @@ if (typeof fw_enabled !== 'function') {
     var fw_blurValue = function () { return 0; };
     var fw_maskAlpha = function () { return 0; };
     var fw_quality = function () { return 1; };
+
+
 }
+
 
 function fw_hostOn(force) {
     var st = null;
@@ -50,6 +53,7 @@ function fwSeedShared() {
     try { fw_sharedSet(true); } catch (e3) {}
     try { console.log('[FW] [宿主] 共享开关已补写: 1'); } catch (e4) {}
 }
+
 
 function fwApplyCfg() {
     var c = null;
@@ -80,6 +84,7 @@ function setting(prefix, fallback) {
     } catch (e) { return fallback; }
 }
 
+
 function getPanel(names) {
     if (typeof names === 'string') names = [names];
     for (var i = 0; i < names.length; ++i) {
@@ -101,6 +106,7 @@ var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'LIBRARYFILTER
     'COVERPANELBIG', 'COVERPANELMINI', 'MINICONTROLBAR', 'SHOWTRACKINFOBIG', 'SHOWTRACKINFOSMALL',
     'TRACKINFOSLIB', 'TRACKINFOSPLAYLIST', 'TRACKINFOSBIO', 'TRACKINFOSVISU', 'TRACKINFOSTEXT'];
 
+
 function snapshot() {
     var files = null;
     try { files = utils.Glob(settingRoot + "*"); } catch (e) { files = null; }
@@ -108,6 +114,7 @@ function snapshot() {
     var map = {};
     for (var i = 0; i < files.length; ++i) {
         var path = String(files[i]);
+        //   ...\eole-settings\RIGHTPLAYLISTWIDTH_240
         var us = path.lastIndexOf('_'), sl = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
         if (us > sl && us > 0) map[path.substring(sl + 1, us)] = path.substring(us + 1);
     }
@@ -125,14 +132,22 @@ function snapshot() {
     return out.join(',');
 }
 
-function arrange() {
+
+function arrange(arg) {
+    /* arg: 'live'  = 正在拖动尺寸（只重排，不折腾显隐）
+            'force' = 松手后补一次完整重排（不看 layoutKey）
+            其它    = 常规调用
+       注意下面还有个 var mode（主面板编号），两者不是一回事。 */
+    /* 除了 on_size 显式传 'live'，其它来源（600ms 轮询、消息触发的 arrange()）
+       在拖动期间也要降级成 live，否则它们会跑全隐全显，照样闪。 */
+    var live = (arg === 'live') || (arg !== 'force' && rsLive);
     var w = window.Width, h = window.Height;
     if (w < 1 || h < 1) return;
 
     var fp = snapshot();
     if (fp !== null) {
         var layoutKey = w + ":" + h + ":" + fp;
-        if (layoutKey === previousLayout) return;
+        if (arg !== 'force' && layoutKey === previousLayout) return;
         previousLayout = layoutKey;
     }
 
@@ -150,8 +165,12 @@ function arrange() {
 
     var panelCount = 0;
     try { panelCount = window.GetPanelCount(); } catch (e) { panelCount = 0; }
-    for (var i = 0; i < panelCount; ++i) {
-        try { window.GetPanelByIndex(i).Show(false); } catch (e) {}
+    /* 拖动尺寸时绝对不能再全隐全显：13 个子面板每帧隐藏再显示一次，
+       就是肉眼看到的"闪一闪"。这里只跳过隐藏，Move/Show(true) 照常走。 */
+    if (!live) {
+        for (var i = 0; i < panelCount; ++i) {
+            try { window.GetPanelByIndex(i).Show(false); } catch (e) {}
+        }
     }
 
     function panel(names, x, y, width, height, opaque) {
@@ -271,26 +290,31 @@ function arrange() {
     window.Repaint();
 }
 
-function fwScheduleGlassRefresh() {
-    if (fwTimer3) { clearTimeout(fwTimer3); fwTimer3 = 0; }
-    fwTimer3 = setTimeout(function () {
-        fwTimer3 = 0;
-        fwDoGlassRefresh();
-        setTimeout(fwDoGlassRefresh, 200);
-    }, 60);
-}
-
-function fwDoGlassRefresh() {
-    try { window.Repaint(); } catch (e1) {}
-    try { window.NotifyOthers("fullscreenWallpaperRepaint", true); } catch (e2) {}
-    try { fwRefreshGlass(); } catch (e3) {}
+/* 尺寸拉完（停顿 260ms）才重建壁纸、刷玻璃。
+   拖动过程中 on_size 每帧都来，若每次都往 fwQueue 里塞，
+   停一下就会跑 fwEnsure(true, 0.5) + 300ms 后 fwEnsure(true) 两次全量模糊，
+   两者都是同步阻塞 UI 线程的，所以表现为"边拉边闪"。 */
+function fwScheduleResizeSettle() {
+    if (rsTimer) { clearTimeout(rsTimer); rsTimer = 0; }
+    rsTimer = setTimeout(function () {
+        rsTimer = 0;
+        rsLive = false;
+        try { arrange('force'); } catch (e1) {}
+        try { fwApplyCfg(); } catch (e2) {}
+        /* 这里直接全质量重建一次，不走 fwQueue：fwQueue 会先跑 0.5 低清预热、
+           300ms 后再全清，等于多算一遍；松手时画面本来就有旧图顶着，不需要预热。 */
+        try { fwEnsure(true); } catch (e3) {}
+        try { window.Repaint(); } catch (e4) {}
+        try { fwRefreshGlass(); } catch (e5) {}
+        try { window.NotifyOthers("fullscreenWallpaperRepaint", true); } catch (e6) {}
+    }, 260);
 }
 
 function on_size() {
-    try { arrange(); } catch (e) {}
+    rsLive = true;
+    try { arrange('live'); } catch (e) {}
     try { window.Repaint(); } catch (eR) {}
-
-    fwScheduleGlassRefresh();
+    fwScheduleResizeSettle();
 }
 
 function on_playback_new_track() {
@@ -305,6 +329,19 @@ function on_colours_changed() {
 }
 
 function on_notify_data(name, info) {
+    if (name === 'lx_cover_ready' || name === 'lx_cover_path') {
+        /* Lxbox 挂好流播封面后会把图片路径广播过来。宿主这边壁纸是整窗背景，
+           子面板的封面框归各自面板管，但背景归这里，所以要收下路径重建壁纸。 */
+        try {
+            var p = (typeof info === 'string') ? info : ((info && info.path) || '');
+            if (p) {
+                g_fwExtCover = String(p);
+                fwQueue(60);
+                window.Repaint();
+            }
+        } catch (eLx) {}
+        return;
+    }
     if (name === 'fullscreenWallpaper') {
         window.SetTimeout(function () {
             try { fw_hostOn(true); } catch (eS) {}
@@ -322,10 +359,12 @@ function on_notify_data(name, info) {
 
 var fwImg = null;
 var fwKey = "";
+var g_fwExtCover = "";
 var fwTimer = 0;
 var fwTimer2 = 0;
 var fwFailAt = 0;
-var fwTimer3 = 0;
+var rsLive = false;      /* 正在拖动尺寸 */
+var rsTimer = 0;
 var fwBuilding = false;
 var fwLastW = 0, fwLastH = 0;
 
@@ -342,7 +381,8 @@ function fwEnsure(force, qOverride) {
 
     var src = fw_pickSource();
     var key = [w, h, fw_isDark() ? 1 : 0, fw_source(), src.path || "-",
-        fw_blurValue(), fw_maskAlpha(), fw_quality()].join(":");
+        fw_blurValue(), fw_maskAlpha(), fw_quality(),
+        (typeof g_fwExtCover === 'string' ? g_fwExtCover : '')].join(":");
     if (fw_source() !== 1 || !src.path) {
         var h0 = null;
         try { h0 = fb.GetNowPlaying(); } catch (e) { h0 = null; }
@@ -395,6 +435,7 @@ function fwQueue(ms) {
     if (fwTimer2) { clearTimeout(fwTimer2); fwTimer2 = 0; }
     fwTimer = setTimeout(function () {
         fwTimer = 0;
+        if (rsLive) { fwQueue(200); return; }   /* 还在拖，重建会卡画面，往后推 */
         try { fwApplyCfg(); } catch (eA) {}
         try { fwEnsure(true, 0.5); } catch (e1) {}
         try { window.Repaint(); } catch (e) {}
@@ -408,7 +449,6 @@ function fwQueue(ms) {
         }, 300);
     }, ms == null ? 250 : ms);
 }
-
 
 function fwRefreshGlass() {
     var n = 0;
@@ -435,7 +475,10 @@ function on_paint(gr) {
         return;
     }
     gr.SetSmoothingMode(0);
-    var img = fwEnsure(false);
+    /* 拖动尺寸期间不重建壁纸：直接拿上一张按新尺寸拉伸顶着，
+       松手后由 fwScheduleResizeSettle 一次性重建。
+       fw_drawWallpaper 本身就是 DrawImage 拉伸，不会出现黑边。 */
+    var img = rsLive ? fwImg : fwEnsure(false);
     fw_drawWallpaper(gr, w, h, img);
 }
 

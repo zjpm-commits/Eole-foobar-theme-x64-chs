@@ -502,8 +502,6 @@ oPlaylistManager = function(name) {
 			gr.FillGradRect(cx,this.y + this.h + cPlaylistManager.botbarHeight,ww-(brw.draw_right_line?1:0),gradient_size,90,colors.pm_shadow_on,colors.pm_shadow_off,1.0)
 			//Main BG
 			gr.FillSolidRect(cx, this.y, this.w, this.h + cPlaylistManager.botbarHeight + 1, colors.pm_bg);
-			gr.FillSolidRect(cx, this.y, ww-(brw.draw_right_line?1:0), 1, colors.pm_border);
-			gr.FillSolidRect(cx, this.y + this.h + cPlaylistManager.botbarHeight, ww-(brw.draw_right_line?1:0), 1, colors.pm_border);
 
             // ** items **
             var rowIdx = 0;
@@ -1054,7 +1052,6 @@ oTagSwitcherBar = function() {
 		// draw background part above playlist (headerbar)
 		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
 
-		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((brw.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
 		total_txt_size = 0
@@ -1315,7 +1312,6 @@ oTagSwitcherBar_old = function() {
 		// draw background part above playlist (headerbar)
 		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
 
-		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((brw.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
 		total_txt_size = 0
@@ -3318,7 +3314,6 @@ oBrowser = function(name) {
 
                 // draw background part above playlist (headerbar)
 				var height_top_fix2 = (properties.showTagSwitcherBar) ? g_tagswitcherbar.default_height : 0;
-                gr.FillSolidRect(this.x, height_top_fix2+properties.headerBarHeight, this.w - this.x -((this.draw_right_line)?1:0), 1, colors.headerbar_line);
 
 				if(g_filterbox.inputbox.text.length==0) {
 					var text_width = gr.CalcTextWidth(boxText,g_font.min1)
@@ -3339,7 +3334,6 @@ oBrowser = function(name) {
 			};
 
 			if(g_resizing.isResizing()) gr.FillSolidRect(ww-1, 0, 1, wh, colors.dragdrop_marker_line);
-			else if(this.draw_right_line) gr.FillSolidRect(ww-1, 0, 1, wh, colors.sidesline);
 
             // draw scrollbar
             if(cScrollBar.enabled && pman.state !=1) {

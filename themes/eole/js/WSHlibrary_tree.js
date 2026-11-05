@@ -192,7 +192,6 @@ oTagSwitcherBar_old = function() {
 		// draw background part above playlist (headerbar)
 		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
 
-		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x -((draw_right_line)?1:0), 1, colors.headerbar_line);
 
 		//Calculate text size
 		total_txt_size = 0
@@ -384,7 +383,6 @@ oTagSwitcherBar = function() {
 		// draw background part above playlist (headerbar)
 		if((colors.headerbar_bg >>> 24) > 0) gr.FillSolidRect(this.x, this.y, this.w, this.h-1, colors.headerbar_bg);
 
-		gr.FillSolidRect(this.x, this.y+this.h-1, this.w - this.x, 1, colors.headerbar_line);
 
 		//Calculate text size
 		total_txt_size = 0
@@ -637,8 +635,6 @@ oPlaylistManager = function(name) {
 			gr.FillGradRect(cx,this.y + this.h + cPlaylistManager.botbarHeight,ui.w-(draw_right_line?1:0),gradient_size,90,colors.pm_shadow_on,colors.pm_shadow_off,1.0)
 			//Main BG
 			gr.FillSolidRect(cx, this.y, this.w, this.h + cPlaylistManager.botbarHeight + 1, colors.pm_bg);
-			gr.FillSolidRect(cx, this.y, ui.w-(draw_right_line?1:0), 1, colors.pm_border);
-			gr.FillSolidRect(cx, this.y + this.h + cPlaylistManager.botbarHeight, ui.w-(draw_right_line?1:0), 1, colors.pm_border);
 
             // ** items **
             var rowIdx = 0;
@@ -3412,7 +3408,6 @@ function searchLibrary() {
         s = Math.min(Math.max(s, 0), p.s_txt.length);
         e = Math.min(Math.max(e, 0), p.s_txt.length);
         cx = Math.min(Math.max(cx, 0), p.s_txt.length);
-		gr.FillSolidRect(0, this.y+p.s_sp, ww -((draw_right_line)?1:0), 1,colors.headerbar_line);
 
         if (p.s_txt) {
             e = (e < p.s_txt.length) ? e : p.s_txt.length;
@@ -3555,7 +3550,6 @@ function on_paint(gr) {
 		pman.draw(gr);
 	};
 	if(g_resizing.isResizing()) gr.FillSolidRect(ui.w-1, 0, 1, wh, colors.dragdrop_marker_line);
-	else gr.FillSolidRect(ui.w-1, 0, 1, wh, colors.sidesline);
 
     if (ui.scrollbar_show && pman.state !=1) sbar.draw(gr);
 }

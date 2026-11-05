@@ -643,14 +643,10 @@ function customTracklistDetails(title, top_msg, bottom_msg, input_default_values
 		data: [title, top_msg, '取消', ok_callback,bottom_msg,input_default_values,input_labels],
 	});
 }
-//Colors ------------------------------------------------------------------------------
-// ===================================================================================
+
 var colors = {};
 var darkcolors = {};
 
-// ===================================================================================
-// list clipping helpers (header bar stays fully transparent)
-// ===================================================================================
 var _list_clip_state = false;
 
 function rowHeightForSnap() {
@@ -775,6 +771,9 @@ function get_colors_global(){
 		colors.keyboard_search_txtred = RGB(255,80,80);
 
 		colors.sidesline = GetGrey(255,25);
+		colors.sidesline_hi = GetGrey(255,45);
+		colors.sidesline_sh = GetGrey(0,110);
+		colors.bevel_style = 0;
 		colors.border = GetGrey(255,50);
 		colors.border_dark = GetGrey(0,40);
 		colors.border_light = colors.border;
@@ -856,6 +855,9 @@ function get_colors_global(){
 		colors.keyboard_search_txtred = RGB(255,80,80);
 
 		colors.sidesline = GetGrey(0,37);
+		colors.sidesline_hi = GetGrey(255,150);
+		colors.sidesline_sh = GetGrey(0,48);
+		colors.bevel_style = 0;
 		colors.border = GetGrey(0,50);
 		colors.border_dark = GetGrey(0,40);
 		colors.border_light = GetGrey(255,50);
@@ -1707,6 +1709,21 @@ function runContextCommand(cmd, handle, flags) {
 function GetGrey(grey,alpha){
 	alpha = typeof alpha !== 'undefined' ? alpha : 255;
 	return RGBA(grey,grey,grey,alpha);
+}
+
+function drawRightBevel(gr, w, y, h){
+	if(!gr || !(w > 2)) return;
+	var st = (typeof colors.bevel_style !== 'undefined') ? colors.bevel_style : 2;
+	var flat = colors.sidesline;
+	if(st === 2 || typeof colors.sidesline_hi === 'undefined'){
+		gr.FillSolidRect(w-1, y, 1, h, flat);
+		return;
+	}
+	var hi = colors.sidesline_hi, sh = colors.sidesline_sh;
+	var inner = (st === 0) ? hi : sh;
+	var outer = (st === 0) ? sh : hi;
+	gr.FillSolidRect(w-2, y, 1, h, inner);
+	gr.FillSolidRect(w-1, y, 1, h, outer);
 }
 function HSL2RGB(zH, zS, zL, result) {
     var L = zL / 100;
@@ -2614,13 +2631,8 @@ button = function (normal, hover, down, name, tooltip_text) {
     };
 };
 
-//=================================================// Tools (general)
 
 function DrawPolyStar(gr, x, y, out_radius, in_radius, points, line_thickness, line_color, fill_color, angle, opacity){
-    // ---------------------
-    // code by ExtremeHunter
-    // ---------------------
-
     if(!opacity && opacity != 0) opacity = 255;
     if(!angle && angle != 0) angle = 0;
 
@@ -3391,7 +3403,6 @@ oImageCache = function () {
     };
 };
 
-//=========================================================================
 function Utf8Encode(string) {
     string = string.replace(/\r\n/g,"\n");
     var utftext = "";
@@ -3630,9 +3641,6 @@ function openCoverFullscreen(metadb, displayedImage){
 // Debugger functions
 function debugger_hint(string){
 }
-// ===================================================================================
-// -----------------------------------------------------------------------------------
-// ===================================================================================
 var FW_PROP_ENABLED = "显示·全屏壁纸";
 var FW_PROP_SOURCE  = "显示·全屏壁纸来源(0=封面 1=指定图片 2=优先图片)";
 var FW_PROP_IMAGE   = "显示·全屏壁纸图片路径";
@@ -3719,9 +3727,6 @@ function fw_enabled() {
     try { return !!window.GetProperty(FW_PROP_ENABLED, false); } catch (e) { return false; }
 }
 
-// ===================================================================================
-// -----------------------------------------------------------------------------------
-// ===================================================================================
 var FW_SHARED_KEY = 'FULLSCREENWALLPAPER';
 
 function fw_sharedRoot() {
@@ -3773,8 +3778,6 @@ function fw_sharedOn(force) {
     return fw_sharedState(force) === true;
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_transparent(localOn) {
     if (!localOn) return false;
     return fw_sharedOn();
@@ -3835,8 +3838,6 @@ function fw_quality() {
     return (v === 2 || v === 3) ? v : 1;
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_pickSource() {
     var src = fw_source(), p = fw_imagePath();
     if (src === 1 || src === 2) {
@@ -3851,8 +3852,6 @@ function fw_pickSource() {
     return { img: null, path: "" };
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_coverArt(metadb) {
     if (!metadb) return null;
     try {
@@ -3883,7 +3882,27 @@ function fw_buildWallpaper(w, h, metadb, qOverride) {
     var srcMode = fw_source();
     var img = null, fromCover = false;
 
-    if (srcMode === 0 || srcMode === 2) {
+    /* 外部面板（Lxbox）推过来的流播封面优先。
+       流播是 http 直链，fb2k 的 album art 对 stream handle 不一定会返回
+       面板 AttachImage 挂上去的图，直接读文件路径最稳。
+       g_fwExtCover 由 Eole_x64_layout.js 收到 lx_cover_path 后写入；
+       其它面板 include 本文件时没有这个变量，typeof 判断会直接跳过。 */
+    if (srcMode !== 1) {
+        try {
+            if (typeof g_fwExtCover === 'string' && g_fwExtCover) {
+                var extMd = metadb;
+                if (!extMd) { try { extMd = fb.GetNowPlaying(); } catch (eM) { extMd = null; } }
+                var extStream = false;
+                if (extMd) { try { extStream = /^https?:\/\//i.test(String(extMd.Path || '')); } catch (eP) {} }
+                if (extStream) {
+                    var extIm = gdi.Image(g_fwExtCover);
+                    if (isImage(extIm) && extIm.Width > 1) { img = extIm; fromCover = true; }
+                }
+            }
+        } catch (eExt) {}
+    }
+
+    if (!isImage(img) && (srcMode === 0 || srcMode === 2)) {
         if (!metadb) { try { metadb = fb.GetNowPlaying(); } catch (e0) { metadb = null; } }
         var cov = fw_coverArt(metadb);
         if (isImage(cov)) { img = cov; fromCover = true; }
@@ -3966,9 +3985,6 @@ function fw_buildWallpaper(w, h, metadb, qOverride) {
     return tmp;
 }
 
-// -----------------------------------------------------------------------------------
-// fw_drawWallpaper(gr, w, h, wallImg)
-// -----------------------------------------------------------------------------------
 function fw_drawWallpaper(gr, w, h, wallImg) {
     if (!gr) return false;
     if (isImage(wallImg) && wallImg.Width > 0) {
@@ -3982,14 +3998,10 @@ function fw_drawWallpaper(gr, w, h, wallImg) {
     return true;
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_isGlass() {
     return fw_enabled();
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 var g_fw_on = null;
 function fw_on() {
     if (g_fw_on === null) g_fw_on = fw_enabled();
@@ -3999,14 +4011,10 @@ function fw_setOn(v) {
     g_fw_on = !!v;
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_glass() {
     return fw_on();
 }
 
-// -----------------------------------------------------------------------------------
-// -----------------------------------------------------------------------------------
 function fw_np_glass(localOn) {
     if (!fw_transparent(localOn === undefined ? fw_enabled() : localOn)) return false;
     var circle = true, txt = false;
@@ -4015,9 +4023,6 @@ function fw_np_glass(localOn) {
     return !!(circle || txt);
 }
 
-// ===================================================================================
-// -----------------------------------------------------------------------------------
-// ===================================================================================
 function fw_cfgPath() {
     return fb.ProfilePath + 'wsh-data\\eole-settings\\FULLSCREENWALLPAPER.cfg';
 }

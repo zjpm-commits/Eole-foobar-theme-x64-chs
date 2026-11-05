@@ -654,11 +654,6 @@ oPlaylistManager = function (parentObjName) {
 		gr.FillSolidRect(brw.x, 0, brw.w, wh, colors.pm_overlay);
         gr.FillSolidRect(this.x, 0, this.w, this.h, colors.pm_bg);
 
-        if(this.side=="right") {
-            gr.DrawLine(this.x, 0, this.x-0, this.y + this.h, 1.0, colors.pm_border);
-        } else {
-            gr.DrawLine(this.x+this.w, 0, this.x+0+this.w, this.y + this.h, 1.0, colors.pm_border);
-        }
 
         gr.DrawLine(this.x+20, this.y + this.headerHeight-6, this.x+this.w-25, this.y+this.headerHeight-6, 1.0, colors.pm_item_separator_line);
 
@@ -2682,7 +2677,6 @@ oHeaderBar = function(name) {
     this.draw = function(gr) {
 
 		//bottom line
-		gr.FillSolidRect(0, this.h, ww, 1,colors.headerbar_line);
 
 		if(brw.playlistName != globalProperties.whole_library && !libraryfilter_state.isActive()) {
 			this.FullLibraryButton.hide = false;
@@ -2794,7 +2788,7 @@ oHeaderBar = function(name) {
 				this.mainTxt='Playlist : '+brw.playlistName;
 				this.itemsTxt='Empty Playlist';
 			}
-			if(brw.SourcePlaylistIdx==plman.PlayingPlaylist) this.mainTxt+= ' (playing)';
+			if(brw.SourcePlaylistIdx==plman.PlayingPlaylist) this.mainTxt+= ' (正在播放)';
 		} else {
 				this.mainTxt='Loading ...';
 				this.itemsTxt='';

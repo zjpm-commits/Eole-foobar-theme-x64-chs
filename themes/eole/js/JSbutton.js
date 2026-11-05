@@ -134,13 +134,10 @@
 		}
 		
 		if(this.name == "Foobar"){
-			if(compact_titlebar.isActive() && layout_state.isEqual(0)) gr.FillSolidRect(this.x+this.w-1, 0, 1, this.h, colors.settings_btn_line);
-			else {
-				gr.FillSolidRect(this.x+this.w-1, 0, 1, this.h, colors.settings_btn_line);
-				gr.FillSolidRect(0, this.h-1, this.x+this.w-1, 1, colors.settings_btn_line);
-			}
+			/* 左上角 foobar 图标：右侧竖线、底部横线全部去掉（原来是一个 L 形框）。
+			   悬停反馈保留，宽度补上原先让给竖线的那 1px。 */
 			if(this.state==ButtonStates.hover || this.state==ButtonStates.down){
-				gr.FillSolidRect(this.x, -1, this.w-1, this.h, colors.settings_btn_hover_bg);
+				gr.FillSolidRect(this.x, -1, this.w, this.h, colors.settings_btn_hover_bg);
 			}	
 		}
 		
