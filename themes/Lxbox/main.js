@@ -116,8 +116,6 @@
 var APP_VERSION = '2.1.6';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
-/* 2.2.0 试过把属性名写成「原名·中文」，2.2.2 撤回：属性名回到纯英文。
-   这段只在升级那一次，把值从带中文的旧键搬回英文键，搬完就不再执行。 */
 function revertPropLabels() {
   try { if (String(window.GetProperty('Lxbox·属性还原', '0')) === '1') return; } catch (e) { return; }
 
@@ -612,8 +610,6 @@ var platform = platformKnown(hidePlatformRow
   ? fixedPlatform
   : String(getP('lx.platform', 'tx') || 'tx'));
 fixedPlatform = platformKnown(fixedPlatform);
-// 音质分两份：全局（顶栏音质条、「音源」页里的设置）与「隐藏第二排平台」时的专用值。
-// qualityHidden 为空 = 跟全局一致；quality 始终是当前生效值，播放链路只认它。
 var qualityAll = String(getP('lx.quality', '320k') || '320k');
 var qualityHidden = String(getP('lx.qualityHidden', '') || '');
 var quality = qualityEff();
@@ -748,15 +744,13 @@ var bioSongsFile = '';
 var bioSongsBusy = false;
 var bioSongsFull = false;
 
-/* 音质档位，由低到高，跟 lx.js 的 QUALITY_ORDER 对齐：
-     前五档人人都认识；后四档是各家音源的高解析 / 空间音频 / 母带档，
-     脚本没声明这一档时 lx.js 会按 rank 自动降档，所以选它不会让播放播不出来。 */
+
 var QUALITIES = ['auto', '128k', '320k', 'flac', 'flac24bit',
                  'hires', 'atmos', 'atmos_plus', 'master'];
 var QUALITY_LABEL = { auto: '自动', '128k': '128K', '320k': '320K', flac: 'FLAC',
                       'flac24bit': 'FLAC 24', hires: 'Hi-Res',
                       atmos: '全景声', 'atmos_plus': '全景声+', master: '母带' };
-/* 下拉 / 菜单里跟在名字后面的那句解释（太长会截断，尽量短） */
+
 var QUALITY_DESC = {
   auto: '按脚本能力挑最高的',
   '128k': '低码率 mp3',
@@ -773,7 +767,6 @@ function qualityHint(q) {
   return QUALITY_DESC[q] || '';
 }
 
-/* 音质选项（设置页里的两处段控共用），顺序跟 QUALITIES 一致 */
 var UI_S = 1;
 var UI_AUTO = 1;
 
@@ -1109,8 +1102,6 @@ function paletteFromFb(fbc) {
 
 var THEME_SIG = '';
 
-/* Eole 标题栏那个明暗按钮的深浅。fb2k 的 CUI/DUI 配色不会跟着它变，
-   所以在「跟随系统」模式下它优先（null = 还没收到，照旧看 fb2k 配色）。 */
 var eoleTheme = null;
 
 function fbTextColour() {
@@ -1132,7 +1123,6 @@ function applyTheme(force) {
   var t = detectTheme();
   THEME = t;
 
-  /* 只有「跟随系统」模式才吃 Eole 的状态；手动选了深 / 浅仍以手动为准 */
   var eole = (themeMode() === 'auto' && (eoleTheme === 'dark' || eoleTheme === 'light'));
   var fbc = null;
   var sig;
@@ -1151,7 +1141,6 @@ function applyTheme(force) {
   var p = PALETTE[t] || PALETTE.dark;
   for (var k in p) { if (p.hasOwnProperty(k)) C[k] = p[k]; }
 
-  /* Eole 管着深浅时不要再让 fb2k 的前景 / 背景色盖回来，否则文字还是跟着 CUI/DUI 走 */
   if (fbc && !eole) {
     var fp = paletteFromFb(fbc);
     for (var k2 in fp) { if (fp.hasOwnProperty(k2)) C[k2] = fp[k2]; }
@@ -1208,9 +1197,6 @@ function bgSat() {
   return clamp(v, 0, 100);
 }
 
-/* 内容区透明度 0~100：0 = 原样（实心），越大越透，100 = 这一层完全不盖。
-   旧属性 lx.bgGlass（0~100 的「不透明度」，内部映射成 0.35~1.0 的玻璃系数）仍然认：
-   没设过新属性时按它换算过来，老面板看起来跟以前一模一样。 */
 function bgClear() {
   var v = parseInt(getP('lx.bgClear', -1), 10);
   if (v >= 0) return clamp(v, 0, 100);
@@ -2180,8 +2166,6 @@ function solidTint(colour, alpha) {
   return A(colour, clamp(Math.round(alpha), 0, 255));
 }
 
-/* 列表选中项：不铺色块，只画上下两条两端渐隐的细线（与 Eole 的列表同一种模式）。
-   中间实色，左右各 SEL_FADE 像素从同色透明渐变过来，视觉上是把这一行"框"住。 */
 var SEL_FADE = 13;
 var SEL_LINE_A = 150;
 
@@ -2200,9 +2184,6 @@ function drawSelFrame(gr, x, y, w, h, col) {
   selLine(gr, x, y + h - 1, w, col);
 }
 
-/* 内容区那层底：左侧栏右边这一整块，底部状态栏不算。
-   内容区透明度 0% = 原样（实心），越大越透，100% = 完全不盖；
-   内容区染色只掺这一层，标题栏 / 搜索栏 / 左侧栏 / 状态栏都不跟着变色。 */
 function contentVeil() {
   var r = L.content;
   if (!r || r.w <= 0 || r.h <= 0) return null;
@@ -2220,9 +2201,6 @@ function paintContentVeil(gr) {
   gr.FillSolidRect(v.x, v.y, v.w, v.h, v.colour);
 }
 
-/* 三块分区蒙版：标题栏 / 搜索栏 / 左侧栏各盖着一层，各自一条透明度滑杆，
-   和「内容区透明度」同一套算法 —— 0 = 原样，越大越透，100 = 这块完全不盖。
-   只动蒙版这一层，不动内容区，也不动全局背景调色；这三块没有染色。 */
 var SURF_CLEAR_PROPS = {
   head:   'lx.clearHead',
   search: 'lx.clearSearch',
@@ -2263,9 +2241,6 @@ function overlayScrim(colour) {
   return solidTint(colour, Math.round(bgOverlayScrimPct() * 2.55));
 }
 
-/* 浮层遮罩底下垫的那张图：把封面重度虚化后铺满整块浮层（拿不到宿主壁纸，
-   封面就是壁纸的默认来源）。和背景那张分开存 —— 背景带遮罩 / 亮度 / 饱和度
-   和调色，浮层只要一张糊成色块的底，遮罩浓度自己控。 */
 var ovArt = null;
 var ovArtKey = '';
 
@@ -7896,6 +7871,21 @@ function drawHeader(gr) {
 var sbGeom = {};        /* id -> { x, y, h, total, visible, offset } */
 var sbDrag = null;
 var sbGuard = false;
+var sbHotId = '';
+
+/* 鼠标进入滚动条判定区时加宽显示；sbHotId 用于触发重绘 */
+function sbHoverAt(id, x, y, h) {
+  if (sbDrag && sbDrag.id === id) return true;
+  return mouseX >= x - 7 && mouseX <= x + 6 && mouseY >= y && mouseY <= y + h;
+}
+
+function updateScrollbarHot(x, y, id) {
+  var now = (id === undefined) ? scrollbarHit(x, y) : id;
+  if (now !== sbHotId) {
+    sbHotId = now;
+    repaint();
+  }
+}
 
 function scrollbarParts(g) {
   var maxOff = Math.max(1, g.total - g.visible);
@@ -7910,13 +7900,12 @@ function drawScrollbar(gr, id, x, y, h, total, visible, offset) {
   if (total <= visible || h <= 0) return;
 
   var p = scrollbarParts(sbGeom[id]);
-  var hot = !!(sbDrag && sbDrag.id === id) ||
-            (FR.hover && mouseX >= x - 7 && mouseX <= x + 6 && mouseY >= y && mouseY <= y + h);
-  var wide = hot ? 4 : 3;
+  var hot = sbHoverAt(id, x, y, h);
+  var wide = hot ? 7 : 3;
   var bx = x - (wide - 3);
 
-  gr.FillSolidRect(bx, y, wide, h, A(C.scroll, hot ? 0x50 : 0x30));
-  gr.FillSolidRect(bx, p.thumbY, wide, p.thumbH, A(C.scroll, hot ? 0xB0 : 0x80));
+  gr.FillSolidRect(bx, y, wide, h, A(C.scroll, hot ? 0x66 : 0x30));
+  gr.FillSolidRect(bx, p.thumbY, wide, p.thumbH, A(C.scroll, hot ? 0xD0 : 0x80));
 }
 
 function activeScrollIds() {
@@ -10372,6 +10361,8 @@ function on_mouse_move(x, y, mask) {
     var hh0 = settingsHit(x, y);
     var sbR = setScrollbarRect();
     setCursorHand((sbR && inRect(sbR, x, y)) || hh0.k !== 'panel');
+    var setG = sbGeom['set'];
+    updateScrollbarHot(x, y, (sbR && setG && sbHoverAt('set', setG.x, setG.y, setG.h)) ? 'set' : '');
     if (drawHover) {
       var hk = hh0.k + '|' + (hh0.row ? hh0.row.id : '') + '|' +
                (hh0.v == null ? '' : hh0.v) + '|' + (hh0.id || '');
@@ -10395,6 +10386,7 @@ function on_mouse_move(x, y, mask) {
     var cb = overlayCloseRect();
     var hotClose = !!(cb && inRect(cb, x, y));
     var hotSb = !!scrollbarHit(x, y);
+    updateScrollbarHot(x, y);
 
     var bIdx = bioSongAt(x, y);
     var bMore = false;
@@ -10498,6 +10490,8 @@ function on_mouse_move(x, y, mask) {
     repaint();
   }
 
+  updateScrollbarHot(x, y);
+
   if (!drawHover) return;
 
   if (newRow !== hoverRow || newKind !== hoverKind || newBtn !== hoverBtn) {
@@ -10517,6 +10511,7 @@ function on_mouse_move(x, y, mask) {
 function on_mouse_leave() {
   sbDrag = null;
   setCursorHand(false);
+  if (sbHotId) { sbHotId = ''; repaint(); }
   if (sideTogHot) { sideTogHot = false; repaint(); }
   if (scriptHot) { scriptHot = false; repaint(); }
   if (qBarHot) { qBarHot = false; repaint(); }
