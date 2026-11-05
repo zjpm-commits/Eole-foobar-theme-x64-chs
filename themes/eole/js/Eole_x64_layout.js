@@ -324,11 +324,29 @@ function on_playback_stop() {
     try { if (fw_hostOn() && fw_source() !== 1) fwQueue(120); } catch (e) {}
 }
 function on_colours_changed() {
+    /* fb2k 换过界面深浅：标题栏按钮写下的壁纸覆盖失效，回到自动跟随。 */
+    try {
+        if (typeof fw_themeStale === 'function' && fw_themeStale()) fw_clearThemeDark();
+    } catch (eS) {}
     try { fw_isDark(true); } catch (e0) {}
     try { if (fw_hostOn()) fwQueue(60); } catch (e) {}
 }
 
 function on_notify_data(name, info) {
+    /* 深 / 浅切换：壁纸是宿主画的，必须自己收下状态、重建一次，
+       否则只有面板变色、背景不动。global_dark_theme 是标题栏切全部面板时
+       顺带发的，一并当作壁纸切换处理（否则会落到末尾的 arrange() 重排）。 */
+    if (name === 'fw_theme_dark' || name === 'global_dark_theme') {
+        var dv = (info === true || Number(info) === 1) ? 1 : 0;
+        var ref = 0;
+        try { ref = (typeof fw_bgIsDark === 'function' && fw_bgIsDark()) ? 1 : 0; } catch (eR) {}
+        try { window.SetProperty(FW_PROP_DARK, dv); } catch (eA) {}
+        try { window.SetProperty(FW_PROP_DARK_REF, ref); } catch (eB) {}
+        try { fw_isDark(true); } catch (eC) {}
+        try { fwQueue(50); } catch (eTQ) {}
+        try { window.Repaint(); } catch (eTR) {}
+        return;
+    }
     if (name === 'lx_cover_ready' || name === 'lx_cover_path') {
         /* Lxbox 挂好流播封面后会把图片路径广播过来。宿主这边壁纸是整窗背景，
            子面板的封面框归各自面板管，但背景归这里，所以要收下路径重建壁纸。 */

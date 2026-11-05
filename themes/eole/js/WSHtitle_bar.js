@@ -95,7 +95,36 @@ var g_fsize=12;
 var cSearchBox = {};
 var g_genre_cache = null;
 var main_panel_btns = null;
-var previous_darkvalue = properties.darklayout;
+/* 明暗切换按钮的连击闸门：双击事件已取消，但双击仍会产生第二次 lbtn_up。 */
+var g_lightswitchAt = 0;
+
+/* 标题栏不一定加载了 JStheme_common.js，所以壁纸深浅这套状态在这里自己写一份、
+   只靠 window.SetProperty / NotifyOthers 落地（属性名必须与 JStheme_common 里的一致）。 */
+function fwWallPropName() {
+    return (typeof FW_PROP_DARK === 'string') ? FW_PROP_DARK : "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
+}
+function fwWallRefName() {
+    return (typeof FW_PROP_DARK_REF === 'string') ? FW_PROP_DARK_REF : "显示·全屏壁纸深色·fb2k基准";
+}
+/* fb2k 当前界面背景是深还是浅（同 fw_bgIsDark 的算法，独立一份以免拿不到公共库） */
+function fwWallBgDark() {
+    if (typeof fw_bgIsDark === 'function') { try { return fw_bgIsDark(); } catch (e0) {} }
+    var c = 0;
+    try { c = (window.InstanceType === 1) ? window.GetColourDUI(1) : window.GetColourCUI(3); } catch (e) { return false; }
+    try { c = Number(c) & 0xffffff; } catch (e2) { return false; }
+    if (!c) return false;
+    var r = (c >> 16) & 0xff, g = (c >> 8) & 0xff, b = c & 0xff;
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 0x80;
+}
+/* 写下"壁纸该用深还是浅"，再广播给宿主（壁纸由 Eole_x64_layout 画整窗背景）。 */
+function fwWriteWallDark(dark) {
+    dark = !!dark;
+    try { window.SetProperty(fwWallPropName(), dark ? 1 : 0); } catch (e1) {}
+    try { window.SetProperty(fwWallRefName(), fwWallBgDark() ? 1 : 0); } catch (e2) {}
+    try { if (typeof fw_setThemeDark === 'function') fw_setThemeDark(dark); } catch (e3) {}
+    try { window.NotifyOthers("fw_theme_dark", dark); } catch (e4) {}
+    return dark;
+}
 
 var cSearchBoxMainLight = {
 	width:270,
@@ -382,6 +411,10 @@ function Lightswitch(switch_all,new_state){
 		get_colors();
 		g_searchbox.adapt_look_to_layout();
 		window.NotifyOthers("global_dark_theme", new_state);
+		/* 面板配色已经切完了，把全屏壁纸的深 / 浅也定下来。
+		   壁纸由 Eole_x64_layout 画整窗背景，它不听 global_dark_theme，
+		   所以这里单独写一份显式状态再发一条专属广播。 */
+		try { fwWriteWallDark(new_state); } catch(eD1){}
 		window.Repaint();
 	}
 }
@@ -583,12 +616,18 @@ function build_buttons(){
 					toggleNowPlayingState();
 				}
 			}, false, false,images.nowplaying_off_icon,images.nowplaying_off_icon,-1, false, false, true),
-			Lightswitch: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "lightswitch", "深色与浅色切换"+"\n"+"仅文字颜色切换", false, function () {
-				previous_darkvalue = properties.darklayout;				
-				Lightswitch();
-			}, function () {
-				Lightswitch(true,!previous_darkvalue);
-			}, images.lightswitch_img,images.lightswitch_img,-1, false, false, true),
+			Lightswitch: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "lightswitch", "深色与浅色切换"+"\n"+"切换全部面板与全屏壁纸", false, function () {
+				/* 单击：全部面板 + 全屏壁纸一起切。双击已取消，但 Windows 的双击
+				   仍然会发出第二次 lbtn_up，这里用 300ms 闸门保证一次操作只切一次。 */
+				var now = (new Date()).getTime();
+				if (now - g_lightswitchAt < 300) return;
+				g_lightswitchAt = now;
+				/* 目标状态取"壁纸当前实际的深浅"再取反：拿得到公共库就用它的判定
+				   （能反映上一次点击的结果），拿不到就退回当前页的深浅状态。 */
+				var target = !properties.darklayout;
+				try { if (typeof fw_themeDark === 'function') target = !fw_themeDark(); } catch (e0) {}
+				Lightswitch(true, target);   /* 全切分支内部会连壁纸一起写并广播 */
+			}, false, images.lightswitch_img,images.lightswitch_img,-1, false, false, true),
 			Fullscreen: new JSButton(-112, btn.top_m, btn.width_small_btns, btn.height, "", "fullscreen", "全屏", function () {
 				g_uihacks.toggleFullscreen();
 			}, false,false,images.fullscreen_img,images.fullscreen_img,-1, false, false, true),
@@ -3202,6 +3241,9 @@ function on_init(){
 on_init();
 
 function on_colours_changed() {
+	/* fb2k 的界面深浅变了：之前明暗按钮写下的壁纸覆盖到此作废，
+	   重新交回 fw_isDarkRaw() 的自动判定（也就是"跟着 fb2k 走"）。 */
+	try { if (typeof fw_themeStale === 'function' && fw_themeStale()) fw_clearThemeDark(); } catch (eS) {}
 	if (!properties.darklayout_follow_cui) return;
     var col = (window.InstanceType === 1) ? window.GetColourDUI(1) : window.GetColourCUI(3);
     var r = (col >> 16) & 0xFF;
@@ -3210,5 +3252,9 @@ function on_colours_changed() {
     var cuiDark = r + g + b < 383;
     if (cuiDark !== properties.darklayout) {
         Lightswitch(true);
+        /* Lightswitch 内部会按新的深浅再写一次覆盖，这里清掉，
+           让壁纸完全走回自动跟随，不留下"看起来像手动设置"的状态。 */
+        try { if (typeof fw_clearThemeDark === 'function') fw_clearThemeDark(); } catch (eC) {}
+        try { if (typeof fw_isDark === 'function') fw_isDark(true); } catch (eD) {}
     }
 }

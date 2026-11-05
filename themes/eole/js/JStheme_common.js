@@ -3651,6 +3651,14 @@ var FW_PROP_MASK_LT = "显示·全屏壁纸蒙版浓度·浅色(0-255)";
 var FW_PROP_QUALITY = "显示·全屏壁纸质量(1=已缩放 2=1.5x 3=2x)";
 var FW_PROP_LXB     = "Lxbox·全屏透明";
 
+/* 全屏壁纸的深 / 浅显式状态。
+   -1 = 没有覆盖，按 fw_isDarkRaw() 的老规则（面板属性 + fb2k 背景亮度）；
+    0 = 强制浅色，1 = 强制深色。
+   第二项是写入覆盖那一刻 fb2k 背景的深浅，用来判断"之后用户在 fb2k 里是不是
+   换过界面主题"——一旦对不上，覆盖自动作废，壁纸回到跟随 fb2k 的老行为。 */
+var FW_PROP_DARK     = "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
+var FW_PROP_DARK_REF = "显示·全屏壁纸深色·fb2k基准";
+
 var g_fw_lastHasRealImg = null;
 var g_fw_lastSrcCover = false;
 
@@ -3684,10 +3692,49 @@ function fw_isDark(force) {
     var now = (new Date()).getTime();
     if (!force && g_fwDarkV !== null && (now - g_fwDarkAt) < 250) return g_fwDarkV;
     var v = false;
-    try { v = fw_isDarkRaw(); } catch (e) { v = false; }
+    try { v = fw_themeDark(); } catch (e) { v = false; }
     g_fwDarkV = v;
     g_fwDarkAt = now;
     return v;
+}
+
+/* 壁纸当前应当用深色还是浅色。
+   显式覆盖有效就用覆盖，否则完全沿用原来的 fw_isDarkRaw()——也就是说
+   "全屏壁纸跟随 foobar2000 深浅自动切换"这条老能力一行没动。 */
+function fw_themeDark() {
+    var v = -1;
+    try { v = Number(window.GetProperty(FW_PROP_DARK, -1)); } catch (e) { v = -1; }
+    if (v !== 0 && v !== 1) return fw_isDarkRaw();
+    if (fw_themeStale()) return fw_isDarkRaw();
+    return v === 1;
+}
+
+/* 覆盖是不是已经过期：写入覆盖时 fb2k 是深（浅），现在反过来了，
+   说明用户在这期间换过 fb2k 的界面深浅主题，覆盖该让位。 */
+function fw_themeStale() {
+    var ref = -1;
+    try { ref = Number(window.GetProperty(FW_PROP_DARK_REF, -1)); } catch (e) { return false; }
+    if (ref !== 0 && ref !== 1) return false;
+    var cur = 0;
+    try { cur = fw_bgIsDark() ? 1 : 0; } catch (e2) { return false; }
+    return cur !== ref;
+}
+
+function fw_setThemeDark(dark) {
+    dark = !!dark;
+    try { window.SetProperty(FW_PROP_DARK, dark ? 1 : 0); } catch (e) {}
+    try { window.SetProperty(FW_PROP_DARK_REF, fw_bgIsDark() ? 1 : 0); } catch (e1) {}
+    g_fwDarkV = dark;
+    g_fwDarkAt = (new Date()).getTime();
+    return dark;
+}
+
+function fw_clearThemeDark() {
+    try { window.SetProperty(FW_PROP_DARK, -1); } catch (e) {}
+    try { window.SetProperty(FW_PROP_DARK_REF, -1); } catch (e1) {}
+    g_fwDarkV = null;
+    g_fwDarkAt = 0;
+    return false;
 }
 
 function fw_isDarkRaw() {
