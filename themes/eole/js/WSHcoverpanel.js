@@ -36,8 +36,6 @@ var bar_height_min=1;
 var b_img;
 var g_text_artist="";
 var g_text_title="";
-var g_text_album="";
-var g_text_date="";
 var images = {};
 var buttons = {};
 var animationTimer = false;

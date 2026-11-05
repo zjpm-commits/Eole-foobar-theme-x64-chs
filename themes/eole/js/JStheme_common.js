@@ -695,7 +695,6 @@ function unclipListArea(gr) {
     _list_clip_state = false;
 }
 
-
 function get_colors_global(){
 	darkcolors.normal_txt = GetGrey(240);
 	if(properties.darklayout || properties.stick2darklayout){
@@ -771,9 +770,6 @@ function get_colors_global(){
 		colors.keyboard_search_txtred = RGB(255,80,80);
 
 		colors.sidesline = GetGrey(255,25);
-		colors.sidesline_hi = GetGrey(255,45);
-		colors.sidesline_sh = GetGrey(0,110);
-		colors.bevel_style = 0;
 		colors.border = GetGrey(255,50);
 		colors.border_dark = GetGrey(0,40);
 		colors.border_light = colors.border;
@@ -855,9 +851,6 @@ function get_colors_global(){
 		colors.keyboard_search_txtred = RGB(255,80,80);
 
 		colors.sidesline = GetGrey(0,37);
-		colors.sidesline_hi = GetGrey(255,150);
-		colors.sidesline_sh = GetGrey(0,48);
-		colors.bevel_style = 0;
 		colors.border = GetGrey(0,50);
 		colors.border_dark = GetGrey(0,40);
 		colors.border_light = GetGrey(255,50);
@@ -1451,17 +1444,13 @@ function shutdown_computer(){
 	WshShell.Run("shutdown.exe /s /t 00", 0);
 }
 var MF_SEPARATOR = 0x00000800;
-var MF_ENABLED = 0x00000000;
 var MF_GRAYED = 0x00000001;
 var MF_STRING = 0x00000000;
 var MF_DISABLED = 0x00000002;
-var MF_UNCHECKED = 0x00000000;
 var MF_CHECKED = 0x00000008;
 var MFT_RADIOCHECK = 0x00000200;
 var MFS_CHECKED = 0x00000008;
 var MF_POPUP = 0x00000010;
-var MF_MENUBARBREAK = 0x00000020;
-var MF_MENUBREAK = 0x00000040;
 var DT_TOP = 0x00000000;
 var DT_LEFT = 0x00000000;
 var DT_CENTER = 0x00000001;
@@ -1470,26 +1459,13 @@ var DT_VCENTER = 0x00000004;
 var DT_BOTTOM = 0x00000008;
 var DT_WORDBREAK = 0x00000010;
 var DT_SINGLELINE = 0x00000020;
-var DT_EXPANDTABS = 0x00000040;
-var DT_TABSTOP = 0x00000080;
 var DT_NOCLIP = 0x00000100;
-var DT_EXTERNALLEADING = 0x00000200;
 var DT_CALCRECT = 0x00000400;  // [1.2.1] Handles well
 var DT_NOPREFIX = 0x00000800;  // NOTE: Please use this flag, or a '&' character will become an underline '_'
-var DT_INTERNAL = 0x00001000;
-var DT_EDITCONTROL = 0x00002000;
-var DT_PATH_ELLIPSIS = 0x00004000;
 var DT_END_ELLIPSIS = 0x00008000;
-var DT_MODIFYSTRING = 0x00010000;  // do not use
-var DT_RTLREADING = 0x00020000;
 var DT_WORD_ELLIPSIS = 0x00040000;
-var DT_NOFULLWIDTHCHARBREAK = 0x00080000;
-var DT_HIDEPREFIX = 0x00100000;
-var DT_PREFIXONLY = 0x00200000;
-var VK_F1 = 0x70;
 var VK_F2 = 0x71;
 var VK_F3 = 0x72;
-var VK_F4 = 0x73;
 var VK_F5 = 0x74;
 var VK_F6 = 0x75;
 var VK_BACK = 0x08;
@@ -1507,34 +1483,13 @@ var VK_LEFT = 0x25;
 var VK_UP = 0x26;
 var VK_RIGHT = 0x27;
 var VK_DOWN = 0x28;
-var VK_INSERT = 0x2D;
 var VK_DELETE = 0x2E;
-var VK_SPACEBAR = 0x20;
-
-var SM_CXVSCROLL = 2;
-var SM_CYHSCROLL = 3;
-
-// Used in get_colors()
-var COLOR_WINDOW = 5;
-var COLOR_HIGHLIGHT = 13;
-var COLOR_BTNFACE = 15;
-var COLOR_BTNTEXT = 18;
 
 // Used in window.SetCursor()
 var IDC_ARROW = 32512;
 var IDC_IBEAM = 32513;
-var IDC_WAIT = 32514;
-var IDC_CROSS = 32515;
-var IDC_UPARROW = 32516;
-var IDC_SIZE = 32640;
-var IDC_ICON = 32641;
-var IDC_SIZENWSE = 32642;
-var IDC_SIZENESW = 32643;
 var IDC_SIZEWE = 32644;
-var IDC_SIZENS = 32645;
 var IDC_SIZEALL = 32646;
-var IDC_NO = 32648;
-var IDC_APPSTARTING = 32650;
 var IDC_HAND = 32649;
 var IDC_HELP = 32651;
 
@@ -1711,20 +1666,6 @@ function GetGrey(grey,alpha){
 	return RGBA(grey,grey,grey,alpha);
 }
 
-function drawRightBevel(gr, w, y, h){
-	if(!gr || !(w > 2)) return;
-	var st = (typeof colors.bevel_style !== 'undefined') ? colors.bevel_style : 2;
-	var flat = colors.sidesline;
-	if(st === 2 || typeof colors.sidesline_hi === 'undefined'){
-		gr.FillSolidRect(w-1, y, 1, h, flat);
-		return;
-	}
-	var hi = colors.sidesline_hi, sh = colors.sidesline_sh;
-	var inner = (st === 0) ? hi : sh;
-	var outer = (st === 0) ? sh : hi;
-	gr.FillSolidRect(w-2, y, 1, h, inner);
-	gr.FillSolidRect(w-1, y, 1, h, outer);
-}
 function HSL2RGB(zH, zS, zL, result) {
     var L = zL / 100;
     var S = zS / 100;
@@ -1935,13 +1876,6 @@ var_cache = function(){
 }
 function isDefined(variable){
 	return (typeof variable != 'undefined' && variable!=null);
-}
-function cloneImg(img){
-	try {
-		return new GdiBitmap(img);
-	} catch(e){
-		console.log(e);
-	}
 }
 function sortNumber(a,b) {
     if(a[0] < b[0]) return -1;
@@ -2630,7 +2564,6 @@ button = function (normal, hover, down, name, tooltip_text) {
         return this.state;
     };
 };
-
 
 function DrawPolyStar(gr, x, y, out_radius, in_radius, points, line_thickness, line_color, fill_color, angle, opacity){
     if(!opacity && opacity != 0) opacity = 255;
@@ -3651,9 +3584,7 @@ var FW_PROP_MASK_LT = "显示·全屏壁纸蒙版浓度·浅色(0-255)";
 var FW_PROP_QUALITY = "显示·全屏壁纸质量(1=已缩放 2=1.5x 3=2x)";
 var FW_PROP_LXB     = "Lxbox·全屏透明";
 
-/* 全屏壁纸的深 / 浅显式状态。
-   -1 = 没有覆盖，按 fw_isDarkRaw() 的老规则（面板属性 + fb2k 背景亮度）；
-    0 = 强制浅色，1 = 强制深色。
+/* 全屏壁纸的深 / 浅：第一个是显式覆盖（-1 跟随 / 0 浅 / 1 深），
    第二项是写入覆盖那一刻 fb2k 背景的深浅，用来判断"之后用户在 fb2k 里是不是
    换过界面主题"——一旦对不上，覆盖自动作废，壁纸回到跟随 fb2k 的老行为。 */
 var FW_PROP_DARK     = "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
@@ -3825,6 +3756,12 @@ function fw_sharedOn(force) {
     return fw_sharedState(force) === true;
 }
 
+/* 不要删：这不是本主题 js 目录内部用的函数。
+   biography\scripts\interface.js 的 UserInterface.draw() 通过
+   typeof fw_transparent === 'function' 探测它，决定要不要给面板铺不透明底色：
+   本面板勾了「背景壁纸·透明」且全局全屏壁纸开着时不铺，让宿主壁纸透下来。
+   SMP 的简介面板把 JStheme_common.js 与 SMPbiography.js 装在同一个脚本上下文里，
+   所以它能直接读到这里的顶层符号。删掉这个函数 → 简介面板背景变成不透明纯色块。 */
 function fw_transparent(localOn) {
     if (!localOn) return false;
     return fw_sharedOn();
@@ -4045,10 +3982,6 @@ function fw_drawWallpaper(gr, w, h, wallImg) {
     return true;
 }
 
-function fw_isGlass() {
-    return fw_enabled();
-}
-
 var g_fw_on = null;
 function fw_on() {
     if (g_fw_on === null) g_fw_on = fw_enabled();
@@ -4060,14 +3993,6 @@ function fw_setOn(v) {
 
 function fw_glass() {
     return fw_on();
-}
-
-function fw_np_glass(localOn) {
-    if (!fw_transparent(localOn === undefined ? fw_enabled() : localOn)) return false;
-    var circle = true, txt = false;
-    try { circle = !!window.GetProperty("显示·圆形模式", true); } catch (e) { circle = true; }
-    try { txt = !!window.GetProperty("显示曲目信息", false); } catch (e) { txt = false; }
-    return !!(circle || txt);
 }
 
 function fw_cfgPath() {

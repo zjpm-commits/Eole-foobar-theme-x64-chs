@@ -3414,7 +3414,7 @@ function searchLibrary() {
             this.drawsel(gr);
             get_offset(gr);
             gr.GdiDrawText(p.s_txt.substr(offset), ui.font, colors.normal_txt, p.s_x, this.y, p.s_w2, p.s_sp, p.l);
-        } else if(!(p.s_search)) gr.GdiDrawText("筛选...", g_font.plus1, colors.normal_txt, p.s_x, this.y, p.s_w2-5, p.s_sp-1, p.l | DT_END_ELLIPSIS);
+        } else if(!(p.s_search)) gr.GdiDrawText("搜索媒体库...", g_font.plus1, colors.normal_txt, p.s_x, this.y, p.s_w2-5, p.s_sp-1, p.l | DT_END_ELLIPSIS);
         sL.drawcursor(gr);
 
         if (p.s_show > 1) {

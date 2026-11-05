@@ -2434,6 +2434,19 @@ function on_focus(is_focused) {
 }
 function on_notify_data(name, info) {
     switch(name) {
+		case "fw_theme_request": {
+			/* 简介 / Lxbox 这类外部面板启动时会来问一次当前深浅（它们读不到本主题的
+			   面板属性），回一条它们认识的广播；正常由 Eole_x64_layout 应这一声，
+			   这里只是布局脚本没跟上时的兜底。取值和 fw_isDark() 一致：
+			   有明确覆盖就用覆盖，否则看 fb2k 当前的界面底色。 */
+			var dReq = false;
+			try {
+				var vReq = Number(window.GetProperty(fwWallPropName(), -1));
+				dReq = (vReq === 0 || vReq === 1) ? (vReq === 1) : fwWallBgDark();
+			} catch (eReq) { dReq = !!properties.darklayout; }
+			window.NotifyOthers("fw_theme_dark", dReq);
+			break;
+		}
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
@@ -2786,9 +2799,6 @@ oSearch = function() {
 
 		this.inputbox.draw(gr, this.x+cSearchBox.paddingLeft, this.y+cSearchBox.paddingTop, 0, 0);
 		if(layout_state.isEqual(0)){
-			//gr.FillSolidRect(this.x, this.y-2, this.w, 1, colors.search_line); //top line
-			//gr.FillSolidRect(this.x, this.y+this.h - 1, this.w, 1, colors.search_line); //bottom line
-			//gr.FillSolidRect(this.x, this.y, 1, this.h-1, colors.search_line); //left line
 			var grad_width = 10;
 			var grad_hadd = 2;
 			gr.FillSolidRect(this.x+this.w-1, this.y+1+grad_width-grad_hadd, 1, this.h-2-grad_width+grad_hadd, colors.search_line); //right line

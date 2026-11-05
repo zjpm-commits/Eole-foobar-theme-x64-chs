@@ -482,6 +482,7 @@ class UserInterface {
 
 	getUIColours() {
 		const colours = Object.keys(colourSelector);
+		const bgEmpty = this.col.bg === ''; // 用户没自定义底色时，Eole 才能接管它
 		this.themeColour = ppt.themeColour && colours.length ? colourSelector[colours[ppt.themeColour]] : null;
 		if (ppt.themed && (ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7) && this.themeColour && ppt.themeColour) {
 			this.col.txt = this.themeColour.text;
@@ -502,6 +503,15 @@ class UserInterface {
 					this.col.txt = window.GetColourDUI(0);
 					this.col.txt_h = window.GetColourDUI(2);
 					break;
+			}
+			/* Eole：面板深浅由标题栏那个明暗按钮决定，而 fb2k 的 CUI/DUI 配色不会跟着它变，
+			   于是这里一直取到的是"系统主题"的颜色，按钮切了文字也不动。收到主题广播后
+			   用同一套灰阶覆盖文字 / 底色（面板自己设的模糊主题优先，不动它）。 */
+			if (typeof eoleDarkState === 'boolean' && !this.blur.dark && !this.blur.light) {
+				if (bgEmpty) this.col.bg = eoleDarkState ? RGB(25, 25, 25) : RGB(255, 255, 255);
+				this.col.bgSel = eoleDarkState ? RGBA(255, 255, 255, 36) : RGBA(50, 50, 50, 36);
+				this.col.txt = eoleDarkState ? RGB(240, 240, 240) : RGB(30, 30, 30);
+				this.col.txt_h = eoleDarkState ? RGB(255, 255, 255) : RGB(71, 129, 183);
 			}
 		}
 	}

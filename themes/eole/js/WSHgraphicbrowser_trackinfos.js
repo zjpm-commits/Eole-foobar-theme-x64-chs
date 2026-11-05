@@ -4993,6 +4993,31 @@ oBrowser = function(name) {
 
             g_end = end_;
 
+			/* 滚动内容只画到搜索框下沿以下。标题栏与筛选框的背景是透明的，
+			   滚上去半截的封面会盖到搜索框上。gr.SetClip 在本环境不起作用（调用被忽略），
+			   所以改成逐行裁剪封面的绘制矩形：目标矩形与源矩形按同一比例一起裁，
+			   不变形、不留空白。滚轮步进、平滑滚动、行判定与展开动画一律不动。 */
+			var boxBottom = this.headerBarHeight;
+			if(properties.showheaderbar && this.showFilterBox && g_filterbox && g_filterbox.inputbox.visible) {
+				boxBottom = Math.max(boxBottom, cFilterBox.y + cFilterBox.h);
+			}
+			/* 但不越过静止时第一张封面的顶边，免得把首行封面削掉一截 */
+			var coverClipTop = Math.min(boxBottom, this.y + this.marginTop + this.CoverMarginTop - 8);
+			/* 只画 coverClipTop 以下的那部分封面；整张都被裁掉时什么都不画 */
+			var drawCoverBelow = function(img, dx, dy, dsize) {
+				if(!img || !img.Width || !img.Height) return;
+				var cut = coverClipTop - dy;
+				if(cut <= 0) {
+					gr.DrawImage(img, dx, dy, dsize, dsize, 0, 0, img.Width, img.Height);
+					return;
+				}
+				if(cut >= dsize) return;
+				var sy = Math.round(cut * img.Height / dsize);
+				if(sy < 0) sy = 0;
+				if(sy >= img.Height) return;
+				gr.DrawImage(img, dx, coverClipTop, dsize, dsize - cut, 0, sy, img.Width, img.Height - sy);
+			};
+
 			//Show now playing animation
 			if(properties.animateShowNowPlaying && cNowPlaying.flashEnable && this.isPlayingIdx>-1) {
 				if(this.ellipse_size==0){
@@ -5005,8 +5030,8 @@ oBrowser = function(name) {
 				ay = firstalbum_y + (row * this.rowHeight);
 				coverTop = ay + this.CoverMarginTop;
 
-				if(ay >= (this.y - (this.marginTop < 0 ? 1 : 0)) && ay < this.y + this.h)
-				gr.FillEllipse(ax+1-Math.round((this.ellipse_size-this.coverRealWith)/2), coverTop+1-Math.round((this.ellipse_size-this.coverRealWith)/2), this.ellipse_size-2, this.ellipse_size-2, colors.nowplaying_animation_circle);
+				if(coverTop - 8 >= coverClipTop) gr.FillEllipse(ax+1-Math.round((this.ellipse_size-this.coverRealWith)/2), coverTop+1-Math.round((this.ellipse_size-this.coverRealWith)/2), this.ellipse_size-2, this.ellipse_size-2, colors.nowplaying_animation_circle);
+				//else gr.FillSolidRect(ax+1-(this.ellipse_size-this.coverRealWith)/2, coverTop+1-(this.ellipse_size-this.coverRealWith)/2, this.ellipse_size-2, this.ellipse_size-2, colors.nowplaying_animation_circle);
 			}
 
             for(var i = start_;i < end_;i++){
@@ -5026,16 +5051,31 @@ oBrowser = function(name) {
 					this.GetAlbumCover(loop_id);
 				}
 				
-				if(ay >= (this.y - (this.marginTop < 0 ? 1 : 0)) && ay < this.y + this.h) {
+				if(ay >= (0 - this.rowHeight) && ay < this.y + this.h) {
 					// Calcs
 					coverTop = ay + this.CoverMarginTop;
 					this.groups[loop_id].x = ax;
 					this.groups[loop_id].y = coverTop;
-					// cover
+				// cover
+				if(coverTop - 8 < coverClipTop) {
+					/* 这一行的封面顶边已经滚进搜索框区域：只画封面被裁剩下的部分，
+					   悬停按钮、边框这些装饰不画，免得它们透到搜索框上。
+					   注意要按 coverTop-8 判断：封面连阴影是从 coverTop-8 开始画的，
+					   用 coverTop 判断会在非整行滚动位置（例如滑到底）漏出 8px。 */
 					if(this.groups[loop_id].cover_img_thumb!=null && typeof this.groups[loop_id].cover_img_thumb != "string") {
-						
-						this.FormatThumb(loop_id); 
-						gr.DrawImage(this.groups[loop_id].cover_img_thumb, ax-8, coverTop-8, this.coverRealWith+28, this.coverRealWith+28, 0, 0,this.groups[loop_id].cover_img_thumb.Width, this.groups[loop_id].cover_img_thumb.Height);
+						this.FormatThumb(loop_id);
+						drawCoverBelow(this.groups[loop_id].cover_img_thumb, ax-8, coverTop-8, this.coverRealWith+28);
+						if(properties.CoverGridNoText){
+							this.groups[loop_id].text_y = coverTop;
+							this.groups[loop_id].showToolTip = true;
+						}
+					} else if(this.groups[loop_id].cover_img_thumb=="no_cover") {
+						drawCoverBelow(globalProperties.nocover_img, ax, coverTop, this.coverRealWith);
+					}
+				} else if(this.groups[loop_id].cover_img_thumb!=null && typeof this.groups[loop_id].cover_img_thumb != "string") {
+
+					this.FormatThumb(loop_id);
+					gr.DrawImage(this.groups[loop_id].cover_img_thumb, ax-8, coverTop-8, this.coverRealWith+28, this.coverRealWith+28, 0, 0,this.groups[loop_id].cover_img_thumb.Width, this.groups[loop_id].cover_img_thumb.Height);
 						if(properties.CoverGridNoText){
 							this.groups[loop_id].text_y = coverTop;
 							this.groups[loop_id].showToolTip = true;
@@ -5095,11 +5135,11 @@ oBrowser = function(name) {
 							var space_between_lines = 2;
 							this.groups[loop_id].showToolTip = ( (this.groups[loop_id].firstRowLength > this.coverRealWith) || (this.groups[loop_id].secondRowLength > this.coverRealWith) )
 
-							if(this.groups[loop_id].text_y+this.firstRowHeight<g_headerbar.h || this.groups[loop_id].text_y>g_headerbar.h)
-								gr.GdiDrawText(this.groups[loop_id].firstRow, g_font.plus2, colors.normal_txt, ax, this.groups[loop_id].text_y, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
+						if(this.groups[loop_id].text_y >= coverClipTop)
+							gr.GdiDrawText(this.groups[loop_id].firstRow, g_font.plus2, colors.normal_txt, ax, this.groups[loop_id].text_y, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-							if(this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines + this.secondRowHeight<g_headerbar.h || this.groups[loop_id].text_y>g_headerbar.h)
-								gr.GdiDrawText(this.groups[loop_id].secondRow, g_font.italic, colors.faded_txt, ax, this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
+						if(this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines >= coverClipTop)
+							gr.GdiDrawText(this.groups[loop_id].secondRow, g_font.italic, colors.faded_txt, ax, this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(typeof this.groups[loop_id].firstRowLength == 'undefined') this.groups[loop_id].firstRowLength = gr.CalcTextWidth(this.groups[loop_id].firstRow,g_font.plus2);
 							if(typeof this.groups[loop_id].secondRowLength == 'undefined') this.groups[loop_id].secondRowLength = gr.CalcTextWidth(this.groups[loop_id].secondRow,g_font.normal);

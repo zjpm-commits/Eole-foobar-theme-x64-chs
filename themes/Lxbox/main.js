@@ -1,4 +1,4 @@
-/* ==========================================================================
+﻿/* ==========================================================================
    Lxbox · 洛雪音源 JSplitter 面板
    发布页：https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter
 
@@ -1035,6 +1035,8 @@ function themeLabel(mode) {
 function detectTheme() {
   var mode = themeMode();
   if (mode !== 'auto') return mode;
+  /* Eole 的深浅按钮优先于 fb2k 的界面配色 */
+  if (eoleTheme === 'dark' || eoleTheme === 'light') return eoleTheme;
   var c = uiBackgroundColour();
   if (c == null) return 'dark';
   return luminanceOf(c) >= 0.5 ? 'light' : 'dark';
@@ -1107,6 +1109,10 @@ function paletteFromFb(fbc) {
 
 var THEME_SIG = '';
 
+/* Eole 标题栏那个明暗按钮的深浅。fb2k 的 CUI/DUI 配色不会跟着它变，
+   所以在「跟随系统」模式下它优先（null = 还没收到，照旧看 fb2k 配色）。 */
+var eoleTheme = null;
+
 function fbTextColour() {
   var fbc = fbUiColours();
   if (fbc && typeof fbc.fg === 'number' && fbc.fg > 0) return fbc.fg & 0xFFFFFF;
@@ -1126,6 +1132,8 @@ function applyTheme(force) {
   var t = detectTheme();
   THEME = t;
 
+  /* 只有「跟随系统」模式才吃 Eole 的状态；手动选了深 / 浅仍以手动为准 */
+  var eole = (themeMode() === 'auto' && (eoleTheme === 'dark' || eoleTheme === 'light'));
   var fbc = null;
   var sig;
   if (bgArtEnabled()) {
@@ -1136,18 +1144,20 @@ function applyTheme(force) {
   }
   sig += '|h' + bgHue();
   sig += '|t' + fbTextColour();
+  sig += '|e' + (eole ? eoleTheme : '');
   if (!force && sig === THEME_SIG && C.text) return false;
   THEME_SIG = sig;
 
   var p = PALETTE[t] || PALETTE.dark;
   for (var k in p) { if (p.hasOwnProperty(k)) C[k] = p[k]; }
 
-  if (fbc) {
+  /* Eole 管着深浅时不要再让 fb2k 的前景 / 背景色盖回来，否则文字还是跟着 CUI/DUI 走 */
+  if (fbc && !eole) {
     var fp = paletteFromFb(fbc);
     for (var k2 in fp) { if (fp.hasOwnProperty(k2)) C[k2] = fp[k2]; }
   }
   applyHueTint();
-  applyFontColour();
+  if (!eole) applyFontColour();
   return true;
 }
 
@@ -10270,6 +10280,16 @@ function on_size() {
 // 注意 Cfg 那条不能漏 —— TitleBar 点开关时先发 Cfg、宿主随后才发 Repaint，
 // 只监听后两者的话，切歌换图那一瞬间本面板会残留上一张壁纸的像素。
 function on_notify_data(name, info) {
+  if (name === 'fw_theme_dark' || name === 'bio_dark_theme') {
+    var m = (info === true || Number(info) === 1) ? 'dark' : 'light';
+    if (eoleTheme !== m) {
+      eoleTheme = m;
+      applyTheme(true);
+      buildBackdrop();
+      repaint();
+    }
+    return;
+  }
   if (name === 'fullscreenWallpaper' ||
       name === 'fullscreenWallpaperCfg' ||
       name === 'fullscreenWallpaperRepaint') {
@@ -11142,6 +11162,12 @@ function init() {
   setTimeout(function () { refreshBackground(false); }, 900);
 
   startThemeWatch();
+
+  /* 启动时向 Eole 宿主要一次当前深浅：外部面板读不到它的面板属性，
+     不问的话只能按 fb2k 配色猜，标题栏按钮切过之后就对不上了。 */
+  setTimeout(function () {
+    try { window.NotifyOthers('fw_theme_request', true); } catch (e) {}
+  }, 900);
 
   setTimeout(function () {
     NM.lx.loadAll({ delay: 120 }).then(function (runtimes) {

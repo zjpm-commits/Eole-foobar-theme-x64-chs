@@ -1988,7 +1988,6 @@ var g_avoid_on_playlists_changed = false;
 var g_avoid_on_item_focus_change = false;
 var g_avoid_on_playlist_items_added = false;
 var g_avoid_on_playlist_items_removed = false;
-var g_avoid_on_playlist_items_removed_callbacks_on_sendItemToPlaylist = false;
 var g_avoid_on_playlist_items_reordered = false;
 // mouse actions
 var g_lbtn_click = false;

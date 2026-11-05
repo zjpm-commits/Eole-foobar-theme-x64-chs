@@ -27,7 +27,7 @@
     wallpapermode: window.GetProperty("大面板·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("大面板·壁纸显示方式", 0),
     defaultPlaylistItemAction: window.GetProperty("大面板·播放列表默认点击动作", "Play"), //"Add to playback queue"
-    showFilterBox: window.GetProperty("大面板·显示筛选框", true),
+    showFilterBox: window.GetProperty("大面板·显示搜索框", true),
     doubleRowText: window.GetProperty("大面板·双行文本", true),
     doubleRowShowCover: window.GetProperty("大面板·双行显示封面", true),
     showArtistAlways: window.GetProperty("大面板·始终显示艺术家", true),
@@ -83,7 +83,7 @@ var properties_mini = {
     wallpapermode: window.GetProperty("迷你·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("迷你·壁纸显示方式", 0),
     defaultPlaylistItemAction: window.GetProperty("迷你·播放列表默认点击动作", "Play"), //"Add to playback queue"
-    showFilterBox: window.GetProperty("迷你·显示筛选框", true),
+    showFilterBox: window.GetProperty("迷你·显示搜索框", true),
     doubleRowText: window.GetProperty("迷你·双行文本", true),
     doubleRowShowCover: window.GetProperty("迷你·双行显示封面", true),
     showArtistAlways: window.GetProperty("迷你·始终显示艺术家", true),
@@ -162,7 +162,7 @@ var PROP_KEY_BIG = {
 		"playlists_dark_theme": "大面板·播放列表深色主题", 	"bio_dark_theme": "大面板·艺术家简介深色主题", 	"bio_stick2darklayout": "大面板·艺术家简介跟随深色布局",
 		"visualization_dark_theme": "大面板·可视化深色主题", 	"showwallpaper": "大面板·显示壁纸", 	"wallpaperblurred": "大面板·壁纸模糊",
 		"wallpaperblurvalue": "大面板·壁纸模糊强度", 	"wallpapermode": "大面板·壁纸模式", 	"wallpaperdisplay": "大面板·壁纸显示方式",
-		"defaultPlaylistItemAction": "大面板·播放列表默认点击动作", 	"showFilterBox": "大面板·显示筛选框", 	"doubleRowText": "大面板·双行文本",
+		"defaultPlaylistItemAction": "大面板·播放列表默认点击动作", 	"showFilterBox": "大面板·显示搜索框", 	"doubleRowText": "大面板·双行文本",
 		"doubleRowShowCover": "大面板·双行显示封面", 	"showArtistAlways": "大面板·始终显示艺术家", 	"showPlaycount": "大面板·显示播放次数",
 		"showBitrate": "大面板·显示比特率", 	"showCodec": "大面板·显示编码", 	"showRating": "大面板·显示评级",
 		"showRatingSelected": "大面板·显示评级(选中行)", 	"showRatingRated": "大面板·显示评级(已评级行)", 	"drawUpAndDownScrollbar": "大面板·显示上下滚动按钮",
@@ -183,7 +183,7 @@ var PROP_KEY_MINI = {
 		"playlists_dark_theme": "迷你·播放列表深色主题", 	"bio_dark_theme": "迷你·艺术家简介深色主题", 	"bio_stick2darklayout": "迷你·艺术家简介跟随深色布局",
 		"visualization_dark_theme": "迷你·可视化深色主题", 	"showwallpaper": "迷你·显示壁纸", 	"wallpaperblurred": "迷你·壁纸模糊",
 		"wallpaperblurvalue": "迷你·壁纸模糊强度", 	"wallpapermode": "迷你·壁纸模式", 	"wallpaperdisplay": "迷你·壁纸显示方式",
-		"defaultPlaylistItemAction": "迷你·播放列表默认点击动作", 	"showFilterBox": "迷你·显示筛选框", 	"doubleRowText": "迷你·双行文本",
+		"defaultPlaylistItemAction": "迷你·播放列表默认点击动作", 	"showFilterBox": "迷你·显示搜索框", 	"doubleRowText": "迷你·双行文本",
 		"doubleRowShowCover": "迷你·双行显示封面", 	"showArtistAlways": "迷你·始终显示艺术家", 	"showPlaycount": "大面板·显示播放次数",
 		"showBitrate": "大面板·显示比特率", 	"showCodec": "大面板·显示编码", 	"showRating": "迷你·显示评级",
 		"showRatingSelected": "迷你·显示评级(选中行)", 	"showRatingRated": "迷你·显示评级(已评级行)", 	"drawUpAndDownScrollbar": "迷你·显示上下滚动按钮",
@@ -955,7 +955,7 @@ oFilterBox = function() {
 	this.getImages();
 
 	this.on_init = function() {
-		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "筛选", colors.normal_txt, 0, 0, colors.selected_bg, g_sendResponse, "brw", undefined, "g_font.normal");
+		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "搜索...", colors.normal_txt, 0, 0, colors.selected_bg, g_sendResponse, "brw", undefined, "g_font.normal");
         this.inputbox.autovalidation = true;
     };
 	this.on_init();
@@ -4785,8 +4785,6 @@ var g_total_seconds = null;
 var g_radio_title = "正在加载实时标签...";
 var g_radio_artist = "";
 
-var list_img = [];
-var g_valid_tid = 0;
 
 var stub_image,cell_null;
 
@@ -6273,8 +6271,6 @@ function on_playlist_switch() {
 	}
 };
 
-var callback_items_added = false;
-var callback_items_removed = false;
 var callback_avoid_populate = false;
 
 function on_playlist_items_added(playlist_idx) {

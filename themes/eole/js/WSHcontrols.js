@@ -98,7 +98,6 @@ var button_top_m=global_top_m;
 var buttons_right_top_m=global_top_m+4;
 var button_left_m=28;
 var button_right_m=60;
-var remaining_playlist_tracks = ""
 var button_width = 32;
 var button_padding = 14;
 var items_removed=items_added=false;
@@ -115,14 +114,12 @@ var time_e = fb.TitleFormat("%playback_time%");
 var time_t = fb.TitleFormat("$if(%length_seconds%,%length_seconds%,'直播中')");
 var time_r = fb.TitleFormat("$if(%length%,-%playback_time_remaining%,%playback_time%)");
 var tf_elapsed_seconds = fb.TitleFormat("$if2(%playback_time_seconds%,'直播中')");
-var tf_radio_artist = fb.TitleFormat("$if3($meta(artist,0),$meta(album artist,0),$meta(composer,0),$meta(performer,0))");
 var tf_title = fb.TitleFormat("%title%");
 var tf_rating = fb.TitleFormat("$if2(" + (globalProperties.use_ratings_file_tags ? "$meta(rating)" : "%rating%") + ",0)");
 var elapsed_seconds = -1;
 var TimeElapsed=".";var TimeRemaining=".";var TimeTotal=".";var text_length="";
 var TimeTotalSeconds = 0;
 var repaint_volume,repaint_progress = false;
-var TimerSetRating = false;
 var Randomize=true;
 var hideProgressWhenVolumeChange = false;
 var nb_of_buttons_right = 5;
@@ -3071,7 +3068,7 @@ function draw_settings_menu(x,y){
 			case (idx == 210):
 				properties.wallpapermode = 99;
 				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalglobalProperties.default_wallpaper, fb.GetNowPlaying());
+				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
 			case (idx == 211):

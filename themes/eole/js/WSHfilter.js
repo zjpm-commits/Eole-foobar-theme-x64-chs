@@ -815,7 +815,7 @@ oFilterBox = function() {
 		if(!properties.showTagSwitcherBar) {
 			var boxText = g_tagswitcherbar.items_txt[properties.tagMode-((properties.showLibraryTreeSwitch)?0:1)]+"...";
 		}
-		else var boxText = "筛选...";
+		else var boxText = "搜索...";
 		this.inputbox.empty_text = boxText;
     };
     this.setSize = function(w, h, font_size) {

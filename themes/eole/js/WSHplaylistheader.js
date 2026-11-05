@@ -990,7 +990,6 @@ function on_mouse_mbtn_down(x, y, mask) {
 function on_mouse_lbtn_dblclk(x,y){
     plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist,0);
 }
-var returnGenre_Timer=false;
 function on_playback_new_track(metadb) {
 	g_wallpaperImg = null;
 	window.Repaint();

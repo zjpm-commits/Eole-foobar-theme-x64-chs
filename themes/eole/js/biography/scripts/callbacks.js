@@ -1,6 +1,15 @@
 ﻿var show_lyrics_btns = window.GetProperty("show lyrics btns", false);
 var ww = 0,
 	wh = 0;
+
+/* Eole 标题栏的深 / 浅。面板自己读不到别的面板的属性，fb2k 的 CUI/DUI 配色也不会
+   跟着那个按钮变，所以启动时向宿主要一次，之后靠广播同步。null = 还没收到，继续按
+   fb2k 配色走（独立使用 biography 时就是这个状态）。 */
+var eoleDarkState = null;
+setTimeout(function () {
+	if (typeof ui === 'undefined' || !ui || typeof on_colours_changed !== 'function') return;
+	try { window.NotifyOthers('fw_theme_request', true); } catch (e) {}
+}, 700);
 		
 function on_colours_changed() {
 	ui.getColours();
@@ -306,6 +315,17 @@ function on_notify_data(name, info) {
 		on_cui_notify(name, clone);
 	}
 	switch (name) {
+		case 'fw_theme_dark':
+		case 'bio_dark_theme': {
+			/* Eole 的深 / 浅：文字和底色都改由它决定，不再看 fb2k 的 CUI/DUI。 */
+			const d = (info === true || Number(info) === 1);
+			if (eoleDarkState !== d) {
+				eoleDarkState = d;
+				on_colours_changed();
+				window.Repaint();
+			}
+			break;
+		}
 		case 'fullscreenWallpaper':
 		case 'fullscreenWallpaperCfg':
 		case 'fullscreenWallpaperRepaint':
