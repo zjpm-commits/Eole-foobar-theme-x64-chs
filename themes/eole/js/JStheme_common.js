@@ -1,5 +1,10 @@
 ﻿var theme_name = "eole";
 
+//无边框 + 无标题栏——	fb.Window.FrameStyle = 2——1082行
+//可拖动 / 双击最大化——fb.Window.SetPseudoCaption(x, y-2, w, h, true)——1083行
+//无原生菜单栏——fb.Window.MainMenuHidden = true——1136行
+//无状态栏	——fb.Window.StatusBarHidden = true	——1137行
+
 var ProfilePath = fb.ProfilePath;
 var FoobarPath = fb.FoobarPath;
 
@@ -1070,15 +1075,6 @@ oTooltip = function (varName) {
 
 oUIHacks = function () {
     this.useNative = (typeof fb !== 'undefined' && typeof fb.Window !== 'undefined');
-    this.activeXObject = null;
-    
-    if (!this.useNative) {
-        try {
-            this.activeXObject = new ActiveXObject("OpenHacks");
-        } catch (e) {
-            try { this.activeXObject = new ActiveXObject("OpenHacksMod"); } catch (e2) {}
-        }
-    }
 
     this.EnableSizing = function () {};
     this.DisableSizing = function () {};
@@ -1086,31 +1082,25 @@ oUIHacks = function () {
     this.SetPseudoCaption = function (x, y, w, h) {
         if (this.useNative) {
             try {
-                fb.Window.FrameStyle = 2; // NoBorder
+                //fb.Window.FrameStyle = 0; //Default（有边框、有标题栏）
+                //fb.Window.FrameStyle = 1; //NoCaption（无边框）
+                fb.Window.FrameStyle = 2; //NoBorder（无边框无标题栏）
                 fb.Window.SetPseudoCaption(x, y - 2, w, h, true); 
             } catch(e) { console.log("Native PseudoCaption Err: " + e); }
-        } else if (this.activeXObject) {
-            var oh = this.activeXObject;
-            oh.PseudoCaptionLeftEnabled = true; oh.PseudoCaptionTopEnabled = true;
-            oh.PseudoCaptionRightEnabled = false; oh.PseudoCaptionBottomEnabled = false;
-            oh.PseudoCaptionLeft = x; oh.PseudoCaptionTop = y;
-            oh.PseudoCaptionWidth = Math.max(0, w); oh.PseudoCaptionHeight = Math.max(0, h);
         }
     };
     
     this.getFullscreenState = function () { 
         if (this.useNative) return fb.Window.Fullscreen;
-        return this.activeXObject ? this.activeXObject.Fullscreen : false; 
+        return false; 
     };
     
     this.setFullscreenState = function (v) { 
         if (this.useNative) fb.Window.Fullscreen = v;
-        else if (this.activeXObject) this.activeXObject.Fullscreen = v;
     };
     
     this.toggleFullscreen = function () { 
         if (this.useNative) fb.Window.Fullscreen = !fb.Window.Fullscreen;
-        else if (this.activeXObject) this.activeXObject.ToggleFullscreen();
     };
     
     this.getMainWindowState = function () { 
@@ -1119,7 +1109,7 @@ oUIHacks = function () {
             if (fb.Window.IsMinimized) return 1; // Minimized
             return 0; // Normal
         }
-        return this.activeXObject ? this.activeXObject.WindowState : 0; 
+        return 0; 
     };
     
     this.setMainWindowState = function (v) { 
@@ -1127,8 +1117,6 @@ oUIHacks = function () {
             if (v === 2) fb.Window.Maximize();
             else if (v === 1) fb.Window.Minimize();
             else fb.Window.Restore();
-        } else if (this.activeXObject) {
-            this.activeXObject.WindowState = v;
         }
     };
 
@@ -1140,41 +1128,20 @@ oUIHacks = function () {
     
     this.setFrameStyle = function (v) { 
         if (this.useNative) fb.Window.FrameStyle = (v === 3 ? 2 : 0);
-        else if (this.activeXObject) this.activeXObject.WindowFrameStyle = (v === 3 ? 1 : 0); 
     };
 };
 
 var g_uihacks = new oUIHacks();
 
-// ═══════════════════════════════════════════════════════════════════════
-// -----------------------------------------------------------------------
-// ═══════════════════════════════════════════════════════════════════════
-var g_dui_bar_hack = null;
-
 function hideDuiBars() {
     if (window.InstanceType !== 1) return;
 
-    var done = false;
     try {
         if (fb.Window) {
             fb.Window.MainMenuHidden = true;
             fb.Window.StatusBarHidden = true;
-            done = (fb.Window.MainMenuHidden === true);
         }
-    } catch (e) { done = false; }
-
-    if (!done) {
-        try {
-            if (!g_dui_bar_hack) {
-                if (utils.CheckComponent("foo_openhacks_mod")) g_dui_bar_hack = new ActiveXObject("OpenHacksMod");
-                else if (utils.CheckComponent("foo_openhacks")) g_dui_bar_hack = new ActiveXObject("OpenHacks");
-            }
-            if (g_dui_bar_hack) {
-                g_dui_bar_hack.MenuBarVisible = false;
-                g_dui_bar_hack.StatusBarVisible = false;
-            }
-        } catch (e) {}
-    }
+    } catch (e) {}
 }
 
 hideDuiBars();

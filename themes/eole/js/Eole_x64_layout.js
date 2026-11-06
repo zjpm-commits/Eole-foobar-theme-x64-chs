@@ -29,8 +29,13 @@ if (typeof fw_enabled !== 'function') {
     var fw_blurValue = function () { return 0; };
     var fw_maskAlpha = function () { return 0; };
     var fw_quality = function () { return 1; };
-
-
+    var FW_PROP_DARK = "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
+    var FW_PROP_DARK_REF = "显示·全屏壁纸深色·fb2k基准";
+    var fw_bgIsDark = function () { return true; };
+    var fw_themeDark = function () { return true; };
+    var fw_themeStale = function () { return false; };
+    var fw_setThemeDark = function (v) { return !!v; };
+    var fw_clearThemeDark = function () { return false; };
 }
 
 
@@ -298,6 +303,22 @@ function fwScheduleResizeSettle() {
     if (rsTimer) { clearTimeout(rsTimer); rsTimer = 0; }
     rsTimer = setTimeout(function () {
         rsTimer = 0;
+        /* 尺寸没变 = 只是最小化后恢复、或被别的窗口遮挡后重新显示。
+           arrange('force') 会把 13 个子面板先全部 Show(false) 再逐个 Show(true)，
+           每个面板在画出内容之前露的是窗口默认底色，肉眼就是「黑一下，然后
+           一个一个加载」。这种场景只需要请各面板重画一次，不要重排。 */
+        var w = 0, h = 0;
+        try { w = window.Width; h = window.Height; } catch (eW) { w = 0; h = 0; }
+        /* 最小化过程中 on_size 可能报 0 尺寸。这时既不能重排、更不能把 0 记进
+           基准——否则恢复时 1400 !== 0，又会被判成"尺寸变了"而重排一次。 */
+        if (w < 1 || h < 1) { rsLive = false; return; }
+        if (w === rsLastW && h === rsLastH) {
+            rsLive = false;
+            try { window.Repaint(); } catch (eR0) {}
+            try { window.NotifyOthers("fullscreenWallpaperRepaint", true); } catch (eR1) {}
+            return;
+        }
+        rsLastW = w; rsLastH = h;
         rsLive = false;
         try { arrange('force'); } catch (e1) {}
         try { fwApplyCfg(); } catch (e2) {}
@@ -330,9 +351,21 @@ function on_colours_changed() {
     } catch (eS) {}
     try { fw_isDark(true); } catch (e0) {}
     try { if (fw_hostOn()) fwQueue(60); } catch (e) {}
+    /* 外部面板（简介、Lxbox）只认 fb2k 配色，这里把"失效后回到自动跟随"的结果
+       再广播一次，免得它们还停在上一轮的深 / 浅上。 */
+    try { window.NotifyOthers('fw_theme_dark', !!fw_isDark()); } catch (eB) {}
 }
 
 function on_notify_data(name, info) {
+    /* 外部面板（SMPbiography、Lxbox）读不到本主题的面板属性，它们启动时会来问一次
+       "现在到底是深还是浅"，这里回一条它们认识的广播。不回的话它们只能按
+       fb2k 的 CUI/DUI 配色猜，标题栏按钮切了它们也不动。 */
+    if (name === 'fw_theme_request') {
+        var dreq = false;
+        try { dreq = !!fw_isDark(); } catch (eReq) { dreq = false; }
+        try { window.NotifyOthers('fw_theme_dark', dreq); } catch (eReq2) {}
+        return;
+    }
     /* 深 / 浅切换：壁纸是宿主画的，必须自己收下状态、重建一次，
        否则只有面板变色、背景不动。global_dark_theme 是标题栏切全部面板时
        顺带发的，一并当作壁纸切换处理（否则会落到末尾的 arrange() 重排）。 */
@@ -383,6 +416,9 @@ var fwTimer2 = 0;
 var fwFailAt = 0;
 var rsLive = false;      /* 正在拖动尺寸 */
 var rsTimer = 0;
+/* 上一次真正重排时窗口的尺寸。从任务栏恢复 / 被遮挡后重新显示也会触发
+   on_size，但尺寸其实没变；这时绝不能重排（原因见 fwScheduleResizeSettle）。 */
+var rsLastW = -1, rsLastH = -1;
 var fwBuilding = false;
 var fwLastW = 0, fwLastH = 0;
 
