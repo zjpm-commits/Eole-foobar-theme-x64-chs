@@ -31,6 +31,13 @@
      5. 缓存与音源维护
         - mp3 / flac 分目录缓存，缓存目录和音源目录均可修改。
         - 播放方式三选一：在线流播 / 边下边播 / 下完再播。
+        - 流播时可把封面挂到播放项、并可选留一份 cover.jpg。
+        - 曲目信息广播：直链项在 fb2k 里没有标签，皮肤面板从 metadb 取 %artist% /
+          %title% 只能拿到空和 URL 末段。面板把自己手上的歌手 / 歌名广播出去
+          （lx_now_info / lx_now_json / lx_now_text），并写一份
+          nowplaying\info.json（含 items 路径索引），皮肤的面板接住即可显示。
+        - 流播时直接把歌手 / 歌名交给 ESLyric 搜词（IESLyricControl.RequestLyric），
+          不依赖 fb2k 的 %artist%（流播项里它恒空），歌词搜索框两栏都有值。
         - 支持封面写入音频标签、额外保存同名 jpg。
         - 支持导入 / 重载音源、重嵌封面、清理缓存、音质检测和诊断日志。
         - 可填写在线音源 .js 直链：启动时检查，有变化则下载覆盖并重载。
@@ -83,8 +90,9 @@
                     ③ 浮层 —— 设置界面 / 简介界面 / 评论界面共用浮层遮罩（底下垫一张虚化封面）
                        与浮层不透明度（无图时的实色浓度，0~100）。
      音源           mp3 / flac / 缓存目录、扩展名检测、播放方式（在线流播 /
-                    边下边播 / 下完再播，三选一按钮）、流播封面推送（流播时
-                    把封面写成 nowplaying\cover.jpg 给 foobar 读）、音源目录、
+                    边下边播 / 下完再播，三选一按钮）、流播封面挂载（流播时
+                    把封面写成 nowplaying\cover.jpg 给 foobar 读）、曲目信息广播
+                    （把歌手 / 歌名推给皮肤面板）、让 ESLyric 代搜歌词、音源目录、
                     播放音源、全局音质（自动 / 128K / 320K / FLAC / FLAC 24 /
                     Hi-Res / 全景声 / 全景声+ / 母带，下拉选）、在线音源网址。
      标签           封面嵌入音频、同时写同名 jpg；
@@ -109,38 +117,36 @@
      发布页链接没有打开浏览器
        状态栏会显示实际结果；诊断日志中的 Win32Error / ShellCode 可用于
        排查系统默认浏览器或 URL 关联问题。
+     ESLyric 播流时搜不到歌词 / 搜索框两个字段都是空的
+       fb2k 没有给流式项目写文本标签的接口，流播项的 %artist% 恒空，而 ESLyric
+       的搜索框是分开取 %title% 和 %artist% 的，所以光把标题塞进 URL 也不够。
+       真正的解法是走 ESLyric 自己的 COM 接口 IESLyricControl.RequestLyric(标题,
+       艺术家) —— 面板把手上的歌手 / 歌名直接喂过去，完全不经过 metadb。
+       设置 → 音源里「流播时让 ESLyric 按面板信息搜词」默认就是开的，换歌后
+       800ms 自动发一次；「立即让 ESLyric 搜一次」可以手动补一发。
+       皮肤面板上的显示另走一条：广播（见下面「皮肤面板显示的还是 hash」）。
+       本地文件（下完再播 / 边下边播第二次起）有真标签，两条都用不上。
+FAQ 超时     皮肤面板显示的还是 hash（列表行 / 标题栏）
+       流播项的 %artist% 恒空、%title% 只是 URL 末段，这是 fb2k 的硬限制：
+       没有给流式项目写文本标签的接口。解法是让面板把信息广播出去 ——
+       设置 → 音源里「把曲目信息广播给皮肤面板」默认开，每首流播曲目广播
+       lx_now_info（对象）/ lx_now_json（JSON 串）/ lx_now_text（纯文本），
+       切回本地文件时发 lx_now_clear。同时写 <缓存目录>\nowplaying\info.json，
+       里面的 items 以播放项路径为键，列表面板逐行查表即可显示正确名字。
+       接收端在 on_notify_data 里加一个 case 就行；晚加载的面板发一次
+       lx_now_request 就能要到当前曲目。
+
      修改脚本后没有生效
        确认覆盖的是面板实际加载目录中的 main.js，并重新加载脚本 / 面板。
 
    ========================================================================== */
-var APP_VERSION = '2.1.6';
+var APP_VERSION = '2.2.3';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
-function revertPropLabels() {
-  try { if (String(window.GetProperty('Lxbox·属性还原', '0')) === '1') return; } catch (e) { return; }
-
-  var names = null;
-  try { if (typeof window.GetPropertyNames === 'function') names = window.GetPropertyNames(); } catch (e) { names = null; }
-  var canRemove = false;
-  try { canRemove = (typeof window.RemoveProperty === 'function'); } catch (e) { canRemove = false; }
-
-  try { window.SetProperty('Lxbox·属性还原', '1'); } catch (e) {}
-  if (!names) return;                 // 拿不到属性清单就只能手改回来
-
-  for (var i = 0; i < names.length; i++) {
-    var n = String(names[i]);
-    if (n.indexOf('lx.') !== 0) continue;
-    var p = n.indexOf('·');
-    if (p < 0) continue;
-    try {
-      window.SetProperty(n.slice(0, p), window.GetProperty(n, ''));
-      if (canRemove) window.RemoveProperty(n);   // 有删除接口就顺手清掉旧项
-      else window.SetProperty(n, '');
-    } catch (e) {}
-  }
-}
-
-revertPropLabels();
+/* 早期版本把 lx.* 属性改成「lx.xxx·中文」时留下的迁移标记，已经没用，读到就删掉 */
+(function purgeLegacyPropMarks() {
+  try { if (window.GetProperty('Lxbox·属性还原') !== undefined) window.SetProperty('Lxbox·属性还原', null); } catch (e) {}
+})();
 
 function getP(k, d) {
   try { return window.GetProperty(k, d); } catch (e) { return d; }
@@ -1966,6 +1972,258 @@ function openNowPlayDir() {
     return;
   }
   setStatus('打不开目录：' + dir, true);
+}
+
+/* ===========================================================================
+ * 曲目信息广播：把「歌手 / 歌名」交给皮肤里的其他 JSplitter 面板
+ *
+ * 流播项在 fb2k 里没有标签，面板只要是从 metadb 取字段（%artist% / %title%），
+ * 拿到的永远是空和 URL 末段。好在 JSplitter 面板之间可以直接通话：
+ *     window.NotifyOthers(名字, 数据)  →  对面 on_notify_data(名字, 数据)
+ * 于是面板把自己手上准确的歌手 / 歌名广播出去，皮肤接住就能显示。
+ *
+ * 三条消息，按可靠程度排，接收方实现其中一条即可：
+ *   lx_now_info    对象 {url, artist, title, album, cover, ts}
+ *   lx_now_json    同上，JSON 字符串（跨组件传对象不一定通，字符串一定通）
+ *   lx_now_text    "歌手 - 歌名" 纯文本
+ *   lx_now_clear   切到本地文件 / 停止时发，表示「回到 metadb 自己取」
+ * 另外落一份 <缓存目录>\nowplaying\info.json：
+ *   { v:1, now:{...}, items:{ "<播放项路径小写>": {artist,title,album,cover,ts} } }
+ * items 是给「列表每一行」用的：行渲染时拿 handle.Path 查表，查得到就覆盖显示。
+ * 文件同时是兜底 —— 面板晚加载、或没收到消息，读一次文件就能补齐。
+ * =========================================================================== */
+var NOW_INFO_VER = 1;
+var NOW_INFO_KEY = '';
+var LX_REQ_LAST = 0;
+var NOW_ITEMS_MAX = 80;
+
+function broadcastOn() {
+  return propStr('lx.broadcast', '1') !== '0';
+}
+
+function nowInfoFile() {
+  var d = '';
+  try { d = nowPlayDir(); } catch (e) { d = ''; }
+  return d ? (d + '\\info.json') : '';
+}
+
+function nowInfoRead() {
+  var out = { v: NOW_INFO_VER, now: null, items: {} };
+  var f = nowInfoFile();
+  if (!f) return out;
+  try {
+    if (!utils.FileExists(f)) return out;
+    var j = JSON.parse(String(utils.ReadTextFile(f, 65001) || '{}').replace(/^\uFEFF/, ''));
+    if (j && j.items && typeof j.items === 'object') {
+      Object.keys(j.items).forEach(function (k) {
+        var v = j.items[k];
+        if (v && (v.title || v.artist)) out.items[k] = v;
+      });
+    }
+    if (j && j.now && (j.now.title || j.now.artist)) out.now = j.now;
+  } catch (e2) {}
+  return out;
+}
+
+/* 固定投放一份给皮肤读：<profile>\Lxbox\nowplaying\info.json
+   皮肤不知道缓存目录被改到哪儿去，所以这份不跟着 lx.cacheDir 走。 */
+function lxInfoSharedFile() {
+  var prof = '';
+  try { prof = String(fb.ProfilePath || ''); } catch (e) { prof = ''; }
+  if (!prof) return '';
+  return prof.replace(/[\\\/]+$/, '') + '\\Lxbox\\nowplaying\\info.json';
+}
+
+function nowInfoWrite(obj) {
+  var txt = JSON.stringify(obj);
+  var ok = false;
+  var f = nowInfoFile();
+  if (f) { try { ok = utils.WriteTextFile(f, txt) !== false; } catch (e) { } }
+  var f2 = lxInfoSharedFile();
+  if (f2) {
+    try { ensureFolder(dirOfFile(f2)); utils.WriteTextFile(f2, txt); } catch (e2) { }
+  }
+  return ok;
+}
+
+/* 当前播放项是不是 Lxbox 刚点的那首 —— 别人的流不能被我们按上一首的信息顶掉 */
+function lxCurrentIsOurs(h) {
+  if (!h || !lastTrack) return false;
+  var hp = '';
+  try { hp = String(h.Path || ''); } catch (e) { hp = ''; }
+  if (LAST_PLAY_URL && hp &&
+      (hp === LAST_PLAY_URL || hp.indexOf(LAST_PLAY_URL) >= 0 || LAST_PLAY_URL.indexOf(hp) >= 0)) return true;
+  var shown = '';
+  try { shown = String(fb.TitleFormat('%title%').EvalWithMetadb(h) || ''); } catch (e2) { shown = ''; }
+  var want = String(lastTrack.title || '');
+  return !!(want && shown && shown.indexOf(want) >= 0);
+}
+
+function lxPublishNow(tries) {
+  if (!broadcastOn()) return;
+  tries = tries || 0;
+
+  var h = nowPlayingHandle();
+  if (!h) { lxClearNow(); return; }
+  if (!isStreamHandle(h)) { lxClearNow(); return; }   /* 本地文件有真标签，交回给 metadb */
+  if (!lastTrack) return;
+
+  if (!lxCurrentIsOurs(h)) {
+    if (tries < 2) setTimeout(function () { try { lxPublishNow(tries + 1); } catch (e) {} }, 1500);
+    return;
+  }
+
+  var hp = '';
+  try { hp = String(h.Path || ''); } catch (e2) { hp = ''; }
+  var artist = '';
+  try { artist = String(artistText(lastTrack) || ''); } catch (e3) { artist = ''; }
+  var info = {
+    url: hp,
+    artist: artist,
+    title: String(lastTrack.title || ''),
+    album: String(lastTrack.album || ''),
+    cover: '',
+    file: nowInfoFile(),      /* 皮肤那边照这个路径读 items，补齐历史行 */
+    ts: Date.now()
+  };
+  try { info.cover = coverFileForTrack(lastTrack) || ''; } catch (e4) {}
+
+  var key = hp + '|' + info.title;
+  if (key === NOW_INFO_KEY) return;                   /* 同一首重复触发就别再发 */
+  NOW_INFO_KEY = key;
+
+  /* 先落盘：晚加载的面板读文件也能补齐 */
+  var db = nowInfoRead();
+  db.now = info;
+  if (hp) db.items[hp.toLowerCase()] = { artist: info.artist, title: info.title, album: info.album, cover: info.cover, ts: info.ts };
+  var keys = Object.keys(db.items);
+  if (keys.length > NOW_ITEMS_MAX) {
+    keys.sort(function (a, b) { return Number(db.items[b].ts || 0) - Number(db.items[a].ts || 0); });
+    keys.slice(NOW_ITEMS_MAX).forEach(function (k) { delete db.items[k]; });
+  }
+  nowInfoWrite(db);
+
+  /* 再三路广播：对象 / JSON 字符串 / 纯文本，接收方挑好实现的用 */
+  try { window.NotifyOthers('lx_now_info', info); } catch (e5) {}
+  try { window.NotifyOthers('lx_now_json', JSON.stringify(info)); } catch (e6) {}
+  try { window.NotifyOthers('lx_now_text', (info.artist ? info.artist + ' - ' : '') + info.title); } catch (e7) {}
+
+  NM.lx.pushLog('info', '已广播曲目信息：' + (info.artist ? info.artist + ' - ' : '') + info.title);
+}
+
+function lxClearNow() {
+  if (NOW_INFO_KEY === '') return;
+  NOW_INFO_KEY = '';
+  var db = nowInfoRead();
+  if (!db.now) return;
+  db.now = null;
+  nowInfoWrite(db);
+  try { window.NotifyOthers('lx_now_clear', true); } catch (e) {}
+}
+
+function lxBroadcastNow() {
+  if (!broadcastOn()) { setStatus('先打开「把曲目信息广播给皮肤面板」', true); return; }
+  var h = nowPlayingHandle();
+  if (!h) { setStatus('现在没有在播放的曲目', true); return; }
+  if (!isStreamHandle(h)) { setStatus('当前是本地文件，皮肤直接读 metadb 就行，不需要广播', true); return; }
+  if (!lastTrack || !lxCurrentIsOurs(h)) { setStatus('当前播放项不是从 Lxbox 点的，没有歌手 / 歌名可发', true); return; }
+  NOW_INFO_KEY = '';
+  lxPublishNow();
+  var info = nowInfoRead().now;
+  setStatus(info ? ('已广播：' + (info.artist ? info.artist + ' - ' : '') + info.title)
+                 : '广播没发出（看诊断日志）');
+}
+
+/* ===========================================================================
+ * 让 ESLyric 按面板自己的歌手 / 歌名搜词
+ *
+ * 流播项在 fb2k 里没有标签，%artist% 恒空，ESLyric 的自动搜词拿不到歌手，
+ * 搜索框两个字段永远是空的。而 ESLyric 的 COM 接口里正好有一个直接吃字符串的
+ *     IESLyricControl.RequestLyric(title, artist)
+ * 于是根本不用绕 metadb：面板手上本来就有准确的歌手和歌名，直接喂给它。
+ * 只对「流播」生效 —— 本地文件有真标签，插手反而可能用错值。
+ * =========================================================================== */
+var ESL_CTL = null;
+var ESL_TRIED = false;
+var ESL_VER = '';
+var ESL_KEY = '';
+var ESL_AT = 0;
+
+function eslRequestOn() {
+  return propStr('lx.eslRequest', '1') !== '0';
+}
+
+function eslControl() {
+  if (ESL_TRIED) return ESL_CTL;
+  ESL_TRIED = true;
+  /* 脚本接口默认是关的：这个 titleformat 会把它临时打开（皮肤改配色也是这么干的） */
+  try { fb.TitleFormat('%esl_expose_api%').Eval(true); } catch (e) {}
+  try { ESL_CTL = new ActiveXObject('ESLyric'); } catch (e2) { ESL_CTL = null; }
+  if (ESL_CTL) {
+    try { ESL_VER = String(ESL_CTL.Version || ''); } catch (e3) { ESL_VER = ''; }
+    NM.lx.pushLog('info', 'ESLyric 控制接口已连上' + (ESL_VER ? '（版本 ' + ESL_VER + '）' : ''));
+  } else {
+    NM.lx.pushLog('warn', '连不上 ESLyric 控制接口（没装 / 脚本接口没开），流播时不会代搜歌词');
+  }
+  return ESL_CTL;
+}
+
+function eslRequestLyric(track, force) {
+  if (!eslRequestOn() || !track) return false;
+  var t = String(track.title || '').trim();
+  var a = '';
+  try { a = String(artistText(track) || '').trim(); } catch (e) { a = ''; }
+  if (!t && !a) return false;
+
+  var key = a + '|' + t;
+  /* 同一次起播可能被两处触发，4 秒内只发一遍 */
+  if (!force && key === ESL_KEY && Date.now() - ESL_AT < 4000) return true;
+
+  var ctl = eslControl();
+  if (!ctl) return false;
+
+  try {
+    ctl.RequestLyric(t, a);
+    ESL_KEY = key;
+    ESL_AT = Date.now();
+    NM.lx.pushLog('info', 'ESLyric 按面板信息搜词：' + (a ? a + ' - ' : '') + t);
+    return true;
+  } catch (e2) {
+    NM.lx.pushLog('warn', 'ESLyric RequestLyric 调用失败（' + (ESL_VER || '版本未知') + '）：' +
+                  ((e2 && e2.message) || e2) + '；很老的版本没有这个接口');
+    return false;
+  }
+}
+
+/* 只在这条播放项确实是 Lxbox 刚点的那首流时才发，免得手动在 fb2k 里播别的流
+   也被我们按上一首的信息去搜词。判定：地址一致 → %title% 里含歌名。 */
+function eslAutoRequest(tries) {
+  if (!eslRequestOn()) return;
+  tries = tries || 0;
+  var h = nowPlayingHandle();
+  if (!h || !isStreamHandle(h)) return;
+  if (!lastTrack) return;
+
+  if (!lxCurrentIsOurs(h)) {
+    /* 列表项还没就位、标题还没算出来，隔一会儿再问一次 */
+    if (tries < 2) setTimeout(function () { try { eslAutoRequest(tries + 1); } catch (e3) {} }, 1500);
+    return;
+  }
+  eslRequestLyric(lastTrack);
+}
+
+function eslRequestNow() {
+  if (!eslRequestOn()) { setStatus('先打开「流播时让 ESLyric 按面板信息搜词」', true); return; }
+  var h = nowPlayingHandle();
+  if (!h) { setStatus('现在没有在播放的曲目', true); return; }
+  if (!isStreamHandle(h)) { setStatus('当前是本地文件，ESLyric 自己有标签可读，不需要代搜', true); return; }
+  if (!lastTrack) { setStatus('当前播放项不是从 Lxbox 点的，没有歌手 / 歌名可发', true); return; }
+  if (!eslControl()) { setStatus('连不上 ESLyric 控制接口（检查是否安装 / 脚本接口是否开启）', true); return; }
+  if (eslRequestLyric(lastTrack, true)) {
+    setStatus('已让 ESLyric 按「' + (artistText(lastTrack) || '') + ' - ' + (lastTrack.title || '') + '」搜词');
+  } else {
+    setStatus('ESLyric 搜词调用失败，详情看诊断日志', true);
+  }
 }
 
 var AUDIO_EXT = ['mp3', 'flac', 'm4a', 'aac', 'ogg', 'wav', 'ape'];
@@ -3820,6 +4078,37 @@ function cleanPlaylistDeadCache() {
     NM.lx.pushLog('info', '已从「' + PLAYLIST_NAME + '」清掉 ' + dead.length + ' 条失效缓存条目');
   } catch (e) {
     NM.lx.pushLog('warn', '清理失效播放列表条目失败：' + ((e && e.message) || e));
+  }
+}
+
+/* 旧版本写进列表的 127.0.0.1 代理地址（那个功能已经取消），重启后全是死链。
+   这些条目本来就是面板加的，启动时顺手清掉，免得用户点到一条播不了的。 */
+function cleanProxyPlaylistItems() {
+  var idx = cachePlaylistIndex();
+  if (idx < 0) return;
+  var total = 0;
+  try { total = plman.PlaylistItemCount(idx); } catch (e) { return; }
+  if (!total) return;
+
+  var dead = [];
+  for (var i = 0; i < total; i++) {
+    var p = '';
+    try {
+      var h = plman.GetPlaylistItemHandle(idx, i);
+      p = h ? String(h.Path || '') : '';
+    } catch (e2) { p = ''; }
+    if (p && /^https?:\/\/127\.0\.0\.1:\d+\/lx\//i.test(p)) dead.push(i);
+  }
+  if (!dead.length) return;
+
+  try { if (plman.UndoBackup) plman.UndoBackup(idx); } catch (e3) {}
+  try {
+    plman.ClearPlaylistSelection(idx);
+    dead.forEach(function (n) { plman.SetPlaylistSelectionSingle(idx, n, true); });
+    plman.RemovePlaylistSelection(idx);
+    NM.lx.pushLog('info', '已从「' + PLAYLIST_NAME + '」清掉 ' + dead.length + ' 条失效条目');
+  } catch (e4) {
+    NM.lx.pushLog('warn', '清理失效条目失败：' + ((e4 && e4.message) || e4));
   }
 }
 
@@ -8905,7 +9194,7 @@ var HUE_PRESETS = [
 var SET_CATS = [
   { id: 'look', name: '外观', hint: '缩放、字号、配色、曲目清单行数、第二排平台、隐藏时的音质。改完立刻生效。' },
   { id: 'bg', name: '背景', hint: '三段：背景效果（底图）、四个区块（标题栏 / 搜索栏 / 左侧栏 / 内容区的蒙版）、浮层（设置 / 简介 / 评论三个整屏界面）。' },
-  { id: 'src', name: '音源', hint: '播放方式（在线流播 / 边下边播 / 下完再播）、流播封面推送、缓存 / 音源目录、扩展名检测、播放音源、全局音质、在线音源网址。目录留空用默认。' },
+  { id: 'src', name: '音源', hint: '播放方式（在线流播 / 边下边播 / 下完再播）、流播封面挂载、曲目信息广播（把歌手 / 歌名推给皮肤面板）、让 ESLyric 代搜歌词、缓存 / 音源目录、扩展名检测、播放音源、全局音质、在线音源网址。目录留空用默认。' },
   { id: 'tag', name: '标签', hint: '封面嵌入音频、同时写同名 jpg；苹果标签源（可选，逐字段勾选，含古典作品 / 乐章）。播放方式与流播封面推送在「音源」页。' },
   { id: 'probe', name: '检测', hint: '音源音质检测：各平台到底能出哪几档。左栏不用关，右栏勾平台 / 档位、选脚本、开始 / 停止检测。' },
   { id: 'maint', name: '维护', hint: '刷新列表 / 重载音源 / 导入音源 / 重嵌封面 / 清缓存 / 诊断日志 / 界面发布页地址。' }
@@ -9323,6 +9612,55 @@ function srcSections() {
                  '下面那个 cover.jpg 只是备用留档，不开也不影响显示。';
         } },
       { kind: 'btn', id: 'openNowPlay', label: '打开流播封面文件夹（排查用）…', close: true, ctl: true },
+      { kind: 'seg', id: 'lxcast', label: '把曲目信息广播给皮肤面板', value: broadcastOn() ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.broadcast', v);
+          NOW_INFO_KEY = '';
+          if (v === '1') {
+            lxPublishNow(0);
+            setStatus('已开启：流播时把歌手 / 歌名广播给其他面板（lx_now_info / lx_now_json / lx_now_text）');
+          } else {
+            lxClearNow();
+            setStatus('已关闭：皮肤只能从 metadb 取，流播时会显示 URL 末段');
+          }
+          repaint();
+        } },
+      { kind: 'note', text: function () {
+          if (!broadcastOn()) {
+            return '关掉后皮肤面板拿不到歌手 / 歌名，流播时列表行和标题只能显示 URL 末段（一串 hash）。';
+          }
+          return '每首流播曲目起播约 0.9 秒广播一次：lx_now_info（对象）、lx_now_json（JSON 串）、' +
+                 'lx_now_text（「歌手 - 歌名」）；切到本地文件时发 lx_now_clear。' +
+                 '同时写一份 <缓存目录>\\nowplaying\\info.json，里面的 items 按播放项路径索引，' +
+                 '列表面板拿 handle.Path 查表就能逐行显示正确名字。' +
+                 '面板晚加载可以发 lx_now_request 要一次。';
+        } },
+      { kind: 'btn', id: 'lxcastNow', label: '立即广播一次…', close: true, ctl: true },
+      { kind: 'seg', id: 'eslreq', label: '流播时让 ESLyric 按面板信息搜词', value: eslRequestOn() ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.eslRequest', v);
+          if (v === '1') {
+            var ctl = eslControl();
+            setStatus(ctl ? '已开启：流播换歌后会把歌手 / 歌名直接交给 ESLyric 搜词'
+                          : '已开启，但连不上 ESLyric 控制接口（看诊断日志）', !ctl);
+          } else {
+            setStatus('已关闭：ESLyric 只能拿到 %artist%（流播时为空）');
+          }
+          repaint();
+        } },
+      { kind: 'note', text: function () {
+          if (!eslRequestOn()) {
+            return 'ESLyric 的搜索框分开取 %title% 和 %artist%，而流播项的 %artist% 永远是空的' +
+                   '（fb2k 没有给流式项目写文本标签的接口）。关掉这个开关，自动搜词就只能靠 title。';
+          }
+          return '开启后，流播换歌时面板直接调用 ESLyric 的 RequestLyric(歌名, 歌手)，' +
+                 '用的是 Lxbox 自己的曲目信息，不经过 fb2k 的 %artist% —— 所以搜索框里' +
+                 '「标题」「艺术家」两栏都会有值。默认对每一首流播曲目只发一次，' +
+                 '本地文件不插手（它们有真标签）。';
+        } },
+      { kind: 'btn', id: 'eslreqNow', label: '立即让 ESLyric 搜一次…', close: true, ctl: true },
       { kind: 'text', id: 'scriptDir', label: '音源目录',
         value: propStr('lx.scriptDir', ''),
         disp: function () {
@@ -10128,6 +10466,8 @@ function runSettingsButton(id, close) {
   else if (id === 'logs') openDiagnostics();
   else if (id === 'openScriptDir') openScriptDirAction();
   else if (id === 'openNowPlay') openNowPlayDir();
+  else if (id === 'eslreqNow') eslRequestNow();
+  else if (id === 'lxcastNow') lxBroadcastNow();
   else if (id === 'appleNow') { appleTagCurrent(); }
   else if (id === 'appleSel') { appleTagBatch(true); }
   else if (id === 'appleBatch') { appleTagBatch(false); }
@@ -10269,6 +10609,15 @@ function on_size() {
 // 注意 Cfg 那条不能漏 —— TitleBar 点开关时先发 Cfg、宿主随后才发 Repaint，
 // 只监听后两者的话，切歌换图那一瞬间本面板会残留上一张壁纸的像素。
 function on_notify_data(name, info) {
+  /* 别的面板刚加载完，问一句「现在在放什么」——重发一遍就行 */
+  if (name === 'lx_now_request') {
+    /* 皮肤里有六七个面板都会在启动时问一次，回一次就够 */
+    var lxNow = Date.now();
+    if (lxNow - LX_REQ_LAST < 2000) return;
+    LX_REQ_LAST = lxNow;
+    try { NOW_INFO_KEY = ''; lxPublishNow(0); } catch (eRR) {}
+    return;
+  }
   if (name === 'fw_theme_dark' || name === 'bio_dark_theme') {
     var m = (info === true || Number(info) === 1) ? 'dark' : 'light';
     if (eoleTheme !== m) {
@@ -11183,6 +11532,7 @@ function init() {
   setTimeout(function () {
     pruneCacheIndex();
     cleanPlaylistDeadCache();
+    cleanProxyPlaylistItems();
   }, 1200);
 
   repaint();
@@ -11196,6 +11546,11 @@ function on_playback_new_track(handle) {
   /* 流播换歌时封面往往还在下载/还没落盘，隔一下再补挂一次。
      已经挂上的会被 ATTACH_KEY 挡掉，不会重复写。 */
   setTimeout(function () { try { attachLastTrack('切歌'); } catch (e2) {} }, 700);
+  /* 流播项的 %artist% 恒空，ESLyric 自己搜不到词：换歌后把手上的歌手 / 歌名
+     直接喂给它（RequestLyric）。本地文件不走这条，它有真标签。 */
+  setTimeout(function () { try { eslAutoRequest(0); } catch (e3) {} }, 800);
+  /* 同一时刻把曲目信息广播给皮肤里的其他面板（列表 / 标题栏都用得上） */
+  setTimeout(function () { try { lxPublishNow(0); } catch (e4) {} }, 900);
   repaint();
 }
 

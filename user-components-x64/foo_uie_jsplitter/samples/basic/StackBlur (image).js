@@ -1,4 +1,4 @@
-window.DefineScript('StackBlur', {author: 'marc2003'});
+﻿window.DefineScript('StackBlur', {author: 'marc2003'});
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
@@ -25,10 +25,10 @@ function on_paint(gr) {
     const min_dim = Math.min(ww,wh - text_h)
     gr.DrawImage(blur_img, 0, text_h, min_dim, min_dim, 0, 0, 600, 600);
     gr.DrawImage(img, 6, text_h + 5, min_dim/3, min_dim/3, 0, 0, 600, 600);
-    // RGB 函数定义在 docs/Helpers.js 中
+    // RGB function is defined in docs/Helpers.js
     gr.FillSolidRect(0, 0, ww, 24, RGB(0, 0, 0));
-    // DT_CENTER 定义在 docs/Flags.js 中
-    gr.GdiDrawText('滚动鼠标以改变模糊半径：' + radius, font, RGB(255, 255, 255), 0, 0, ww, text_h, DT_CENTER);
+    // DT_CENTER is defined in docs/Flags.js
+    gr.GdiDrawText('Scroll mouse to change radius: ' + radius, font, RGB(255, 255, 255), 0, 0, ww, text_h, DT_CENTER);
 }
 
 function on_size(w,h) {

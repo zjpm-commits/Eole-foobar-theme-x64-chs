@@ -42,7 +42,7 @@ function on_paint(dgr) {
 	effect.SetValue(Effects.D3DPerspectiveTransform.Rotation, angles);
 	dgr.DrawEffect(effect, 0, 0, 0, 0, ww, wh);
 	
-	dgr.DrawText("用鼠标改变方向", font, 0xFFFFFFFF, 10, 10, ww, 45);
+	dgr.DrawText("Change direction with mouse", font, 0xFFFFFFFF, 10, 10, ww, 45);
 }
 
 let lastX = 0, lastY = 0;

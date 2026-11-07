@@ -1,5 +1,5 @@
 ﻿// *****************************************************************************************************************************************
-// 输入框，作者 Br3tt aka Falstaff (c)2013-2015
+// INPUT BOX by Br3tt aka Falstaff (c)2013-2015
 // *****************************************************************************************************************************************
 
 cInputbox = {
@@ -57,13 +57,13 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 		} else {
 			var DT = DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_CALCRECT | DT_END_ELLIPSIS;
 		};
-		// 绘制背景
+		// draw bg
 		gr.SetSmoothingMode(0);
 		if (this.bordercolor)
 			gr.DrawRect(x - 2, y + 0, (this.w + 4) - 1, this.h - 1, 1.0, this.bordercolor);
 		gr.FillSolidRect(x - 1, y + 1, (this.w + 2), this.h - 2, this.backcolor & RGBA(255, 255, 255, this.backcolor_alpha));
 
-		// 调整偏移量，使光标始终可见
+		// adjust offset to always see the cursor
 		if (!this.drag && !this.select) {
 			this.Cx = cInputbox.temp_gr.CalcTextWidth(this.text.substr(this.offset, this.Cpos - this.offset), this.font);
 			while (this.Cx >= this.w - this.right_margin) {
@@ -71,7 +71,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				this.Cx = cInputbox.temp_gr.CalcTextWidth(this.text.substr(this.offset, this.Cpos - this.offset), this.font);
 			};
 		};
-		// 绘制选区
+		// draw selection
 		if (this.SelBegin != this.SelEnd) {
 			this.select = true;
 			this.CalcText();
@@ -104,13 +104,13 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 			this.text_selected = "";
 		};
 
-		// 绘制文本
+		// draw text
 		if (this.text.length > 0) {
 			gr.GdiDrawText(this.text.substr(this.offset), this.edit ? this.font : this.font, this.edit ? this.textcolor : blendColors(textcolor, backcolor, 0.5), this.x, this.y, this.w, this.h, DT);
 		} else {
 			gr.GdiDrawText(this.empty_text, this.font_italic, blendColors(textcolor, backcolor, 0.5), this.x, this.y, this.w, this.h, DT);
 		};
-		// 绘制光标
+		// draw cursor
 		if (this.edit && !this.select)
 			this.drawcursor(gr);
 	};
@@ -174,7 +174,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				eval(gfunc);
 			};
 			this.edit = false;
-			// 清除计时器
+			// clear timer
 			if (cInputbox.timer_cursor) {
 				window.ClearInterval(cInputbox.timer_cursor);
 				cInputbox.timer_cursor = false;
@@ -294,7 +294,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				this.Cpos = tmp;
 				this.repaint();
 			};
-			// 设置鼠标光标样式
+			// Set Mouse Cursor Style
 			if (this.hover || this.drag) {
 				window.SetCursor(IDC_IBEAM);
 			} else if (this.ibeam_set) {
@@ -333,14 +333,14 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 		var idx;
 		var _menu = window.CreatePopupMenu();
 		cInputbox.clipboard = cInputbox.doc.parentWindow.clipboardData.getData("Text");
-		_menu.AppendMenuItem(this.select ? MF_STRING : MF_GRAYED | MF_DISABLED, 1, "复制");
-		_menu.AppendMenuItem(this.select ? MF_STRING : MF_GRAYED | MF_DISABLED, 2, "剪切");
+		_menu.AppendMenuItem(this.select ? MF_STRING : MF_GRAYED | MF_DISABLED, 1, "Copy");
+		_menu.AppendMenuItem(this.select ? MF_STRING : MF_GRAYED | MF_DISABLED, 2, "Cut");
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(cInputbox.clipboard ? MF_STRING : MF_GRAYED | MF_DISABLED, 3, "粘贴");
+		_menu.AppendMenuItem(cInputbox.clipboard ? MF_STRING : MF_GRAYED | MF_DISABLED, 3, "Paste");
 		if (utils.IsKeyPressed(VK_SHIFT)) {
 			_menu.AppendMenuSeparator();
-			_menu.AppendMenuItem(MF_STRING, 20, "属性");
-			_menu.AppendMenuItem(MF_STRING, 21, "配置...");
+			_menu.AppendMenuItem(MF_STRING, 20, "Properties");
+			_menu.AppendMenuItem(MF_STRING, 21, "Configure...");
 		};
 		idx = _menu.TrackPopupMenu(x, y);
 		switch (idx) {
@@ -385,7 +385,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 					this.CalcText();
 					this.repaint();
 				} else {
-					if (this.Cpos > 0) { // 光标位置 > 0
+					if (this.Cpos > 0) { // cursor pos > 0
 						this.text = this.text.substring(0, this.Cpos) + cInputbox.clipboard + this.text.substring(this.Cpos, this.text.length);
 					} else {
 						this.text = cInputbox.clipboard + this.text.substring(this.Cpos, this.text.length);
@@ -420,7 +420,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 			case VK_SHIFT:
 				break;
 			case VK_BACK:
-				// 更新前保存文本
+				//save text before update
 				this.stext = this.text;
 				if (this.edit) {
 					if (this.select) {
@@ -456,7 +456,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				this.repaint();
 				break;
 			case VK_DELETE:
-				// 更新前保存文本
+				//save text before update
 				this.stext = this.text;
 				if (this.edit) {
 					if (this.select) {
@@ -497,7 +497,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				if (this.edit) {
 					this.edit = false;
 					this.text_selected = "";
-					this.text = this.default_text; // 按下 ESC 时恢复输入框初始值
+					this.text = this.default_text; // restore the inputbox initial value on ESC
 					this.select = false;
 					this.repaint();
 				};
@@ -667,7 +667,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 							};
 						};
 
-						// 处理光标选中时的文本滚动
+						// handle scroll text on cursor selection
 						var tmp_x = this.GetCx(this.Cpos);
 						if (tmp_x > (this.w - this.right_margin)) {
 							this.offset++;
@@ -693,7 +693,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				};
 				if (vkey == 88) { // CTRL+X
 					if (this.edit && this.select) {
-						// 更新前保存文本
+						//save text avant MAJ
 						this.stext = this.text;
 						//
 						cInputbox.doc.parentWindow.clipboardData.setData("Text", this.text_selected);
@@ -708,7 +708,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 						this.repaint();
 					};
 				};
-				if (vkey == 90) { // CTRL+Z（撤销输入）
+				if (vkey == 90) { // CTRL+Z (annulation saisie)
 					if (this.edit) {
 						this.text = this.stext;
 						this.repaint();
@@ -717,7 +717,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 				if (vkey == 86) { // CTRL+V
 					cInputbox.clipboard = cInputbox.doc.parentWindow.clipboardData.getData("Text");
 					if (this.edit && cInputbox.clipboard) {
-						// 更新前保存文本
+						//save text avant MAJ
 						this.stext = this.text;
 						//
 						if (this.select) {
@@ -736,7 +736,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 							this.CalcText();
 							this.repaint();
 						} else {
-							if (this.Cpos > 0) { // 光标位置 > 0
+							if (this.Cpos > 0) { // cursor pos > 0
 								this.text = this.text.substring(0, this.Cpos) + cInputbox.clipboard + this.text.substring(this.Cpos, this.text.length);
 							} else {
 								this.text = cInputbox.clipboard + this.text.substring(this.Cpos, this.text.length);
@@ -751,10 +751,10 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 			};
 		};
 
-		// 自动搜索：on_key 或 on_char 后文本是否改变？
+		// autosearch: has text changed after on_key or on_char ?
 		if (this.autovalidation) {
 			if (this.text != this.prev_text) {
-				// 启动计时器以处理搜索
+				// launch timer to process the search
 				gfunc_launch_timer && window.ClearTimeout(gfunc_launch_timer);
 				gfunc_launch_timer = window.SetTimeout(function () {
 						eval(gfunc);
@@ -774,7 +774,7 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 			this.repaint();
 		};
 		if (code > 31 && this.edit) {
-			// 更新前保存文本
+			//save text before update
 			this.stext = this.text;
 			if (this.select) {
 				var p1 = this.SelBegin;
@@ -806,10 +806,10 @@ oInputbox = function (w, h, default_text, empty_text, textcolor, backcolor, bord
 			this.repaint();
 		};
 
-		// 自动搜索：on_key 或 on_char 后文本是否改变？
+		// autosearch: has text changed after on_key or on_char ?
 		if (this.autovalidation) {
 			if (this.text != this.prev_text) {
-				// 启动计时器以处理搜索
+				// launch timer to process the search
 				gfunc_launch_timer && window.ClearTimeout(gfunc_launch_timer);
 				gfunc_launch_timer = window.SetTimeout(function () {
 						eval(gfunc);

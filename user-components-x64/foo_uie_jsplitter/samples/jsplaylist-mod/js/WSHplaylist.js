@@ -1,5 +1,5 @@
 ﻿// *****************************************************************************************************************************************
-// Playlist 对象，作者 Br3tt aka Falstaff (c)2015
+// Playlist object by Br3tt aka Falstaff (c)2015
 // *****************************************************************************************************************************************
 
 oGroup = function (index, start, count, total_time_length, focusedTrackId, iscollapsed) {
@@ -14,13 +14,13 @@ oGroup = function (index, start, count, total_time_length, focusedTrackId, iscol
 	} else {
 		this.rowsToAdd = 0;
 	};
-	// 向分组的总行数添加额外行
+	// Add extra rows to the total rows of the group
 	this.rowsToAdd += cGroup.extra_rows;
 
 	if (properties.autocollapse) {
-		if (focusedTrackId >= this.start && focusedTrackId < this.start + this.count) { // 聚焦音轨在此分组中！
+		if (focusedTrackId >= this.start && focusedTrackId < this.start + this.count) { // focused track is in this group!
 			this.collapsed = false;
-			// 在全局变量中保存聚焦音轨的当前分组 id（用于自动折叠选项）
+			// save in globals the current group id of the focused track (used for autocollapse option)
 			g_group_id_focused = this.index;
 		} else {
 			this.collapsed = true;
@@ -43,8 +43,8 @@ oGroup = function (index, start, count, total_time_length, focusedTrackId, iscol
 };
 
 oItem = function (playlist, row_index, type, handle, track_index, group_index, track_index_in_group, heightInRow, groupRowDelta, obj, empty_row_index) {
-	// 类型 1 = 分组
-	// 类型 0 = 音轨
+	// type 1 = group
+	// type 0 = track
 	this.type = type;
 	this.playlist = playlist;
 	this.row_index = row_index;
@@ -81,10 +81,10 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 		if (pos > -1) {
 			var tab = tf.split(String.fromCharCode(3));
 			var fin = tab.length;
-			// 若第一部分是文本（而非颜色）
+			// if first part is text (not a color)
 			if (pos > 0)
 				txt = tab[0];
-			// 获取颜色和另一部分文本
+			// get color and other text part
 			tmp = tab[1];
 			result[1] = eval("0xFF" + tmp.substr(4, 2) + tmp.substr(2, 2) + tmp.substr(0, 2));
 			while (i < fin) {
@@ -97,7 +97,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 	};
 
 	this.drawRowContents = function (gr) {
-		// 绘制列内容
+		// Draw columns content
 		var cx,
 		cw,
 		tf1,
@@ -121,7 +121,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				cx = p.headerBar.columns[j].x + g_z5;
 				cw = (Math.abs(p.headerBar.w * p.headerBar.columns[j].percent / 100000)) - g_z10;
 				switch (p.headerBar.columns[j].ref) {
-				case "状态":
+				case "State":
 					if (p.headerBar.columns[j].tf == "null") {
 						var columnColor = this.text_colour;
 					} else {
@@ -161,14 +161,14 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 								};
 							} else {
 								gr.SetTextRenderingHint(5);
-								if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // 若已选中
+								if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // if selected
 									if (this.queue_idx > 0) {
 										gr.DrawRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 1, cTrack.height - g_z16 + 1, 1.0, columnColor & 0x77ffffff);
 										gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, columnColor, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
 									} else {
 										gr.DrawString(String.fromCharCode(80), g_font_checkbox, columnColor, icon_x + g_z3, this.y + g_z3, queue_w + g_z2, cTrack.height + cTrack.parity, lc_stringformat);
 									};
-								} else { // 若未选中
+								} else { // if not selected
 									gr.FillSolidRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 2, cTrack.height - g_z16 + 2, g_color_normal_txt & 0x08ffffff);
 									if (this.queue_idx > 0) {
 										gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, columnColor & 0xbbffffff, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
@@ -177,14 +177,14 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 							};
 						} else {
 							gr.SetTextRenderingHint(5);
-							if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // 若已选中
+							if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // if selected
 								if (this.queue_idx > 0) {
 									gr.DrawRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 1, cTrack.height - g_z16 + 1, 1.0, columnColor & 0x77ffffff);
 									gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, columnColor, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
 								} else {
 									gr.DrawString(String.fromCharCode(80), g_font_checkbox, columnColor, icon_x + g_z3, this.y + g_z3, queue_w + g_z2, cTrack.height + cTrack.parity, lc_stringformat);
 								};
-							} else { // 若未选中
+							} else { // if not selected
 								gr.FillSolidRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 2, cTrack.height - g_z16 + 2, g_color_normal_txt & 0x08ffffff);
 								if (this.queue_idx > 0) {
 									gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, g_color_highlight & 0xbbffffff, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
@@ -193,14 +193,14 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						};
 					} else {
 						gr.SetTextRenderingHint(5);
-						if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // 若已选中
+						if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) { // if selected
 							if (this.queue_idx > 0) {
 								gr.DrawRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 1, cTrack.height - g_z16 + 1, 1.0, columnColor & 0x77ffffff);
 								gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, columnColor, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
 							} else {
 								gr.DrawString(String.fromCharCode(80), g_font_checkbox, columnColor, icon_x + g_z3, this.y + g_z3, queue_w + g_z2, cTrack.height + cTrack.parity, lc_stringformat);
 							};
-						} else { // 若未选中
+						} else { // if not selected
 							gr.FillSolidRect(icon_x - 1, this.y + g_z8 - 1, queue_w + g_z6 + 2, cTrack.height - g_z16 + 2, g_color_normal_txt & 0x08ffffff);
 							if (this.queue_idx > 0) {
 								gr.DrawString(num(this.queue_idx, 2), g_font_queue_idx, g_color_highlight & 0xbbffffff, icon_x + g_z3, this.y, queue_w, cTrack.height + cTrack.parity, lc_stringformat);
@@ -208,7 +208,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						};
 					};
 					break;
-				case "喜爱":
+				case "Loved":
 					if (typeof(this.mood) == "undefined") {
 						this.mood = fb.TitleFormat(p.headerBar.columns[j].tf).EvalWithMetadb(this.metadb);
 						var moodArray = this.parseTF(this.mood, this.text_colour);
@@ -216,15 +216,15 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						this.mood_color = moodArray[1];
 					};
 					columns.mood = true;
-					// 列宽
+					// column width
 					if (g_font_guifx_found) {
 						columns.mood_w = gr.CalcTextWidth("v", g_font_mood) + 3;
 					} else {
 						columns.mood_w = gr.CalcTextWidth(String.fromCharCode(252), g_font_mood) + 3;
 					};
-					// 此列的最小宽度
+					// for minimum width for this column
 					p.headerBar.columns[j].minWidth = zoom(36, g_dpi);
-					// 列 x
+					// column x
 					switch (p.headerBar.columns[j].align) {
 					case 0:
 						columns.mood_x = cx - 2;
@@ -249,7 +249,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						gr.DrawString(String.fromCharCode(60), g_font_mood, m_color, columns.mood_x, this.y + 3, columns.mood_w, cTrack.height + cTrack.parity - 1, lc_stringformat);
 					};
 					break;
-				case "等级":
+				case "Rating":
 					cw = p.headerBar.columns[j].w - g_z6;
 					if (typeof(this.rating) == "undefined") {
 						this.rating = fb.TitleFormat(p.headerBar.columns[j].tf).EvalWithMetadb(this.metadb);
@@ -258,20 +258,20 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						this.rating_color = ratingArray[1];
 					};
 					columns.rating = true;
-					// 列宽
+					// column width
 					if (g_font_guifx_found) {
 						columns.rating_w = gr.CalcTextWidth("bbbbb", g_font_rating);
 					} else {
 						columns.rating_w = gr.CalcTextWidth(String.fromCharCode(234).repeat(5), g_font_rating);
 					};
-					// 此列的最小宽度
+					// for minimum width for this column
 					p.headerBar.columns[j].minWidth = columns.rating_w + zoom(7.5, g_dpi);
 					//
 					var one_star_w = Math.round(columns.rating_w / 5);
 					var total_stars_drawable = Math.floor((cw - 2) / one_star_w);
 					if (total_stars_drawable > 5)
 						total_stars_drawable = 5;
-					// 列 x
+					// column x
 					switch (p.headerBar.columns[j].align) {
 					case 0:
 						columns.rating_x = cx - 2 + 3;
@@ -305,10 +305,10 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					};
 					break;
 				default:
-					// 通用 TF 解析
+					// Common TF parsing
 					var eval_play = false;
 					var tf_prep = p.headerBar.columns[j].tf;
-					// 解析第一行 TF 中的特殊 TF 字段
+					// PARSING special TF fields in 1st TF line
 					if (tf_prep != "null") {
 						// %list_index%
 						tf_prep = replaceAll(tf_prep, "%list_index%", (this.track_index + 1).toString());
@@ -321,7 +321,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						} else {
 							tf_prep = replaceAll(tf_prep, "%isplaying%", "$greater(0,1)");
 						};
-						// 解析后求值 TF 字段
+						// Evaluate TF field after parsing
 						if (eval_play) {
 							tf1 = fb.TitleFormat(tf_prep).Eval(true);
 						} else {
@@ -329,7 +329,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						};
 					};
 				};
-				// 绘制上面解析出的通用字段
+				// draw the general field parsed above
 				// ===================================
 				if (j > 0 && tf1 && tf1 != "null") {
 					//try {
@@ -337,7 +337,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					//gr.GdiDrawText(tf1, g_font, blendColors(this.text_colour, RGB(255,255,255), (cList.enableExtraLine ? 0.10 : 0.00)), cx, tf1_y, cw, tf1_h, p.headerBar.columns[j].DT_align | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 					if (cList.enableExtraLine) {
 						tf_prep = p.headerBar.columns[j].tf2;
-						// 解析额外 TF 行中的特殊 TF 字段
+						// PARSING special TF fields in extra TF line
 						if (tf_prep != "null") {
 							// %list_index%
 							tf_prep = replaceAll(tf_prep, "%list_index%", (this.track_index + 1).toString());
@@ -350,7 +350,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 							} else {
 								tf_prep = replaceAll(tf_prep, "%isplaying%", "$greater(0,1)");
 							};
-							// 解析后求值 TF 字段
+							// Evaluate TF field after parsing
 							if (eval_play) {
 								tf2 = fb.TitleFormat(tf_prep).Eval(true);
 							} else {
@@ -366,10 +366,10 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 			} else {
 				switch (p.headerBar.columns[j].ref) {
-				case "喜爱":
+				case "Loved":
 					columns.mood = false;
 					break;
-				case "等级":
+				case "Rating":
 					columns.rating = false;
 					break;
 				};
@@ -385,7 +385,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 		switch (this.type) {
 		case 0:
 			// ===============
-			// 绘制音轨项
+			// draw track item
 			// ===============
 			if (cover.column) {
 				cover.w = p.headerBar.columns[0].w;
@@ -398,25 +398,25 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				this.queue_idx = plman.FindPlaybackQueueItemIndex(this.metadb, this.playlist, this.track_index) + 1;
 				this.normalTextColor = false;
 				if (fb.IsPlaying && plman.PlayingPlaylist == this.playlist && this.track_index == p.list.nowplaying.PlaylistItemIndex) {
-					// 正在播放音轨背景
+					// playing track bg
 					if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) {
 						if (p.list.focusedTrackId == this.track_index) {
 							//**
 							gr.FillSolidRect(this.x + cover.w + 2, this.y + 3, this.w - cover.w - 4, this.h - 6, g_color_selected_bg & RGBA(255, 255, 255, properties.selection_rect_alpha));
-							// 聚焦项上的边框
+							// frame on focused item
 							gr.DrawRect(this.x + cover.w + 1, this.y + 2, this.w - cover.w - 2, this.h - 4, 2.0, g_color_selected_bg & RGBA(255, 255, 255, properties.focus_rect_alpha));
 						} else {
 							//**
 							gr.FillSolidRect(this.x + cover.w, this.y + 1, this.w - cover.w, this.h - 2, g_color_selected_bg & RGBA(255, 255, 255, properties.selection_rect_alpha));
 						};
 					} else {
-						// 若行被聚焦，绘制聚焦颜色与样式，否则用普通颜色绘制
+						// if row is focused, draw focused colors & style ELSE draw with normal colors
 						if (p.list.focusedTrackId == this.track_index) {
 							this.text_colour = blendColors(g_color_highlight, g_color_normal_bg, 0.1);
-							// 聚焦项上的边框
+							// frame on focused item
 							gr.DrawRect(this.x + cover.w + 1, this.y + 2, this.w - cover.w - 2, this.h - 4, 2.0, g_color_normal_txt & RGBA(255, 255, 255, properties.focus_rect_alpha));
 						} else {
-							// 绘制普通行背景的条纹
+							// draw stripes of the normal row background
 							if (properties.oddevenrowshighlight) {
 								if (properties.showgroupheaders) {
 									var parity = ((this.track_index_in_group / 2) == Math.floor(this.track_index_in_group / 2) ? 1 : 0);
@@ -431,12 +431,12 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					};
 					this.text_colour = p.list.text_colour_playing;
 				} else {
-					// 无正在播放音轨背景
+					// no playing track bg
 					if (plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) {
 						if (p.list.focusedTrackId == this.track_index) {
 							//**
 							gr.FillSolidRect(this.x + cover.w + 2, this.y + 3, this.w - cover.w - 4, this.h - 6, g_color_selected_bg & RGBA(255, 255, 255, properties.selection_rect_alpha));
-							// 聚焦项上的边框
+							// frame on focused item
 							gr.DrawRect(this.x + cover.w + 1, this.y + 2, this.w - cover.w - 2, this.h - 4, 2.0, g_color_selected_bg & RGBA(255, 255, 255, properties.focus_rect_alpha));
 						} else {
 							//**
@@ -444,12 +444,12 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						};
 						this.text_colour = p.list.text_colour_selected;
 					} else {
-						// 若行被聚焦，绘制聚焦颜色与样式，否则用普通颜色绘制
+						// if row is focused, draw focused colors & style ELSE draw with normal colors
 						if (p.list.focusedTrackId == this.track_index) {
-							// 聚焦项上的边框
+							// frame on focused item
 							gr.DrawRect(this.x + cover.w + 1, this.y + 2, this.w - cover.w - 2, this.h - 4, 2.0, g_color_normal_txt & RGBA(255, 255, 255, properties.focus_rect_alpha));
 						} else {
-							// 绘制普通行背景的条纹
+							// draw stripes of the normal row background
 							if (properties.oddevenrowshighlight) {
 								if (properties.showgroupheaders) {
 									var parity = ((this.track_index_in_group / 2) == Math.floor(this.track_index_in_group / 2) ? 1 : 0);
@@ -475,7 +475,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				gr.FillSolidRect(this.x + cover.w, this.y, this.w - cover.w, this.h, RGBA(255,255,255,5));
 				};
 				*/
-				// 若为分组的最后一个空音轨，绘制分组长度信息
+				// if last empty track of the group, draw group length info
 				/*
 				if (cGroup.extra_rows > 0 && this.track_index_in_group == p.list.groups[this.group_index].count) {
 				gr.GdiDrawText("Total Group Length = " + TimeFromSeconds(Math.round(p.list.groups[this.group_index].total_time_length)), gdi_font("Arial", 10, 0), g_color_normal_txt, this.x, this.y, this.w - 010, this.h, DT_RIGHT | DT_TOP | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE | DT_END_ELLIPSIS);
@@ -483,7 +483,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				*/
 			};
 
-			// 正在播放音轨
+			// now playing track
 			if (this.empty_row_index == 0) {
 				if (fb.IsPlaying) {
 					if (plman.PlayingPlaylist == this.playlist) {
@@ -494,19 +494,19 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 			};
 
-			// 若无分组标题，在分组第一个音轨顶部绘制一条细线
+			// if no group header draw a thin line on the top of the 1st track of the group
 			if (cover.column && !properties.showgroupheaders && this.track_index_in_group == 0) {
 				gr.FillGradRect(this.x, this.y, this.w, 1, 0, 0, g_color_normal_txt & 0x10ffffff, 0.9);
 			};
 
-			// 绘制音轨内容
+			// Draw Track content
 			// ==================
 			if (this.empty_row_index == 0) {
 				this.text_colour_default = this.text_colour;
 				this.drawRowContents(gr);
 			};
 
-			// 绘制封面艺术
+			// Draw cover art
 			// ==============
 			if (cover.column) {
 				if (this.row_index == 0 && this.track_index_in_group > 0 && this.track_index_in_group <= Math.ceil(cover.h / cTrack.height)) {
@@ -515,7 +515,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					var cover_draw_delta = 0;
 				};
 				if ((this.track_index_in_group == 0 || (this.row_index == 0 && cover_draw_delta > 0))) {
-					// 封面背景
+					// cover bg
 					if (properties.showgroupsheader) {
 						var cMargin = cover.margin;
 					} else {
@@ -535,7 +535,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						};
 						if (this.cover_img) {
 							if (cover.keepaspectratio) {
-								// *** 检查宽高比 *** //
+								// *** check aspect ratio *** //
 								if (this.cover_img.Height >= this.cover_img.Width) {
 									var ratio = this.cover_img.Width / this.cover_img.Height;
 									var pw = cv_w * ratio;
@@ -557,7 +557,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 									cv_w = cv_w - this.left * 2 - 1;
 									cv_h = cv_h - this.top * 2 - 1;
 								};
-								// *** 检查宽高比 *** //
+								// *** check aspect ratio *** //
 							};
 
 							gr.SetSmoothingMode(2);
@@ -576,7 +576,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 			};
 
-			// 若正在拖动项，在悬停项顶部绘制线条，以显示鼠标抬起时拖动项将插入的位置
+			// if dragging items, draw line at top of the hover items to show where dragged items will be inserted on mouse button up
 			if (!properties.enableTouchControl) {
 				if (!cPlaylistManager.hscroll_timer && mouse_x < (p.playlistManager.x - p.playlistManager.woffset) - 30) {
 					if (this.empty_row_index == 0) {
@@ -614,7 +614,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 			break;
 		case 1:
 			// ===============
-			// 绘制分组项
+			// draw group item
 			// ===============
 			if (this.obj) {
 				if (!cover.column || (cover.column && this.obj.collapsed)) {
@@ -635,11 +635,11 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 			};
 			var groupDelta = this.groupRowDelta * cTrack.height;
 
-			// 分组标题背景
+			// group header bg
 			gr.FillSolidRect(this.x, (this.y - groupDelta), this.w, 1, g_color_normal_txt & 0x10ffffff);
 			gr.FillSolidRect(this.x, (this.y - groupDelta) + 1, this.w, this.h - 2, g_color_normal_txt & 0x04ffffff);
 
-			// 绘制分组文本信息
+			// draw group text infos
 			var text_left_padding = g_z2;
 			var scrollbar_gape = (p.scrollbar.visible && (p.list.totalRows > p.list.totalRowVisible)) ? 0 : cScrollBar.width;
 
@@ -656,7 +656,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 			this.l2_color = blendColors(g_color_normal_txt, blendColors(g_color_normal_bg, color_txt, 0.70), 0.70);
 			var line_color = p.list.line_color;
 
-			// 绘制标题内容
+			// Draw Header content
 			// ===================
 			switch (this.heightInRow) {
 			case 1:
@@ -681,10 +681,10 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				gr.GdiDrawText(this.l2, g_font_group2, this.l2_color, this.x + cover.w + text_left_padding, (this.y + cTrack.height - groupDelta) - 4, this.w - cover.w - text_left_padding * 4 - lg2_right_field_w - scrollbar_gape, cTrack.height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE | DT_END_ELLIPSIS);
 				gr.GdiDrawText(this.r1, g_font_group1, this.l1_color, this.x + cover.w + text_left_padding, (this.y - groupDelta) + 3, this.w - cover.w - text_left_padding * 5 + 2 - scrollbar_gape, cTrack.height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE | DT_END_ELLIPSIS);
 				gr.GdiDrawText(this.r2, g_font_group2, this.l2_color, this.x + cover.w + text_left_padding, (this.y + cTrack.height - groupDelta) - 4, this.w - cover.w - text_left_padding * 5 + 1 - scrollbar_gape, cTrack.height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE | DT_END_ELLIPSIS);
-				// lg 3（不可自定义）
+				// lg 3 (not customizable)
 				gr.FillSolidRect(this.x + cover.w + text_left_padding, (this.y + cTrack.height * 2 - groupDelta) - 1, this.w - cover.w - text_left_padding * 5 + 2 - scrollbar_gape, 1.0, line_color);
 				if (this.obj) {
-					var lg3_left_field = this.obj.count + (this.obj.count > 1 ? " 首曲目 · " : " 首曲目 · ") + this.obj.total_group_duration_txt;
+					var lg3_left_field = this.obj.count + (this.obj.count > 1 ? " tracks. " : " track. ") + this.obj.total_group_duration_txt;
 				} else {
 					var lg3_left_field = "";
 				}
@@ -694,7 +694,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				gr.GdiDrawText(lg3_right_field, g_font, blendColors(g_color_normal_txt, g_color_normal_bg, 0.35), this.x + cover.w + text_left_padding, (this.y + cTrack.height * 2 - groupDelta) - 2, this.w - cover.w - text_left_padding * 5 + 1 - scrollbar_gape, cTrack.height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_SINGLELINE | DT_END_ELLIPSIS);
 			};
 
-			// 高亮包含已选音轨的分组
+			// highlight group that contains a selected track
 			var now_playing_found = false;
 			if (this.obj) {
 				for (var k = 0; k < this.obj.count; k++) {
@@ -702,7 +702,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						gr.FillSolidRect(this.x, (this.y - groupDelta) + 1, this.w, this.h - 2, g_color_selected_bg & 0x20ffffff);
 						break;
 					} else {
-						// 高亮正在播放的分组标题
+						// highlight the now playing group header
 						if (fb.IsPlaying) {
 							if (plman.PlayingPlaylist == this.playlist) {
 								if (!now_playing_found && p.list.nowplaying.PlaylistItemIndex >= this.obj.start && p.list.nowplaying.PlaylistItemIndex < this.obj.start + this.obj.count && this.obj.collapsed) {
@@ -715,12 +715,12 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 			};
 
-			// 绘制封面艺术
+			// Draw cover art
 			// ==============
 			if (this.obj) {
 				if (!cover.column || (cover.column && this.obj.collapsed)) {
 					if (this.heightInRow > 1 && cover.show) {
-						// 封面背景
+						// cover bg
 						var cv_x = Math.floor(this.x + cover.margin + 1);
 						var cv_y = Math.floor((this.y - groupDelta) + cover.margin);
 						var cv_w = Math.floor(cover.w - cover.margin * 2);
@@ -734,7 +734,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 							};
 							if (this.cover_img) {
 								if (cover.keepaspectratio) {
-									// *** 检查宽高比 *** //
+									// *** check aspect ratio *** //
 									if (this.cover_img.Height >= this.cover_img.Width) {
 										var ratio = this.cover_img.Width / this.cover_img.Height;
 										var pw = cv_w * ratio;
@@ -756,7 +756,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 										cv_w = cv_w - this.left * 2 - 1;
 										cv_h = cv_h - this.top * 2 - 1;
 									};
-									// *** 检查宽高比 *** //
+									// *** check aspect ratio *** //
 								};
 
 								gr.SetSmoothingMode(2);
@@ -776,7 +776,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 			};
 
-			// 若正在拖动项，在悬停项顶部绘制线条，以显示鼠标抬起时拖动项将插入的位置
+			// if dragging items, draw line at top of the hover items to show where dragged items will be inserted on mouse button up
 			if (this.obj) {
 				if (!properties.enableTouchControl) {
 					if (!cPlaylistManager.hscroll_timer && mouse_x < (p.playlistManager.x - p.playlistManager.woffset) - 30) {
@@ -832,7 +832,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 		var groupDelta = this.groupRowDelta * cTrack.height;
 		var col_cover_w = (p.headerBar.columns[0].percent > 0 ? p.headerBar.columns[0].w : 0);
 		this.ishover = (x >= this.x + col_cover_w && x < this.x + this.w && y >= this.y && y < this.y + this.h - groupDelta);
-		if (this.ishover) { // p.list.count 必须 > 0（否则不会进入 Item 部分）
+		if (this.ishover) { // p.list.count is mandatory > 0 (if not with couldn't be in Item section)
 			var trackId = p.list.getTrackId(this.row_index);
 			g_dragndrop_trackId = this.track_index;
 			g_dragndrop_rowId = this.row_index;
@@ -859,7 +859,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 				if (!cTouch.down || (cTouch.down && cTouch.down_id == cTouch.up_id)) {
 					p.list.item_clicked = true;
-					if (this.type == 1) { // 分组标题
+					if (this.type == 1) { // group header
 						if (utils.IsKeyPressed(VK_SHIFT)) {
 							if (this.obj && p.list.focusedTrackId != this.track_index) {
 								if (p.list.SHIFT_start_id != null) {
@@ -903,7 +903,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 							};
 						};
 						p.list.metadblist_selection = plman.GetPlaylistSelectedItems(p.list.playlist);
-					} else { // 音轨
+					} else { // track
 						if (this.rating_hover) {
 							columns.rating_drag = true;
 						} else if (this.mood_hover) {
@@ -916,7 +916,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 									dragndrop.x = x;
 									dragndrop.y = y;
 									if (p.list.metadblist_selection.Count > 1) {
-										// 测试选区是否连续，若不连续则禁用拖放
+										// test if selection is contigus, if not, drag'n drop disable
 										var first_item_selected_id = p.list.handleList.Find(p.list.metadblist_selection[0]);
 										var last_item_selected_id = p.list.handleList.Find(p.list.metadblist_selection[p.list.metadblist_selection.Count - 1]);
 										var contigus_count = (last_item_selected_id - first_item_selected_id) + 1;
@@ -957,7 +957,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 									plman.ClearPlaylistSelection(p.list.playlist);
 									plman.SetPlaylistSelectionSingle(p.list.playlist, this.track_index, true);
 								};
-							} else { // 点击未选中的音轨
+							} else { // click on a not selected track
 								if (utils.IsKeyPressed(VK_SHIFT)) {
 									if (p.list.focusedTrackId != this.track_index) {
 										if (p.list.SHIFT_start_id != null) {
@@ -993,7 +993,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 			break;
 		case "dblclk":
 			if (this.ishover) {
-				if (this.type == 1) { // 分组标题
+				if (this.type == 1) { // group header
 					if (properties.autocollapse) {
 						/*
 						if(this.obj) {
@@ -1016,7 +1016,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					p.list.setItems(false);
 					//**p.scrollbar.setCursor(p.list.totalRowVisible, p.list.totalRows, p.list.offset);
 					full_repaint();
-				} else { // 音轨
+				} else { // track
 					var cmd = properties.defaultPlaylistItemAction;
 					if (cmd == "Play") {
 						plman.ExecutePlaylistDefaultAction(p.list.playlist, this.track_index);
@@ -1036,17 +1036,17 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 				};
 				if (!cTouch.down || (cTouch.down && cTouch.down_id == cTouch.up_id)) {
 					if (this.rating_hover) {
-						// 评级
+						// Rating
 						if (this.tracktype < 2) {
 							if (foo_playcount) {
-								// 通过 foo_playcount.dll 提供的数据库统计进行评级
+								// Rate to database statistics brought by foo_playcount.dll
 								if (this.l_rating != this.rating) {
 									if (this.metadb) {
-										fb.RunContextCommandWithMetadb("Playback Statistics/Rating/" + ((this.l_rating == 0) ? "<not set>" : this.l_rating), this.metadb, 8); // Regorxxx <- 修复隐藏的上下文菜单项 ->
+										fb.RunContextCommandWithMetadb("Playback Statistics/Rating/" + ((this.l_rating == 0) ? "<not set>" : this.l_rating), this.metadb, 8); // Regorxxx <- Fix for hidden context menu entries ->
 										this.rating = this.l_rating;
 									};
 								} else {
-									fb.RunContextCommandWithMetadb("Playback Statistics/Rating/<not set>", this.metadb, 8); // Regorxxx <- 修复隐藏的上下文菜单项 ->
+									fb.RunContextCommandWithMetadb("Playback Statistics/Rating/<not set>", this.metadb, 8); // Regorxxx <- Fix for hidden context menu entries ->
 									this.rating = 0;
 								};
 							} else {
@@ -1061,7 +1061,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 							};
 						};
 					} else if (this.mood_hover) {
-						// 心情
+						// Mood
 						if (this.tracktype < 2) {
 							var handles = new FbMetadbHandleList(this.metadb);
 							if (this.l_mood != this.mood) {
@@ -1076,7 +1076,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						if (!p.list.drawRectSel && plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) {
 							if (!utils.IsKeyPressed(VK_SHIFT) && !utils.IsKeyPressed(VK_CONTROL)) {
 								if (!dragndrop.drag_in) {
-									if (this.type == 0) { // 音轨
+									if (this.type == 0) { // track
 										plman.SetPlaylistFocusItem(p.list.playlist, this.track_index);
 										plman.ClearPlaylistSelection(p.list.playlist);
 										plman.SetPlaylistSelectionSingle(p.list.playlist, this.track_index, true);
@@ -1096,7 +1096,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 			break;
 		case "right":
 			if (this.ishover) {
-				if (this.type == 1) { // 分组标题
+				if (this.type == 1) { // group header
 					if (!plman.IsPlaylistItemSelected(p.list.playlist, this.track_index)) {
 						plman.ClearPlaylistSelection(p.list.playlist);
 						plman.SetPlaylistFocusItem(p.list.playlist, this.track_index);
@@ -1104,7 +1104,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 						p.list.SHIFT_start_id = null;
 					};
 					p.list.contextMenu(x, y, this.track_index, this.row_index);
-				} else { // 音轨
+				} else { // track
 					if (this.rating_hover) {}
 					else if (this.mood_hover) {}
 					else {
@@ -1137,20 +1137,20 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 					this.l_mood = 0;
 				};
 			};
-			// 更新提示文本
+			// update tooltip text
 			if (this.tooltip && this.ishover) {
 				g_tooltip_txt = this.title;
 			};
 
-			// 鼠标移动时更新以绘制矩形选择区域
+			// update on mouse move to draw rect selection zone
 			if (!this.drawRectSel) {
 				this.drawRectSel = this.drawRectSel_click;
 			};
 			if (p.list.drawRectSel) {
 				if (this.ishover) {
-					if (this.type == 0) { // 音轨
+					if (this.type == 0) { // track
 						p.list.selEndId = this.track_index;
-					} else { // 分组标题
+					} else { // group header
 						if (this.track_index > 0) {
 							if (y > p.list.selY) {
 								if (p.list.selStartId <= p.list.selEndId) {
@@ -1196,7 +1196,7 @@ oItem = function (playlist, row_index, type, handle, track_index, group_index, t
 									if (p.scrollbar.visible)
 										on_mouse_wheel(-1);
 								};
-								// 在绘制的矩形区域内的项上设置选中
+								// set selection on items in the rect area drawn
 								plman.SetPlaylistSelection(p.list.playlist, p.list.selAffected, false);
 								p.list.selAffected.splice(0, p.list.selAffected.length);
 								var deb = p.list.selStartId <= p.list.selEndId ? p.list.selStartId : p.list.selEndId;
@@ -1250,7 +1250,7 @@ oList = function (object_name, playlist) {
 	this.groups = [];
 	this.items = [];
 	this.groupby = [];
-	this.totalGroupBy = window.GetProperty("系统.分组.总分组方式", 0);
+	this.totalGroupBy = window.GetProperty("SYSTEM.Groups.TotalGroupBy", 0);
 	this.metadblist_selection = plman.GetPlaylistSelectedItems(this.playlist);
 	this.SHIFT_start_id = null;
 	this.SHIFT_count = 0;
@@ -1262,7 +1262,7 @@ oList = function (object_name, playlist) {
 	this.beam = 0;
 	this.item_clicked = false;
 
-	// Item 对象中使用的项变量（优化）
+	// items variables used in Item object (optimization)
 	this.setItemColors = function () {
 		this.text_colour_playing = blendColors(g_color_highlight, g_color_normal_bg, 0.1);
 		this.text_colour_selected = blendColors(g_color_selected_txt, g_color_normal_bg, 0.1);
@@ -1323,56 +1323,56 @@ oList = function (object_name, playlist) {
 					tmp = tmp + this.groupby[i].collapseGroupsByDefault;
 					break;
 				};
-				// 添加分隔符
+				// add separator
 				if (i < this.groupby.length - 1) {
 					tmp = tmp + "^^";
 				};
 			};
 			switch (j) {
 			case 0:
-				window.SetProperty("系统.分组方式.标签", tmp);
+				window.SetProperty("SYSTEM.GroupBy.label", tmp);
 				break;
 			case 1:
-				window.SetProperty("系统.分组方式.标题格式", tmp);
+				window.SetProperty("SYSTEM.GroupBy.tf", tmp);
 				break;
 			case 2:
-				window.SetProperty("系统.分组方式.排序顺序", tmp);
+				window.SetProperty("SYSTEM.GroupBy.sortOrder", tmp);
 				break;
 			case 3:
-				window.SetProperty("系统.分组方式.参考", tmp);
+				window.SetProperty("SYSTEM.GroupBy.ref", tmp);
 				break;
 			case 4:
-				window.SetProperty("系统.分组方式.播放列表筛选", tmp);
+				window.SetProperty("SYSTEM.GroupBy.playlistFilter", tmp);
 				break;
 			case 5:
-				window.SetProperty("系统.分组方式.额外行数", tmp);
+				window.SetProperty("SYSTEM.GroupBy.extraRows", tmp);
 				break;
 			case 6:
-				window.SetProperty("系统.分组方式.折叠高度", tmp);
+				window.SetProperty("SYSTEM.GroupBy.collapsedHeight", tmp);
 				break;
 			case 7:
-				window.SetProperty("系统.分组方式.展开高度", tmp);
+				window.SetProperty("SYSTEM.GroupBy.expandedHeight", tmp);
 				break;
 			case 8:
-				window.SetProperty("系统.分组方式.显示封面", tmp);
+				window.SetProperty("SYSTEM.GroupBy.showCover", tmp);
 				break;
 			case 9:
-				window.SetProperty("系统.分组方式.自动折叠", tmp);
+				window.SetProperty("SYSTEM.GroupBy.autoCollapse", tmp);
 				break;
 			case 10:
-				window.SetProperty("系统.分组方式.左1", tmp);
+				window.SetProperty("SYSTEM.GroupBy.l1", tmp);
 				break;
 			case 11:
-				window.SetProperty("系统.分组方式.右1", tmp);
+				window.SetProperty("SYSTEM.GroupBy.r1", tmp);
 				break;
 			case 12:
-				window.SetProperty("系统.分组方式.左2", tmp);
+				window.SetProperty("SYSTEM.GroupBy.l2", tmp);
 				break;
 			case 13:
-				window.SetProperty("系统.分组方式.右2", tmp);
+				window.SetProperty("SYSTEM.GroupBy.r2", tmp);
 				break;
 			case 14:
-				window.SetProperty("系统.分组方式.默认折叠分组", tmp);
+				window.SetProperty("SYSTEM.GroupBy.collapseGroupsByDefault", tmp);
 				break;
 			};
 		};
@@ -1382,7 +1382,7 @@ oList = function (object_name, playlist) {
 	this.initGroupBy = function () {
 		this.groupby.splice(0, this.groupby.length);
 		if (this.totalGroupBy == 0) {
-			// 初始化 GroupBy 模式
+			// INITIALIZE GroupBy patterns
 			var fields = [],
 			tmp,
 			fin;
@@ -1390,7 +1390,7 @@ oList = function (object_name, playlist) {
 			for (var i = 0; i < 15; i++) {
 				switch (i) {
 				case 0:
-					fields.push(new Array("专辑艺术家 | 专辑 | 碟片", "文件夹结构"));
+					fields.push(new Array("Album Artist | Album | Disc", "Folder Structure"));
 					break;
 				case 1:
 					fields.push(new Array("%album artist%%album%%discnumber%", "$replace(%path%,%filename_ext%,)"));
@@ -1401,22 +1401,22 @@ oList = function (object_name, playlist) {
 				case 3:
 					fields.push(new Array("Album", "Custom"));
 					break;
-				case 4: // 播放列表筛选
+				case 4: // playlist filter
 					fields.push(new Array("null", "null"));
 					break;
-				case 5: // 额外行
+				case 5: // extra rows
 					fields.push(new Array("0", "0"));
 					break;
-				case 6: // 折叠高度
+				case 6: // collapsed height
 					fields.push(new Array("2", "2"));
 					break;
-				case 7: // 展开高度
+				case 7: // expanded height
 					fields.push(new Array("3", "3"));
 					break;
-				case 8: // 显示封面
+				case 8: // show cover
 					fields.push(new Array("1", "1"));
 					break;
-				case 9: // 自动折叠
+				case 9: // auto collapse
 					fields.push(new Array("0", "0"));
 					break;
 				case 10: // l1
@@ -1435,7 +1435,7 @@ oList = function (object_name, playlist) {
 					fields.push(new Array("0", "0"));
 					break;
 				};
-				// 将数组转换为 csv 字符串
+				// convert array to csv string
 				tmp = "";
 				fin = fields[i].length;
 				for (var j = 0; j < fin; j++) {
@@ -1444,58 +1444,58 @@ oList = function (object_name, playlist) {
 						tmp = tmp + "^^";
 					};
 				};
-				// 将 CSV 字符串保存到窗口属性
+				// save CSV string into window Properties
 				switch (i) {
 				case 0:
-					window.SetProperty("系统.分组方式.标签", tmp);
+					window.SetProperty("SYSTEM.GroupBy.label", tmp);
 					break;
 				case 1:
-					window.SetProperty("系统.分组方式.标题格式", tmp);
+					window.SetProperty("SYSTEM.GroupBy.tf", tmp);
 					break;
 				case 2:
-					window.SetProperty("系统.分组方式.排序顺序", tmp);
+					window.SetProperty("SYSTEM.GroupBy.sortOrder", tmp);
 					break;
 				case 3:
-					window.SetProperty("系统.分组方式.参考", tmp);
+					window.SetProperty("SYSTEM.GroupBy.ref", tmp);
 					break;
 				case 4:
-					window.SetProperty("系统.分组方式.播放列表筛选", tmp);
+					window.SetProperty("SYSTEM.GroupBy.playlistFilter", tmp);
 					break;
 				case 5:
-					window.SetProperty("系统.分组方式.额外行数", tmp);
+					window.SetProperty("SYSTEM.GroupBy.extraRows", tmp);
 					break;
 				case 6:
-					window.SetProperty("系统.分组方式.折叠高度", tmp);
+					window.SetProperty("SYSTEM.GroupBy.collapsedHeight", tmp);
 					break;
 				case 7:
-					window.SetProperty("系统.分组方式.展开高度", tmp);
+					window.SetProperty("SYSTEM.GroupBy.expandedHeight", tmp);
 					break;
 				case 8:
-					window.SetProperty("系统.分组方式.显示封面", tmp);
+					window.SetProperty("SYSTEM.GroupBy.showCover", tmp);
 					break;
 				case 9:
-					window.SetProperty("系统.分组方式.自动折叠", tmp);
+					window.SetProperty("SYSTEM.GroupBy.autoCollapse", tmp);
 					break;
 				case 10:
-					window.SetProperty("系统.分组方式.左1", tmp);
+					window.SetProperty("SYSTEM.GroupBy.l1", tmp);
 					break;
 				case 11:
-					window.SetProperty("系统.分组方式.右1", tmp);
+					window.SetProperty("SYSTEM.GroupBy.r1", tmp);
 					break;
 				case 12:
-					window.SetProperty("系统.分组方式.左2", tmp);
+					window.SetProperty("SYSTEM.GroupBy.l2", tmp);
 					break;
 				case 13:
-					window.SetProperty("系统.分组方式.右2", tmp);
+					window.SetProperty("SYSTEM.GroupBy.r2", tmp);
 					break;
 				case 14:
-					window.SetProperty("系统.分组方式.默认折叠分组", tmp);
+					window.SetProperty("SYSTEM.GroupBy.collapseGroupsByDefault", tmp);
 					break;
 				};
 			};
-			// 创建 GroupBy 对象
+			// create GroupBy Objects
 			this.totalGroupBy = fields[0].length;
-			window.SetProperty("系统.分组.总分组方式", this.totalGroupBy);
+			window.SetProperty("SYSTEM.Groups.TotalGroupBy", this.totalGroupBy);
 			for (var k = 0; k < this.totalGroupBy; k++) {
 				this.groupby.push(new oGroupBy(fields[0][k], fields[1][k], fields[2][k], fields[3][k], fields[4][k], fields[5][k], fields[6][k], fields[7][k], fields[8][k], fields[9][k], fields[10][k], fields[11][k], fields[12][k], fields[13][k], fields[14][k]));
 			};
@@ -1503,53 +1503,53 @@ oList = function (object_name, playlist) {
 		} else {
 			var fields = [];
 			var tmp;
-			// 从属性加载 GroupBy 模式
+			// LOAD GroupBy patterns from Properties
 			for (var i = 0; i < 15; i++) {
 				switch (i) {
 				case 0:
-					tmp = window.GetProperty("系统.分组方式.标签", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.label", "?;?");
 					break;
 				case 1:
-					tmp = window.GetProperty("系统.分组方式.标题格式", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.tf", "?;?");
 					break;
 				case 2:
-					tmp = window.GetProperty("系统.分组方式.排序顺序", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.sortOrder", "?;?");
 					break;
 				case 3:
-					tmp = window.GetProperty("系统.分组方式.参考", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.ref", "?;?");
 					break;
 				case 4:
-					tmp = window.GetProperty("系统.分组方式.播放列表筛选", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.playlistFilter", "?;?");
 					break;
 				case 5:
-					tmp = window.GetProperty("系统.分组方式.额外行数", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.extraRows", "?;?");
 					break;
 				case 6:
-					tmp = window.GetProperty("系统.分组方式.折叠高度", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.collapsedHeight", "?;?");
 					break;
 				case 7:
-					tmp = window.GetProperty("系统.分组方式.展开高度", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.expandedHeight", "?;?");
 					break;
 				case 8:
-					tmp = window.GetProperty("系统.分组方式.显示封面", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.showCover", "?;?");
 					break;
 				case 9:
-					tmp = window.GetProperty("系统.分组方式.自动折叠", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.autoCollapse", "?;?");
 					break;
 				case 10:
-					tmp = window.GetProperty("系统.分组方式.左1", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.l1", "?;?");
 					break;
 				case 11:
-					tmp = window.GetProperty("系统.分组方式.右1", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.r1", "?;?");
 					break;
 				case 12:
-					tmp = window.GetProperty("系统.分组方式.左2", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.l2", "?;?");
 					break;
 				case 13:
-					tmp = window.GetProperty("系统.分组方式.右2", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.r2", "?;?");
 					break;
 				case 14:
-					tmp = window.GetProperty("系统.分组方式.默认折叠分组", "?;?");
+					tmp = window.GetProperty("SYSTEM.GroupBy.collapseGroupsByDefault", "?;?");
 					break;
 				};
 				fields.push(tmp.split("^^"));
@@ -1623,13 +1623,13 @@ oList = function (object_name, playlist) {
 	};
 
 	this.updateGroupStatus = function (group_id) {
-		// 折叠聚焦音轨的前一个分组
+		// collapse previous group of focused track
 		if (properties.autocollapse) {
 			this.updateGroupsOnCollapse(g_group_id_focused);
 		};
-		// 展开当前聚焦音轨的新分组（新的）
+		// expand new group of the current focused track (new one)
 		this.updateGroupsOnExpand(group_id);
-		// 更新聚焦音轨的当前分组 id
+		// update current group id of focused track
 		g_group_id_focused = group_id;
 	};
 
@@ -1644,10 +1644,10 @@ oList = function (object_name, playlist) {
 		cGroup.default_expanded_height = Math.floor(this.groupby[m].expandedHeight);
 		cGroup.expanded_height = cGroup.default_expanded_height;
 		properties.collapseGroupsByDefault = (this.groupby[m].collapseGroupsByDefault == "1" ? true : false);
-		// 更新 max_w 和 max_h，供缓存图像句柄函数中加载封面和重绘使用
+		// update max_w et max_h for cover loading and repaint in cache image handle functions
 		cover.max_w = cGroup.default_collapsed_height > cGroup.default_expanded_height ? cGroup.default_collapsed_height * cTrack.height : cGroup.default_expanded_height * cTrack.height;
 		cover.max_h = cGroup.default_collapsed_height > cGroup.default_expanded_height ? cGroup.default_collapsed_height * cTrack.height : cGroup.default_expanded_height * cTrack.height;
-		// 刷新播放列表
+		// refresh playlist
 		g_image_cache = new image_cache;
 	};
 
@@ -1664,7 +1664,7 @@ oList = function (object_name, playlist) {
 		fin,
 		fin2;
 
-		// 更新分组键 TF 模式
+		// update group key TF pattern
 		if (properties.showgroupheaders) {
 			if (properties.enablePlaylistFilter) {
 				var pl_name = plman.GetPlaylistName(this.playlist);
@@ -1689,11 +1689,11 @@ oList = function (object_name, playlist) {
 					};
 				};
 				if (default_pattern_index < 0) {
-					// 若未设置默认模式（分组依据模式的播放列表筛选字段为 '*'），我们使用当前模式
+					// if no default pattern set ('*' in the playlist filter field of a group by pattern), we use the current pattern
 					default_pattern_index = cGroup.pattern_idx;
 				};
 				if (!found) {
-					// 若播放列表未在模式的播放列表筛选中找到，则应用默认模式
+					// apply default pattern if playlist not found in patterns playlist-filter
 					m = default_pattern_index;
 					this.updateGroupByPattern(m);
 				};
@@ -1704,7 +1704,7 @@ oList = function (object_name, playlist) {
 			tf_group_key = fb.TitleFormat("%path%");
 			cGroup.extra_rows = 0;
 		};
-		// 若状态刚在设置中更新，iscollapsed 参数用于强制
+		// if status just updated in settings, iscollapsed parameter to force
 		//iscollapsed = properties.collapseGroupsByDefault;
 
 		this.groups.splice(0, this.groups.length);
@@ -1732,10 +1732,10 @@ oList = function (object_name, playlist) {
 			
 			global_time += length;
 		};
-		// 计算这些句柄 + 分组的总行数
+		// calc total rows for this total handles + groups
 		this.totalRows = this.getTotalRows();
 
-		// 播放列表标题面板的总秒数
+		// total seconds playlist for playlist header panel
 		g_total_duration_text = utils.FormatDuration(global_time);
 	};
 
@@ -1815,11 +1815,11 @@ oList = function (object_name, playlist) {
 				plman.ActivePlaylist = plman.PlayingPlaylist;
 				this.playlist = plman.ActivePlaylist;
 				this.nowplaying = plman.GetPlayingItemLocation();
-				// 聚焦正在播放的项
+				// set focus on the now playing item
 				plman.SetPlaylistFocusItem(this.playlist, this.nowplaying.PlaylistItemIndex);
 			} else {
 				this.nowplaying = plman.GetPlayingItemLocation();
-				// 聚焦正在播放的项
+				// set focus on the now playing item
 				plman.SetPlaylistFocusItem(this.playlist, this.nowplaying.PlaylistItemIndex);
 				this.setItems(!p.list.isFocusedItemVisible());
 				full_repaint();
@@ -1907,10 +1907,10 @@ oList = function (object_name, playlist) {
 		var grp_id = this.getGroupIdfromTrackId(trackId);
 		if (grp_id == -1)
 			return -1;
-		if (this.groups[grp_id].collapsed) { // 音轨隐藏在折叠分组中，因此返回 = -1，还是返回其所属分组的行 id？
+		if (this.groups[grp_id].collapsed) { // track hidden in the collapsed group so return = -1 or we return the row id of the group it belongs to ?
 			//var row_index = -1;
 			var row_index = this.groups[grp_id].totalPreviousRows + 1;
-		} else { // 分组已展开，因此我们可以为搜索的音轨返回有效的 row_id
+		} else { // group expanded so we can return a valid row_id for the track searched
 			var row_index = this.groups[grp_id].totalPreviousRows + cGroup.expanded_height + (trackId - this.groups[grp_id].start);
 		};
 		return row_index;
@@ -1933,7 +1933,7 @@ oList = function (object_name, playlist) {
 					this.s_groupheader_line_id = -1;
 					this.s_track_id = (a - this.s_group_height) + this.groups[this.s_group_id].start;
 					var track_index_in_group = this.s_track_id - this.groups[this.s_group_id].start;
-					if (track_index_in_group >= this.groups[this.s_group_id].count) { // 音轨是分组最后一个音轨的副本，用于通过分组最小音轨数功能填满分组！
+					if (track_index_in_group >= this.groups[this.s_group_id].count) { // track is a copy of the last track of the group to fill the group with minimum track count in group feature!
 						this.s_delta = (track_index_in_group - this.groups[this.s_group_id].count) + 1;
 						this.s_track_id -= this.s_delta;
 					} else {
@@ -1949,11 +1949,11 @@ oList = function (object_name, playlist) {
 
 	this.scrollItems = function (delta, scrollstep) {
 		cList.scroll_direction = (delta < 0 ? -1 : 1);
-		if (delta > 0) { // 向上滚动
+		if (delta > 0) { // scroll up
 			this.offset -= scrollstep;
 			if (this.offset < 0)
 				this.offset = 0;
-		} else { // 向下滚动
+		} else { // scroll down
 			this.offset += scrollstep;
 			if (this.offset > this.totalRows - this.totalRowVisible) {
 				this.offset = this.totalRows - this.totalRowVisible;
@@ -1976,7 +1976,7 @@ oList = function (object_name, playlist) {
 		var row_index = 0;
 		var m,
 		n;
-		if (forceFocus) { // 来自在面板中居中的聚焦项
+		if (forceFocus) { // from focus item centered in panel
 			if (this.totalRows > this.totalRowVisible) {
 				var i = this.getStartOffsetFromFocusId();
 				if (this.totalRows - this.offset <= this.totalRowVisible) {
@@ -1988,11 +1988,11 @@ oList = function (object_name, playlist) {
 				this.items.splice(0, this.items.length);
 				while (i < this.offset + total_rows_to_draw) {
 					this.getTrackId(i);
-					if (this.s_groupheader_line_id >= 0) { // 分组标题
+					if (this.s_groupheader_line_id >= 0) { // group header
 						this.items.push(new oItem(this.playlist, row_index, 1, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, 0, this.s_group_height, this.s_groupheader_line_id, this.groups[this.s_group_id], 0));
 						i += this.s_group_height - this.s_groupheader_line_id;
 						row_index += this.s_group_height - this.s_groupheader_line_id;
-					} else { // 音轨行
+					} else { // track row
 						track_index_in_group = this.s_track_id - this.groups[this.s_group_id].start + this.s_delta;
 						this.items.push(new oItem(this.playlist, row_index, 0, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, track_index_in_group, 1, 0, null, this.s_delta));
 						i++;
@@ -2006,11 +2006,11 @@ oList = function (object_name, playlist) {
 				this.items.splice(0, this.items.length);
 				while (i < this.totalRows) {
 					this.getTrackId(i);
-					if (this.s_groupheader_line_id >= 0) { // 分组标题
+					if (this.s_groupheader_line_id >= 0) { // group header
 						this.items.push(new oItem(this.playlist, row_index, 1, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, 0, this.s_group_height, this.s_groupheader_line_id, this.groups[this.s_group_id], 0));
 						i += this.s_group_height - this.s_groupheader_line_id;
 						row_index += this.s_group_height - this.s_groupheader_line_id;
-					} else { // 音轨行
+					} else { // track row
 						track_index_in_group = this.s_track_id - this.groups[this.s_group_id].start + this.s_delta;
 						this.items.push(new oItem(this.playlist, row_index, 0, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, track_index_in_group, 1, 0, null, this.s_delta));
 						i++;
@@ -2018,11 +2018,11 @@ oList = function (object_name, playlist) {
 					};
 				};
 			};
-		} else { // 从当前偏移填充项
+		} else { // fill items from current offset
 			if (this.totalRows > this.totalRowVisible) {
 				if (typeof(this.offset) == "undefined") {
 					this.getStartOffsetFromFocusId();
-					console.log("... 未定义");
+					console.log("... undefined");
 				};
 
 				var i = this.offset;
@@ -2035,11 +2035,11 @@ oList = function (object_name, playlist) {
 				this.items.splice(0, this.items.length);
 				while (i < this.offset + total_rows_to_draw) {
 					this.getTrackId(i);
-					if (this.s_groupheader_line_id >= 0) { // 分组标题
+					if (this.s_groupheader_line_id >= 0) { // group header
 						this.items.push(new oItem(this.playlist, row_index, 1, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, 0, this.s_group_height, this.s_groupheader_line_id, this.groups[this.s_group_id], 0));
 						i += this.s_group_height - this.s_groupheader_line_id;
 						row_index += this.s_group_height - this.s_groupheader_line_id;
-					} else { // 音轨行
+					} else { // track row
 						track_index_in_group = this.s_track_id - this.groups[this.s_group_id].start + this.s_delta;
 						this.items.push(new oItem(this.playlist, row_index, 0, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, track_index_in_group, 1, 0, null, this.s_delta));
 						i++;
@@ -2051,11 +2051,11 @@ oList = function (object_name, playlist) {
 				this.items.splice(0, this.items.length);
 				while (i < this.totalRows) {
 					this.getTrackId(i);
-					if (this.s_groupheader_line_id >= 0) { // 分组标题
+					if (this.s_groupheader_line_id >= 0) { // group header
 						this.items.push(new oItem(this.playlist, row_index, 1, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, 0, this.s_group_height, this.s_groupheader_line_id, this.groups[this.s_group_id], 0));
 						i += this.s_group_height - this.s_groupheader_line_id;
 						row_index += this.s_group_height - this.s_groupheader_line_id;
-					} else { // 音轨行
+					} else { // track row
 						track_index_in_group = this.s_track_id - this.groups[this.s_group_id].start + this.s_delta;
 						this.items.push(new oItem(this.playlist, row_index, 0, this.handleList[this.s_track_id], this.s_track_id, this.s_group_id, track_index_in_group, 1, 0, null, this.s_delta));
 						i++;
@@ -2109,15 +2109,15 @@ oList = function (object_name, playlist) {
 			this.nowplaying = plman.GetPlayingItemLocation();
 		};
 
-		// 设置 Items 对象中使用的变量（优化）
+		// set variables used in Items object (optimization)
 		this.state_queue_w = Math.round(gr.CalcTextWidth("00", g_font_queue_idx) + 1);
 		this.state_icon_w = this.state_queue_w + g_z6;
 
-		// 绘制项（音轨和分组标题）
+		// Draw items (tracks and group headers)
 		var fin = this.items.length;
 		for (var i = 0; i < fin; i++) {
 			item_h = this.items[i].heightInRow * cTrack.height;
-			// 测试是否显示滚动条，以确定要绘制的项宽度
+			// test if scrollbar displayed or not for the items width to draw
 			if (this.totalRows <= this.totalRowVisible || !properties.showscrollbar) {
 				width = this.w;
 			} else {
@@ -2141,7 +2141,7 @@ oList = function (object_name, playlist) {
 			gr.FillSolidRect(rx + rw - cList.borderWidth, ry + item_height - Math.floor(cList.borderWidth / 2) - 4 * cList.borderWidth, cList.borderWidth, 9 * cList.borderWidth, g_color_selected_bg);
 		};
 
-		// 绘制矩形选区
+		// Draw rect selection
 		if (this.drawRectSel) {
 			var rectSelColor = g_color_selected_bg;
 			this.selDeltaRows = this.selEndOffset - this.selStartOffset;
@@ -2185,8 +2185,8 @@ oList = function (object_name, playlist) {
 					this.items[i].check(event, x, y);
 				};
 				if (!cTouch.down) {
-					if (!p.scrollbar.isHoverObject(x, y) && x < p.scrollbar.x) { // 若未悬停在滚动条上
-						if (this.items.length > 0 && !this.item_clicked) { // 且若点击播放列表的空白区域（最后一项之后）
+					if (!p.scrollbar.isHoverObject(x, y) && x < p.scrollbar.x) { // if not hover the scrollbar
+						if (this.items.length > 0 && !this.item_clicked) { // and if click on an empty area of the playlist (after the last item)
 							if (!properties.enableTouchControl) {
 								this.selX = x;
 								this.selY = y;
@@ -2216,10 +2216,10 @@ oList = function (object_name, playlist) {
 			};
 			p.list.drawRectSel_click = false;
 			p.list.drawRectSel = false;
-			// 终止 "drawRectSel" 矩形区域刷新的计时器
+			// kill timer on rect area refresh for "drawRectSel"
 			cList.repaint_timer && window.ClearInterval(cList.repaint_timer);
 			cList.repaint_timer = false;
-			// 终止拖动移动播放列表项的计时器（vscroll）
+			// kill drag move playlist item timers (vscroll)
 			cPlaylistManager.vscroll_timer_loop && window.ClearTimeout(cPlaylistManager.vscroll_timer_loop);
 			cPlaylistManager.vscroll_timer_loop = false;
 			cPlaylistManager.vscroll_timer && window.ClearTimeout(cPlaylistManager.vscroll_timer);
@@ -2261,7 +2261,7 @@ oList = function (object_name, playlist) {
 				this.drawRectSel = this.drawRectSel_click;
 			};
 			if (!this.drawRectSel) {
-				// 若播放列表管理器面板默认不可见，拖动音轨时水平滚动它
+				// hscroll playlist manager panel when dragging tracks if not visible by default
 				if (dragndrop.moved || cPlaylistManager.drag_moved) {
 					if (!cPlaylistManager.hscroll_timer) {
 						if (!cPlaylistManager.visible) {
@@ -2290,7 +2290,7 @@ oList = function (object_name, playlist) {
 							};
 						};
 						if (p.playlistManager.woffset >= cPlaylistManager.width) { // if playlist manager panel opened
-							// 拖动时垂直滚动播放列表管理器
+							// vscroll playlist manager on dragging
 							// ************************************
 							var inner_padding = 0;
 							//var area_h = Math.floor((p.playlistManager.h - (cPlaylistManager.showStatusBar ? cPlaylistManager.statusBarHeight*0 : 0) ) / cPlaylistManager.rowHeight) * cPlaylistManager.rowHeight;
@@ -2313,7 +2313,7 @@ oList = function (object_name, playlist) {
 															p.playlistManager.offset = p.playlistManager.offset > 0 ? p.playlistManager.offset - 1 : 0;
 															p.playlistManager.scrollbar.reSet(p.playlistManager.rowTotal, cPlaylistManager.rowHeight, p.playlistManager.offset);
 															full_repaint();
-															if (p.playlistManager.offset == 0 || p.playlistManager.woffset < cPlaylistManager.width) { // 终止间隔计时器！
+															if (p.playlistManager.offset == 0 || p.playlistManager.woffset < cPlaylistManager.width) { // kill interval timer!
 																window.ClearTimeout(cPlaylistManager.vscroll_timer_loop);
 																cPlaylistManager.vscroll_timer_loop = false;
 															};
@@ -2339,9 +2339,9 @@ oList = function (object_name, playlist) {
 													cPlaylistManager.vscroll_timer = window.SetTimeout(function () {
 															p.playlistManager.offset = p.playlistManager.offset < p.playlistManager.rowTotal - p.playlistManager.totalRows ? p.playlistManager.offset + 1 : p.playlistManager.rowTotal - p.playlistManager.totalRows;
 															p.playlistManager.scrollbar.reSet(p.playlistManager.rowTotal, cPlaylistManager.rowHeight, p.playlistManager.offset);
-															on_mouse_move(mouse_x + 1, mouse_y); // 调用 mouse_move 以将鼠标光标设为正确图像（若不在播放列表项上则为 IDC_NO）
+															on_mouse_move(mouse_x + 1, mouse_y); // call mouse_move to set mouse cursor to right image (IDC_NO if not on a playlist item)
 															full_repaint();
-															if (p.playlistManager.offset == p.playlistManager.rowTotal - p.playlistManager.totalRows || p.playlistManager.woffset < cPlaylistManager.width) { // 终止间隔计时器！
+															if (p.playlistManager.offset == p.playlistManager.rowTotal - p.playlistManager.totalRows || p.playlistManager.woffset < cPlaylistManager.width) { // kill interval timer!
 																window.ClearTimeout(cPlaylistManager.vscroll_timer_loop);
 																cPlaylistManager.vscroll_timer_loop = false;
 															};
@@ -2376,14 +2376,14 @@ oList = function (object_name, playlist) {
 						};
 					};
 				} else {
-					// 终止计时器
+					// kill timers
 					if (cPlaylistManager.vscroll_timer_loop) {
 						window.ClearInterval(cPlaylistManager.vscroll_timer_loop);
 						cPlaylistManager.vscroll_timer_loop = false;
 					};
 				};
 			} else if (!this.item_clicked) {
-				// 若从空白区域绘制选择矩形，鼠标移动时重绘以显示该矩形
+				// if draw Selection Rect from an empty area, repaint on mouse move to show the rect
 				full_repaint();
 			};
 			break;
@@ -2405,15 +2405,15 @@ oList = function (object_name, playlist) {
 		var gstart;
 		var pid = -1;
 
-		// 若缓存中无搜索字符串则退出
+		// exit if no search string in cache
 		if (cList.search_string.length <= 0)
 			return true;
 
-		// 搜索字符串的第一个字符
+		// 1st char of the search string
 		var first_chr = cList.search_string.substring(0, 1);
 		var len = cList.search_string.length;
 
-		// 搜索的起始点
+		// which start point for the search
 		if (this.count > 1000) {
 			albumartist = tf_albumartist.EvalWithMetadb(this.handleList[Math.floor(this.count / 2)]);
 			chr = albumartist.substring(0, 1);
@@ -2428,7 +2428,7 @@ oList = function (object_name, playlist) {
 
 		if (!properties.showgroupheaders) {
 
-			// 首先在 "album artist" 标签上搜索
+			// 1st search on "album artist" TAG
 			var format_str = "";
 			for (var i = gstart; i < this.count; i++) {
 				albumartist = tf_albumartist.EvalWithMetadb(this.handleList[i]);
@@ -2439,7 +2439,7 @@ oList = function (object_name, playlist) {
 				};
 			};
 
-			// 若未找到，在第一部分搜索（从 0 到 gstart）
+			// if not found, search in the first part (from 0 to gstart)
 			if (pid < 0) {
 				var format_str = "";
 				for (var i = 0; i < gstart; i++) {
@@ -2453,7 +2453,7 @@ oList = function (object_name, playlist) {
 			};
 
 			if (pid < 0) {
-				// 其次在 "artist" 标签上搜索
+				// 2nd search on "artist" TAG
 				var format_str = "";
 				for (var i = 0; i < this.count; i++) {
 					artist = tf_artist.EvalWithMetadb(this.handleList[i]);
@@ -2467,7 +2467,7 @@ oList = function (object_name, playlist) {
 
 		} else {
 
-			// 首先在当前分组依据模式的 tf_group_key 上搜索
+			// 1st search on tf_group_key of current group by pattern
 			var format_str = "";
 			for (var i = gstart; i < this.count; i++) {
 				groupkey = tf_group_key.EvalWithMetadb(this.handleList[i]);
@@ -2478,7 +2478,7 @@ oList = function (object_name, playlist) {
 				};
 			};
 
-			// 若未找到，在第一部分搜索（从 0 到 gstart）
+			// if not found, search in the first part (from 0 to gstart)
 			if (pid < 0) {
 				var format_str = "";
 				for (var i = 0; i < gstart; i++) {
@@ -2493,20 +2493,20 @@ oList = function (object_name, playlist) {
 
 		};
 
-		if (pid >= 0) { // 已找到
+		if (pid >= 0) { // found
 			this.focusedTrackId = pid;
 			plman.ClearPlaylistSelection(this.playlist);
 			plman.SetPlaylistSelectionSingle(this.playlist, this.focusedTrackId, true);
 			plman.SetPlaylistFocusItem(this.playlist, this.focusedTrackId);
 			this.showFocusedItem();
-		} else { // 在 "album artist" 标签上未找到，改为在 "artist" 标签上搜索
+		} else { // not found on "album artist" TAG, new search on "artist" TAG
 			cList.inc_search_noresult = true;
 			full_repaint();
 		};
 
 		cList.clear_incsearch_timer && window.ClearTimeout(cList.clear_incsearch_timer);
 		cList.clear_incsearch_timer = window.SetTimeout(function () {
-				// 1 秒无按键后重置增量搜索字符串
+				// reset incremental search string after 1 seconds without any key pressed
 				cList.search_string = "";
 				cList.inc_search_noresult = false;
 				full_repaint();
@@ -2523,14 +2523,14 @@ oList = function (object_name, playlist) {
 		var _context = fb.CreateContextMenuManager();
 		
 		_context.InitContextPlaylist();
-		_menu.AppendMenuItem(MF_STRING, 1000, "面板设置...");
+		_menu.AppendMenuItem(MF_STRING, 1000, "Panel Settings...");
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(flag, 1001, "裁剪");
-		_menu.AppendMenuItem(flag, 1002, "移除");
+		_menu.AppendMenuItem(flag, 1001, "Crop");
+		_menu.AppendMenuItem(flag, 1002, "Remove");
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(flag, 1003, "剪切");
-		_menu.AppendMenuItem(MF_STRING, 1004, "复制");
-		_menu.AppendMenuItem(!plman.IsPlaylistLocked(this.playlist) && fb.CheckClipboardContents(window.ID) ? MF_STRING : MF_GRAYED, 1005, "粘贴");
+		_menu.AppendMenuItem(flag, 1003, "Cut");
+		_menu.AppendMenuItem(MF_STRING, 1004, "Copy");
+		_menu.AppendMenuItem(!plman.IsPlaylistLocked(this.playlist) && fb.CheckClipboardContents(window.ID) ? MF_STRING : MF_GRAYED, 1005, "Paste");
 		_menu.AppendMenuSeparator();
 		_context.BuildMenu(_menu, 1);
 		var idx = _menu.TrackPopupMenu(x, y);

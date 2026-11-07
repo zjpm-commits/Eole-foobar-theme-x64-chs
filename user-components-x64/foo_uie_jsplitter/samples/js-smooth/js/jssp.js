@@ -3,40 +3,40 @@
 ppt = {
 	tf_artist: fb.TitleFormat("%artist%"),
 	tf_albumartist: fb.TitleFormat("%album artist%"),
-	tf_groupkey: fb.TitleFormat(window.GetProperty("_属性: 分组键格式", "$if2(%album artist%,$if(%length%,'?',%title%)) ^^ $if2(%album%,$if(%length%,'?',%path%)) ^^ %discnumber% ## [%artist%] ^^ %title% ^^ [%genre%] ^^ [%date%]")),
+	tf_groupkey: fb.TitleFormat(window.GetProperty("_PROPERTY: tf_groupkey", "$if2(%album artist%,$if(%length%,'?',%title%)) ^^ $if2(%album%,$if(%length%,'?',%path%)) ^^ %discnumber% ## [%artist%] ^^ %title% ^^ [%genre%] ^^ [%date%]")),
 	tf_track: fb.TitleFormat("%tracknumber% ^^ [%length%] ^^ $if2(%rating%,0) ^^ $if2(%feedback%,0)"),
 	tf_path: fb.TitleFormat("$directory_path(%path%)\\"),
 	tf_crc: fb.TitleFormat("$crc32(%path%)"),
-	tf_time_remaining: fb.TitleFormat("$if(%length%,-%playback_time_remaining%,'播放中')"),
-	defaultRowHeight: window.GetProperty("_属性: 行高", 35),
+	tf_time_remaining: fb.TitleFormat("$if(%length%,-%playback_time_remaining%,'ON AIR')"),
+	defaultRowHeight: window.GetProperty("_PROPERTY: Row Height", 35),
 	doubleRowPixelAdds: 3,
-	rowHeight: window.GetProperty("_属性: 行高", 35),
+	rowHeight: window.GetProperty("_PROPERTY: Row Height", 35),
 	rowScrollStep: 3,
 	scrollSmoothness: 2.5,
 	refreshRate: 40,
-	extraRowsNumber: window.GetProperty("_属性: 每组额外行数", 0),
-	minimumRowsNumberPerGroup: window.GetProperty("_属性: 每组最少行数", 0),
-	groupHeaderRowsNumber: window.GetProperty("_属性: 分组标题行数", 2),
-	showHeaderBar: window.GetProperty("_显示: 显示顶栏", true),
+	extraRowsNumber: window.GetProperty("_PROPERTY: Number of Extra Rows per Group", 0),
+	minimumRowsNumberPerGroup: window.GetProperty("_PROPERTY: Number minimum of Rows per Group", 0),
+	groupHeaderRowsNumber: window.GetProperty("_PROPERTY: Number of Rows for Group Header", 2),
+	showHeaderBar: window.GetProperty("_DISPLAY: Show Top Bar", true),
 	defaultHeaderBarHeight: 25,
 	headerBarHeight: 25,
-	autocollapse: window.GetProperty("_属性: 自动折叠分组", false),
+	autocollapse: window.GetProperty("_PROPERTY: Autocollapse groups", false),
 	enableFullScrollEffectOnFocusChange: false,
-	enableCustomColors: window.GetProperty("_属性: 自定义颜色", false),
-	showgroupheaders: window.GetProperty("_显示: 显示分组标题", true),
-	showwallpaper: window.GetProperty("_显示: 显示壁纸", false),
+	enableCustomColors: window.GetProperty("_PROPERTY: Custom Colors", false),
+	showgroupheaders: window.GetProperty("_DISPLAY: Show Group Headers", true),
+	showwallpaper: window.GetProperty("_DISPLAY: Show Wallpaper", false),
 	wallpaperalpha: 150,
-	wallpaperblurred: window.GetProperty("_显示: 壁纸模糊", true),
+	wallpaperblurred: window.GetProperty("_DISPLAY: Wallpaper Blurred", true),
 	wallpaperblurvalue: 1.05,
-	wallpapermode: window.GetProperty("_系统: 壁纸模式", 0),
-	wallpaperpath: window.GetProperty("_属性: 默认壁纸路径", ".\\user-components\\foo_uie_jsplitter\\samples\\js-smooth\\images\\default.png"),
-	extra_font_size: window.GetProperty("_系统: 额外字号值", 0),
-	showFilterBox: window.GetProperty("_属性: 在顶栏启用播放列表筛选框", true),
-	doubleRowText: window.GetProperty("_属性: 双行文本信息", true),
-	showArtistAlways: window.GetProperty("_显示: 在曲目行显示艺术家", true),
-	showRating: window.GetProperty("_显示: 在曲目行显示评分", true),
-	// showMood: window.GetProperty("_显示: 在曲目行显示心情", true),
-	enableTouchControl: window.GetProperty("_属性: 触摸控制", true)
+	wallpapermode: window.GetProperty("_SYSTEM: Wallpaper Mode", 0),
+	wallpaperpath: window.GetProperty("_PROPERTY: Default Wallpaper Path", ".\\user-components\\foo_uie_jsplitter\\samples\\js-smooth\\images\\default.png"),
+	extra_font_size: window.GetProperty("_SYSTEM: Extra font size value", 0),
+	showFilterBox: window.GetProperty("_PROPERTY: Enable Playlist Filterbox in Top Bar", true),
+	doubleRowText: window.GetProperty("_PROPERTY: Double Row Text Info", true),
+	showArtistAlways: window.GetProperty("_DISPLAY: Show Artist in Track Row", true),
+	showRating: window.GetProperty("_DISPLAY: Show Rating in Track Row", true),
+	// showMood: window.GetProperty("_DISPLAY: Show Mood in Track Row", true),
+	enableTouchControl: window.GetProperty("_PROPERTY: Touch control", true)
 };
 
 cTouch = {
@@ -58,7 +58,7 @@ cSettings = {
 };
 
 cFilterBox = {
-	enabled: window.GetProperty("_属性: 启用筛选框", true),
+	enabled: window.GetProperty("_PROPERTY: Enable Filter Box", true),
 	default_w: 120,
 	default_h: 20,
 	x: 5,
@@ -89,11 +89,11 @@ cPlaylistManager = {
 	blink_id: null,
 	blink_row: null,
 	blink_totaltracks: 0,
-	showTotalItems: window.GetProperty("_属性.播放列表管理器.显示总项数", true)
+	showTotalItems: window.GetProperty("_PROPERTY.PlaylistManager.ShowTotalItems", true)
 };
 
 cScrollBar = {
-	enabled: window.GetProperty("_显示: 显示滚动条", true),
+	enabled: window.GetProperty("_DISPLAY: Show Scrollbar", true),
 	visible: true,
 	themed: false,
 	defaultWidth: get_system_scrollbar_width(),
@@ -110,8 +110,8 @@ cScrollBar = {
 };
 
 cover = {
-	masks: window.GetProperty("_属性: 封面掩码（用于缓存）", "*front*.*;*cover*.*;*folder*.*;*.*"),
-	show: window.GetProperty("_显示: 显示封面", true),
+	masks: window.GetProperty("_PROPERTY: Cover art masks (used for the cache)", "*front*.*;*cover*.*;*folder*.*;*.*"),
+	show: window.GetProperty("_DISPLAY: Show Cover Art", true),
 	column: false,
 	draw_glass_reflect: false,
 	glass_reflect: null,
@@ -170,7 +170,7 @@ dragndrop = {
 
 /*
 ===================================================================================================
-图像缓存
+Images cache
 ===================================================================================================
  */
 function reset_cover_timers() {
@@ -221,16 +221,16 @@ function on_get_album_art_done(metadb, art_id, image, image_path) {
 	};
 };
 
-//=================================================// 封面工具
+//=================================================// Cover Tools
 image_cache = function () {
 	this._cachelist = {};
 	this.hit = function (metadb, albumIndex) {
 		var img = this._cachelist[brw.groups[albumIndex].cachekey];
-		if (typeof(img) == "undefined" || img == null) { // 若图像不在缓存中，我们异步加载它
+		if (typeof(img) == "undefined" || img == null) { // if image not in cache, we load it asynchronously
 			//if(!isScrolling  && !cScrollBar.timerID) { // and when no scrolling
 			brw.groups[albumIndex].crc = check_cache(metadb, albumIndex);
 			if (brw.groups[albumIndex].crc && brw.groups[albumIndex].load_requested == 0) {
-				// 从缓存加载图像
+				// load img from cache
 				if (!timers.coverLoad) {
 					timers.coverLoad = window.SetTimeout(function () {
 							try {
@@ -242,7 +242,7 @@ image_cache = function () {
 						}, (!isScrolling && !cScrollBar.timerID ? 5 : 25));
 				};
 			} else if (brw.groups[albumIndex].load_requested == 0) {
-				// 用默认方法加载图像
+				// load img default method
 				if (!timers.coverLoad) {
 					timers.coverLoad = window.SetTimeout(function () {
 						brw.groups[albumIndex].load_requested = 1;
@@ -284,7 +284,7 @@ image_cache = function () {
 			var pw = cw - cover.margin * 2;
 			var ph = ch - cover.margin * 2;
 		};
-		// cover.type：0 = 无封面，1 = 外部封面，2 = 嵌入封面，3 = 流
+		// cover.type : 0 = nocover, 1 = external cover, 2 = embedded cover, 3 = stream
 		if (brw.groups[albumId].tracktype != 3) {
 			if (metadb) {
 				if (image) {
@@ -303,7 +303,7 @@ image_cache = function () {
 		if (cover_type == 1) {
 			this._cachelist[brw.groups[albumId].cachekey] = img;
 		};
-		// 将图像保存到缓存
+		// save img to cache
 		if (cover_type == 1 && !brw.groups[albumId].save_requested) {
 			if (!timers.saveCover) {
 				brw.groups[albumId].save_requested = true;
@@ -329,7 +329,7 @@ function FormatCover(image, w, h) {
 
 /*
 ===================================================================================================
-对象
+Objects
 ===================================================================================================
  */
 oPlaylist = function (idx, rowId) {
@@ -342,8 +342,8 @@ oPlaylist = function (idx, rowId) {
 oPlaylistManager = function (name) {
 	this.name = name;
 	this.playlists = [];
-	this.state = 0; // 0 = 隐藏，1 = 可见
-	// 尺寸
+	this.state = 0; // 0 = hidden, 1 = visible
+	// metrics
 	this.scroll = 0;
 	this.offset = 0;
 	this.w = 250;
@@ -355,7 +355,7 @@ oPlaylistManager = function (name) {
 	this.drop_done = false;
 
 	this.adjustPanelHeight = function () {
-		// 调整面板高度，避免显示列表中最后一个可见项下方出现空白区域
+		// adjust panel height to avoid blank area under last visible item in the displayed list
 		var target_total_rows = Math.floor((this.default_h - cPlaylistManager.topbarHeight) / cPlaylistManager.rowHeight);
 		if (this.rowTotal != -1 && this.rowTotal < target_total_rows)
 			target_total_rows = this.rowTotal;
@@ -377,7 +377,7 @@ oPlaylistManager = function (name) {
 		this.h = h;
 		this.totalRows = Math.floor((this.h - cPlaylistManager.topbarHeight) / cPlaylistManager.rowHeight);
 
-		// 调整面板高度 / rowHeight + rowTotal（必须先执行过一次刷新，才有有效的 rowTotal）
+		// adjust panel height / rowHeight + rowTotal (! refresh must have been executed once to have a valide rowTotal)
 		this.adjustPanelHeight();
 	};
 
@@ -429,13 +429,13 @@ oPlaylistManager = function (name) {
 		};
 		this.rowTotal = rowId;
 
-		// 调整面板高度 / rowHeight + rowTotal
+		// adjust panel height / rowHeight + rowTotal
 		this.adjustPanelHeight();
 
 		if (reset_scroll || this.rowTotal <= this.totalRows) {
 			this.scroll = 0;
 		} else {
-			// 检查播放列表总数是否与滚动值一致
+			//check it total playlist is coherent with scroll value
 			if (this.scroll > this.rowTotal - this.totalRows) {
 				this.scroll = this.rowTotal - this.totalRows;
 			};
@@ -444,7 +444,7 @@ oPlaylistManager = function (name) {
 
 	this.draw = function (gr) {
 		if (this.offset > 0) {
-			// 尺寸
+			// metrics
 			var cx = this.x - this.offset;
 			var ch = cPlaylistManager.rowHeight;
 			var cw = this.w;
@@ -454,7 +454,7 @@ oPlaylistManager = function (name) {
 			var bg_color = RGB(0, 0, 0);
 			var txt_color = RGB(255, 255, 255);
 
-			// 滚动条尺寸
+			// scrollbar metrics
 			if (this.rowTotal > this.totalRows) {
 				this.scr_y = this.y + cPlaylistManager.topbarHeight;
 				this.scr_w = cPlaylistManager.scrollbarWidth;
@@ -465,7 +465,7 @@ oPlaylistManager = function (name) {
 				this.scr_h = 0;
 			};
 
-			// ** 面板背景 **
+			// ** panel bg **
 			gr.SetSmoothingMode(2);
 			gr.FillRoundRect(cx, this.y, this.w + 12, this.h + cPlaylistManager.botbarHeight + 1, 10, 10, RGBA(0, 0, 0, 120));
 			gr.FillRoundRect(cx, this.y, this.w + 12, this.h + cPlaylistManager.botbarHeight, 10, 10, RGBA(0, 0, 0, 150));
@@ -474,7 +474,7 @@ oPlaylistManager = function (name) {
 
 			gr.FillSolidRect(cx + bg_margin_left, this.y + cPlaylistManager.topbarHeight - 2, this.w - bg_margin_left * 2, 1, RGBA(255, 255, 255, 40));
 
-			// ** 项 **
+			// ** items **
 			var rowIdx = 0;
 			var totalp = this.playlists.length;
 			var start_ = this.scroll;
@@ -485,12 +485,12 @@ oPlaylistManager = function (name) {
 				cy = this.y + cPlaylistManager.topbarHeight + rowIdx * ch;
 				this.playlists[i].y = cy;
 
-				// ** 项背景 **
+				// ** item bg **
 				gr.FillSolidRect(cx + bg_margin_left, cy + bg_margin_top, cw - bg_margin_left * 2 - this.scr_w, ch - bg_margin_top * 2, RGBA(0, 0, 0, 130));
 				gr.DrawRect(cx + bg_margin_left, cy + bg_margin_top, cw - bg_margin_left * 2 - this.scr_w - 1, ch - bg_margin_top * 2 - 1, 1.0, RGBA(255, 255, 255, 20));
 
-				// ** 项文本 **
-				// 播放列表项目总数
+				// ** item text **
+				// playlist total items
 				if (cPlaylistManager.showTotalItems) {
 					t = plman.PlaylistItemCount(this.playlists[i].idx);
 					tw = gr.CalcTextWidth(t, g_font);
@@ -498,14 +498,14 @@ oPlaylistManager = function (name) {
 				} else {
 					tw = 0;
 				};
-				// 绘制播放列表名
+				// draw playlist name
 				if ((this.activeIndex == i + 1 && cPlaylistManager.blink_counter < 0) || (cPlaylistManager.blink_id == i + 1 && cPlaylistManager.blink_row != 0)) {
 					gr.GdiDrawText("+ " + this.playlists[i].name, g_font_bold, txt_color, cx + bg_margin_left + txt_margin, cy, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 				} else {
 					gr.GdiDrawText(this.playlists[i].name, g_font, blendColors(txt_color, bg_color, 0.2), cx + bg_margin_left + txt_margin, cy, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 				};
 
-				// 拖放后在 lbtn_up 时绘制闪烁的项目
+				// draw flashing item on lbtn_up after a drag'n drop
 				if (cPlaylistManager.blink_counter > -1) {
 					if (cPlaylistManager.blink_row != 0) {
 						if (i == cPlaylistManager.blink_id - 1) {
@@ -519,25 +519,25 @@ oPlaylistManager = function (name) {
 				rowIdx++;
 			};
 
-			// 顶栏
-			// 拖放后在 lbtn_up 时绘制闪烁的顶栏项目
+			// top bar
+			// draw flashing top bar item on lbtn_up after a drag'n drop
 			if (cPlaylistManager.blink_counter > -1) {
 				if (cPlaylistManager.blink_row == 0) {
 					if (cPlaylistManager.blink_counter <= 6 && Math.floor(cPlaylistManager.blink_counter / 2) == Math.ceil(cPlaylistManager.blink_counter / 2)) {
-						gr.GdiDrawText("+ 发送到新播放列表", g_font_bold, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText("+ Sent to a New Playlist", g_font_bold, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 					};
 				} else {
-					gr.GdiDrawText("发送到...", g_font, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("Send to ...", g_font, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 				};
 			} else {
 				if (this.activeRow == 0) {
-					gr.GdiDrawText("+ 发送到新播放列表", g_font_bold, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("+ Send to a New Playlist", g_font_bold, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 				} else {
-					gr.GdiDrawText("发送到...", g_font, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("Send to ...", g_font, txt_color, cx + bg_margin_left + txt_margin, this.y, cw - bg_margin_left * 2 - txt_margin * 2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 				};
 			};
 
-			// 绘制 activeIndex 悬停框
+			// draw activeIndex hover frame
 			if (cPlaylistManager.blink_counter > -1 && cPlaylistManager.blink_row > 0) {
 				cy_ = this.y + cPlaylistManager.blink_row * ch;
 				gr.DrawRect(cx + bg_margin_left + 1, cy_ + bg_margin_top + 1, cw - bg_margin_left * 2 - this.scr_w - 2, ch - bg_margin_top * 2 - 2, 2.0, RGBA(255, 255, 255, 240));
@@ -550,12 +550,12 @@ oPlaylistManager = function (name) {
 				};
 			};
 
-			// 滚动条
+			// scrollbar
 			if (this.scr_w > 0) {
 				this.scr_cursor_h = (this.scr_h / (ch * this.rowTotal)) * this.scr_h;
 				if (this.scr_cursor_h < 20)
 					this.scr_cursor_h = 20;
-				// 设置光标 y 位置
+				// set cursor y pos
 				var ratio = (this.scroll * ch) / (this.rowTotal * ch - this.scr_h);
 				this.scr_cursor_y = this.scr_y + Math.round((this.scr_h - this.scr_cursor_h) * ratio);
 
@@ -574,7 +574,7 @@ oPlaylistManager = function (name) {
 
 		switch (event) {
 		case "move":
-			// 获取 x,y 坐标处的活动项索引……
+			// get active item index at x,y coords...
 			this.activeIndex = -1;
 			if (this.ishover) {
 				this.activeRow = Math.ceil((y - this.y) / cPlaylistManager.rowHeight) - 1;
@@ -627,21 +627,21 @@ oPlaylistManager = function (name) {
 				if (this.activeIndex > -1) {
 					brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
 					if (this.activeRow == 0) {
-						// 发送到新播放列表
+						// send to a new playlist
 						this.drop_done = true;
 						window.NotifyOthers("JSSmoothPlaylist->JSSmoothBrowser:avoid_on_playlist_switch_callbacks_on_sendItemToPlaylist", true);
 						plman.CreatePlaylist(plman.PlaylistCount, "");
 						plman.ActivePlaylist = plman.PlaylistCount - 1;
 						plman.InsertPlaylistItems(plman.PlaylistCount - 1, 0, brw.metadblist_selection, false);
 					} else {
-						// 发送到所选（悬停）播放列表
+						// send to selected (hover) playlist
 						this.drop_done = true;
 						var row_idx = this.activeIndex - 1;
 						var playlist_idx = this.playlists[row_idx].idx;
 						var insert_index = plman.PlaylistItemCount(playlist_idx);
 						plman.InsertPlaylistItems(playlist_idx, insert_index, brw.metadblist_selection, false);
 					};
-					// 计时器，使曲目被拖放到的播放列表项目闪烁！
+					// timer to blink the playlist item where tracks have been droped!
 					if (this.drop_done) {
 						if (!cPlaylistManager.blink_timer) {
 							cPlaylistManager.blink_x = x;
@@ -658,7 +658,7 @@ oPlaylistManager = function (name) {
 										cPlaylistManager.blink_counter = -1;
 										cPlaylistManager.blink_id = null;
 										pman.drop_done = false;
-										// 关闭 pman
+										// close pman
 										if (!timers.hidePlaylistManager) {
 											timers.hidePlaylistManager = window.SetInterval(pman.hidePanel, 25);
 										};
@@ -775,7 +775,7 @@ oFilterBox = function () {
 	this.getImages();
 
 	this.on_init = function () {
-		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "搜索", g_color_normal_txt, 0, 0, g_color_selected_bg, g_sendResponse, "brw");
+		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "Filter", g_color_normal_txt, 0, 0, g_color_selected_bg, g_sendResponse, "brw");
 		this.inputbox.autovalidation = true;
 	};
 	this.on_init();
@@ -896,8 +896,8 @@ oScrollbar = function (themed) {
 	};
 
 	this.setButtons = function () {
-		// 普通向上滚动图像
-		// 绘制主题滚动条（lg/col）
+		// normal scroll_up Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.upImage_normal = gdi.CreateImage(this.w, this.w);
 			var gb = this.upImage_normal.GetGraphics();
@@ -914,8 +914,8 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_normal.ReleaseGraphics(gb);
 
-		// 悬停向上滚动图像
-		// 绘制主题滚动条（lg/col）
+		// hover scroll_up Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.upImage_hover = gdi.CreateImage(this.w, this.w);
 			gb = this.upImage_hover.GetGraphics();
@@ -932,8 +932,8 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_hover.ReleaseGraphics(gb);
 
-		// 按下向上滚动图像
-		// 绘制主题滚动条（lg/col）
+		// down scroll_up Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.upImage_down = gdi.CreateImage(this.w, this.w);
 			gb = this.upImage_down.GetGraphics();
@@ -950,8 +950,8 @@ oScrollbar = function (themed) {
 		};
 		this.upImage_down.ReleaseGraphics(gb);
 
-		// 普通向下滚动图像
-		// 绘制主题滚动条（lg/col）
+		// normal scroll_down Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.downImage_normal = gdi.CreateImage(this.w, this.w);
 			gb = this.downImage_normal.GetGraphics();
@@ -968,8 +968,8 @@ oScrollbar = function (themed) {
 		};
 		this.downImage_normal.ReleaseGraphics(gb);
 
-		// 悬停向下滚动图像
-		// 绘制主题滚动条（lg/col）
+		// hover scroll_down Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.downImage_hover = gdi.CreateImage(this.w, this.w);
 			gb = this.downImage_hover.GetGraphics();
@@ -986,8 +986,8 @@ oScrollbar = function (themed) {
 		};
 		this.downImage_hover.ReleaseGraphics(gb);
 
-		// 按下向下滚动图像
-		// 绘制主题滚动条（lg/col）
+		// down scroll_down Image
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			this.downImage_down = gdi.CreateImage(this.w, this.w);
 			gb = this.downImage_down.GetGraphics();
@@ -1020,10 +1020,10 @@ oScrollbar = function (themed) {
 	};
 
 	this.setCursorButton = function () {
-		// 普通光标图像
+		// normal cursor Image
 		this.cursorImage_normal = gdi.CreateImage(this.cursorw, this.cursorh);
 		var gb = this.cursorImage_normal.GetGraphics();
-		// 绘制主题滚动条（lg/col）
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 1);
@@ -1041,10 +1041,10 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_normal.ReleaseGraphics(gb);
 
-		// 悬停光标图像
+		// hover cursor Image
 		this.cursorImage_hover = gdi.CreateImage(this.cursorw, this.cursorh);
 		gb = this.cursorImage_hover.GetGraphics();
-		// 绘制主题滚动条（lg/col）
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 2);
@@ -1062,10 +1062,10 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_hover.ReleaseGraphics(gb);
 
-		// 按下光标图像
+		// down cursor Image
 		this.cursorImage_down = gdi.CreateImage(this.cursorw, this.cursorh);
 		gb = this.cursorImage_down.GetGraphics();
-		// 绘制主题滚动条（lg/col）
+		// Draw Themed Scrollbar (lg/col)
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(3, 3);
@@ -1083,14 +1083,14 @@ oScrollbar = function (themed) {
 		};
 		this.cursorImage_down.ReleaseGraphics(gb);
 
-		// 在 buttons 数组中创建/刷新光标按钮
+		// create/refresh cursor Button in buttons array
 		this.buttons[this.buttonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down);
 		this.buttons[this.buttonType.cursor].x = this.x;
 		this.buttons[this.buttonType.cursor].y = this.cursory;
 	};
 
 	this.draw = function (gr) {
-		// 滚动条背景
+		// scrollbar background
 		if (this.themed) {
 			try {
 				this.theme.SetPartAndStateId(6, 1);
@@ -1103,7 +1103,7 @@ oScrollbar = function (themed) {
 			gr.FillSolidRect(this.x, this.y, this.w, this.h, this.color_bg & 0x25ffffff);
 			gr.FillSolidRect(this.x, this.y, 1, this.h, this.color_txt & 0x05ffffff);
 		};
-		// 滚动条按钮
+		// scrollbar buttons
 		if (cScrollBar.visible)
 			this.buttons[this.buttonType.cursor].draw(gr, this.x, this.cursory, 200);
 		if (this.showButtons) {
@@ -1117,9 +1117,9 @@ oScrollbar = function (themed) {
 		this.total = brw.rowsCount;
 		this.rowh = ppt.rowHeight;
 		this.totalh = this.total * this.rowh;
-		// 设置滚动条可见性
+		// set scrollbar visibility
 		cScrollBar.visible = (this.totalh > brw.h);
-		// 设置光标宽度/高度
+		// set cursor width/height
 		this.cursorw = cScrollBar.width;
 		if (this.total > 0) {
 			this.cursorh = Math.round((brw.h / this.totalh) * this.areah);
@@ -1128,14 +1128,14 @@ oScrollbar = function (themed) {
 		} else {
 			this.cursorh = cScrollBar.minCursorHeight;
 		};
-		// 设置光标 y 位置
+		// set cursor y pos
 		this.setCursorY();
 		if (this.cursorw && this.cursorh && this.cursorh != prev_cursorh)
 			this.setCursorButton();
 	};
 
 	this.setCursorY = function () {
-		// 设置光标 y 位置
+		// set cursor y pos
 		var ratio = scroll / (this.totalh - brw.h);
 		this.cursory = this.areay + Math.round((this.areah - this.cursorh) * ratio);
 	};
@@ -1157,9 +1157,9 @@ oScrollbar = function (themed) {
 	};
 
 	this.setScrollFromCursorPos = function () {
-		// 计算滚动光标的比例，以换算整个列表中对应的项（含 gh）
+		// calc ratio of the scroll cursor to calc the equivalent item for the full list (with gh)
 		var ratio = (this.cursory - this.areay) / (this.areah - this.cursorh);
-		// 计算要显示在面板列表顶部（可见）的项索引（整个列表，含 gh）
+		// calc idx of the item (of the full list with gh) to display at top of the panel list (visible)
 		scroll = Math.round((this.totalh - brw.h) * ratio);
 	};
 
@@ -1234,11 +1234,11 @@ oScrollbar = function (themed) {
 			if ((this.isHoverCursor || this.cursorDrag) && !this.buttonClick && !this.isHoverEmptyArea) {
 				this.cursorCheck(event, x, y);
 			} else {
-				// 按钮事件
+				// buttons events
 				var bt_state = ButtonStates.normal;
 				for (var i = 1; i < 3; i++) {
 					switch (i) {
-					case 1: // 向上按钮
+					case 1: // up button
 						bt_state = this.buttons[i].checkstate(event, x, y);
 						if ((event == "down" && bt_state == ButtonStates.down) || (event == "dblclk" && bt_state == ButtonStates.hover)) {
 							this.buttonClick = true;
@@ -1256,7 +1256,7 @@ oScrollbar = function (themed) {
 							};
 						};
 						break;
-					case 2: // 向下按钮
+					case 2: // down button
 						bt_state = this.buttons[i].checkstate(event, x, y);
 						if ((event == "down" && bt_state == ButtonStates.down) || (event == "dblclk" && bt_state == ButtonStates.hover)) {
 							this.buttonClick = true;
@@ -1277,9 +1277,9 @@ oScrollbar = function (themed) {
 					};
 				};
 				if (!this.buttonClick && this.isHoverEmptyArea) {
-					// 检测点击滚动条空白区域
+					// check click on empty area scrollbar
 					if (y < this.cursory) {
-						// 向上
+						// up
 						this.buttonClick = true;
 						scroll = scroll - scroll_step_page;
 						scroll = check_scroll(scroll);
@@ -1294,7 +1294,7 @@ oScrollbar = function (themed) {
 								}, 80);
 						};
 					} else {
-						// 向下
+						// down
 						this.buttonClick = true;
 						scroll = scroll + scroll_step_page;
 						scroll = check_scroll(scroll);
@@ -1374,7 +1374,7 @@ oGroup = function (index, start, handle, groupkey) {
 		this.rowsToAdd += ppt.extraRowsNumber;
 
 		if (this.collapsed) {
-			if (brw.focusedTrackId >= this.start && brw.focusedTrackId < this.start + count) { // 焦点音轨在此分组中！
+			if (brw.focusedTrackId >= this.start && brw.focusedTrackId < this.start + count) { // focused track is in this group!
 				this.collapsed = false;
 				g_group_id_focused = this.index;
 			};
@@ -1397,11 +1397,11 @@ oBrowser = function (name) {
 
 	this.launch_populate = function () {
 		var launch_timer = window.SetTimeout(function () {
-				// 用项填充浏览器
+				// populate browser with items
 				brw.populate(true);
-				// 填充播放列表弹出面板列表
+				// populate playlist popup panel list
 				pman.populate(false, true);
-				// 终止 Timeout
+				// kill Timeout
 				launch_timer && window.ClearTimeout(launch_timer);
 				launch_timer = false;
 			}, 5);
@@ -1432,20 +1432,20 @@ oBrowser = function (name) {
 		scroll = check_scroll(scroll);
 		scroll_ = scroll;
 
-		// 滚动条更新
+		// scrollbar update
 		this.scrollbar.updateScrollbar();
 
 		pman.setSize(ww, y + 50, (cPlaylistManager.width < ww ? cPlaylistManager.width : ww), h - 100);
 	};
 
-	this.collapseAll = function (bool) { // bool = true 折叠所有分组，否则展开所有分组
+	this.collapseAll = function (bool) { // bool = true to collapse all groups otherwise expand them all
 		var end = this.groups.length;
 		for (i = 0; i < end; i++) {
 			this.groups[i].collapsed = bool;
 		};
 		this.setList(true);
 		g_focus_row = this.getOffsetFocusItem(g_focus_id);
-		// 若焦点音轨未完全可见，我们滚动使其在面板中居中显示
+		// if focused track not totally visible, we scroll to show it centered in the panel
 		if (g_focus_row < scroll / ppt.rowHeight || g_focus_row > scroll / ppt.rowHeight + brw.totalRowsVis - 1) {
 			scroll = (g_focus_row - Math.floor(brw.totalRowsVis / 2)) * ppt.rowHeight;
 			scroll = check_scroll(scroll);
@@ -1479,7 +1479,7 @@ oBrowser = function (name) {
 
 			this.groups[i].load_requested = 0;
 
-			// 更新此分组之前的总行数
+			// update total rows present before this group
 			//this.groups[i].totalPreviousRows = r;
 
 			grptags = this.groups[i].groupkey;
@@ -1491,7 +1491,7 @@ oBrowser = function (name) {
 					this.groups[i].rowId = r;
 					for (k = 0; k < headerTotalRows; k++) {
 						this.rows[r] = new Object();
-						this.rows[r].type = k + 1; // 分组标题的第一行
+						this.rows[r].type = k + 1; // 1st line of group header
 						this.rows[r].metadb = this.groups[i].metadb;
 						this.rows[r].albumId = i;
 						this.rows[r].albumTrackId = 0;
@@ -1505,7 +1505,7 @@ oBrowser = function (name) {
 					this.groups[i].rowId = r;
 					for (k = 0; k < headerTotalRows; k++) {
 						this.rows[r] = new Object();
-						this.rows[r].type = k + 1; // 分组标题的第一行
+						this.rows[r].type = k + 1; // 1st line of group header
 						this.rows[r].metadb = this.groups[i].metadb;
 						this.rows[r].albumId = i;
 						this.rows[r].albumTrackId = 0;
@@ -1514,11 +1514,11 @@ oBrowser = function (name) {
 						r++;
 					};
 				};
-				// 音轨
+				// tracks
 				m = this.groups[i].count;
 				for (j = 0; j < m; j++) {
 					this.rows[r] = new Object();
-					this.rows[r].type = 0; // 音轨
+					this.rows[r].type = 0; // track
 					this.rows[r].metadb = this.list[s + j];
 					this.rows[r].albumId = i;
 					this.rows[r].albumTrackId = j;
@@ -1528,11 +1528,11 @@ oBrowser = function (name) {
 					this.rows[r].rating = -1;
 					r++;
 				};
-				// 空的额外行
+				// empty extra rows
 				p = this.groups[i].rowsToAdd;
 				for (n = 0; n < p; n++) {
 					this.rows[r] = new Object();
-					this.rows[r].type = 99; // 专辑/分组底部的额外行
+					this.rows[r].type = 99; // extra row at bottom of the album/group
 					r++;
 				};
 			};
@@ -1550,7 +1550,7 @@ oBrowser = function (name) {
 						g_active_playlist = plman.ActivePlaylist = plman.PlayingPlaylist;
 					};
 
-					// 将焦点设为正在播放的项
+					// set focus on the now playing item
 					g_focus_id_prev = g_focus_id;
 					g_focus_id = this.nowplaying.PlaylistItemIndex;
 
@@ -1646,11 +1646,11 @@ oBrowser = function (name) {
 		var row_idx = 0;
 		if (fid > -1) {
 			if (ppt.showgroupheaders) {
-				// fid = 播放列表中的第 n 项（focus id）
+				// fid = no item dans la playlist (focus id)
 				// this.rows[] => albumId
-				// 1. 查找包含 focus_id 的专辑 id
+				// 1 . rech album id contenant le focus_id
 				g_focus_album_id = this.getAlbumIdfromTrackId(fid);
-				// 2. 查找 row id
+				// 2. rech row id
 				for (i = 0; i < this.rows.length; i++) {
 					if (this.rows[i].type != 0 && this.rows[i].type != 99 && this.rows[i].albumId == g_focus_album_id) {
 						if (this.groups[g_focus_album_id].collapsed) {
@@ -1663,9 +1663,9 @@ oBrowser = function (name) {
 					};
 				};
 			} else {
-				// 1. 查找包含 focus_id 的专辑 id
+				// 1 . rech album id contenant le focus_id
 				g_focus_album_id = this.getAlbumIdfromTrackId(fid);
-				// 2. 查找 row id
+				// 2. rech row id
 				for (i = 0; i < this.rows.length; i++) {
 					if (this.rows[i].type == 0 && this.rows[i].albumId == g_focus_album_id) {
 						var albumTrackId = g_focus_id - this.groups[g_focus_album_id].start;
@@ -1713,13 +1713,13 @@ oBrowser = function (name) {
 			if (toAdd) {
 				if (current != previous) {
 					if (g > 0) {
-						// 更新当前分组
+						// update current group
 						this.groups[g - 1].finalize(t, tr);
 						tr.splice(0, t);
 						t = 0;
 					};
 					if (i < total) {
-						// 添加新分组
+						// add new group
 						tr.push(arr[1]);
 						t++;
 						this.groups.push(new oGroup(g, i, handle, arr[0]));
@@ -1727,14 +1727,14 @@ oBrowser = function (name) {
 						previous = current;
 					};
 				} else {
-					// 将音轨添加到当前分组
+					// add track to current group
 					tr.push(arr[1]);
 					t++;
 				};
 			};
 		};
 
-		// 更新最后一个分组属性
+		// update last group properties
 		if (g > 0)
 			this.groups[g - 1].finalize(t, tr);
 
@@ -1747,13 +1747,13 @@ oBrowser = function (name) {
 		this.init_groups();
 		this.setList();
 		g_focus_row = brw.getOffsetFocusItem(g_focus_id);
-		if (g_focus_id < 0) { // 焦点项未设置
+		if (g_focus_id < 0) { // focused item not set
 			if (is_first_populate) {
 				scroll = scroll_ = 0;
 			};
 		} else {
 			if (is_first_populate) {
-				// 若焦点音轨未完全可见，我们滚动使其在面板中居中显示
+				// if focused track not totally visible, we scroll to show it centered in the panel
 				if (g_focus_row < scroll / ppt.rowHeight || g_focus_row > scroll / ppt.rowHeight + brw.totalRowsVis - 1) {
 					scroll = (g_focus_row - Math.floor(brw.totalRowsVis / 2)) * ppt.rowHeight;
 					scroll = check_scroll(scroll);
@@ -1778,7 +1778,7 @@ oBrowser = function (name) {
 				scroll_ = scroll;
 			var start_ = Math.round(scroll_ / ppt.rowHeight + 0.4);
 			var end_ = start_ + this.totalRows + (ppt.groupHeaderRowsNumber - 1);
-			// 检查边界
+			// check boundaries
 			start_ = start_ > 0 ? start_ - 1 : start_;
 			if (start_ < 0)
 				start_ = 0;
@@ -1796,7 +1796,7 @@ oBrowser = function (name) {
 
 		this.getlimits();
 
-		// 强制全列表刷新，尤其是在媒体库填充时（由 'on_item_focus_change' 调用）
+		// force full list refresh especially when library is populating (call from 'on_item_focus_change')
 		if (Math.abs(g_start_ - start_prev) > 1 || Math.abs(g_end_ - end_prev) > 1)
 			all = true;
 
@@ -1806,16 +1806,16 @@ oBrowser = function (name) {
 		if (all) {
 			for (var i = g_start_; i <= g_end_; i++) {
 				switch (this.rows[i].type) {
-				case this.groupHeaderRowHeight: // 最后一个分组标题行
-					// 分组标签
+				case this.groupHeaderRowHeight: // last group header row
+					// group tags
 					this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb);
-					// 音轨标签
+					// track tags
 					this.rows[i].tracktags = tf_trk.EvalWithMetadb(this.rows[i].metadb);
 					break;
-				case 0: // 音轨行
-					// 分组标签
+				case 0: // track row
+					// group tags
 					this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb);
-					// 音轨标签
+					// track tags
 					this.rows[i].tracktags = tf_trk.EvalWithMetadb(this.rows[i].metadb);
 					break;
 				};
@@ -1823,23 +1823,23 @@ oBrowser = function (name) {
 		} else {
 			if (g_start_ < start_prev) {
 				switch (this.rows[g_start_].type) {
-				case this.groupHeaderRowHeight: // 最后一个分组标题行
-					// 音轨标签
+				case this.groupHeaderRowHeight: // last group header row
+					// track tags
 					this.rows[g_start_].tracktags = tf_trk.EvalWithMetadb(this.rows[g_start_].metadb);
 					break;
-				case 0: // 音轨行
-					// 音轨标签
+				case 0: // track row
+					// track tags
 					this.rows[g_start_].tracktags = tf_trk.EvalWithMetadb(this.rows[g_start_].metadb);
 					break;
 				};
 			} else if (g_start_ > start_prev || g_end_ > end_prev) {
 				switch (this.rows[g_end_].type) {
-				case this.groupHeaderRowHeight: // 最后一个分组标题行
-					// 音轨标签
+				case this.groupHeaderRowHeight: // last group header row
+					// track tags
 					this.rows[g_end_].tracktags = tf_trk.EvalWithMetadb(this.rows[g_end_].metadb);
 					break;
-				case 0: // 音轨行
-					// 音轨标签
+				case 0: // track row
+					// track tags
 					this.rows[g_end_].tracktags = tf_trk.EvalWithMetadb(this.rows[g_end_].metadb);
 					break;
 				};
@@ -1864,7 +1864,7 @@ oBrowser = function (name) {
 				var g = 0;
 				var coverWidth = cover.max_w;
 
-				// 获取正在播放的音轨
+				// get Now Playing track
 				if (fb.IsPlaying && plman.PlayingPlaylist == g_active_playlist) {
 					this.nowplaying = plman.GetPlayingItemLocation();
 				} else {
@@ -1877,27 +1877,27 @@ oBrowser = function (name) {
 					this.rows[i].y = ay;
 
 					switch (this.rows[i].type) {
-					case ghrh: // 最后一个分组标题行
+					case ghrh: // last group header row
 						if (ay > 0 - (ghrh * ah) && ay < this.h + (ghrh * ah)) {
 							try {
 								arr_g = this.rows[i].groupkey.split(" ^^ ");
 								arr_e = this.groups[this.rows[i].albumId].tra[0].split(" ^^ ");
 							} catch (e) {};
 
-							// 正在播放的分组？
+							// Now Playing Group ?
 							if (this.nowplaying && this.nowplaying.PlaylistItemIndex >= this.groups[this.rows[i].albumId].start && this.nowplaying.PlaylistItemIndex < this.groups[this.rows[i].albumId].start + this.groups[this.rows[i].albumId].count) {
 								var nowplaying_group = true;
 							} else {
 								var nowplaying_group = false;
 							};
 
-							// 分组 id
+							// group id
 							g = this.rows[i].albumId;
 
 							// ================
-							// 分组标题背景
+							// group header bg
 							// ================
-							// 若分组已折叠，检查该分组的第一首音轨是否被选中，以高亮显示该分组为已选中音轨]
+							// if group collapsed, check if 1st track of the group is selected to highlight the group as a selected track]
 							var g_selected = false;
 							if (this.groups[g].collapsed) {
 								var deb = this.groups[g].start;
@@ -1921,7 +1921,7 @@ oBrowser = function (name) {
 								gr.FillSolidRect(ax, ay - ((ghrh - 1) * ah), aw, 1, g_color_normal_txt & 0x08ffffff);
 							};
 							// ==========
-							// 封面艺术
+							// cover art
 							// ==========
 							if (ghrh > 1 && cover.show) {
 								if (this.groups[g].cover_type == null) {
@@ -1953,32 +1953,32 @@ oBrowser = function (name) {
 								var text_left_margin = 0;
 							};
 							// =====
-							// 文本
+							// text
 							// =====
-							// 右侧区域
+							// right area
 							cColumns.dateWidth = gr.CalcTextWidth(arr_e[3], g_font_group1) + 10;
 							gr.GdiDrawText(arr_e[3], g_font_group1, group_color_txt_normal, ax + aw - cColumns.dateWidth - 5, ay - ((ghrh - 1) * ah) + Math.round(ah * 1 / 3) - 2, cColumns.dateWidth, Math.round(ah * 2 / 3), DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 							cColumns.genreWidth = gr.CalcTextWidth(arr_e[2], g_font_group2) + 10;
 							gr.GdiDrawText(arr_e[2], g_font_group2, group_color_txt_fader, ax + aw - cColumns.genreWidth - 5, ay - ((ghrh - 2) * ah), cColumns.genreWidth, Math.round(ah * 2 / 3), DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-							// 左侧区域
+							// left area
 							if (arr_g[1] == "?") {
 								if (this.groups[g].count > 1) {
-									var album_name = "(单曲)"
+									var album_name = "(Singles)"
 								} else {
 									var arr_tmp = this.groups[g].tra[0].split(" ^^ ");
-									var album_name = "(单曲) " + arr_tmp[1];
+									var album_name = "(Single) " + arr_tmp[1];
 								};
 							} else {
 								var album_name = arr_g[1];
 							};
 							gr.GdiDrawText(arr_g[0].toUpperCase(), g_font_group1, group_color_txt_fader, ax + text_left_margin + 5, ay - ((ghrh - 1) * ah) + Math.round(ah * 1 / 3) - 2, aw - text_left_margin - cColumns.dateWidth - 10, Math.round(ah * 2 / 3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-							gr.GdiDrawText(album_name, g_font_group2, group_color_txt_normal, ax + text_left_margin + 5, ay - ((ghrh - 2) * ah), aw - text_left_margin - cColumns.genreWidth - 30, Math.round(ah * 2 / 3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+							gr.GdiDrawText(album_name, g_font_group2, group_color_txt_normal, ax + text_left_margin + 25, ay - ((ghrh - 2) * ah), aw - text_left_margin - cColumns.genreWidth - 30, Math.round(ah * 2 / 3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 							if (nowplaying_group) {
 								gr.GdiDrawText(">", g_font_group2, group_color_txt_normal, ax + text_left_margin + 5, ay - ((ghrh - 2) * ah), 20, Math.round(ah * 2 / 3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 							};
 						};
 						break;
-					case 0: // 音轨行
+					case 0: // track row
 						if (ay > this.y - ppt.headerBarHeight - ah && ay < this.y + this.h) {
 							try {
 								arr_t = this.rows[i].tracktags.split(" ^^ ");
@@ -1988,20 +1988,20 @@ oBrowser = function (name) {
 							} catch (e) {};
 
 							// =========
-							// 音轨背景
+							// track bg
 							// =========
 							var track_color_txt = g_color_normal_txt;
 							var track_artist_color_text = blendColors(track_color_txt, g_color_normal_bg, 0.25);
 							var track_color_rating = blendColors(track_color_txt, g_color_normal_bg, 0.2);
 
-							// 选中音轨背景
+							// selected track bg
 							var t_selected = (plman.IsPlaylistItemSelected(g_active_playlist, this.rows[i].playlistTrackId));
 							if (t_selected) {
 								track_color_txt = (ppt.enableCustomColors ? g_color_selected_txt : g_color_normal_bg);
 								track_artist_color_text = blendColors(track_color_txt, g_color_selected_bg, 0.25);
 								track_color_rating = blendColors(track_color_txt, g_color_selected_bg, 0.2);
 								gr.FillSolidRect(ax, ay, aw, ah, g_color_selected_bg & 0xb0ffffff);
-								// 默认音轨背景（奇/偶）
+								// default track bg (odd/even)
 								if (ppt.showgroupheaders) {
 									if (this.rows[i].albumTrackId % 2 == 0) {
 										gr.FillSolidRect(ax, ay, aw, ah, RGBA(255, 255, 255, 5));
@@ -2016,7 +2016,7 @@ oBrowser = function (name) {
 									};
 								};
 							} else {
-								// 默认音轨背景（奇/偶）
+								// default track bg (odd/even)
 								if (ppt.showgroupheaders) {
 									if (this.rows[i].albumTrackId % 2 != 0) {
 										gr.FillSolidRect(ax, ay, aw, ah, g_color_normal_txt & 0x05ffffff);
@@ -2027,13 +2027,13 @@ oBrowser = function (name) {
 									};
 								};
 							};
-							// 焦点音轨背景
+							// focused track bg
 							if (this.rows[i].playlistTrackId == g_focus_id) {
 								gr.DrawRect(ax + 1, ay + 1, aw - 2, ah - 2, 2.0, g_color_selected_bg & 0xd0ffffff);
 							};
 
 							// =====
-							// 文本
+							// text
 							// =====
 							if (ay >= (0 - ah) && ay < this.y + this.h) {
 
@@ -2043,7 +2043,7 @@ oBrowser = function (name) {
 								if (nbc == 1)
 									nbc++;
 
-								// 字段
+								// fields
 								var track_num = arr_t[0] == "?" ? this.rows[i].albumTrackId + 1 : arr_t[0];
 								var track_num_part = num(track_num, nbc) + "    ";
 								if (ppt.showArtistAlways || !ppt.showgroupheaders || arr_e[0].toLowerCase() != arr_g[0].toLowerCase() || ppt.doubleRowText) {
@@ -2053,7 +2053,7 @@ oBrowser = function (name) {
 								};
 								var track_title_part = arr_e[1];
 								var track_time_part = arr_t[1];
-								// 评分标签修正与格式化
+								// rating tag fixing & formatting
 								if (this.rows[i].rating == -1) {
 									if (isNaN(arr_t[2])) {
 										var track_rating_part = 0;
@@ -2087,7 +2087,7 @@ oBrowser = function (name) {
 									var ah_1 = Math.floor(ah / 2);
 									var ay_2 = ay + ah_1 - 2;
 									var ah_2 = ah - Math.floor(ah / 2);
-									if (this.nowplaying && this.rows[i].playlistTrackId == this.nowplaying.PlaylistItemIndex) { // 正在播放的音轨
+									if (this.nowplaying && this.rows[i].playlistTrackId == this.nowplaying.PlaylistItemIndex) { // now playing track
 										this.nowplaying_y = ay;
 										if (!g_time_remaining) {
 											g_time_remaining = ppt.tf_time_remaining.Eval(true);
@@ -2100,7 +2100,7 @@ oBrowser = function (name) {
 										cColumns.track_time_part = gr.CalcTextWidth("00:00:00", g_font) + 10;
 										var tx = ax + cColumns.track_num_part;
 										var tw = aw - cColumns.track_num_part;
-										if (track_time_part == "播放中") {
+										if (track_time_part == "ON AIR") {
 											gr.GdiDrawText(g_radio_title, g_font, track_color_txt, tx + 10, ay_1, tw - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 											gr.GdiDrawText(g_radio_artist, g_font, track_artist_color_text, tx + 10, ay_2, tw - cColumns.track_time_part - 15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										} else {
@@ -2113,7 +2113,7 @@ oBrowser = function (name) {
 										} else {
 											gr.DrawImage(images.play_off.Resize(ppt.rowHeight, ppt.rowHeight, 2), ax + 2, ay, ppt.rowHeight, ppt.rowHeight, 0, 0, ppt.rowHeight, ppt.rowHeight, 0, 255);
 										};
-										// 评分星级
+										// rating Stars
 										if (ppt.showRating && track_type != 3) {
 											if (g_font_guifx_found) {
 												gr.DrawString("b".repeat(5), g_font_rating, track_color_txt & 0x15ffffff, tx + tw - cColumns.track_time_part - (cColumns.track_rating_part + 10), ay_1, cColumns.track_rating_part + 10, ah_1, lc_stringformat);
@@ -2137,7 +2137,7 @@ oBrowser = function (name) {
 										gr.GdiDrawText(track_artist_part, g_font, track_artist_color_text, tx + 10, ay_2, tw - cColumns.track_time_part - 15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										gr.GdiDrawText(track_title_part, g_font, track_color_txt, tx + 10, ay_1, tw - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										gr.GdiDrawText(track_time_part, g_font, track_color_txt, tx + tw - cColumns.track_time_part - 5, ay_1, cColumns.track_time_part, ah_1, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-										// 评分星级
+										// rating Stars
 										if (ppt.showRating && track_type != 3) {
 											if (g_font_guifx_found) {
 												gr.DrawString("b".repeat(5), g_font_rating, track_color_txt & 0x15ffffff, tx + tw - cColumns.track_time_part - (cColumns.track_rating_part + 10), ay_1, cColumns.track_rating_part + 10, ah_1, lc_stringformat);
@@ -2155,15 +2155,15 @@ oBrowser = function (name) {
 									if (track_artist_part.length > 0) {
 										track_artist_part = track_artist_part + " - ";
 									};
-									// 计算文本部分宽度 + 绘制文本
-									if (this.nowplaying && this.rows[i].playlistTrackId == this.nowplaying.PlaylistItemIndex) { // 正在播放的音轨
+									// calc text part width + dtaw text
+									if (this.nowplaying && this.rows[i].playlistTrackId == this.nowplaying.PlaylistItemIndex) { // now playing track
 										this.nowplaying_y = ay;
 										if (!g_time_remaining) {
 											g_time_remaining = ppt.tf_time_remaining.Eval(true);
 										};
 										track_time_part = g_time_remaining;
 										//
-										if (track_time_part == "播放中") {
+										if (track_time_part == "ON AIR") {
 											if (g_radio_artist.length > 0) {
 												g_radio_artist = g_radio_artist + " - ";
 											};
@@ -2172,7 +2172,7 @@ oBrowser = function (name) {
 										cColumns.track_num_part = gr.CalcTextWidth(track_num_part, g_font) + 10;
 										cColumns.track_title_part = gr.CalcTextWidth(track_title_part, g_font) + 10;
 										cColumns.track_time_part = gr.CalcTextWidth("00:00:00", g_font) + 10;
-										if (track_time_part == "播放中") {
+										if (track_time_part == "ON AIR") {
 											cColumns.track_artist_part = g_radio_artist.length > 0 ? gr.CalcTextWidth(g_radio_artist, g_font) : 0;
 										} else {
 											cColumns.track_artist_part = track_artist_part.length > 0 ? gr.CalcTextWidth(track_artist_part, g_font) : 0;
@@ -2180,13 +2180,13 @@ oBrowser = function (name) {
 										var tx = ax + cColumns.track_num_part;
 										var tw = aw - cColumns.track_num_part;
 										if (cColumns.track_artist_part > 0) {
-											if (track_time_part == "播放中") {
+											if (track_time_part == "ON AIR") {
 												gr.GdiDrawText(g_radio_artist, g_font, track_artist_color_text, tx + 10, ay, tw - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 											} else {
 												gr.GdiDrawText(track_artist_part, g_font, track_artist_color_text, tx + 10, ay, tw - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 											};
 										};
-										if (track_time_part == "播放中") {
+										if (track_time_part == "ON AIR") {
 											gr.GdiDrawText(g_radio_title, g_font, track_color_txt, tx + cColumns.track_artist_part + 10, ay, tw - cColumns.track_artist_part - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										} else {
 											gr.GdiDrawText(track_title_part, g_font, track_color_txt, tx + cColumns.track_artist_part + 10, ay, tw - cColumns.track_artist_part - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
@@ -2197,7 +2197,7 @@ oBrowser = function (name) {
 										} else {
 											gr.DrawImage(images.play_off.Resize(ppt.rowHeight, ppt.rowHeight, 2), ax + 5, ay, ppt.rowHeight, ppt.rowHeight, 0, 0, ppt.rowHeight, ppt.rowHeight, 0, 255);
 										};
-										// 评分星级
+										// rating Stars
 										if (ppt.showRating && track_type != 3) {
 											if (g_font_guifx_found) {
 												gr.DrawString("b".repeat(5), g_font_rating, track_color_txt & 0x15ffffff, tx + tw - cColumns.track_time_part - (cColumns.track_rating_part + 10), ay, cColumns.track_rating_part + 10, ah, lc_stringformat);
@@ -2210,7 +2210,7 @@ oBrowser = function (name) {
 												gr.DrawString(String.fromCharCode(0x25CF).repeat(track_rating_part), g_font_rating, track_color_rating, tx + tw - cColumns.track_time_part - (cColumns.track_rating_part + 10), ay, cColumns.track_rating_part + 10, ah, lc_stringformat);
 											};
 										};
-									} else { // 默认音轨
+									} else { // default track
 										cColumns.track_num_part = gr.CalcTextWidth(track_num_part, g_font) + 10;
 										cColumns.track_artist_part = track_artist_part.length > 0 ? gr.CalcTextWidth(track_artist_part, g_font) + 0 : 0;
 										cColumns.track_title_part = gr.CalcTextWidth(track_title_part, g_font) + 10;
@@ -2223,7 +2223,7 @@ oBrowser = function (name) {
 										};
 										gr.GdiDrawText(track_title_part, g_font, track_color_txt, tx + cColumns.track_artist_part + 10, ay, tw - cColumns.track_artist_part - cColumns.track_time_part - 15 - (cColumns.track_rating_part + 10), ah, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										gr.GdiDrawText(track_time_part, g_font, track_color_txt, tx + tw - cColumns.track_time_part - 5, ay, cColumns.track_time_part, ah, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-										// 评分星级
+										// rating Stars
 										if (ppt.showRating && track_type != 3) {
 											if (g_font_guifx_found) {
 												gr.DrawString("b".repeat(5), g_font_rating, track_color_txt & 0x15ffffff, tx + tw - cColumns.track_time_part - (cColumns.track_rating_part + 10), ay, cColumns.track_rating_part + 10, ah, lc_stringformat);
@@ -2241,7 +2241,7 @@ oBrowser = function (name) {
 							};
 						};
 						break;
-					case 99: // 底部额外行
+					case 99: // extra bottom row
 						if (ay > -1 && ay < this.h) {
 							if (this.rows[i].albumTrackId % 2 == 0) {
 								gr.FillSolidRect(ax, ay, aw, ah, RGBA(255, 255, 255, 3));
@@ -2253,13 +2253,13 @@ oBrowser = function (name) {
 					};
 
 				};
-				// 绘制滚动条
+				// draw scrollbar
 				//if(cScrollBar.enabled || (m_x > ww - cScrollBar.width && m_x < ww && m_y > ppt.headerBarHeight && m_y < wh))  {
 				if (cScrollBar.enabled) {
 					brw.scrollbar && brw.scrollbar.draw(gr);
 				};
 
-				// 增量搜索显示
+				// Incremental Search Display
 				if (cList.search_string.length > 0) {
 					gr.SetSmoothingMode(2);
 					brw.tt_x = Math.floor(((brw.w) / 2) - (((cList.search_string.length * 13) + (10 * 2)) / 2));
@@ -2275,19 +2275,19 @@ oBrowser = function (name) {
 					} catch (e) {};
 				};
 
-			} else { // 无音轨，播放列表为空
+			} else { // no track, playlist is empty
 
-				// 绘制滚动条
+				// draw scrollbar
 				if (cScrollBar.enabled) {
 					brw.scrollbar && brw.scrollbar.draw(gr);
 				};
 			};
 
-			// 绘制标题栏
+			// draw header
 			if (ppt.showHeaderBar) {
 				//var boxText = "  "+this.groups.length+" album"+(this.groups.length>1?"s  ":"  ");
-				var boxText = (plman.PlaylistCount > 0 ? plman.GetPlaylistName(plman.ActivePlaylist) + "  " : "无播放列表  ");
-				// 绘制播放列表上方背景部分（标题栏）
+				var boxText = (plman.PlaylistCount > 0 ? plman.GetPlaylistName(plman.ActivePlaylist) + "  " : "no playlist  ");
+				// draw background part above playlist (headerbar)
 				if (fb.IsPlaying && g_wallpaperImg && ppt.showwallpaper) {
 					gr.GdiDrawBitmap(g_wallpaperImg, 0, 0, ww, brw.y - 1, 0, 0, g_wallpaperImg.Width, brw.y - 1);
 					gr.FillSolidRect(0, 0, ww, brw.y - 1, g_color_normal_bg & RGBA(255, 255, 255, ppt.wallpaperalpha));
@@ -2307,7 +2307,7 @@ oBrowser = function (name) {
 				try {
 					gr.GdiDrawText(boxText, g_font_box, blendColors(g_color_normal_txt, g_color_normal_bg, 0.4), tx, 0, tw, ppt.headerBarHeight - 1, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
 				} catch (e) {
-					console.log(">> 调试：cScrollBar.width=" + cScrollBar.width + " /boxText=" + boxText + " /ppt.headerBarHeight=" + ppt.headerBarHeight + " /g_fsize=" + g_fsize);
+					console.log(">> debug: cScrollBar.width=" + cScrollBar.width + " /boxText=" + boxText + " /ppt.headerBarHeight=" + ppt.headerBarHeight + " /g_fsize=" + g_fsize);
 				};
 			};
 	};
@@ -2334,7 +2334,7 @@ oBrowser = function (name) {
 	this.on_mouse = function (event, x, y) {
 		this.ishover = (x >= this.x && x <= this.x + this.w && y >= this.y && y <= this.y + this.h);
 
-		// 获取悬停行索引（鼠标光标悬停）
+		// get hover row index (mouse cursor hover)
 		if (y > this.y && y < this.y + this.h) {
 			this.activeRow = Math.ceil((y + scroll_ - this.y) / ppt.rowHeight - 1);
 			if (this.activeRow >= this.rows.length)
@@ -2343,7 +2343,7 @@ oBrowser = function (name) {
 			this.activeRow = -1;
 		};
 
-		// 评分检查
+		// rating check
 		this.ishover_rating_prev = this.ishover_rating;
 		if (this.activeRow > -1) {
 			var rating_x = this.x + this.w - cColumns.track_time_part - (cColumns.track_rating_part + 10);
@@ -2367,7 +2367,7 @@ oBrowser = function (name) {
 				this.drag_clicked_x = x;
 				//
 				switch (true) {
-				case (rowType > 0 && rowType < 99): // ----------------> 分组标题行
+				case (rowType > 0 && rowType < 99): // ----------------> group header row
 					var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					if (utils.IsKeyPressed(VK_SHIFT)) {
 						if (g_focus_id != playlistTrackId) {
@@ -2389,7 +2389,7 @@ oBrowser = function (name) {
 					};
 					plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
 					break;
-				case (rowType == 0): // ----------------> 音轨行
+				case (rowType == 0): // ----------------> track row
 					var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					if (utils.IsKeyPressed(VK_SHIFT)) {
 						if (g_focus_id != playlistTrackId) {
@@ -2408,18 +2408,18 @@ oBrowser = function (name) {
 						};
 						this.SHIFT_start_id = null;
 					} else {
-						// 检查是否需要更新评分？
+						// check if rating to update ?
 						if (this.ishover_rating) {
-							// 计算新评分
+							// calc new rating
 							var l_rating = Math.ceil((x - rating_x) / (cColumns.track_rating_part / 5) + 0.1);
 							if (l_rating > 5)
 								l_rating = 5;
-							// 若新评分 <> 当前音轨评分则更新
+							// update if new rating <> current track rating
 							if (this.rows[this.activeRow].tracktype < 2) {
 								g_rating_updated = true;
 								g_rating_rowId = this.activeRow;
 								if (foo_playcount) {
-									// 将评分写入 foo_playcount.dll 提供的数据库统计
+									// Rate to database statistics brought by foo_playcount.dll
 									if (l_rating != this.rows[this.activeRow].rating) {
 										if (this.rows[this.activeRow].metadb) {
 											this.rows[this.activeRow].rating = l_rating;
@@ -2433,7 +2433,7 @@ oBrowser = function (name) {
 									};
 								} else {
 									var handles = new FbMetadbHandleList(this.rows[this.activeRow].metadb);
-									// 将评分写入文件
+									// Rate to file
 									if (l_rating != this.rows[this.activeRow].rating) {
 										this.rows[this.activeRow].rating = l_rating;
 										window.Repaint();
@@ -2452,7 +2452,7 @@ oBrowser = function (name) {
 									//plman.SetPlaylistSelectionSingle(g_active_playlist, playlistTrackId, true);
 									//plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
 								} else {
-									// 无操作，单个音轨已选中
+									// nothing, single track already selected
 								};
 							} else {
 								plman.ClearPlaylistSelection(g_active_playlist);
@@ -2463,13 +2463,13 @@ oBrowser = function (name) {
 						};
 					};
 					break;
-				case (rowType == 99): // ----------------> 额外空行
+				case (rowType == 99): // ----------------> extra empty row
 
 					break;
 				};
 				this.repaint();
 			} else {
-				// 滚动条
+				// scrollbar
 				if (cScrollBar.enabled && cScrollBar.visible) {
 					brw.scrollbar && brw.scrollbar.on_mouse(event, x, y);
 				};
@@ -2481,10 +2481,10 @@ oBrowser = function (name) {
 				var rowType = this.rows[this.activeRow].type;
 				//
 				switch (true) {
-				case (rowType > 0 && rowType < 99): // ----------------> 分组标题行
+				case (rowType > 0 && rowType < 99): // ----------------> group header row
 					//var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					break;
-				case (rowType == 0): // ----------------> 音轨行
+				case (rowType == 0): // ----------------> track row
 					var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					if (!utils.IsKeyPressed(VK_SHIFT) && !utils.IsKeyPressed(VK_CONTROL)) {
 						if (plman.IsPlaylistItemSelected(g_active_playlist, playlistTrackId)) {
@@ -2496,7 +2496,7 @@ oBrowser = function (name) {
 						};
 					};
 					break;
-				case (rowType == 99): // ----------------> 额外空行
+				case (rowType == 99): // ----------------> extra empty row
 
 					break;
 				};
@@ -2504,7 +2504,7 @@ oBrowser = function (name) {
 			};
 
 			this.drag_clicked = false;
-			// 滚动条
+			// scrollbar
 			if (cScrollBar.enabled && cScrollBar.visible) {
 				brw.scrollbar && brw.scrollbar.on_mouse(event, x, y);
 			};
@@ -2513,12 +2513,12 @@ oBrowser = function (name) {
 			if (this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
 				var rowType = this.rows[this.activeRow].type;
 				switch (true) {
-				case (rowType > 0 && rowType < 99): // 分组标题
+				case (rowType > 0 && rowType < 99): // group header
 					this.groups[this.rows[this.activeRow].albumId].collapsed = !this.groups[this.rows[this.activeRow].albumId].collapsed;
 					this.setList(true);
 					///*
 					g_focus_row = this.getOffsetFocusItem(g_focus_id);
-					// 若焦点音轨未完全可见，我们滚动使其在面板中居中显示
+					// if focused track not totally visible, we scroll to show it centered in the panel
 					if (g_focus_row < scroll / ppt.rowHeight || g_focus_row > scroll / ppt.rowHeight + brw.totalRowsVis - 1) {
 						scroll = (g_focus_row - Math.floor(brw.totalRowsVis / 2)) * ppt.rowHeight;
 						scroll = check_scroll(scroll);
@@ -2530,16 +2530,16 @@ oBrowser = function (name) {
 					this.scrollbar.updateScrollbar();
 					brw.repaint();
 					break;
-				case (rowType == 0): // 音轨
+				case (rowType == 0): // track
 					plman.ExecutePlaylistDefaultAction(g_active_playlist, this.rows[this.activeRow].playlistTrackId);
 					break;
-				case (rowType == 99): // 额外空行
+				case (rowType == 99): // extra empty row
 
 					break;
 				};
 				this.repaint();
 			} else {
-				// 滚动条
+				// scrollbar
 				if (cScrollBar.enabled && cScrollBar.visible) {
 					brw.scrollbar && brw.scrollbar.on_mouse(event, x, y);
 				};
@@ -2563,7 +2563,7 @@ oBrowser = function (name) {
 			if (this.drag_moving && !timers.hidePlaylistManager && !timers.showPlaylistManager) {
 				pman.on_mouse("move", x, y);
 			};
-			// 滚动条
+			// scrollbar
 			if (this.ishover_rating) {
 				if (!this.ishover_rating_prev)
 					window.SetCursor(IDC_HAND);
@@ -2580,7 +2580,7 @@ oBrowser = function (name) {
 			if (this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
 				var rowType = this.rows[this.activeRow].type;
 				switch (true) {
-				case (rowType > 0 && rowType < 99): // ----------------> 分组标题行
+				case (rowType > 0 && rowType < 99): // ----------------> group header row
 					var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					if (!plman.IsPlaylistItemSelected(g_active_playlist, playlistTrackId)) {
 						plman.ClearPlaylistSelection(g_active_playlist);
@@ -2590,7 +2590,7 @@ oBrowser = function (name) {
 					};
 					this.context_menu(x, y, this.track_index, this.row_index);
 					break;
-				case (rowType == 0): // ----------------> 音轨行
+				case (rowType == 0): // ----------------> track row
 					var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
 					if (!plman.IsPlaylistItemSelected(g_active_playlist, playlistTrackId)) {
 						plman.ClearPlaylistSelection(g_active_playlist);
@@ -2599,17 +2599,17 @@ oBrowser = function (name) {
 					};
 					this.context_menu(x, y, playlistTrackId, this.activeRow);
 					break;
-				case (rowType == 99): // ----------------> 额外空行
+				case (rowType == 99): // ----------------> extra empty row
 
 					break;
 				};
 				this.repaint();
 			} else {
-				// 滚动条
+				// scrollbar
 				if (cScrollBar.enabled && cScrollBar.visible) {
 					brw.scrollbar && brw.scrollbar.on_mouse(event, x, y);
 				};
-				// 设置菜单
+				// settings menu
 				if (!g_filterbox.inputbox.hover) {
 					this.settings_context_menu(x, y);
 				};
@@ -2619,7 +2619,7 @@ oBrowser = function (name) {
 			//this.scrollbar.updateScrollbar(); // update scrollbar done in g_time at each scroll update
 			break;
 		case "leave":
-			// 滚动条
+			// scrollbar
 			if (cScrollBar.enabled && cScrollBar.visible) {
 				this.scrollbar && this.scrollbar.on_mouse(event, 0, 0);
 			};
@@ -2657,7 +2657,7 @@ oBrowser = function (name) {
 				brw.launch_populate();
 			};
 
-			// 获取悬停行索引（鼠标光标悬停）
+			// get hover row index (mouse cursor hover)
 			if (m_y > brw.y && m_y < brw.y + brw.h) {
 				brw.activeRow = Math.ceil((m_y + scroll_ - brw.y) / ppt.rowHeight - 1);
 				if (brw.activeRow >= brw.rows.length)
@@ -2708,7 +2708,7 @@ oBrowser = function (name) {
 		this.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
 		Context.InitContextPlaylist();
 
-		// 检查选区是否为单个且在媒体库中，以便在合适时提供指向专辑视图面板的链接
+		// check if selection is single and is in the Media Library to provide if ok a link to Album View panel
 		var showInAlbumView = false;
 		if (this.metadblist_selection.Count == 1) {
 			if (fb.IsMetadbInMediaLibrary(this.metadblist_selection[0])) {
@@ -2716,20 +2716,20 @@ oBrowser = function (name) {
 			};
 		};
 
-		_menu.AppendMenuItem(MF_STRING, 1, "面板设置...");
+		_menu.AppendMenuItem(MF_STRING, 1, "Settings...");
 		_menu.AppendMenuSeparator();
 		Context.BuildMenu(_menu, 2);
 
-		_child01.AppendTo(_menu, MF_STRING, "选择...");
+		_child01.AppendTo(_menu, MF_STRING, "Selection...");
 		if (brw.activeRow > -1) {
 			if (this.metadblist_selection.Count == 1) {
-				_child01.AppendMenuItem(MF_STRING, 1010, "重置图像缓存");
+				_child01.AppendMenuItem(MF_STRING, 1010, "Reset Image Cache");
 			};
 		};
-		_child01.AppendMenuItem((showInAlbumView ? MF_STRING : MF_GRAYED | MF_DISABLED), 1011, "在平滑浏览器中高亮显示");
-		_child01.AppendMenuItem(plman.IsAutoPlaylist(g_active_playlist) ? MF_DISABLED | MF_GRAYED : MF_STRING, 1020, "移除");
-		_child02.AppendTo(_child01, MF_STRING, "发送到...");
-		_child02.AppendMenuItem(MF_STRING, 2000, "新建播放列表...");
+		_child01.AppendMenuItem((showInAlbumView ? MF_STRING : MF_GRAYED | MF_DISABLED), 1011, "Highlight in JS Smooth Browser");
+		_child01.AppendMenuItem(plman.IsAutoPlaylist(g_active_playlist) ? MF_DISABLED | MF_GRAYED : MF_STRING, 1020, "Remove");
+		_child02.AppendTo(_child01, MF_STRING, "Send to...");
+		_child02.AppendMenuItem(MF_STRING, 2000, "a New playlist...");
 
 		var pl_count = plman.PlaylistCount;
 		if (pl_count > 1) {
@@ -2758,7 +2758,7 @@ oBrowser = function (name) {
 					try {
 						fso.DeleteFile(CACHE_FOLDER + crc);
 					} catch (e) {
-						console.log("JSplitter 错误：图像缓存 [" + crc + "] 无法从磁盘删除，文件被占用，请稍后重试或重载面板。");
+						console.log("JSplitter Error: Image cache [" + crc + "] can't be deleted on disk, file in use, try later or reload panel.");
 					};
 				};
 				this.groups[albumIndex].tid = -1;
@@ -2795,90 +2795,90 @@ oBrowser = function (name) {
 		var _menu3 = window.CreatePopupMenu();
 		var idx;
 
-		_menu.AppendMenuItem((fb.IsPlaying ? MF_STRING : MF_GRAYED | MF_DISABLED), 900, "显示正在播放的音轨");
+		_menu.AppendMenuItem((fb.IsPlaying ? MF_STRING : MF_GRAYED | MF_DISABLED), 900, "Show Now Playing");
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(MF_STRING, 910, "标题栏");
+		_menu.AppendMenuItem(MF_STRING, 910, "Header Bar");
 		_menu.CheckMenuItem(910, ppt.showHeaderBar);
-		_menu.AppendMenuItem(MF_STRING, 912, "双行显示");
+		_menu.AppendMenuItem(MF_STRING, 912, "Double Track Line");
 		_menu.CheckMenuItem(912, ppt.doubleRowText);
 
 		_menu.AppendMenuSeparator();
-		_menu1.AppendMenuItem((!ppt.doubleRowText ? (!ppt.showgroupheaders ? MF_GRAYED | MF_DISABLED : MF_STRING) : MF_GRAYED | MF_DISABLED), 111, "艺术家");
+		_menu1.AppendMenuItem((!ppt.doubleRowText ? (!ppt.showgroupheaders ? MF_GRAYED | MF_DISABLED : MF_STRING) : MF_GRAYED | MF_DISABLED), 111, "Artist");
 		_menu1.CheckMenuItem(111, ppt.showArtistAlways);
 		//_menu1.AppendMenuItem(MF_STRING, 112, "Mood");
 		//_menu1.CheckMenuItem(112, ppt.showMood);
-		_menu1.AppendMenuItem(MF_STRING, 113, "等级");
+		_menu1.AppendMenuItem(MF_STRING, 113, "Rating");
 		_menu1.CheckMenuItem(113, ppt.showRating);
-		_menu1.AppendTo(_menu, MF_STRING, "扩展音轨信息");
+		_menu1.AppendTo(_menu, MF_STRING, "Extra Track Infos");
 
-		_menu2.AppendMenuItem(MF_STRING, 200, "启用");
+		_menu2.AppendMenuItem(MF_STRING, 200, "Enable");
 		_menu2.CheckMenuItem(200, ppt.showwallpaper);
-		_menu2.AppendMenuItem(MF_STRING, 220, "模糊");
+		_menu2.AppendMenuItem(MF_STRING, 220, "Blur");
 		_menu2.CheckMenuItem(220, ppt.wallpaperblurred);
 		_menu2.AppendMenuSeparator();
-		_menu2.AppendMenuItem(MF_STRING, 210, "正在播放的专辑封面");
-		_menu2.AppendMenuItem(MF_STRING, 211, "默认");
+		_menu2.AppendMenuItem(MF_STRING, 210, "Playing Album Cover");
+		_menu2.AppendMenuItem(MF_STRING, 211, "Default");
 		_menu2.CheckMenuRadioItem(210, 211, ppt.wallpapermode + 210);
 
-		_menu2.AppendTo(_menu, MF_STRING, "背景墙纸");
+		_menu2.AppendTo(_menu, MF_STRING, "Background Wallpaper");
 
-		_menu3.AppendMenuItem((!ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 300, "启用");
+		_menu3.AppendMenuItem((!ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 300, "Enable");
 		_menu3.CheckMenuItem(300, ppt.showgroupheaders);
-		_menu3.AppendMenuItem((ppt.showgroupheaders ? MF_STRING : MF_GRAYED | MF_DISABLED), 310, "自动折叠");
+		_menu3.AppendMenuItem((ppt.showgroupheaders ? MF_STRING : MF_GRAYED | MF_DISABLED), 310, "Autocollapse");
 		_menu3.CheckMenuItem(310, ppt.autocollapse);
 		_menu3.AppendMenuSeparator();
-		_menu3.AppendMenuItem((ppt.showgroupheaders && !ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 320, "折叠全部");
-		_menu3.AppendMenuItem((ppt.showgroupheaders && !ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 330, "展开全部");
+		_menu3.AppendMenuItem((ppt.showgroupheaders && !ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 320, "Collapse All");
+		_menu3.AppendMenuItem((ppt.showgroupheaders && !ppt.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 330, "Expand All");
 
-		_menu3.AppendTo(_menu, MF_STRING, "分组标题");
+		_menu3.AppendTo(_menu, MF_STRING, "Group Headers");
 
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(MF_STRING, 991, "面板属性");
-		_menu.AppendMenuItem(MF_STRING, 992, "配置...");
+		_menu.AppendMenuItem(MF_STRING, 991, "Panel Properties");
+		_menu.AppendMenuItem(MF_STRING, 992, "Configure...");
 
 		idx = _menu.TrackPopupMenu(x, y);
 
 		switch (true) {
 		case (idx == 111):
 			ppt.showArtistAlways = !ppt.showArtistAlways;
-			window.SetProperty("_显示: 在曲目行显示艺术家", ppt.showArtistAlways);
+			window.SetProperty("_DISPLAY: Show Artist in Track Row", ppt.showArtistAlways);
 			get_metrics();
 			brw.repaint();
 			break;
 		case (idx == 112):
 			// ppt.showMood = !ppt.showMood;
-			// window.SetProperty("_显示: 在曲目行显示心情", ppt.showMood);
+			// window.SetProperty("_DISPLAY: Show Mood in Track Row", ppt.showMood);
 			// get_metrics();
 			// brw.repaint();
 			break;
 		case (idx == 113):
 			ppt.showRating = !ppt.showRating;
-			window.SetProperty("_显示: 在曲目行显示评分", ppt.showRating);
+			window.SetProperty("_DISPLAY: Show Rating in Track Row", ppt.showRating);
 			get_metrics();
 			brw.repaint();
 			break;
 		case (idx == 200):
 			ppt.showwallpaper = !ppt.showwallpaper;
-			window.SetProperty("_显示: 显示壁纸", ppt.showwallpaper);
+			window.SetProperty("_DISPLAY: Show Wallpaper", ppt.showwallpaper);
 			g_wallpaperImg = setWallpaperImg();
 			brw.repaint();
 			break;
 		case (idx == 210):
 		case (idx == 211):
 			ppt.wallpapermode = idx - 210;
-			window.SetProperty("_系统: 壁纸模式", ppt.wallpapermode);
+			window.SetProperty("_SYSTEM: Wallpaper Mode", ppt.wallpapermode);
 			g_wallpaperImg = setWallpaperImg();
 			brw.repaint();
 			break;
 		case (idx == 220):
 			ppt.wallpaperblurred = !ppt.wallpaperblurred;
-			window.SetProperty("_显示: 壁纸模糊", ppt.wallpaperblurred);
+			window.SetProperty("_DISPLAY: Wallpaper Blurred", ppt.wallpaperblurred);
 			g_wallpaperImg = setWallpaperImg();
 			brw.repaint();
 			break;
 		case (idx == 300):
 			ppt.showgroupheaders = !ppt.showgroupheaders;
-			window.SetProperty("_显示: 显示分组标题", ppt.showgroupheaders);
+			window.SetProperty("_DISPLAY: Show Group Headers", ppt.showgroupheaders);
 			if (!ppt.showgroupheaders)
 				brw.collapseAll(false);
 			get_metrics();
@@ -2886,7 +2886,7 @@ oBrowser = function (name) {
 			break;
 		case (idx == 310):
 			ppt.autocollapse = !ppt.autocollapse;
-			window.SetProperty("_属性: 自动折叠分组", ppt.autocollapse);
+			window.SetProperty("_PROPERTY: Autocollapse groups", ppt.autocollapse);
 			brw.populate(false);
 			brw.showFocusedItem();
 			break;
@@ -2903,13 +2903,13 @@ oBrowser = function (name) {
 			break;
 		case (idx == 910):
 			ppt.showHeaderBar = !ppt.showHeaderBar;
-			window.SetProperty("_显示: 显示顶栏", ppt.showHeaderBar);
+			window.SetProperty("_DISPLAY: Show Top Bar", ppt.showHeaderBar);
 			get_metrics();
 			brw.repaint();
 			break;
 		case (idx == 912):
 			ppt.doubleRowText = !ppt.doubleRowText;
-			window.SetProperty("_属性: 双行文本信息", ppt.doubleRowText);
+			window.SetProperty("_PROPERTY: Double Row Text Info", ppt.doubleRowText);
 			get_metrics();
 			brw.repaint();
 			break;
@@ -2932,15 +2932,15 @@ oBrowser = function (name) {
 		var gstart;
 		var pid = -1;
 
-		// 若缓存中无搜索字符串则退出
+		// exit if no search string in cache
 		if (cList.search_string.length <= 0)
 			return true;
 
-		// 搜索字符串的第一个字符
+		// 1st char of the search string
 		var first_chr = cList.search_string.substring(0, 1);
 		var len = cList.search_string.length;
 
-		// 搜索的起始点
+		// which start point for the search
 		if (this.list.count > 1000) {
 			albumartist = ppt.tf_albumartist.EvalWithMetadb(this.list[Math.floor(this.list.Count / 2)]);
 			chr = albumartist.substring(0, 1);
@@ -2955,7 +2955,7 @@ oBrowser = function (name) {
 
 		if (!ppt.showgroupheaders) {
 
-			// 首先在 "album artist" 标签上搜索
+			// 1st search on "album artist" TAG
 			var format_str = "";
 			for (var i = gstart; i < this.list.Count; i++) {
 				albumartist = ppt.tf_albumartist.EvalWithMetadb(this.list[i]);
@@ -2966,7 +2966,7 @@ oBrowser = function (name) {
 				};
 			};
 
-			// 若未找到，在第一部分搜索（从 0 到 gstart）
+			// if not found, search in the first part (from 0 to gstart)
 			if (pid < 0) {
 				var format_str = "";
 				for (var i = 0; i < gstart; i++) {
@@ -2980,7 +2980,7 @@ oBrowser = function (name) {
 			};
 
 			if (pid < 0) {
-				// 其次在 "artist" 标签上搜索
+				// 2nd search on "artist" TAG
 				var format_str = "";
 				for (var i = 0; i < this.list.Count; i++) {
 					artist = ppt.tf_artist.EvalWithMetadb(this.list[i]);
@@ -2994,7 +2994,7 @@ oBrowser = function (name) {
 
 		} else {
 
-			// 首先按模式在当前分组的 tf_group_key 上搜索
+			// 1st search on tf_group_key of current group by pattern
 			var format_str = "";
 			for (var i = gstart; i < this.list.Count; i++) {
 				groupkey = ppt.tf_groupkey.EvalWithMetadb(this.list[i]);
@@ -3005,7 +3005,7 @@ oBrowser = function (name) {
 				};
 			};
 
-			// 若未找到，在第一部分搜索（从 0 到 gstart）
+			// if not found, search in the first part (from 0 to gstart)
 			if (pid < 0) {
 				var format_str = "";
 				for (var i = 0; i < gstart; i++) {
@@ -3020,20 +3020,20 @@ oBrowser = function (name) {
 
 		};
 
-		if (pid >= 0) { // 已找到
+		if (pid >= 0) { // found
 			g_focus_id = pid;
 			plman.ClearPlaylistSelection(g_active_playlist);
 			plman.SetPlaylistSelectionSingle(g_active_playlist, g_focus_id, true);
 			plman.SetPlaylistFocusItem(g_active_playlist, g_focus_id);
 			this.showFocusedItem();
-		} else { // 在 "album artist" 标签上未找到，改为在 "artist" 标签上搜索
+		} else { // not found on "album artist" TAG, new search on "artist" TAG
 			cList.inc_search_noresult = true;
 			brw.repaint();
 		};
 
 		cList.clear_incsearch_timer && window.ClearTimeout(cList.clear_incsearch_timer);
 		cList.clear_incsearch_timer = window.SetTimeout(function () {
-				// 1 秒无按键后重置增量搜索字符串
+				// reset incremental search string after 1 seconds without any key pressed
 				cList.search_string = "";
 				cList.inc_search_noresult = false;
 				brw.repaint();
@@ -3045,12 +3045,12 @@ oBrowser = function (name) {
 
 /*
 ===================================================================================================
-主程序
+Main
 ===================================================================================================
  */
 var g_seconds = 0;
 var g_time_remaining = null;
-var g_radio_title = "加载实时标签...";
+var g_radio_title = "loading live tag ...";
 var g_radio_artist = "";
 
 var list_img = [];
@@ -3069,7 +3069,7 @@ var filter_text = "";
 
 var g_instancetype = window.InstanceType;
 
-// 字体
+// fonts
 var g_font = null;
 var g_font_headers = null;
 var g_font_group1 = null;
@@ -3079,7 +3079,7 @@ var g_font_rating = null;
 var g_font_guifx_found = utils.CheckFont("guifx v2 transports");
 var g_font_wingdings2_found = utils.CheckFont("wingdings 2");
 
-// 从 Windows 系统拖放
+// drag'n drop from windows system
 var g_dragndrop_status = false;
 var g_dragndrop_x = -1;
 var g_dragndrop_y = -1;
@@ -3102,7 +3102,7 @@ var g_focus_id_prev = -1;
 var g_focus_row = 0;
 var g_focus_album_id = -1;
 var g_populate_opt = 1;
-// 颜色变量
+// color vars
 var g_color_normal_bg = 0;
 var g_color_selected_bg = 0;
 var g_color_normal_txt = 0;
@@ -3112,7 +3112,7 @@ var g_syscolor_window_bg = 0;
 var g_syscolor_highlight = 0;
 var g_syscolor_button_bg = 0;
 var g_syscolor_button_txt = 0;
-// 用于避免回调的布尔值
+// boolean to avoid callbacks
 var g_avoid_on_playlists_changed = false;
 var g_avoid_on_playlist_switch = false;
 var g_avoid_on_item_focus_change = false;
@@ -3120,7 +3120,7 @@ var g_avoid_on_playlist_items_added = false;
 var g_avoid_on_playlist_items_removed = false;
 var g_avoid_on_playlist_items_removed_callbacks_on_sendItemToPlaylist = false;
 var g_avoid_on_playlist_items_reordered = false;
-// 鼠标动作
+// mouse actions
 var g_lbtn_click = false;
 //
 var g_total_duration_text = "";
@@ -3153,7 +3153,7 @@ function on_init() {
 };
 on_init();
 
-// 开始
+// START
 function on_size() {
 	window.DlgCode = DLGC_WANTALLKEYS;
 
@@ -3165,7 +3165,7 @@ function on_size() {
 
 	get_images();
 
-	// 设置浏览器大小
+	// set Size of browser
 	if (cScrollBar.enabled) {
 		brw.setSize(0, (ppt.showHeaderBar ? ppt.headerBarHeight : 0), ww - cScrollBar.width, wh - (ppt.showHeaderBar ? ppt.headerBarHeight : 0));
 	} else {
@@ -3178,7 +3178,7 @@ function on_paint(gr) {
 		return;
 
 	//gr.FillSolidRect(0, 0, ww, wh, RGBA(210,210,215,255));
-	// 绘制播放列表下方背景
+	// draw background under playlist
 	if (fb.IsPlaying && g_wallpaperImg && ppt.showwallpaper) {
 		gr.GdiDrawBitmap(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
 		gr.FillSolidRect(0, 0, ww, wh, g_color_normal_bg & RGBA(255, 255, 255, ppt.wallpaperalpha));
@@ -3199,7 +3199,7 @@ function on_paint(gr) {
 	};
 
 	if (ppt.showHeaderBar) {
-		// 输入框
+		// inputBox
 		if (ppt.showFilterBox && g_filterbox) {
 			if (g_filterbox.inputbox.visible) {
 				g_filterbox.draw(gr, 5, 2);
@@ -3211,11 +3211,11 @@ function on_paint(gr) {
 function on_mouse_lbtn_down(x, y) {
 	g_lbtn_click = true;
 
-	// 停止惯性
+	// stop inertia
 	if (cTouch.timer) {
 		window.ClearInterval(cTouch.timer);
 		cTouch.timer = false;
-		// 停止滚动但不突兀，为停止添加一点偏移
+		// stop scrolling but not abrupt, add a little offset for the stop
 		if (Math.abs(scroll - scroll_) > ppt.rowHeight) {
 			scroll = (scroll > scroll_ ? scroll_ + ppt.rowHeight : scroll_ - ppt.rowHeight);
 			scroll = check_scroll(scroll);
@@ -3250,7 +3250,7 @@ function on_mouse_lbtn_down(x, y) {
 		brw.on_mouse("down", x, y);
 	};
 
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_mouse("lbtn_down", x, y);
 	};
@@ -3258,7 +3258,7 @@ function on_mouse_lbtn_down(x, y) {
 
 function on_mouse_lbtn_up(x, y) {
 
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_mouse("lbtn_up", x, y);
 	};
@@ -3277,7 +3277,7 @@ function on_mouse_lbtn_up(x, y) {
 		};
 	};
 
-	// 鼠标左键抬起时创建滚动惯性
+	// create scroll inertia on mouse lbtn up
 	if (cTouch.down) {
 		cTouch.down = false;
 		cTouch.y_end = y;
@@ -3317,7 +3317,7 @@ function on_mouse_lbtn_dblclk(x, y, mask) {
 };
 
 function on_mouse_rbtn_up(x, y) {
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_mouse("rbtn_up", x, y);
 	};
@@ -3335,7 +3335,7 @@ function on_mouse_move(x, y) {
 	if (m_x == x && m_y == y)
 		return;
 
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_mouse("move", x, y);
 	};
@@ -3369,7 +3369,7 @@ function on_mouse_wheel(step) {
 		cTouch.timer = false;
 	};
 
-	if (utils.IsKeyPressed(VK_SHIFT)) { // 仅缩放封面大小
+	if (utils.IsKeyPressed(VK_SHIFT)) { // zoom cover size only
 		var zoomStep = 1;
 		var previous = ppt.groupHeaderRowsNumber;
 		if (!timers.mouseWheel) {
@@ -3384,12 +3384,12 @@ function on_mouse_wheel(step) {
 			};
 			if (previous != ppt.groupHeaderRowsNumber) {
 				timers.mouseWheel = window.SetTimeout(function () {
-						window.SetProperty("_属性: 分组标题行数", ppt.groupHeaderRowsNumber);
+						window.SetProperty("_PROPERTY: Number of Rows for Group Header", ppt.groupHeaderRowsNumber);
 						get_font();
 						get_metrics();
 						get_images();
 
-						// 刷新封面
+						// refresh covers
 						g_image_cache = new image_cache;
 						var total = brw.groups.length;
 						for (var i = 0; i < total; i++) {
@@ -3421,12 +3421,12 @@ function on_mouse_wheel(step) {
 			};
 			if (previous != ppt.extra_font_size) {
 				timers.mouseWheel = window.SetTimeout(function () {
-						window.SetProperty("_系统: 额外字号值", ppt.extra_font_size);
+						window.SetProperty("_SYSTEM: Extra font size value", ppt.extra_font_size);
 						get_font();
 						get_metrics();
 						get_images();
 
-						// 刷新封面
+						// refresh covers
 						g_image_cache = new image_cache;
 						var total = brw.groups.length;
 						for (var i = 0; i < total; i++) {
@@ -3458,7 +3458,7 @@ function on_mouse_wheel(step) {
 };
 
 function on_mouse_leave() {
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_mouse("leave", 0, 0);
 	};
@@ -3469,7 +3469,7 @@ function on_mouse_leave() {
 	};
 };
 
-//=================================================// 尺寸与字体与颜色与图像
+//=================================================// Metrics & Fonts & Colors & Images
 function get_metrics() {
 
 	cPlaylistManager.topbarHeight = Math.floor(cPlaylistManager.default_topbarHeight * g_zoom_percent / 100);
@@ -3512,7 +3512,7 @@ function get_metrics() {
 		brw.setList();
 		//
 		g_focus_row = brw.getOffsetFocusItem(g_focus_id);
-		// 若焦点音轨未完全可见，我们滚动使其在面板中居中显示
+		// if focused track not totally visible, we scroll to show it centered in the panel
 		if (g_focus_row < scroll / ppt.rowHeight || g_focus_row > scroll / ppt.rowHeight + brw.totalRowsVis - 1) {
 			scroll = (g_focus_row - Math.floor(brw.totalRowsVis / 2)) * ppt.rowHeight;
 			scroll = check_scroll(scroll);
@@ -3529,7 +3529,7 @@ function get_images() {
 
 	cover.glass_reflect = draw_glass_reflect(200, 200);
 
-	// PLAY 图标
+	// PLAY icon
 	images.play_on = gdi.CreateImage(70, 70);
 	gb = images.play_on.GetGraphics();
 	DrawPolyStar(gb, 12 - 2, 12, 46, 1, 3, 2, g_color_normal_bg, g_color_normal_txt, 90, 255);
@@ -3546,10 +3546,10 @@ function get_images() {
 
 	var nw = 250,
 	nh = 250;
-	txt = "无\n封面";
+	txt = "NO\nCOVER";
 	images.noart = gdi.CreateImage(nw, nh);
 	gb = images.noart.GetGraphics();
-	// 绘制无封面艺术图像
+	// draw no cover art image
 	gb.FillSolidRect(0, 0, nw, nh, g_color_normal_txt & 0x10ffffff);
 	gb.SetTextRenderingHint(4);
 	gb.DrawString(txt, gdi.Font(g_fname, Math.round(nh / 12 * 2), 1), blendColors(g_color_normal_txt, g_color_normal_bg, 0.30), 1, 1, nw, nh, cc_stringformat);
@@ -3557,10 +3557,10 @@ function get_images() {
 
 	var sw = 250,
 	sh = 250;
-	txt = "流媒体";
+	txt = "STREAM";
 	images.stream = gdi.CreateImage(sw, sh);
 	gb = images.stream.GetGraphics();
-	// 绘制流艺术图像
+	// draw stream art image
 	gb.FillSolidRect(0, 0, sw, sh, g_color_normal_txt & 0x10ffffff);
 	gb.SetTextRenderingHint(4);
 	gb.DrawString(txt, gdi.Font(g_fname, Math.round(sh / 12 * 2), 1), blendColors(g_color_normal_txt, g_color_normal_bg, 0.30), 1, 1, sw, sh, cc_stringformat);
@@ -3584,14 +3584,14 @@ function get_font() {
 		g_fsize = default_font.Size;
 		g_fstyle = default_font.Style;
 	} catch (e) {
-		console.log("JSplitter 错误：无法使用默认字体。改用 Arial 字体。");
+		console.log("JSplitter Error: Unable to use the default font. Using Arial font instead.");
 		g_fname = "arial";
 		g_fsize = 12;
 		g_fstyle = 0;
 		font_error = true;
 	};
 
-	// 若启用了额外缩放则调整字号
+	// adjust font size if extra zoom activated
 	g_fsize += ppt.extra_font_size;
 	g_font = gdi.Font(g_fname, g_fsize, 0);
 	g_font_bold = gdi.Font(g_fname, g_fsize, 1);
@@ -3599,10 +3599,8 @@ function get_font() {
 
 	g_zoom_percent = Math.floor(g_fsize / 12 * 100);
 
-	g_font_group1 = gdi.Font(g_fname, (g_fsize * 120 / 100), 0);
-	// 第3602行：分组标题第1行（主标题）= 基准字号 × 160%
-	g_font_group2 = gdi.Font(g_fname, (g_fsize * 120 / 100), 0);
-	// 第3603行：分组标题第2行（副标题）= 基准字号 × 140%
+	g_font_group1 = gdi.Font(g_fname, (g_fsize * 160 / 100), 1);
+	g_font_group2 = gdi.Font(g_fname, (g_fsize * 140 / 100), 0);
 
 	//g_font_guifx_found = false;
 	//g_font_wingdings2_found = false;
@@ -3621,26 +3619,26 @@ function get_font() {
 
 function get_colors() {
 	var arr;
-	// 获取一些系统颜色
+	// get some system colors
 	g_syscolor_window_bg = utils.GetSysColour(COLOR_WINDOW);
 	g_syscolor_highlight = utils.GetSysColour(COLOR_HIGHLIGHT);
 	g_syscolor_button_bg = utils.GetSysColour(COLOR_BTNFACE);
 	g_syscolor_button_txt = utils.GetSysColour(COLOR_BTNTEXT);
 
-	arr = window.GetProperty("自定义 颜色 文本 正常", "180-180-180").split("-");
+	arr = window.GetProperty("CUSTOM COLOR TEXT NORMAL", "180-180-180").split("-");
 	g_color_normal_txt = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("自定义 颜色 文本 选中", "000-000-000").split("-");
+	arr = window.GetProperty("CUSTOM COLOR TEXT SELECTED", "000-000-000").split("-");
 	g_color_selected_txt = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("自定义 颜色 背景 正常", "025-025-035").split("-");
+	arr = window.GetProperty("CUSTOM COLOR BACKGROUND NORMAL", "025-025-035").split("-");
 	g_color_normal_bg = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("自定义 颜色 背景 选中", "015-177-255").split("-");
+	arr = window.GetProperty("CUSTOM COLOR BACKGROUND SELECTED", "015-177-255").split("-");
 	g_color_selected_bg = RGB(arr[0], arr[1], arr[2]);
-	arr = window.GetProperty("自定义 颜色 高亮", "255-175-050").split("-");
+	arr = window.GetProperty("CUSTOM COLOR HIGHLIGHT", "255-175-050").split("-");
 	g_color_highlight = RGB(arr[0], arr[1], arr[2]);
 
-	// 先从窗口 ppt 获取自定义颜色
+	// get custom colors from window ppt first
 	if (!ppt.enableCustomColors) {
-		// 若未设置自定义颜色，则获取 UI 首选项中设置的 UI 颜色
+		// get UI colors set in UI Preferences if no custom color set
 		if (g_instancetype == 0) {
 			g_color_normal_txt = window.GetColourCUI(ColorTypeCUI.text);
 			g_color_selected_txt = window.GetColourCUI(ColorTypeCUI.selection_text);
@@ -3678,15 +3676,15 @@ function on_script_unload() {
 	brw.g_time = false;
 };
 
-//=================================================// 键盘回调
+//=================================================// Keyboard Callbacks
 function on_key_up(vkey) {
 	if (cSettings.visible) {} else {
-		// 输入框
+		// inputBox
 		if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 			g_filterbox.on_key("up", vkey);
 		};
 
-		// 滚动键上下重置（步长与计时器）
+		// scroll keys up and down RESET (step and timers)
 		brw.keypressed = false;
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
@@ -3715,22 +3713,22 @@ function vk_up() {
 				new_row = 0;
 			};
 		};
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
 	} else {
 		switch (brw.rows[new_row].type) {
-		case 0: // 音轨行
+		case 0: // track row
 			// RAS
 			break;
-		case 99: // 空行（额外行）
+		case 99: // blank line (extra line)
 			while (brw.rows[new_row].type == 99) {
 				if (new_row > 0)
 					new_row -= 1;
 			};
 			break;
-		default: // 分组行
+		default: // group row
 			if (brw.groups[brw.rows[new_row].albumId].collapsed) {
 				new_row -= (ppt.groupHeaderRowsNumber - 1);
 			} else {
@@ -3748,7 +3746,7 @@ function vk_up() {
 		plman.SetPlaylistSelectionSingle(g_active_playlist, new_focus_id, true);
 		plman.SetPlaylistFocusItem(g_active_playlist, new_focus_id);
 	} else {
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
@@ -3766,24 +3764,24 @@ function vk_down() {
 		if (brw.groups[brw.rows[new_row].albumId].collapsed) {
 			new_row -= (ppt.groupHeaderRowsNumber - 1);
 		};
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
 	} else {
 		switch (brw.rows[new_row].type) {
-		case 0: // 音轨行
+		case 0: // track row
 			// RAS
 			break;
-		case 99: // 空行（额外行）
+		case 99: // blank line (extra line)
 			while (brw.rows[new_row].type == 99) {
 				if (new_row < brw.rowsCount - 1)
 					new_row += 1;
 			};
 			break;
-		default: // 分组行
+		default: // group row
 			if (brw.groups[brw.rows[new_row].albumId].collapsed) {
-				if (brw.rows[new_row].type > 1) { // 若非分组标题的第一行
+				if (brw.rows[new_row].type > 1) { // if not 1st row of the group header
 					new_row += (ppt.groupHeaderRowsNumber - brw.rows[new_row].type + 1);
 					if (new_row > brw.rowsCount - 1) {
 						new_row = brw.rowsCount - 1;
@@ -3799,8 +3797,8 @@ function vk_down() {
 					// RAS
 				};
 			} else {
-				if (brw.rows[new_row].type > 1) { // 若非分组标题的第一行
-					// RAS，不会发生
+				if (brw.rows[new_row].type > 1) { // if not 1st row of the group header
+					// RAS, can't happend
 				} else {
 					new_row += ppt.groupHeaderRowsNumber;
 				};
@@ -3817,7 +3815,7 @@ function vk_down() {
 		plman.SetPlaylistSelectionSingle(g_active_playlist, new_focus_id, true);
 		plman.SetPlaylistFocusItem(g_active_playlist, new_focus_id);
 	} else {
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
@@ -3836,24 +3834,24 @@ function vk_pgup() {
 		} else {
 			new_row = 0 + ppt.groupHeaderRowsNumber;
 		};
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
 	} else {
 		switch (brw.rows[new_row].type) {
-		case 0: // 音轨行
+		case 0: // track row
 			// RAS
 			break;
-		case 99: // 空行（额外行）
+		case 99: // blank line (extra line)
 			while (brw.rows[new_row].type == 99) {
 				if (new_row > 0)
 					new_row -= 1;
 			};
 			break;
-		default: // 分组行
+		default: // group row
 			if (brw.groups[brw.rows[new_row].albumId].collapsed) {
-				if (brw.rows[new_row].type > 1) { // 若非分组标题的第一行
+				if (brw.rows[new_row].type > 1) { // if not 1st row of the group header
 					new_row -= (brw.rows[new_row].type - 1);
 				} else {
 					// RAS
@@ -3873,7 +3871,7 @@ function vk_pgup() {
 		plman.SetPlaylistSelectionSingle(g_active_playlist, new_focus_id, true);
 		plman.SetPlaylistFocusItem(g_active_playlist, new_focus_id);
 	} else {
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
@@ -3893,18 +3891,18 @@ function vk_pgdn() {
 		};
 	} else {
 		switch (brw.rows[new_row].type) {
-		case 0: // 音轨行
+		case 0: // track row
 			// RAS
 			break;
-		case 99: // 空行（额外行）
+		case 99: // blank line (extra line)
 			while (brw.rows[new_row].type == 99) {
 				if (new_row < brw.rowsCount - 1)
 					new_row += 1;
 			};
 			break;
-		default: // 分组行
+		default: // group row
 			if (brw.groups[brw.rows[new_row].albumId].collapsed) {
-				if (brw.rows[new_row].type > 1) { // 若非分组标题的第一行
+				if (brw.rows[new_row].type > 1) { // if not 1st row of the group header
 					new_row -= (brw.rows[new_row].type - 1);
 				} else {
 					// RAS
@@ -3924,7 +3922,7 @@ function vk_pgdn() {
 		plman.SetPlaylistSelectionSingle(g_active_playlist, new_focus_id, true);
 		plman.SetPlaylistFocusItem(g_active_playlist, new_focus_id);
 	} else {
-		// 终止计时器
+		// kill timer
 		cScrollBar.timerCounter = -1;
 		cScrollBar.timerID && window.ClearTimeout(cScrollBar.timerID);
 		cScrollBar.timerID = false;
@@ -3937,7 +3935,7 @@ function on_key_down(vkey) {
 	if (cSettings.visible) {} else {
 		//if(dragndrop.drag_in) return true;
 
-		// 输入框
+		// inputBox
 		if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 			g_filterbox.on_key("down", vkey);
 		};
@@ -3951,7 +3949,7 @@ function on_key_down(vkey) {
 				brw.showNowPlaying();
 				break;
 			case VK_F5:
-				// 刷新封面
+				// refresh covers
 				g_image_cache = new image_cache;
 				var total = brw.groups.length;
 				for (var i = 0; i < total; i++) {
@@ -4087,7 +4085,7 @@ function on_key_down(vkey) {
 			switch (mask) {
 			case KMask.shift:
 				switch (vkey) {
-				case VK_SHIFT: // 单独按 SHIFT 键
+				case VK_SHIFT: // SHIFT key alone
 					brw.SHIFT_count = 0;
 					break;
 				case VK_UP: // SHIFT + KEY UP
@@ -4154,13 +4152,13 @@ function on_key_down(vkey) {
 				};
 				if (vkey == 66) { // CTRL+B
 					cScrollBar.enabled = !cScrollBar.enabled;
-					window.SetProperty("_显示: 显示滚动条", cScrollBar.enabled);
+					window.SetProperty("_DISPLAY: Show Scrollbar", cScrollBar.enabled);
 					get_metrics();
 					brw.repaint();
 				};
 				if (vkey == 84) { // CTRL+T
 					ppt.showHeaderBar = !ppt.showHeaderBar;
-					window.SetProperty("_显示: 显示顶栏", ppt.showHeaderBar);
+					window.SetProperty("_DISPLAY: Show Top Bar", ppt.showHeaderBar);
 					get_metrics();
 					brw.scrollbar.updateScrollbar();
 					brw.repaint();
@@ -4171,12 +4169,12 @@ function on_key_down(vkey) {
 						ppt.extra_font_size = 0;
 						if (previous != ppt.extra_font_size) {
 							timers.mouseWheel = window.SetTimeout(function () {
-									window.SetProperty("_系统: 额外字号值", ppt.extra_font_size);
+									window.SetProperty("_SYSTEM: Extra font size value", ppt.extra_font_size);
 									get_font();
 									get_metrics();
 									get_images();
 
-									// 刷新封面
+									// refresh covers
 									g_image_cache = new image_cache;
 									var total = brw.groups.length;
 									for (var i = 0; i < total; i++) {
@@ -4203,7 +4201,7 @@ function on_key_down(vkey) {
 };
 
 function on_char(code) {
-	// 输入框
+	// inputBox
 	if (ppt.showHeaderBar && ppt.showFilterBox && g_filterbox.inputbox.visible) {
 		g_filterbox.on_char(code);
 	};
@@ -4218,7 +4216,7 @@ function on_char(code) {
 				brw.tt_w = ((cList.search_string.length * 13) + (10 * 2));
 				brw.tt_h = 60;
 				if (code == 32 && cList.search_string.length == 0)
-					return true; // 第一个字符不允许使用空格
+					return true; // SPACE Char not allowed on 1st char
 				if (cList.search_string.length <= 20 && brw.tt_w <= brw.w - 20) {
 					if (code > 31) {
 						cList.search_string = cList.search_string + String.fromCharCode(code).toUpperCase();
@@ -4238,30 +4236,30 @@ function on_char(code) {
 	};
 };
 
-//=================================================// 播放回调
+//=================================================// Playback Callbacks
 function on_playback_stop(reason) {
 	g_seconds = 0;
 	g_time_remaining = null;
 	g_metadb = null;
 
 	switch (reason) {
-	case 0: // 用户停止
-	case 1: // eof（例如播放列表结束）
-		// 更新壁纸
+	case 0: // user stop
+	case 1: // eof (e.g. end of playlist)
+		// update wallpaper
 		g_wallpaperImg = setWallpaperImg();
 		brw.repaint();
 		break;
-	case 2: // starting_another（仅在用户操作时调用，例如点击下一曲按钮）
+	case 2: // starting_another (only called on user action, i.e. click on next button)
 		break;
 	};
 
-	g_radio_title = "加载实时标签...";
+	g_radio_title = "loading live tag ...";
 	g_radio_artist = "";
 };
 
 function on_playback_new_track(metadb) {
 	g_metadb = metadb;
-	g_radio_title = "加载实时标签...";
+	g_radio_title = "loading live tag ...";
 	g_radio_artist = "";
 
 	g_wallpaperImg = setWallpaperImg();
@@ -4274,7 +4272,7 @@ function on_playback_time(time) {
 	g_seconds = time;
 	g_time_remaining = ppt.tf_time_remaining.Eval(true);
 
-	// 单选标签（实时）
+	// radio Tags (live)
 	if (g_metadb && g_metadb.Length < 0) {
 		g_radio_title = fb.TitleFormat("%title%").Eval(true);
 		g_radio_artist = fb.TitleFormat("$if2(%artist%,%bitrate%'K')").Eval(true);
@@ -4288,7 +4286,7 @@ function on_playback_time(time) {
 	};
 };
 
-//=================================================// 播放列表回调
+//=================================================// Playlist Callbacks
 function on_playlists_changed() {
 
 	if (g_avoid_on_playlists_changed)
@@ -4302,7 +4300,7 @@ function on_playlists_changed() {
 		};
 	};
 
-	// 刷新播放列表列表
+	// refresh playlists list
 	pman.populate(false, false);
 };
 
@@ -4317,7 +4315,7 @@ function on_playlist_switch() {
 	brw.populate(true);
 	brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
 
-	// 刷新播放列表列表
+	// refresh playlists list
 	pman.populate(false, false);
 };
 
@@ -4360,7 +4358,7 @@ function on_item_focus_change(playlist, from, to) {
 
 	if (!g_avoid_on_item_focus_change) {
 		if (playlist == g_active_playlist) {
-			// 自动折叠处理
+			// Autocollapse handle
 			if (ppt.autocollapse) { // && !center_focus_item
 				if (from > -1 && from < brw.list.Count) {
 					var old_focused_group_id = brw.getAlbumIdfromTrackId(from);
@@ -4386,7 +4384,7 @@ function on_item_focus_change(playlist, from, to) {
 				};
 			};
 
-			// 若新焦点音轨未完全可见，我们滚动使其在面板中居中显示
+			// if new focused track not totally visible, we scroll to show it centered in the panel
 			g_focus_row = brw.getOffsetFocusItem(g_focus_id);
 			if (g_focus_row < scroll / ppt.rowHeight || g_focus_row > scroll / ppt.rowHeight + brw.totalRowsVis - 0.1) {
 				var old = scroll;
@@ -4421,10 +4419,10 @@ function on_metadb_changed(handles) {
 	if (!brw.list)
 		return;
 
-	// 重建列表
-	if (g_rating_updated) { // 若标签更新来自播放列表中的评分点击动作，则不重新填充
+	// rebuild list
+	if (g_rating_updated) { // no repopulate if tag update is from rating click action in playlist
 		g_rating_updated = false;
-		// 更新音轨标签信息以避免全量填充
+		// update track tags info to avoid a full populate
 		if (g_rating_rowId > -1) {
 			brw.rows[g_rating_rowId].tracktags = ppt.tf_track.EvalWithMetadb(brw.rows[g_rating_rowId].metadb);
 			g_rating_rowId = -1;
@@ -4491,7 +4489,7 @@ function g_sendResponse() {
 		filter_text = g_filterbox.inputbox.text;
 	};
 
-	// 在当前面板中筛选
+	// filter in current panel
 	g_focus_id = 0;
 	brw.populate(true);
 	if (brw.rowsCount > 0) {
@@ -4524,7 +4522,7 @@ function save_image_to_cache(metadb, albumIndex) {
 
 on_load();
 
-//=================================================// 拖放回调
+//=================================================// Drag'n'Drop Callbacks
 function on_drag_enter() {
 
 }
@@ -4547,7 +4545,7 @@ function on_drag_drop(action, x, y, mask) {
 	} else {
 		var count = plman.PlaylistCount;
 		if (count == 0 || plman.ActivePlaylist == -1) {
-			plman.CreatePlaylist(count, "拖入的项目");
+			plman.CreatePlaylist(count, "Dropped Items");
 			action.Playlist = count;
 			action.Base = 0;
 		} else {

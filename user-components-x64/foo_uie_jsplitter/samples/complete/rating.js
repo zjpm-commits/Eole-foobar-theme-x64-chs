@@ -1,20 +1,20 @@
 ﻿'use strict';
 
-window.DefineScript('评分', {author:'marc2003', options:{grab_focus:false}});
+window.DefineScript('Rating', {author:'marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\rating.js');
 
 /*
-现支持 3 种模式：
-1) foo_playcount，限于 5 星，通过 %rating% 访问
-2) 文件标签，可配置上限，通过自定义标签访问。使用右键菜单设置。
-3) JSplitter '播放统计' 数据库，可配置上限，通过 %jsplitter_rating% 访问。绑定到 '%artist% - %title%'，因此不同专辑中的相同曲目会共享评分。
+Now supports 3 modes:
+1) foo_playcount, limited to 5 stars, access via %rating%
+2) file tags, configurable max limit, access via custom tag. Use right click menu to set.
+3) JSplitter 'Playback stats' database, configurable max limit, access via %jsplitter_rating%. Bound to '%artist% - %title%' so common tracks across different albums will share the rating.
 */
 
 let panel = new _panel(true);
-let rating = new _rating(0, 0, 24, _RGB(255, 128, 0)); // x, y, 尺寸, 颜色
+let rating = new _rating(0, 0, 24, _RGB(255, 128, 0)); // x, y, size, colour
 
 panel.item_focus_change();
 

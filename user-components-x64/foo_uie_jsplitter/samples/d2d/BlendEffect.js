@@ -39,75 +39,75 @@ function on_paint(dgr) {
 		
 	opacity.SetValue(Effects.Opacity.Opacity, alpha / 255);	
 	dgr.DrawEffect(opacity, 0, wh / 2, 0, 0, ww / 2, wh / 2);
-	if(helpAlpha) dgr.DrawText("在此滚动以更改透明度", font, 0xFFFFFFFF, 0, wh / 2, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
+	if(helpAlpha) dgr.DrawText("Scroll here to change alpha", font, 0xFFFFFFFF, 0, wh / 2, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
 	
 	opacity2.SetValue(Effects.Opacity.Opacity, alpha2 / 255);	
 	dgr.DrawEffect(opacity2, ww / 2, wh / 2, 0, 0, ww / 2, wh / 2);
-	if(helpAlpha2) dgr.DrawText("在此滚动以更改透明度", font, 0xFFFFFFFF, ww / 2, wh / 2, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
+	if(helpAlpha2) dgr.DrawText("Scroll here to change alpha", font, 0xFFFFFFFF, ww / 2, wh / 2, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
 	
 	blend.SetValue(Effects.Blend.Mode, mode);
 	dgr.DrawEffect(blend, ww / 4, 0, 0, 0, ww / 2, wh / 2);
-	if(helpBlend) dgr.DrawText("在此滚动以更改混合模式", font, 0xFFFFFFFF, ww / 4, 0, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
+	if(helpBlend) dgr.DrawText("Scroll here to change blend mode", font, 0xFFFFFFFF, ww / 4, 0, ww / 2, wh / 2, DT_CENTER | DT_VCENTER);
 
-	dgr.DrawText(`混合模式：${GetModeName(mode)}`, font, 0xFF000000, 0, 0, ww / 4, wh / 2, DT_WORDBREAK);
-	dgr.DrawText(`透明度：${alpha}`, font, 0xFF000000, 0, 0, ww / 4, wh / 2, DT_BOTTOM | DT_WORDBREAK);
-	dgr.DrawText(`透明度：${alpha2}`, font, 0xFF000000, ww - ww / 4, 0, ww / 4, wh / 2, DT_BOTTOM | DT_RIGHT | DT_WORDBREAK);
+	dgr.DrawText(`Blend mode: ${GetModeName(mode)}`, font, 0xFF000000, 0, 0, ww / 4, wh / 2, DT_WORDBREAK);
+	dgr.DrawText(`Alpha: ${alpha}`, font, 0xFF000000, 0, 0, ww / 4, wh / 2, DT_BOTTOM | DT_WORDBREAK);
+	dgr.DrawText(`Alpha: ${alpha2}`, font, 0xFF000000, ww - ww / 4, 0, ww / 4, wh / 2, DT_BOTTOM | DT_RIGHT | DT_WORDBREAK);
 }
 
 function GetModeName(mode) {
 	switch(mode) {		
 		case 0:
-			return "正片叠底";
+			return "Multiply";
 		case 1:
-			return "滤色";
+			return "Screen";
 		case 2:
-			return "变暗";
+			return "Darken";
 		case 3:
-			return "变亮";
+			return "Lighten";
 		case 4:
-			return "溶解";
+			return "Dissolve";
 		case 5:
-			return "颜色加深";
+			return "Burn";
 		case 6:
-			return "线性加深";
+			return "LinearBurn";
 		case 7:
-			return "深色";
+			return "DarkerColor";
 		case 8:
-			return "浅色";
+			return "LighterColor";
 		case 9:
-			return "颜色减淡";
+			return "ColorDodge";
 		case 10:
-			return "线性减淡";
+			return "LinearDodge";
 		case 11:
-			return "叠加";
+			return "Overlay";
 		case 12:
-			return "柔光";
+			return "SoftLight";
 		case 13:
-			return "强光";
+			return "HardLight";
 		case 14:
-			return "亮光";
+			return "VividLight";
 		case 15:
-			return "线性光";
+			return "LinearLight";
 		case 16:
-			return "点光";
+			return "PinLight";
 		case 17:
-			return "实色混合";
+			return "HardMix";
 		case 18:
-			return "差值";
+			return "Difference";
 		case 19:
-			return "排除";
+			return "Exclusion";
 		case 20:
-			return "色相";
+			return "Hue";
 		case 21:
-			return "饱和度";
+			return "Saturation";
 		case 22:
-			return "颜色";
+			return "Color";
 		case 23:
-			return "明度";
+			return "Luminosity";
 		case 24:
-			return "减去";
+			return "Subtract";
 		default:
-			return "划分";
+			return "Division";
 	}		
 }
 

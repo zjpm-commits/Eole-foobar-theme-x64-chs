@@ -53,8 +53,8 @@ function on_paint(gr) {
 	gr.FillSolidRect(0, 0, window.Width, window.Height, 0xFF000000);
 	for (const s of stars) gr.FillEllipse(s.x, s.y, s.size, s.size, s.color);
 
-	gr.GdiDrawText(`模式：${window.DrawMode == 0 ? "GDI+" : "Direct2D"}`, font, 0xFFFFFFFF, 5, 0, window.Width, 45);
-	gr.GdiDrawText(`星星数量：${starCount}`, font, 0xFFFFFFFF, 5, 40, window.Width, 45);
+	gr.GdiDrawText(`Mode: ${window.DrawMode == 0 ? "GDI+" : "Direct2D"}`, font, 0xFFFFFFFF, 5, 0, window.Width, 45);
+	gr.GdiDrawText(`Stars count: ${starCount}`, font, 0xFFFFFFFF, 5, 40, window.Width, 45);
 	
 	worked += performance.now() - now;
 	frameCounter++;

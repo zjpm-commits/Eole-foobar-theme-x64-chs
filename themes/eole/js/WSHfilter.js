@@ -2192,6 +2192,9 @@ oBrowser = function(name) {
 					//Set group date, artist, album, and add track titles to array
 					this.groups[dest].date = tf_date.EvalWithMetadb(handle);
 					this.groups[dest].artist_name = tf_artist.EvalWithMetadb(handle);
+					/* 流播项没有标签：用洛雪广播来的歌手名顶上 */
+					var _lxi = lxInfoOf(handle);
+					if (_lxi && _lxi.artist) this.groups[dest].artist_name = _lxi.artist;
 					this.groups[dest].album = tf_album.EvalWithMetadb(handle);
 					this.groups[dest].tra.push(tf_title.EvalWithMetadb(handle));
 					this.groups[dest].traIndex.push(i);
@@ -5456,6 +5459,8 @@ function g_sendResponse() {
 };
 
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "fullscreenWallpaper":
 			fw_setOn(info);

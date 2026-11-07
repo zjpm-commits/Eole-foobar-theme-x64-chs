@@ -35,7 +35,7 @@ function _panel(custom_background = false) {
 			name = font.Name;
 		} else {
 			name = 'Segoe UI';
-			console.log(N, '无法使用默认字体。改用', name, '。');
+			console.log(N, 'Unable to use default font. Using', name, 'instead.');
 		}
 		this.fonts.title = _gdiFont(name, 12, 1);
 		this.fonts.normal = _gdiFont(name, this.fonts.size.value);
@@ -79,8 +79,8 @@ function _panel(custom_background = false) {
 		this.s11 = window.CreatePopupMenu();
 		this.s12 = window.CreatePopupMenu();
 		this.s13 = window.CreatePopupMenu();
-		// 面板 1-999
-		// 对象 1000+
+		// panel 1-999
+		// object 1000+
 		if (object) {
 			object.rbtn_up(x, y);
 		}
@@ -89,24 +89,24 @@ function _panel(custom_background = false) {
 				this.s1.AppendMenuItem(MF_STRING, item, item);
 			});
 			this.s1.CheckMenuRadioItem(_.first(this.fonts.sizes), _.last(this.fonts.sizes), this.fonts.size.value);
-			this.s1.AppendTo(this.m, MF_STRING, '字体大小');
+			this.s1.AppendTo(this.m, MF_STRING, 'Font size');
 			this.m.AppendMenuSeparator();
 		}
 		if (this.custom_background) {
-			this.s2.AppendMenuItem(MF_STRING, 100, window.InstanceType ? '使用默认UI设置' : '使用Columns UI设置');
-			this.s2.AppendMenuItem(MF_STRING, 101, '分离器');
-			this.s2.AppendMenuItem(MF_STRING, 102, '自定义');
+			this.s2.AppendMenuItem(MF_STRING, 100, window.InstanceType ? 'Use default UI setting' : 'Use columns UI setting');
+			this.s2.AppendMenuItem(MF_STRING, 101, 'Splitter');
+			this.s2.AppendMenuItem(MF_STRING, 102, 'Custom');
 			this.s2.CheckMenuRadioItem(100, 102, this.colours.mode.value + 100);
 			this.s2.AppendMenuSeparator();
-			this.s2.AppendMenuItem(this.colours.mode.value == 2 ? MF_STRING : MF_GRAYED, 103, '设置自定义颜色...');
-			this.s2.AppendTo(this.m, window.IsTransparent ? MF_GRAYED : MF_STRING, '背景');
+			this.s2.AppendMenuItem(this.colours.mode.value == 2 ? MF_STRING : MF_GRAYED, 103, 'Set custom colour...');
+			this.s2.AppendTo(this.m, window.IsTransparent ? MF_GRAYED : MF_STRING, 'Background');
 			this.m.AppendMenuSeparator();
 		}
 		if (this.metadb_func) {
-			this.s3.AppendMenuItem(MF_STRING, 110, '优先显示正在播放');
-			this.s3.AppendMenuItem(MF_STRING, 111, '跟随所选曲目（播放列表）');
+			this.s3.AppendMenuItem(MF_STRING, 110, 'Prefer now playing');
+			this.s3.AppendMenuItem(MF_STRING, 111, 'Follow selected track (playlist)');
 			this.s3.CheckMenuRadioItem(110, 111, this.selection.value + 110);
-			this.s3.AppendTo(this.m, MF_STRING, '选择模式');
+			this.s3.AppendTo(this.m, MF_STRING, 'Selection mode');
 			this.m.AppendMenuSeparator();
 		}
 		this.m.AppendMenuItem(MF_STRING, 120, 'Configure...');

@@ -9,5 +9,5 @@ button:focus { border: 1px solid #0078D7; padding: 3px; }
 button:hover { background: #e5f1fb; border: 1px solid #0078D7; padding: 3px; } 
 button:focus:hover { background: #e5f1fb; border:1px solid #0078D7; padding: 3px; } 
 button[disabled] { background: #CCCCCC; color:#EBEBE4; } 
-/* --手动抑制 button:hover，因为 not() 无法工作 =( */
+/* --Suppress button:hover manually, since not() is not working =( */
 button[disabled]:hover { border: 1px solid #ADADAD; padding: 3px; } 

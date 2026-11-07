@@ -6,7 +6,7 @@ include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\list.js');
 
-// 本脚本要求你的文件中含有 'musicbrainz_artistid' 或 'musicbrainz artist id' 标签。
+// This script requires 'musicbrainz_artistid' or 'musicbrainz artist id' tags present in your files.
 
 let panel = new _panel();
 let list = new _list('musicbrainz', LM, TM, 0, 0);

@@ -1,17 +1,19 @@
-// JSplitter 示例：聚焦曲目波形
+﻿// JSplitter sample: Focus Track Waveform
 //
-// 适用于“解码过程中就应显示”的波形的推荐模式：
-// 1. 对整个请求范围一次性调用 GetWaveformAsync()。
-// 2. 进度分块到达后立即保存。
-// 3. 用一个独立的可见前端动画逼近已加载的前端，而不是把每个原生进度分块
-//    都绘制成一个可见步骤。
-// 4. 当请求已过时时，在进度回调中返回 false；这会取消原生解码。
+// Recommended pattern for a waveform that should appear while decoding:
+// 1. Call GetWaveformAsync() once for the whole requested range.
+// 2. Store progress chunks immediately as they arrive.
+// 3. Animate a separate visible front toward the loaded front instead of drawing
+//    each native progress chunk as a visible step.
+// 4. Return false from the progress callback when the request becomes obsolete;
+//    this cancels the native decode.
 //
-// 这样整个过程中只打开一个解码器，并给出平滑的渐进式渲染，
-// 而无需根据曲目时长或编解码器速度来预测完成时间。
+// This keeps one decoder open for the whole pass and gives smooth progressive
+// rendering without predicting completion time from track duration or codec speed.
 //
-// GetWaveformAsync 返回 0.0..1.0 的振幅包络。每个值是一个时间区间的
-// 幅度，因此同一个值会在中心线上、下方镜像显示。
+// GetWaveformAsync returns a 0.0..1.0 amplitude envelope. Each value is a
+// magnitude for one time interval, so the SAME value is mirrored above and
+// below the center line.
 
 const WAVEFORM_POINTS = 2048;
 const REVEAL_INTERVAL_MS = 16;
@@ -67,8 +69,8 @@ function updateReveal() {
         visiblePosition = loaded;
     }
     else if (elapsed > 0 && followSpeed > 0) {
-        // 以生产者真实的累计解码速率跟随它。即使原生进度是分块到达的，
-        // 可见前端仍能保持平滑。
+        // Follow the producer at its real cumulative decode rate. The visible
+        // front remains smooth even though native progress arrives in chunks.
         visiblePosition = Math.min(
             loaded,
             visiblePosition + followSpeed * elapsed
@@ -121,8 +123,8 @@ async function loadWaveform() {
             0,
             0,
             (values, start) => {
-                // 此曲目仍在解码时焦点发生了变化。
-                // 返回 false 会取消原生解码。
+                // Focus changed while this track was still decoding.
+                // Returning false cancels the native decode.
                 if (token !== loadToken) {
                     return false;
                 }
@@ -144,7 +146,7 @@ async function loadWaveform() {
             return;
         }
 
-        // 渐进式交付结束后，Promise 仍会返回完整的包络。
+        // The Promise still returns the complete envelope after progressive delivery.
         waveform = complete;
         loadedPoints = complete.length;
         loading = false;
@@ -158,7 +160,7 @@ async function loadWaveform() {
         window.Repaint();
     }
     catch (e) {
-        // 过时请求被取消是预期的行为。
+        // Cancellation of an obsolete request is expected.
         if (token !== loadToken) {
             return;
         }
@@ -169,7 +171,7 @@ async function loadWaveform() {
         loadedPoints = 0;
         visiblePosition = 0;
         visiblePoints = 0;
-        console.log(`GetWaveformAsync 失败：${e}`);
+        console.log(`GetWaveformAsync failed: ${e}`);
         window.Repaint();
     }
 }
@@ -219,9 +221,9 @@ function drawWaveform(gr, w, h) {
 
     gr.DrawLine(0, centerY, w, centerY, 1, CENTER_COLOR);
 
-    // 将原生包络重采样为屏幕列。当多个波形点映射到同一像素时，
-    // 进行平均可以让显示保持干净并贴近预期的包络，而不是让瞬态变得
-    // 不自然地密集。
+    // Resample the native envelope to screen columns. Averaging when several
+    // waveform points map to one pixel keeps the display clean and close to the
+    // intended envelope instead of making transients unnaturally dense.
     for (let x = 0; x < visibleColumns; ++x) {
         const amplitude = displayValueAtColumn(x, w) * maxAmplitude;
         gr.DrawLine(
@@ -242,7 +244,7 @@ function drawStatus(gr, w) {
 
     const percent = Math.floor(loadedPoints * 100 / waveform.length);
     gr.GdiDrawText(
-        `正在解码波形… ${percent}%`,
+        `Decoding waveform... ${percent}%`,
         font,
         TEXT_COLOR,
         0,
@@ -255,7 +257,7 @@ function drawStatus(gr, w) {
 
 function drawNoTrack(gr, w, h) {
     gr.GdiDrawText(
-        '请选择一个曲目',
+        'Select a track',
         font,
         TEXT_COLOR,
         0,
@@ -286,7 +288,7 @@ function on_item_focus_change() {
 }
 
 function on_script_unload() {
-    // 让正在活动的进度回调在再次被调用时返回 false。
+    // Makes the active progress callback return false if it is invoked again.
     ++loadToken;
     stopRevealTimer();
 }

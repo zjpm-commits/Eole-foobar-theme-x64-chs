@@ -1,12 +1,12 @@
-window.DefineScript('LoadImageAsync', { author: 'T.P Wang' });
+﻿window.DefineScript('LoadImageAsync', { author: 'T.P Wang' });
 
-// 从文件夹获取 jpg 文件列表
+// Get a list of jpg files from a folder
 const g_image_list = utils.Glob(`${fb.ComponentPath}samples/basic/images/*.jpg`);
 let ww = 0, wh = 0;
 let g_img = null;
 let g_valid_tid = 0;
 
-// 每 5 秒触发一次。
+// Trigger every 5 seconds.
 let g_timer = setInterval(function () {
     load_random_image_async();
 }, 5000);
@@ -14,9 +14,9 @@ let g_timer = setInterval(function () {
 load_random_image_async();
 
 function load_random_image_async() {
-    // 从列表中加载一张随机图片
+    // Load a random image from the list
     let path = g_image_list[Math.floor(Math.random() * g_image_list.length)];
-    // 图片加载完成后将触发 on_load_image_done
+    // on_load_image_done will be triggered when the image has been loaded
     g_valid_tid = gdi.LoadImageAsync(0, path);
 }
 
@@ -43,7 +43,7 @@ function on_paint(gr) {
     gr.DrawImage(g_img, pos_x, pos_y, g_img.Width * scale, g_img.Height * scale, 0, 0, g_img.Width, g_img.Height);
 }
 
-// 图片在后台加载完成后，将调用此回调
+// After loading image is done in the background, this callback will be invoked
 function on_load_image_done(tid, image, image_path) {
     if (g_valid_tid === tid) {
         g_img = image;

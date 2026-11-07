@@ -900,6 +900,12 @@ oRow = function(metadb,itemIndex) {
 		} else
 			var TagsString = TF.title.EvalWithMetadb(metadb);
 		Tags = TagsString.replace(/\r?\n/gm, ' ').split(" ^^ ");
+		/* 流播项没有标签：用洛雪广播来的歌手 / 歌名顶上 */
+		var _lxi = lxInfoOf(metadb);
+		if (_lxi) {
+			if (_lxi.artist) Tags[0] = _lxi.artist;
+			if (_lxi.title) Tags[3] = _lxi.title;
+		}
 		
 		this.artist = Tags[0];
 		if(this.artist=="?") this.artist="未知艺术家";
@@ -7179,6 +7185,10 @@ function on_script_unload() {
 
 //=================================================// Playback Callbacks =================================================
 
+function lxRefresh() {
+	try { window.Repaint(); } catch (e) { }
+}
+
 function on_playback_stop(reason) {
 	g_seconds = 0;
 	g_showlist.CheckIfPlaying();
@@ -7483,6 +7493,8 @@ function on_drag_over(action, x, y, mask) {
     g_cursor.y = y;
 }
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "fullscreenWallpaper":
 			fw_setOn(info);

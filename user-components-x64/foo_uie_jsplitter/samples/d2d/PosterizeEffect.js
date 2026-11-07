@@ -32,7 +32,7 @@ function on_paint(dgr) {
     // emboss.SetValue(Effects.Posterize.GreenValueCount, steps);
     emboss.SetValue(Effects.Posterize.BlueValueCount, steps);
 	dgr.DrawEffect(emboss, 0, 0, 0, 0, ww, wh);
-	dgr.DrawText(`色调分离效果\n滚动以更改\n步数：${steps}`, font, 0xFFFFFFFF, 0, 0, ww, wh, DT_CENTER | DT_VCENTER);
+	dgr.DrawText(`POSTERIZE effect\nScroll to change\nSteps: ${steps}`, font, 0xFFFFFFFF, 0, 0, ww, wh, DT_CENTER | DT_VCENTER);
 }
 
 function on_mouse_wheel(step) {

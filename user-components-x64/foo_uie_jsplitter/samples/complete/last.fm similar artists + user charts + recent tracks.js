@@ -1,7 +1,7 @@
 ﻿'use strict';
 //29/10/24
 
-window.DefineScript('Last.fm 相似艺人 + 用户图表 + 最近曲目', {author:'marc2003 & regorxxx'});
+window.DefineScript('Last.fm Similar Artists + User Charts + Recent Tracks', {author:'marc2003 & regorxxx'});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');

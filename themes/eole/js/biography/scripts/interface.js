@@ -193,12 +193,18 @@ class UserInterface {
 	}
 
 	draw(gr) {
-		// 透明：本面板勾了「背景壁纸 → 透明」、且宿主的全屏壁纸开着时不画底色，
-		// 让宿主铺的那一整张图透下来。读的是本面板自己的属性，不依赖跨面板同步。
+		// 透明：宿主的全屏壁纸开着、且本面板没被显式关掉「背景壁纸·透明」时不画底色，
+		// 让宿主铺的那一整张图透下来。
 		let fwGlass = false;
 		try {
-			fwGlass = (typeof fw_transparent === 'function') &&
-				fw_transparent(!!window.GetProperty("背景壁纸·透明", false));
+			/* 「背景壁纸·透明」这个属性全仓没有任何地方写入，读出来恒 false，
+			   等于把这一层永远关掉；默认值改成 true，只要没被显式关过就跟随宿主。 */
+			let fwLocal = true;
+			try {
+				const v = window.GetProperty("背景壁纸·透明", true);
+				fwLocal = !(v === false || v === 0 || v === '0');
+			} catch (eFWv) { fwLocal = true; }
+			fwGlass = (typeof fw_transparent === 'function') && fw_transparent(fwLocal);
 		} catch (e) { fwGlass = false; }
 		if (this.style.bg && !fwGlass) gr.FillSolidRect(0, 0, panel.w, panel.h, this.col.bg);
 	}

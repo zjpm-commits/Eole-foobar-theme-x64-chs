@@ -24,7 +24,7 @@ function _list(mode, x, y, w, h) {
 	this.size = () => {
 		this.index = 0;
 		this.offset = 0;
-		this.rows = Math.floor((this.h - _scale(24)) / (panel.row_height || 1)); // Regorxxx <- 修复溢出 ->
+		this.rows = Math.floor((this.h - _scale(24)) / (panel.row_height || 1)); // Regorxxx <- Fix overflow ->
 		this.up_btn.x = this.x + Math.round((this.w - _scale(12)) / 2);
 		this.down_btn.x = this.up_btn.x;
 		this.up_btn.y = this.y;
@@ -33,18 +33,18 @@ function _list(mode, x, y, w, h) {
 
 	this.paint = (gr) => {
 		if (this.mode === 'lastfm_info' && !lastfm.api_key.value.length) {
-			gr.GdiDrawText('未找到 API 密钥。使用右键点击添加。', panel.fonts.normal, panel.colours.text, this.x, this.y + _scale(12), this.w, panel.row_height, LEFT);
+			gr.GdiDrawText('No API key found. Add it using R. Click.', panel.fonts.normal, panel.colours.text, this.x, this.y + _scale(12), this.w, panel.row_height, LEFT);
 			return;
 		}
 		if (this.items == 0) {
 			return;
 		}
 		switch (true) {
-			case this.mode == 'lastfm_info' && this.properties.mode.value == 1: { // 图表
+			case this.mode == 'lastfm_info' && this.properties.mode.value == 1: { // charts
 				this.text_x = this.spacer_w + 5;
 				this.text_width = Math.round(this.w / 2) + 30;
 				const lastfm_charts_bar_x = this.x + this.text_x + this.text_width + 10;
-				const unit_width = (this.w - lastfm_charts_bar_x - _scale(50)) / (this.data[0].playcount || 1); // Regorxxx <- 修复溢出 ->
+				const unit_width = (this.w - lastfm_charts_bar_x - _scale(50)) / (this.data[0].playcount || 1); // Regorxxx <- Fix overflow ->
 				for (let i = 0; i < Math.min(this.items, this.rows); i++) {
 					let bar_width = Math.ceil(unit_width * this.data[i + this.offset].playcount);
 					gr.GdiDrawText(this.data[i + this.offset].rank + '.', panel.fonts.normal, panel.colours.highlight, this.x, this.y + _scale(12) + (i * panel.row_height), this.text_x - 5, panel.row_height, RIGHT);
@@ -54,7 +54,7 @@ function _list(mode, x, y, w, h) {
 				}
 				break;
 			}
-			case this.mode == 'musicbrainz' && this.properties.mode.value == 0: {// 发行
+			case this.mode == 'musicbrainz' && this.properties.mode.value == 0: {// releases
 				this.text_width = this.w - this.spacer_w - 10;
 				for (let i = 0; i < Math.min(this.items, this.rows); i++) {
 					gr.GdiDrawText(this.data[i + this.offset].name, panel.fonts.normal, this.data[i + this.offset].width == 0 ? panel.colours.highlight : panel.colours.text, this.x, this.y + _scale(12) + (i * panel.row_height), this.text_width, panel.row_height, LEFT);
@@ -66,11 +66,11 @@ function _list(mode, x, y, w, h) {
 				this.text_width = this.w - this.text_x;
 				for (let i = 0; i < Math.min(this.items, this.rows); i++) {
 					gr.GdiDrawText(this.data[i + this.offset].name, panel.fonts.normal, panel.colours.highlight, this.x, this.y + _scale(12) + (i * panel.row_height), this.text_x - 10, panel.row_height, LEFT);
-					gr.GdiDrawText(this.data[i + this.offset].value, panel.fonts.normal, panel.colours.text, this.x + this.text_x, this.y + _scale(12) + (i * panel.row_height), this.text_width, panel.row_height, LEFT ^ DT_CALCRECT | DT_WORD_ELLIPSIS ); // Regorxxx <- 正确显示不合规的多行文本 ->
+					gr.GdiDrawText(this.data[i + this.offset].value, panel.fonts.normal, panel.colours.text, this.x + this.text_x, this.y + _scale(12) + (i * panel.row_height), this.text_width, panel.row_height, LEFT ^ DT_CALCRECT | DT_WORD_ELLIPSIS ); // Regorxxx <- Properly display non-compliant multi-line text ->
 				}
 				break;
 			}
-			default: {// 自动播放列表 / last.fm 相似艺术家 / last.fm 最近播放 / musicbrainz 链接 / 队列查看器
+			default: {// autoplaylists / last.fm similar artists / last.fm recent tracks / musicbrainz links / queue viewer
 				this.text_x = 0;
 				this.text_width = this.w;
 				for (let i = 0; i < Math.min(this.items, this.rows); i++) {
@@ -171,7 +171,7 @@ function _list(mode, x, y, w, h) {
 		this.my = y;
 		window.SetCursor(IDC_ARROW);
 		if (this.trace(x, y)) {
-			this.index = Math.floor((y - this.y - _scale(12)) / (panel.row_height || 1)) + this.offset; // Regorxxx <- 修复溢出 ->
+			this.index = Math.floor((y - this.y - _scale(12)) / (panel.row_height || 1)) + this.offset; // Regorxxx <- Fix overflow ->
 			this.in_range = this.index >= this.offset && this.index < this.offset + Math.min(this.rows, this.items);
 			switch (true) {
 				case this.up_btn.move(x, y):
@@ -180,17 +180,17 @@ function _list(mode, x, y, w, h) {
 				case !this.in_range:
 					break;
 				case this.mode == 'autoplaylists':
-					if (this.index !== -1 && x > this.x && x < this.x + Math.min(this.data[this.index].width, this.text_width)) { // Regorxxx <- 修复溢出 ->
+					if (this.index !== -1 && x > this.x && x < this.x + Math.min(this.data[this.index].width, this.text_width)) { // Regorxxx <- Fix overflow ->
 						window.SetCursor(IDC_HAND);
-						_tt('自动播放列表：' + this.data[this.index].name);
+						_tt('Autoplaylist: ' + this.data[this.index].name);
 					} else { _tt(''); }
 					break;
-				case this.index !== -1 && x > this.x + this.text_x && x < this.x + this.text_x + Math.min(this.data[this.index].width, this.text_width): // Regorxxx <- 修复溢出 ->
+				case this.index !== -1 && x > this.x + this.text_x && x < this.x + this.text_x + Math.min(this.data[this.index].width, this.text_width): // Regorxxx <- Fix overflow ->
 					window.SetCursor(IDC_HAND);
 					if (this.data[this.index].url.startsWith('http')) {
 						_tt(this.data[this.index].url);
 					} else {
-						_tt('自动播放列表：' + this.data[this.index].url);
+						_tt('Autoplaylist: ' + this.data[this.index].url);
 					}
 					break;
 				default:
@@ -233,7 +233,7 @@ function _list(mode, x, y, w, h) {
 	this.rbtn_up = (x, y) => {
 		switch (this.mode) {
 			case 'autoplaylists':
-				panel.m.AppendMenuItem(MF_STRING, 1000, '新建自动播放列表...');
+				panel.m.AppendMenuItem(MF_STRING, 1000, 'Add new autoplaylist...');
 				panel.m.AppendMenuSeparator();
 				if (this.deleted_items.length) {
 					_(this.deleted_items)
@@ -241,34 +241,34 @@ function _list(mode, x, y, w, h) {
 						.forEach((item, i) => {
 							panel.s10.AppendMenuItem(MF_STRING, i + 1010, item.name);
 						})
-					panel.s10.AppendTo(panel.m, MF_STRING, '恢复');
+					panel.s10.AppendTo(panel.m, MF_STRING, 'Restore');
 					panel.m.AppendMenuSeparator();
 				}
 				break;
 			case 'lastfm_info':
-				panel.m.AppendMenuItem(MF_STRING, 1100, '艺术家信息');
-				panel.m.AppendMenuItem(MF_STRING, 1101, '用户排行榜');
-				panel.m.AppendMenuItem(MF_STRING, 1102, '最近播放');
+				panel.m.AppendMenuItem(MF_STRING, 1100, 'Artist Info');
+				panel.m.AppendMenuItem(MF_STRING, 1101, 'User Charts');
+				panel.m.AppendMenuItem(MF_STRING, 1102, 'Recent Tracks');
 				panel.m.CheckMenuRadioItem(1100, 1102, this.properties.mode.value + 1100);
 				panel.m.AppendMenuSeparator();
 				if (this.properties.mode.value == 0) {
-					panel.m.AppendMenuItem(MF_STRING, 1105, '相似艺术家');
-					panel.m.AppendMenuItem(MF_STRING, 1106, '热门曲目');
-					panel.m.AppendMenuItem(MF_STRING, 1107, '热门标签');
+					panel.m.AppendMenuItem(MF_STRING, 1105, 'Similar Artists');
+					panel.m.AppendMenuItem(MF_STRING, 1106, 'Top Tracks');
+					panel.m.AppendMenuItem(MF_STRING, 1107, 'Top Tags');
 					panel.m.CheckMenuRadioItem(1105, 1107, this.properties.artist_method.value + 1105);
 					panel.m.AppendMenuSeparator();
 					if (this.properties.artist_method.value == 0) {
-						panel.s10.AppendMenuItem(MF_STRING, 1110, '打开 Last.fm 网站');
-						panel.s10.AppendMenuItem(MF_STRING, 1111, '自动播放列表');
+						panel.s10.AppendMenuItem(MF_STRING, 1110, 'Open Last.fm website');
+						panel.s10.AppendMenuItem(MF_STRING, 1111, 'Autoplaylist');
 						panel.s10.CheckMenuRadioItem(1110, 1111, this.properties.link.value + 1110);
-						panel.s10.AppendTo(panel.m, MF_STRING, '链接');
+						panel.s10.AppendTo(panel.m, MF_STRING, 'Links');
 						panel.m.AppendMenuSeparator();
 					}
 				} else if (this.properties.mode.value < 2) {
-					panel.s10.AppendMenuItem(MF_STRING, 1110, '打开 Last.fm 网站');
-					panel.s10.AppendMenuItem(MF_STRING, 1111, '自动播放列表');
+					panel.s10.AppendMenuItem(MF_STRING, 1110, 'Open Last.fm website');
+					panel.s10.AppendMenuItem(MF_STRING, 1111, 'Autoplaylist');
 					panel.s10.CheckMenuRadioItem(1110, 1111, this.properties.link.value + 1110);
-					panel.s10.AppendTo(panel.m, this.properties.method.value == 0 ? MF_STRING : MF_GRAYED, '链接');
+					panel.s10.AppendTo(panel.m, this.properties.method.value == 0 ? MF_STRING : MF_GRAYED, 'Links');
 					panel.m.AppendMenuSeparator();
 				}
 				if (this.properties.mode.value == 1) {
@@ -282,20 +282,20 @@ function _list(mode, x, y, w, h) {
 					});
 					panel.m.CheckMenuRadioItem(1130, 1135, this.properties.period.value + 1130);
 					panel.m.AppendMenuSeparator();
-					panel.m.AppendMenuItem(MF_STRING, 1140, '条颜色...');
+					panel.m.AppendMenuItem(MF_STRING, 1140, 'Bar colour...');
 					panel.m.AppendMenuSeparator();
 				}
-				panel.m.AppendMenuItem(MF_STRING, 1150, 'Last.fm 用户名...');
+				panel.m.AppendMenuItem(MF_STRING, 1150, 'Last.fm username...');
 				panel.m.AppendMenuSeparator();
-				panel.m.AppendMenuItem(MF_STRING, 1199, 'Last.fm API 密钥');
+				panel.m.AppendMenuItem(MF_STRING, 1199, 'Last.fm API key');
 				panel.m.AppendMenuSeparator();
 				break;
 			case 'musicbrainz':
-				panel.m.AppendMenuItem(MF_STRING, 1200, '发行');
-				panel.m.AppendMenuItem(MF_STRING, 1201, '链接');
+				panel.m.AppendMenuItem(MF_STRING, 1200, 'Releases');
+				panel.m.AppendMenuItem(MF_STRING, 1201, 'Links');
 				panel.m.CheckMenuRadioItem(1200, 1201, this.properties.mode.value + 1200);
 				panel.m.AppendMenuSeparator();
-				panel.m.AppendMenuItem(_isUUID(this.mb_id) ? MF_STRING : MF_GRAYED, 1202, '刷新');
+				panel.m.AppendMenuItem(_isUUID(this.mb_id) ? MF_STRING : MF_GRAYED, 1202, 'Refresh');
 				panel.m.AppendMenuSeparator();
 				if (!_isUUID(this.mb_id)) {
 					panel.m.AppendMenuItem(MF_GRAYED, 1203, 'Artist MBID missing. Use Musicbrainz Picard or foo_musicbrainz to tag your files.');
@@ -303,39 +303,39 @@ function _list(mode, x, y, w, h) {
 				}
 				break;
 			case 'properties': {
-				panel.m.AppendMenuItem(MF_STRING, 1300, '元数据');
+				panel.m.AppendMenuItem(MF_STRING, 1300, 'Metadata');
 				panel.m.CheckMenuItem(1300, this.properties.meta.enabled);
-				panel.m.AppendMenuItem(MF_STRING, 1301, '位置');
+				panel.m.AppendMenuItem(MF_STRING, 1301, 'Location');
 				panel.m.CheckMenuItem(1301, this.properties.location.enabled);
-				panel.m.AppendMenuItem(MF_STRING, 1302, '技术信息');
+				panel.m.AppendMenuItem(MF_STRING, 1302, 'Tech Info');
 				panel.m.CheckMenuItem(1302, this.properties.tech.enabled);
-				panel.m.AppendMenuItem(this.foo_playcount ? MF_STRING : MF_GRAYED, 1303, '播放统计（foo_playcount）');
+				panel.m.AppendMenuItem(this.foo_playcount ? MF_STRING : MF_GRAYED, 1303, 'Playback Statistics (foo_playcount)');
 				panel.m.CheckMenuItem(1303, this.foo_playcount && this.properties.playcount.enabled);
-				// Regorxxx <- 同时支持两种 JS 宿主
+				// Regorxxx <- Support both JS hosts
 				const jsHost = fb.ComponentPath.includes('foo_uie_jsplitter')
 					? 'JSplitter'
 					: 'SMP';
-				panel.m.AppendMenuItem(MF_STRING, 1304, jsHost + ' 统计');
+				panel.m.AppendMenuItem(MF_STRING, 1304, jsHost + ' Stats');
 				// Regorxxx ->
 				panel.m.CheckMenuItem(1304, this.properties.stats.enabled);
-				panel.m.AppendMenuItem(MF_STRING, 1305, '回放增益');
+				panel.m.AppendMenuItem(MF_STRING, 1305, 'Replaygain');
 				panel.m.CheckMenuItem(1305, this.properties.rg.enabled);
 				panel.m.AppendMenuSeparator();
-				// Regorxxx <- 完整属性
-				panel.m.AppendMenuItem(MF_STRING, 1306, '获取完整元数据');
+				// Regorxxx <- Full properties
+				panel.m.AppendMenuItem(MF_STRING, 1306, 'Retrieve full metadata');
 				panel.m.CheckMenuItem(1306, this.properties.fullV2.enabled);
 				// Regorxxx ->
 				panel.m.AppendMenuSeparator();
 				break;
 			}
 			case 'queue_viewer':
-				panel.m.AppendMenuItem(MF_STRING, 1400, '项目显示标题格式...');
-				panel.m.AppendMenuItem(this.data.length ? MF_STRING : MF_GRAYED, 1401, '清空播放队列');
+				panel.m.AppendMenuItem(MF_STRING, 1400, 'Item display title formatting...');
+				panel.m.AppendMenuItem(this.data.length ? MF_STRING : MF_GRAYED, 1401, 'Flush playback queue');
 				panel.m.AppendMenuSeparator();
 				break;
 		}
 		if (this.mode != 'queue_viewer') {
-			panel.m.AppendMenuItem(_isFile(this.filename) ? MF_STRING : MF_GRAYED, 1999, '打开所在文件夹');
+			panel.m.AppendMenuItem(_isFile(this.filename) ? MF_STRING : MF_GRAYED, 1999, 'Open containing folder');
 			panel.m.AppendMenuSeparator();
 		}
 	}
@@ -402,7 +402,7 @@ function _list(mode, x, y, w, h) {
 				lastfm.update_username();
 				break;
 			case 1199:
-				lastfm.api_key.value = utils.InputBox(window.ID, '自 2024 年 8 月 31 日起，多年来一直使用的 Last.fm API 密钥因使用过度而被封禁。\n您可以从此链接获取：\n\nhttps://www.last.fm/api/account/create\n\n请输入您自己的 API 密钥：', 'Last.fm API 密钥', lastfm.api_key.value, false);
+				lastfm.api_key.value = utils.InputBox(window.ID, 'On the 31st August 2024, it was noticed that the Last.fm API key supplied for many years has been blocked for excessive usage.\nYou can get one from this link:\n\nhttps://www.last.fm/api/account/create\n\nInput your own API key:', 'Last.fm API key', lastfm.api_key.value, false);
 				window.Reload();
 				break;
 			case 1200:
@@ -437,14 +437,14 @@ function _list(mode, x, y, w, h) {
 				this.properties.rg.toggle();
 				panel.item_focus_change();
 				break;
-			// Regorxxx <- 完整属性
+			// Regorxxx <- Full properties
 			case 1306:
 				this.properties.fullV2.toggle();
 				panel.item_focus_change();
 				break;
 			// Regorxxx ->
 			case 1400: {
-				let tmp = utils.InputBox(window.ID, '输入标题格式', window.ScriptInfo.Name, this.properties.tf.value);
+				let tmp = utils.InputBox(window.ID, 'Enter title formatting', window.ScriptInfo.Name, this.properties.tf.value);
 				this.properties.tf.value = tmp || this.properties.tf.default_;
 				this.tfo = fb.TitleFormat(this.properties.tf.value);
 				this.update();
@@ -499,7 +499,7 @@ function _list(mode, x, y, w, h) {
 									} else {
 										name = item.name;
 										url = this.properties.artist_method.value == 0
-											? (this.properties.link.value == 0 ? item.url : '艺术家包含 ' + item.name)
+											? (this.properties.link.value == 0 ? item.url : 'artist HAS ' + item.name)
 											: item.url;
 									}
 									return {
@@ -518,7 +518,7 @@ function _list(mode, x, y, w, h) {
 						break;
 					case 1:
 						if (!lastfm.username.length) {
-							console.log(N, '未设置 Last.fm 用户名。');
+							console.log(N, 'Last.fm username not set.');
 							break;
 						}
 						this.filename = folders.lastfm + lastfm.username + '.' + this.methods[this.properties.method.value].method + '.' + this.periods[this.properties.period.value].period + '.json';
@@ -528,7 +528,7 @@ function _list(mode, x, y, w, h) {
 								let name, url;
 								if (this.properties.method.value == 0) {
 									name = data[i].name;
-									url = this.properties.link.value == 0 ? data[i].url : '艺术家包含 ' + name;
+									url = this.properties.link.value == 0 ? data[i].url : 'artist HAS ' + name;
 								} else {
 									name = data[i].artist.name + ' - ' + data[i].name;
 									url = data[i].url;
@@ -550,7 +550,7 @@ function _list(mode, x, y, w, h) {
 						break;
 					case 2:
 						if (!lastfm.username.length) {
-							console.log(N, '未设置 Last.fm 用户名。');
+							console.log(N, 'Last.fm username not set.');
 							break;
 						}
 						this.filename = folders.lastfm + lastfm.username + '.user.getRecentTracks.json';
@@ -611,7 +611,7 @@ function _list(mode, x, y, w, h) {
 									width: _textWidth(item.title, panel.fonts.normal),
 									url: 'https://musicbrainz.org/release-group/' + item.id,
 									date: (item['first-release-date'] || '').substring(0, 4),
-									group: types.join(' + ') || '未指定类型',
+									group: types.join(' + ') || 'Unspecified type',
 									group_order: Object.prototype.hasOwnProperty.call(primary_order, primary) ? primary_order[primary] : (primary.length ? 50 : 100)
 								};
 							})
@@ -680,7 +680,7 @@ function _list(mode, x, y, w, h) {
 			case 'properties': {
 				this.text_x = 0;
 				this.filename = panel.metadb.Path;
-				let fileinfo = panel.metadb.GetFileInfo(this.properties.fullV2.enabled); // Regorxxx <- 完整属性 ->
+				let fileinfo = panel.metadb.GetFileInfo(this.properties.fullV2.enabled); // Regorxxx <- Full properties ->
 				if (this.properties.meta.enabled) {
 					this.add_meta(fileinfo);
 				}
@@ -724,15 +724,15 @@ function _list(mode, x, y, w, h) {
 	this.header_text = () => {
 		switch (this.mode) {
 			case 'autoplaylists':
-				return '自动播放列表';
+				return 'Autoplaylists';
 			case 'lastfm_info':
 				switch (this.properties.mode.value) {
 					case 0:
 						return this.artist + ': ' + this.artist_methods[this.properties.artist_method.value].display;
 					case 1:
-						return lastfm.username + ': ' + this.periods[this.properties.period.value].display + ' ' + this.methods[this.properties.method.value].display + ' 榜单';
+						return lastfm.username + ': ' + this.periods[this.properties.period.value].display + ' ' + this.methods[this.properties.method.value].display + ' charts';
 					case 2:
-						return lastfm.username + '：近期曲目';
+						return lastfm.username + ': recent tracks';
 				}
 				break;
 			case 'musicbrainz':
@@ -740,7 +740,7 @@ function _list(mode, x, y, w, h) {
 			case 'properties':
 				return panel.tf('%artist% - %title%');
 			case 'queue_viewer':
-				return '队列查看器';
+				return 'Queue Viewer';
 		}
 	}
 
@@ -769,16 +769,16 @@ function _list(mode, x, y, w, h) {
 				}
 
 				this.add = () => {
-					const new_name = utils.InputBox(window.ID, '输入自动播放列表名称', window.ScriptInfo.Name);
+					const new_name = utils.InputBox(window.ID, 'Enter autoplaylist name', window.ScriptInfo.Name);
 					if (!new_name.length) {
 						return;
 					}
-					const new_query = utils.InputBox(window.ID, '输入自动播放列表查询', window.ScriptInfo.Name);
+					const new_query = utils.InputBox(window.ID, 'Enter autoplaylist query', window.ScriptInfo.Name);
 					if (!new_query.length) {
 						return;
 					}
 					const new_sort = utils.InputBox(window.ID, 'Enter sort pattern\n\n(optional)', window.ScriptInfo.Name);
-					const new_forced = (new_sort.length ? WshShell.Popup('强制排序？', 0, window.ScriptInfo.Name, popup.question + popup.yes_no) : popup.no) == popup.yes;
+					const new_forced = (new_sort.length ? WshShell.Popup('Force sort?', 0, window.ScriptInfo.Name, popup.question + popup.yes_no) : popup.no) == popup.yes;
 					this.data.push({
 						name: new_name,
 						query: new_query,
@@ -792,25 +792,25 @@ function _list(mode, x, y, w, h) {
 					const z = this.index;
 					_tt('');
 					let m = window.CreatePopupMenu();
-					m.AppendMenuItem(MF_STRING, 1, '运行查询');
+					m.AppendMenuItem(MF_STRING, 1, 'Run query');
 					m.AppendMenuSeparator();
 					m.AppendMenuItem(MF_STRING, 2, 'Rename...');
-					m.AppendMenuItem(MF_STRING, 3, '编辑查询...');
-					m.AppendMenuItem(MF_STRING, 4, '编辑排序模式...');
-					m.AppendMenuItem(MF_STRING, 5, '强制排序');
+					m.AppendMenuItem(MF_STRING, 3, 'Edit query...');
+					m.AppendMenuItem(MF_STRING, 4, 'Edit sort pattern...');
+					m.AppendMenuItem(MF_STRING, 5, 'Force Sort');
 					m.CheckMenuItem(5, this.data[z].forced);
 					m.AppendMenuSeparator();
-					m.AppendMenuItem(z > 0 ? MF_STRING : MF_GRAYED, 6, '上移');
-					m.AppendMenuItem(z < this.data.length - 1 ? MF_STRING : MF_GRAYED, 7, '下移');
+					m.AppendMenuItem(z > 0 ? MF_STRING : MF_GRAYED, 6, 'Move up');
+					m.AppendMenuItem(z < this.data.length - 1 ? MF_STRING : MF_GRAYED, 7, 'Move down');
 					m.AppendMenuSeparator();
-					m.AppendMenuItem(MF_STRING, 8, '删除');
+					m.AppendMenuItem(MF_STRING, 8, 'Delete');
 					const idx = m.TrackPopupMenu(x, y);
 					switch (idx) {
 						case 1:
 							this.run_query(this.data[z].name, this.data[z].query, this.data[z].sort, this.data[z].forced);
 							break;
 						case 2: {
-							const new_name = utils.InputBox(window.ID, '重命名自动播放列表', window.ScriptInfo.Name, this.data[z].name);
+							const new_name = utils.InputBox(window.ID, 'Rename autoplaylist', window.ScriptInfo.Name, this.data[z].name);
 							if (new_name.length && new_name != this.data[z].name) {
 								this.data[z].name = new_name;
 								this.edit_done(z);
@@ -818,7 +818,7 @@ function _list(mode, x, y, w, h) {
 							break;
 						}
 						case 3: {
-							const new_query = utils.InputBox(window.ID, '输入自动播放列表查询', window.ScriptInfo.Name, this.data[z].query);
+							const new_query = utils.InputBox(window.ID, 'Enter autoplaylist query', window.ScriptInfo.Name, this.data[z].query);
 							if (new_query.length && new_query != this.data[z].query) {
 								this.data[z].query = new_query;
 								this.edit_done(z);
@@ -830,7 +830,7 @@ function _list(mode, x, y, w, h) {
 							if (new_sort != this.data[z].sort) {
 								this.data[z].sort = new_sort;
 								if (new_sort.length) {
-									this.data[z].forced = WshShell.Popup('强制排序？', 0, window.ScriptInfo.Name, popup.question + popup.yes_no) == popup.yes;
+									this.data[z].forced = WshShell.Popup('Force sort?', 0, window.ScriptInfo.Name, popup.question + popup.yes_no) == popup.yes;
 								}
 								this.edit_done(z);
 							}
@@ -939,15 +939,15 @@ function _list(mode, x, y, w, h) {
 				this.artist_methods = [{
 					method: 'artist.getSimilar',
 					json: 'similarartists.artist',
-					display: '相似艺术家'
+					display: 'similar artists'
 				}, {
 					method: 'artist.getTopTracks',
 					json: 'toptracks.track',
-					display: '热门曲目'
+					display: 'top tracks'
 				}, {
 					method: 'artist.getTopTags',
 					json: 'toptags.tag',
-					display: '热门标签'
+					display: 'top tags'
 				}
 				];
 
@@ -971,19 +971,19 @@ function _list(mode, x, y, w, h) {
 					display: 'overall'
 				}, {
 					period: '7day',
-					display: '最近 7 天'
+					display: 'last 7 days'
 				}, {
 					period: '1month',
-					display: '1 个月'
+					display: '1 month'
 				}, {
 					period: '3month',
-					display: '3 个月'
+					display: '3 month'
 				}, {
 					period: '6month',
-					display: '6 个月'
+					display: '6 month'
 				}, {
 					period: '12month',
-					display: '12 个月'
+					display: '12 month'
 				}
 				];
 
@@ -991,12 +991,12 @@ function _list(mode, x, y, w, h) {
 				this.filenames = {};
 
 				this.properties = {
-					mode: new _p('2K3.LIST.LASTFM.MODE', 0), // 0 艺术家 1 图表 2 最近播放
-					artist_method: new _p('2K3.LIST.LASTFM.ARTIST.METHOD', 0), // 0 相似艺术家 1 热门曲目 2 热门标签
+					mode: new _p('2K3.LIST.LASTFM.MODE', 0), // 0 artist 1 charts 2 recent tracks
+					artist_method: new _p('2K3.LIST.LASTFM.ARTIST.METHOD', 0), // 0 similar artists 1 top tracks 2 top tags
 					method: new _p('2K3.LIST.LASTFM.CHARTS.METHOD', 0),
 					period: new _p('2K3.LIST.LASTFM.CHARTS.PERIOD', 0),
 					colour: new _p('2K3.LIST.LASTFM.CHARTS.BAR.COLOUR', _RGB(60, 60, 60)),
-					link: new _p('2K3.LIST.LASTFM.LINK', 0) // 0 last.fm 网站 1 自动播放列表
+					link: new _p('2K3.LIST.LASTFM.LINK', 0) // 0 last.fm website 1 autoplaylist
 				};
 
 				if (this.properties.mode.value > 0) {
@@ -1013,7 +1013,7 @@ function _list(mode, x, y, w, h) {
 					try {
 						return JSON.parse(_open(file));
 					} catch (e) {
-						console.log(N, '无效的 MusicBrainz 缓存:', file);
+						console.log(N, 'Invalid MusicBrainz cache:', file);
 						return null;
 					}
 				}
@@ -1023,7 +1023,7 @@ function _list(mode, x, y, w, h) {
 						return;
 					}
 
-					// MusicBrainz 每秒最多允许一个 API 请求。
+					// MusicBrainz allows at most one API request per second.
 					const delay = Math.max(0, this.mb_request_interval - (_.now() - this.mb_last_request));
 					if (delay) {
 						setTimeout(() => this.mb_request(request), delay);
@@ -1039,7 +1039,7 @@ function _list(mode, x, y, w, h) {
 						const task_id = utils.HTTPRequestAsync(0, url, this.mb_headers);
 						this.mb_requests[task_id] = request;
 					} catch (e) {
-						console.log(N, 'MusicBrainz 请求失败:', `${e}`);
+						console.log(N, 'MusicBrainz request failed:', `${e}`);
 					}
 				}
 
@@ -1077,7 +1077,7 @@ function _list(mode, x, y, w, h) {
 					}
 
 					if (!success) {
-						console.log(N, 'MusicBrainz 请求失败' + (status ? ' (HTTP ' + status + ')' : '') + ':', response_text);
+						console.log(N, 'MusicBrainz request failed' + (status ? ' (HTTP ' + status + ')' : '') + ':', response_text);
 						return;
 					}
 
@@ -1085,7 +1085,7 @@ function _list(mode, x, y, w, h) {
 					try {
 						data = JSON.parse(response_text);
 					} catch (e) {
-						console.log(N, 'MusicBrainz 返回了无效的 JSON。');
+						console.log(N, 'MusicBrainz returned invalid JSON.');
 						return;
 					}
 
@@ -1096,7 +1096,7 @@ function _list(mode, x, y, w, h) {
 
 					if (request.mode == 0) {
 						if (!_.isObject(data) || !_.isArray(data['release-groups']) || !_.isNumber(data['release-group-count'])) {
-							console.log(N, 'MusicBrainz 返回了意外的发行组响应。');
+							console.log(N, 'MusicBrainz returned an unexpected release-group response.');
 							return;
 						}
 
@@ -1104,7 +1104,7 @@ function _list(mode, x, y, w, h) {
 						const releases = data['release-groups'];
 
 						if (request.offset < count && releases.length == 0) {
-							console.log(N, 'MusicBrainz 返回了意外的空发行组页面。已保留缓存数据。');
+							console.log(N, 'MusicBrainz returned an unexpectedly empty release-group page. Cached data was kept.');
 							return;
 						}
 
@@ -1119,7 +1119,7 @@ function _list(mode, x, y, w, h) {
 						}
 					} else {
 						if (!_.isObject(data) || !_.isArray(data.relations)) {
-							console.log(N, 'MusicBrainz 返回了意外的艺术家响应。');
+							console.log(N, 'MusicBrainz returned an unexpected artist response.');
 							return;
 						}
 
@@ -1138,7 +1138,7 @@ function _list(mode, x, y, w, h) {
 				});
 				this.mb_id = '';
 				this.properties = {
-					mode: new _p('2K3.LIST.MUSICBRAINZ.MODE', 0) // 0 发行 1 链接
+					mode: new _p('2K3.LIST.MUSICBRAINZ.MODE', 0) // 0 releases 1 links
 				};
 
 				_createFolder(folders.data);
@@ -1194,13 +1194,13 @@ function _list(mode, x, y, w, h) {
 							});
 						}
 					}
-					if (this.data.length) { // 仅在有元数据时才添加空行
+					if (this.data.length) { // only add blank line if there is some metadata
 						this.add();
 					}
 				}
 
 				this.add_location = () => {
-					let names = ['文件名', '文件夹名', '文件路径', '子曲目索引', '文件大小', '最后修改'];
+					let names = ['FILE NAME', 'FOLDER NAME', 'FILE PATH', 'SUBSONG INDEX', 'FILE SIZE', 'LAST MODIFIED'];
 					let values = [panel.tf('%filename_ext%'), panel.tf('$directory_path(%path%)'), this.filename, panel.metadb.SubSong, panel.tf('[%filesize_natural%]'), panel.tf('[%last_modified%]')];
 					let urls = ['%filename_ext% IS ', '"$directory_path(%path%)" IS ', '%path% IS ', '%subsong% IS ', '%filesize_natural% IS ', '%last_modified% IS '];
 					for (let i = 0; i < 6; i++) {
@@ -1218,7 +1218,7 @@ function _list(mode, x, y, w, h) {
 					const samples = _formatNumber(panel.tf('%length_samples%'), ' ');
 					this.data.push({
 						name: 'DURATION',
-						value: duration + ' (' + samples + ' 样本)',
+						value: duration + ' (' + samples + ' samples)',
 						url: '%length% IS ' + duration
 					});
 					let tmp = [];
@@ -1274,7 +1274,7 @@ function _list(mode, x, y, w, h) {
 					playcount: new _p('2K3.LIST.PROPERTIES.PLAYCOUNT', true),
 					stats: new _p('2K3.LIST.PROPERTIES.STATS', true),
 					rg: new _p('2K3.LIST.PROPERTIES.RG', true),
-					fullV2: new _p('2K3.LIST.PROPERTIES.FULLV2', true) // Regorxxx <- 完整属性 ->
+					fullV2: new _p('2K3.LIST.PROPERTIES.FULLV2', true) // Regorxxx <- Full properties ->
 				};
 
 				this.foo_playcount = _cc('foo_playcount');

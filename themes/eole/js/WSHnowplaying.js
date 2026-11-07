@@ -475,6 +475,11 @@ function on_playback_new_track(metadb) {
 	window.Repaint();
 }
 
+/* 广播到了以后，把「正在播放」这一块重算一遍 */
+function lxRefresh() {
+	try { if (g_infos && g_infos.getTrackInfos) g_infos.getTrackInfos(); } catch (e) { }
+}
+
 function on_playback_stop(reason) {
 	switch(reason) {
 	case 0: // user stop
@@ -968,6 +973,8 @@ function on_layout_change() {
 	adaptButtons();
 }
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "lx_cover_ready":
 		case "lx_cover_path":
@@ -1443,6 +1450,12 @@ function oInfos() {
 		} else {
 			var defaultinfos = g_tfo.defaultinfos.EvalWithMetadb(this.metadb);
 			defaultinfos = defaultinfos.replace(/\r?\n/gm, ' ').split(" ^^ ");
+			/* 流播项没有标签：用洛雪广播来的歌手 / 歌名顶上 */
+			var _lxi = lxInfoOf(this.metadb);
+			if (_lxi) {
+				if (_lxi.title) defaultinfos[1] = _lxi.title;
+				defaultinfos[2] = (_lxi.artist || '') + (_lxi.album ? '  |  ' + _lxi.album : '');
+			}
 
 			this.rating = defaultinfos[0];
 
@@ -1458,6 +1471,11 @@ function oInfos() {
 	this.getTrackInfosCustom = function(metadb, album_infos, rating, tracklist){
 		var customInfos = g_tfo.customInfos.EvalWithMetadb(this.metadb);
 		customInfos = customInfos.split(" ^^ ");
+		var _lxi2 = lxInfoOf(this.metadb);
+		if (_lxi2) {
+			if (_lxi2.title) customInfos[1] = _lxi2.title;
+			if (_lxi2.artist) customInfos[2] = _lxi2.artist;
+		}
 		this.rating = customInfos[0];
 		var row1 = customInfos[1];
 		var row2 = customInfos[2];

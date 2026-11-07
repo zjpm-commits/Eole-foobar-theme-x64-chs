@@ -1,58 +1,58 @@
 <!doctype html>
-<html lang="zh">
+<html lang="en">
 <head>
-	<meta charset="utf-8">
-	<title>Lexbor 解析器测试</title>
-	<meta property="og:title" content="测试艺人传记">
+	<meta charset="windows-1251">
+	<title>Lexbor Parser Test</title>
+	<meta property="og:title" content="Test Artist Biography">
 </head>
 <body>
 	<main id="page" class="artist-page biography">
-		<h1 class="artist-name">测试艺人</h1>
+		<h1 class="artist-name">Test Artist</h1>
 
 		<section class="wiki-content" data-source="lastfm">
 			<p>
-				测试艺人是一个来自伦敦的实验音乐项目。
-				该项目融合了 <strong>氛围</strong>、<em>工业</em>
-				和电子音乐。
+				Test Artist is an experimental music project from London.
+				The project combines <strong>ambient</strong>, <em>industrial</em>,
+				and electronic music.
 			</p>
 
 			<p>
-				他们的第一张专辑，
-				<a href="/music/Test+Artist/First+Album" class="album-link">第一张专辑</a>，
-				于 2020 年发行。
+				Their first album,
+				<a href="/music/Test+Artist/First+Album" class="album-link">First Album</a>,
+				was released in 2020.
 			</p>
 		</section>
 
 		<section class="albums">
-			<h2>专辑</h2>
+			<h2>Albums</h2>
 
 			<ul class="album-list">
 				<li class="album" data-year="2020">
-					<a href="/music/Test+Artist/First+Album">第一张专辑</a>
+					<a href="/music/Test+Artist/First+Album">First Album</a>
 				</li>
 				<li class="album featured" data-year="2022">
-					<a href="/music/Test+Artist/Second+Album">第二张专辑</a>
+					<a href="/music/Test+Artist/Second+Album">Second Album</a>
 				</li>
 				<li class="album" data-year="2024">
-					<span>无链接专辑</span>
+					<span>No link album</span>
 				</li>
 			</ul>
 		</section>
 
 		<section class="external-links">
-			<h2>外部链接</h2>
+			<h2>External links</h2>
 
 			<ul>
 				<li>
-					链接前的文本
-					<a href="https://example.com/artist" rel="external">官方网站</a>
+					text before link
+					<a href="https://example.com/artist" rel="external">Official site</a>
 				</li>
 				<li>
-					<!-- 链接前的注释 -->
+					<!-- comment before link -->
 					<a href="https://musicbrainz.org/artist/test">MusicBrainz</a>
 				</li>
 				<li>
-					<span>没有 href 的损坏项目</span>
+					<span>Broken item without href</span>
 				</li>
 			</ul>
 		</section>

@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('状态栏 + 音量', {author:'marc2003', options:{grab_focus:false}});
+window.DefineScript('Status Bar + Volume', {author:'marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\volume.js');
@@ -91,23 +91,23 @@ function on_mouse_rbtn_up(x, y) {
 	if (fb.IsPlaying) {
 		c.InitNowPlaying();
 		c.BuildMenu(s, 1);
-		s.AppendTo(m, MF_STRING, '正在播放');
+		s.AppendTo(m, MF_STRING, 'Now playing');
 		m.AppendMenuSeparator();
 	}
-	m.AppendMenuItem(MF_STRING, 10000, '显示播放列表名称');
+	m.AppendMenuItem(MF_STRING, 10000, 'Show playlist name');
 	m.CheckMenuItem(10000, properties.name.enabled);
-	m.AppendMenuItem(MF_STRING, 10001, '显示播放列表项目数');
+	m.AppendMenuItem(MF_STRING, 10001, 'Show playlist item count');
 	m.CheckMenuItem(10001, properties.count.enabled);
-	m.AppendMenuItem(MF_STRING, 10002, '显示播放列表时长');
+	m.AppendMenuItem(MF_STRING, 10002, 'Show playlist duration');
 	m.CheckMenuItem(10002, properties.duration.enabled);
-	m.AppendMenuItem(MF_STRING, 10003, '显示播放列表大小');
+	m.AppendMenuItem(MF_STRING, 10003, 'Show playlist size');
 	m.CheckMenuItem(10003, properties.size.enabled);
 	m.AppendMenuSeparator();
-	col.AppendMenuItem(MF_STRING, 10004, '背景...');
-	col.AppendMenuItem(MF_STRING, 10005, '文本...');
-	col.AppendTo(m, MF_STRING, '颜色');
+	col.AppendMenuItem(MF_STRING, 10004, 'Background...');
+	col.AppendMenuItem(MF_STRING, 10005, 'Text...');
+	col.AppendTo(m, MF_STRING, 'Colours');
 	m.AppendMenuSeparator();
-	m.AppendMenuItem(MF_STRING, 10010, '配置...');
+	m.AppendMenuItem(MF_STRING, 10010, 'Configure...');
 	const idx = m.TrackPopupMenu(x, y);
 	switch (idx) {
 	case 0:
@@ -176,7 +176,7 @@ function refresh() {
 		tmp.push(plman.GetPlaylistName(plman.ActivePlaylist));
 	}
 	if (properties.count.enabled) {
-		tmp.push(count + (count == 1 ? ' 首' : ' 首'));
+		tmp.push(count + (count == 1 ? ' track' : ' tracks'));
 	}
 	if (properties.duration.enabled) {
 		tmp.push(utils.FormatDuration(items.CalcTotalDuration()));

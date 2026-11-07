@@ -308,7 +308,22 @@ function on_mouse_wheel(step) {
 	}
 }
 
+/* 广播到了：让简介按新的歌手 / 专辑重新取一次 */
+
+function lxRefresh() {
+	try {
+		if (typeof panel !== 'undefined' && panel && panel.getList) panel.getList(true, true);
+		if (typeof on_playback_new_track === 'function') on_playback_new_track();
+		else {
+			if (typeof txt !== 'undefined' && txt && txt.on_playback_new_track) txt.on_playback_new_track();
+			if (typeof img !== 'undefined' && img && img.on_playback_new_track) img.on_playback_new_track();
+		}
+	} catch (e) { }
+}
+
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）：交给公共文件的统一处理 */
+	if (typeof lxNotify === 'function' && lxNotify(name, info)) return;
 	let clone;
 	if (ui.id.local && name.startsWith('opt_')) {
 		clone = typeof info === 'string' ? String(info) : info;
@@ -328,10 +343,22 @@ function on_notify_data(name, info) {
 		}
 		case 'fullscreenWallpaper':
 		case 'fullscreenWallpaperCfg':
-		case 'fullscreenWallpaperRepaint':
-			// 统一处理：写本面板自己的属性仓库 + 更新缓存 + 重绘
-			if (typeof fw_syncNotify === 'function') fw_syncNotify(name, info);
+		case 'fullscreenWallpaperRepaint': {
+			/* 和 Eole 其它面板一样的处理：收下开关、立刻改伪透明标记、重绘。
+			   原来这里调 fw_syncNotify，而全仓没有这个函数，等于什么都不做 ——
+			   面板只能等宿主 arrange() 全量重排时才被刷新，切壁纸要等一两秒。 */
+			let fwOn = false;
+			if (name === 'fullscreenWallpaper') {
+				fwOn = (info === true || Number(info) === 1);
+				try { if (typeof fw_setOn === 'function') fw_setOn(fwOn); } catch (eFW1) { }
+			} else {
+				/* Cfg / Repaint 的载荷不是开关值，直接问共享状态（force 绕开 500ms 缓存） */
+				try { fwOn = (typeof fw_sharedOn === 'function') ? fw_sharedOn(true) : false; } catch (eFW2) { fwOn = false; }
+			}
+			try { window.SupportPseudoTransparency = fwOn; } catch (eFW3) { }
+			window.Repaint();
 			break;
+		}
 		case 'show_lyrics_btns':
 			show_lyrics_btns = info;
 			window.SetProperty("show lyrics btns", show_lyrics_btns);

@@ -108,6 +108,14 @@ class Helpers {
 
 	eval(n, focus, ignoreLock) {
 		if (!n) return '';
+		/* 洛雪广播：流播项没有标签，%artist% / %title% / %album% 先用广播值填进格式串，
+		   否则 isRadio 那条会走 tfo.Eval()，拿到的永远是空。 */
+		if (typeof lxFillFormat === 'function' && typeof g_lx_now !== 'undefined' && g_lx_now) {
+			const lxH = this.handle(focus, ignoreLock);
+			if (panel.isRadio(focus) || (typeof lxInfoOf === 'function' && lxH && lxInfoOf(lxH))) {
+					n = lxFillFormat(n);
+			}
+		}
 		const tfo = FbTitleFormat(n);
 		if (panel.isRadio(focus)) return tfo.Eval();
 		const handle = this.handle(focus, ignoreLock);

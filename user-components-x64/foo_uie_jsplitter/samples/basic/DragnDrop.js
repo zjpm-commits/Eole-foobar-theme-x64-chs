@@ -1,13 +1,13 @@
-// 本示例演示了基本的拖放实现。
-// 别忘了打开某个播放列表视图，才能看到所执行的全部操作。
+﻿// This sample demonstrates a basic drag-n-drop implementation.
+// Don't forget to open some playlist viewer to see all the performed actions.
 //
-// CTRL、SHIFT、ALT 及其组合会修改对项目执行的操作
-// （你可以通过在 Windows 资源管理器中移动文件来尝试）。
+// CTRL, SHIFT, ALT and their combination will modify the action
+// that will be performed on item (you can try that by moving file in Windows Explorer).
 //
-// 警告：拖放是一项高级技术，请小心使用！
+// Warning: drag-n-drop is an advanced technique, so beware!
 //
 
-window.DefineScript('拖放', { author: 'TheQwertiest', features: { drag_n_drop: true } });
+window.DefineScript('Drag n drop', { author: 'TheQwertiest', features: { drag_n_drop: true } });
 
 include('docs/Flags.js');
 
@@ -32,12 +32,12 @@ let last_pressed_coord = {};
 let is_dragging = false;
 let is_internal_drag_n_drop_active = false;
 
-let status_text = '开始向面板拖放或从面板拖出';
+let status_text = 'Start dragging to or from the panel';
 let status_text_2 = '';
 
 
 ////////////////////////////
-// 回调
+// Callbacks
 ////////////////////////////
 
 function on_paint(gr) {
@@ -49,8 +49,8 @@ function on_paint(gr) {
     gr.DrawString(status_text, font, 0xFF000000, 0, 0, ww, 30, 0x11000000);
     gr.DrawString(status_text_2, font, 0xFF000000, 0, 30, ww, 30, 0x11000000);
     
-    gr.DrawString('从这里或外部拖出', font, 0xFF000000, 0, 60, ww/2, wh - 60, 0x11000000);
-    gr.DrawString('拖放到这里或外部', font, 0xFF000000, ww/2, 60, ww/2, wh - 60, 0x11000000);
+    gr.DrawString('Drag from here or from outside', font, 0xFF000000, 0, 60, ww/2, wh - 60, 0x11000000);
+    gr.DrawString('Drop here or outside', font, 0xFF000000, ww/2, 60, ww/2, wh - 60, 0x11000000);
 }
 
 function on_size(w,h) {
@@ -129,7 +129,7 @@ function on_drag_leave() {
     mouse_in = false;
     mouse_down = false;
 
-    status_text_2 = '项目被拖到外部或放置到禁止拖放区域';
+    status_text_2 = 'Item was dragged outside or dropped on no-drop zone';
     window.Repaint(); 
 }
 
@@ -142,14 +142,14 @@ function on_drag_over(action, x, y, mask) {
         action.Effect = g_drop_effect.none;
     }
     
-    if (status_text_2 !== '项目正在被拖放') {
-        status_text_2 = '项目正在被拖放';
+    if (status_text_2 !== 'Item is being dragged') {
+        status_text_2 = 'Item is being dragged';
         window.Repaint(); 
     }
 }
 
 function on_drag_drop(action, x, y, m) {
-    this.mouse_down = false; ///< 因为 on_drag_drop 会抑制 on_mouse_lbtn_up 的调用
+    this.mouse_down = false; ///< because on_drag_drop suppresses on_mouse_lbtn_up call
 
     if (!is_dragging || !trace_end_zone(x, y)) {
         is_dragging = false;
@@ -164,32 +164,32 @@ function on_drag_drop(action, x, y, m) {
         let copy_drop = ctrl_pressed && ((action.Effect & 1) || (action.Effect & 4));
         drop(copy_drop);
 
-        // 抑制原生拖放，因为我们已经自行处理了
+        // Suppress native drop, since we've handled it ourselves
         action.Effect = g_drop_effect.none;
                 
-        status_text_2 = '来自播放列表的项目已放置，并已';
-        status_text_2 += copy_drop ? '复制' : '移动';            
+        status_text_2 = 'Item from playlist was dropped and ';
+        status_text_2 += copy_drop ? 'copied' : 'moved';            
         window.Repaint();        
     }
     else {
         action.Effect = filter_effect_by_modifiers(action.Effect);
         if (g_drop_effect.none !== action.Effect) {
             external_drop(action);
-            status_text_2 = '来自外部的项目已放置，并已';
-            status_text_2 += g_drop_effect.move & action.Effect ? '移动' : '复制';
+            status_text_2 = 'Item from outside was dropped and ';
+            status_text_2 += g_drop_effect.move & action.Effect ? 'moved' : 'copied';
             window.Repaint();    
         }
         else {
             is_dragging = false;
             
-            status_text_2 = '来自外部的项目已放置，但该操作被禁止';            
+            status_text_2 = 'Item from outside was dropped but the action was forbidden';            
             window.Repaint(); 
         }
     }
 }
 
 ////////////////////////////
-// 方法
+// Methods
 ////////////////////////////
 
 function trace_start_zone(x,y) {
@@ -216,22 +216,22 @@ function perform_internal_drag_n_drop() {
     let effect = fb.DoDragDrop(0, cur_playlist_selection, g_drop_effect.copy | g_drop_effect.move | g_drop_effect.link);
 
     if (is_dragging) {
-        // 如果拖放操作未被取消，则意味着 on_drag_drop 和 on_drag_leave 事件处理器
-        // 都未被触发，即项目很可能被放置到了面板内部
-        // （而由于异步事件处理，相关方法未被调用）        
+        // If drag operation was not cancelled, then it means that nor on_drag_drop, nor on_drag_leave event handlers
+        // were triggered, which means that the items were most likely dropped inside the panel
+        // (and relevant methods were not called because of async event processing)        
         return;
     }
 
     function can_handle_move_drop() {
-        // 只有当播放列表仍处于相同状态时，我们才能正确处理“移动放置”
+        // We can handle the 'move drop' properly only when playlist is still in the same state
         return cur_playlist_size === plman.PlaylistItemCount(cur_playlist_idx)
             && plman.IsPlaylistItemSelected(cur_playlist_idx, cur_selected_index);
     }
 
     if (g_drop_effect.none === effect && can_handle_move_drop()) {
-        // DROPEFFECT_NONE 需要特殊处理，因为在 NT 上，某些移动操作
-        // 返回的是 DROPEFFECT_NONE 而不是 DROPEFFECT_MOVE。
-        // 详情请参见 Q182219。
+        // DROPEFFECT_NONE needs special handling, because on NT it
+        // is returned for some move operations, instead of DROPEFFECT_MOVE.
+        // See Q182219 for the details.
 
         let items_to_remove = [];
         let playlist_items = plman.GetPlaylistItems(cur_playlist_idx);
@@ -284,7 +284,7 @@ function external_drop(action) {
 
     let playlist_idx;
     if (!plman.PlaylistCount) {
-        playlist_idx = plman.CreatePlaylist(0, '默认');
+        playlist_idx = plman.CreatePlaylist(0, 'Default');
         plman.ActivePlaylist = playlist_idx;
     }
     else {
@@ -306,21 +306,21 @@ function filter_effect_by_modifiers(effect) {
 
     if (ctrl_pressed && shift_pressed && !alt_pressed
         || alt_pressed && !ctrl_pressed && !shift_pressed) {
-        // 仅链接
+        // Link only
         return (effect & g_drop_effect.link);
     }
 
     if (ctrl_pressed && !shift_pressed && !alt_pressed) {
-        // 复制（也支持链接）        
+        // Copy (also via link)        
         return (effect & g_drop_effect.copy) || (effect & g_drop_effect.link);
     }
 
     if (shift_pressed) {
-        // 仅移动
+        // Move only
         return (effect & g_drop_effect.move);
     }
 
-    // 移动 > 复制 > 链接    
+    // Move > Copy > Link    
     return (effect & g_drop_effect.move) || (effect & g_drop_effect.copy) || (effect & g_drop_effect.link);
 }
 
@@ -329,20 +329,20 @@ function get_text_from_effect(effect, is_internal) {
         case g_drop_effect.move:
         {
             if (is_internal) {
-                return '正在从内部移动';
+                return 'Moving from inside';
             }
-            return '正在从外部移动';
+            return 'Moving from outside';
         }
         case g_drop_effect.copy:
         {
             if (is_internal) {
-                return '正在从内部复制';
+                return 'Copying from inside';
             }
-            return '正在从外部复制';
+            return 'Copying from outside';
         }
         case g_drop_effect.link:
         {
-            return '正在从外部链接';
+            return 'Linking from outside';
         }
         default:
             return '';

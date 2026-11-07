@@ -1,5 +1,5 @@
 ﻿// *****************************************************************************************************************************************
-// TopBar 对象，作者 Br3tt aka Falstaff (c)2015
+// TopBar object by Br3tt aka Falstaff (c)2015
 // *****************************************************************************************************************************************
 
 oTopBar = function () {
@@ -29,12 +29,12 @@ oTopBar = function () {
 	this.setDatas = function () {
 		this.playlist_name = plman.GetPlaylistName(plman.ActivePlaylist);
 
-		// 播放列表是否按 groupBy 模式进行了筛选
+		// is playlist Filtered for groupBy Patterns
 		var found = false;
 		var default_pattern_index = -1;
 		this.pattern_idx = -1;
 		if (properties.enablePlaylistFilter) {
-			// 获取筛选后的 groupBy 模式
+			// get Filtered groupBy pattern
 			for (var m = 0; m < p.list.groupby.length; m++) {
 				if (default_pattern_index > -1 && found) {
 					break;
@@ -83,7 +83,7 @@ oTopBar = function () {
 		var bt_w = zoom(18, g_dpi);
 		var bt_h = zoom(18, g_dpi);
 
-		// 普通关闭图像
+		// normal close Image
 		this.close_off = gdi.CreateImage(bt_w, bt_h);
 		var gb = this.close_off.GetGraphics();
 		gb.SetSmoothingMode(2);
@@ -92,7 +92,7 @@ oTopBar = function () {
 		gb.SetSmoothingMode(0);
 		this.close_off.ReleaseGraphics(gb);
 
-		// 悬停关闭图像
+		// hover close Image
 		this.close_ov = gdi.CreateImage(bt_w, bt_h);
 		var gb = this.close_ov.GetGraphics();
 		gb.SetSmoothingMode(2);
@@ -106,31 +106,31 @@ oTopBar = function () {
 
 	this.draw = function (gr) {
 		if (this.visible) {
-			// 背景
+			// bg
 			var borderHeight = cHeaderBar.borderWidth;
 			var logoW = this.h - ((borderHeight * 4) * 2);
 			var logoImg = images.logo.Resize(logoW, logoW, 7);
-			// 背景
+			// background
 			gr.FillSolidRect(this.x, this.y, this.w, this.h - borderHeight, g_color_normal_txt & 0x03ffffff);
-			// foobar2000 标志
+			// foobar2000 logo
 			gr.SetSmoothingMode(2);
 			gr.DrawImage(logoImg, this.x + borderHeight, this.y + (borderHeight * 4), logoW, logoW, 0, 0, logoImg.Width, logoImg.Height, 0, 255);
 			gr.SetSmoothingMode(0);
-			// 播放列表名
+			// playlist name
 			gr.SetTextRenderingHint(3);
 			var playlist_name_width = gr.CalcTextWidth(this.playlist_name + " ", gdi_font("segoe ui", this.txt1Height, 1));
 			gr.DrawString(this.playlist_name, gdi_font("segoe ui", this.txt1Height, 1), g_color_normal_txt, this.x + logoW + borderHeight, this.y + 1 + borderHeight, this.w - logoW - 34, this.txt1Height + 15, lt_stringformat);
 			if (this.filter_type > 0) {
 				//gr.DrawString("["+p.list.groupby[this.pattern_idx].label+"]", gdi_font("segoe ui", this.txt1Height - g_z6, 0), blendColors(g_color_normal_txt, g_color_normal_bg, 0.5), this.x + logoW + borderHeight + playlist_name_width, this.y + 1 + borderHeight + g_z6, this.w - logoW - 34 - playlist_name_width, this.txt1Height + 15, lt_stringformat);
 			}
-			// 播放列表信息
+			// playlist infos
 			gr.SetTextRenderingHint(5);
 			if (this.totalDurationText.length > 0) {
-				gr.DrawString(this.playlist_count > 0 ? (this.playlist_count + (this.playlist_count > 1 ? " 首曲目 · " : " 首曲目 · ") + this.totalDurationText) : "空播放列表", gdi_font("segoe ui", this.txt2Height, 0), g_color_normal_txt & 0x88ffffff, this.x + logoW + borderHeight, Math.ceil(cTopBar.height / 2) + 1 + borderHeight, this.w - logoW - 15, 32, lt_stringformat);
+				gr.DrawString(this.playlist_count > 0 ? (this.playlist_count + (this.playlist_count > 1 ? " tracks. " : " track. ") + this.totalDurationText) : "empty playlist", gdi_font("segoe ui", this.txt2Height, 0), g_color_normal_txt & 0x88ffffff, this.x + logoW + borderHeight, Math.ceil(cTopBar.height / 2) + 1 + borderHeight, this.w - logoW - 15, 32, lt_stringformat);
 			} else {
-				gr.DrawString(this.playlist_count > 0 ? (this.playlist_count + (this.playlist_count > 1 ? " 个流媒体 · " : " 个流媒体 · ")) : "空播放列表", gdi_font("segoe ui", this.txt2Height, 0), g_color_normal_txt & 0x88ffffff, this.x + logoW + cHeaderBar.borderWidth, Math.ceil(cTopBar.height / 2) + 1 + borderHeight, this.w - logoW - 15, 32, lt_stringformat);
+				gr.DrawString(this.playlist_count > 0 ? (this.playlist_count + (this.playlist_count > 1 ? " streams " : " stream ")) : "empty playlist", gdi_font("segoe ui", this.txt2Height, 0), g_color_normal_txt & 0x88ffffff, this.x + logoW + cHeaderBar.borderWidth, Math.ceil(cTopBar.height / 2) + 1 + borderHeight, this.w - logoW - 15, 32, lt_stringformat);
 			};
-			// 绘制关闭按钮
+			// draw close button
 			this.button.draw(gr, this.x + this.w - zoom(20, g_dpi), this.y + zoom(4, g_dpi), 255);
 		};
 	};
@@ -145,9 +145,9 @@ oTopBar = function () {
 			break;
 		case "up":
 			if (this.buttonClicked && state == ButtonStates.hover) {
-				// 动作
+				// action
 				cTopBar.visible = false;
-				window.SetProperty("系统.顶栏.可见", cTopBar.visible);
+				window.SetProperty("SYSTEM.TopBar.Visible", cTopBar.visible);
 				resize_panels();
 				full_repaint();
 			};
@@ -159,7 +159,7 @@ oTopBar = function () {
 	this.check = function (event, x, y) {
 		if (!p.scrollbar.clicked) {
 			this.is_hover = (x > this.x && x < this.x + this.w && y > this.y && y < this.y + this.h);
-			// 若按钮未悬停，检测关闭按钮或顶栏
+			// check close button or topbar if button not hover
 			if (this.buttonCheck(event, x, y) != ButtonStates.hover) {
 				switch (event) {
 				case "up":
@@ -184,7 +184,7 @@ oTopBar = function () {
 		var idx;
 		var _menu = window.CreatePopupMenu();
 
-		_menu.AppendMenuItem(MF_STRING, 10, "面板设置...");
+		_menu.AppendMenuItem(MF_STRING, 10, "Panel Settings...");
 
 		idx = _menu.TrackPopupMenu(x, y);
 		switch (true) {

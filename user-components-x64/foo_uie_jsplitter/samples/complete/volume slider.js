@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('音量滑块', {author:'marc2003', options:{grab_focus:false}});
+window.DefineScript('Volume Slider', {author:'marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\volume.js');

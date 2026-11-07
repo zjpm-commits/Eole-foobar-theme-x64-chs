@@ -222,7 +222,7 @@ function _fbDate(t) {
 	const offset = new Date().getTimezoneOffset() * 60;
 	if (typeof t == 'number') {
 		t -= offset;
-		const tmp = new Date(t * 1000).toISOString(); // 仅 ES5
+		const tmp = new Date(t * 1000).toISOString(); // ES5 only
 		return tmp.substring(0, 10) + ' ' + tmp.substring(11, 19);
 	} else {
 		const tmp = new Date(t.substring(0, 10) + "T" + t.substring(11, 19) + "Z");
@@ -397,7 +397,7 @@ function _lineWrap(value, font, width) {
 	return _(_gr.EstimateLineWrap(value, font, width))
 		.filter((item, i) => { return i % 2 == 0; })
 		.map((line) => {
-			// 仅在行首为单个空格时去除首尾空格
+			// only trim if line begins with single space.
 			if (line.startsWith(' ') && !line.startsWith('  ')) return _.trim(line);
 			else return line;
 		})
@@ -488,7 +488,7 @@ function _recycleFile(file) {
 		try {
 			app.NameSpace(10).MoveHere(file);
 		} catch (e) {
-			console.log(N, '回收文件失败:', file);
+			console.log(N, 'Failed to recycle file:', file);
 		}
 	}
 }
@@ -521,7 +521,7 @@ function _save(file, value) {
 	if (_isFolder(utils.FileTest(file, 'split')[0]) && utils.WriteTextFile(file, value, false)) {
 		return true;
 	}
-	console.log('保存到 ' + file + ' 时出错');
+	console.log('Error saving to ' + file);
 	return false;
 }
 
@@ -572,7 +572,7 @@ function _setClipboardData(value) {
 	try {
 		doc.parentWindow.clipboardData.setData('Text', value.toString());
 	} catch (e) {
-		console.log(N, '设置剪贴板文本失败。');
+		console.log(N, 'Failed to set clipboard text.');
 	}
 }
 
@@ -606,7 +606,7 @@ function _ts() {
 	return Math.floor(_.now() / 1000);
 }
 
-// Regorxxx <- 修复工具提示在处理大量数据（如指纹）时溢出导致 foobar 挂起的问题
+// Regorxxx <- Fix TT overflow hanging foobar for huge data (like fingerprints)
 function _tt(value) {
 	const sanitized = _cut(value, 2000, true);
 	if (tooltip.Text != sanitized) {
@@ -724,12 +724,12 @@ let image = {
 };
 
 let ha_links = [
-	['标题格式参考', 'https://wiki.hydrogenaud.io/index.php?title=Foobar2000:Title_Formatting_Reference'],
-	['查询语法', 'https://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax'],
-	['主页', 'https://www.foobar2000.org/'],
-	['组件', 'https://www.foobar2000.org/components'],
+	['Title Formatting Reference', 'https://wiki.hydrogenaud.io/index.php?title=Foobar2000:Title_Formatting_Reference'],
+	['Query Syntax', 'https://wiki.hydrogenaud.io/index.php?title=Foobar2000:Query_syntax'],
+	['Homepage', 'https://www.foobar2000.org/'],
+	['Components', 'https://www.foobar2000.org/components'],
 	['Wiki', 'https://wiki.hydrogenaud.io/index.php?title=Foobar2000:Foobar2000'],
-	['论坛', 'https://hydrogenaud.io/index.php/board,28.0.html']
+	['Forums', 'https://hydrogenaud.io/index.php/board,28.0.html']
 ];
 
 let _bmp = gdi.CreateImage(1, 1);

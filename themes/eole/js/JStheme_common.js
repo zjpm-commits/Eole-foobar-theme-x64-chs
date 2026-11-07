@@ -143,17 +143,11 @@ var timers = [];
     function readProp(k) {
         return window.GetProperty(k);
     }
-    function isJunk(v) {
-        return v !== undefined && v !== null && String(v).indexOf("eole_none") >= 0;
-    }
     try {
-        if (!readProp("_哨兵属性已清理")) {
-            for (var c = 0; c < KEYPAIRS.length; c++) {
-                var cp = KEYPAIRS[c].split("\u0001");
-                if (isJunk(readProp(cp[0]))) window.SetProperty(cp[0], null);
-                if (isJunk(readProp(cp[1]))) window.SetProperty(cp[1], null);
-            }
-            window.SetProperty("_哨兵属性已清理", true);
+        /* 早期版本做属性汉化时留下的几个标记键，已经没用，读到就删掉 */
+        var _oldMarks = ["_哨兵属性已清理", "_属性键已修正迁移", "_属性名已汉化迁移", "_属性名已修正迁移"];
+        for (var _m = 0; _m < _oldMarks.length; _m++) {
+            if (readProp(_oldMarks[_m]) !== undefined) window.SetProperty(_oldMarks[_m], null);
         }
 
         for (var i = 0; i < KEYPAIRS.length; i++) {
@@ -167,7 +161,6 @@ var timers = [];
             }
             window.SetProperty(ok, null);
         }
-        if (readProp("_属性名已汉化迁移") !== undefined) window.SetProperty("_属性名已汉化迁移", null);
     } catch (e) {
     }
 })();
@@ -3702,6 +3695,9 @@ function fw_sharedSet(on) {
     }
 }
 
+/* 广播里带来的开关值。绘制路径优先用它 —— 文件那边有 500ms 缓存，
+   光靠它的话，收到 fullscreenWallpaper 后还得等缓存过期再重绘一次才生效。 */
+var g_fw_live = null;
 var g_fw_sharedRaw = null, g_fw_sharedRawAt = 0;
 function fw_sharedState(force) {
     var now = (new Date()).getTime();
@@ -3716,10 +3712,13 @@ function fw_sharedState(force) {
     } catch (e) { v = null; }
     g_fw_sharedRaw = v;
     g_fw_sharedRawAt = now;
+    /* force 是「请以磁盘为准」的意思：这时候顺便把内存值校正回来，免得广播丢了以后永远停在旧值 */
+    if (force && typeof v === 'boolean') g_fw_live = v;
     return v;
 }
 
 function fw_sharedOn(force) {
+    if (!force && typeof g_fw_live === 'boolean') return g_fw_live;
     return fw_sharedState(force) === true;
 }
 
@@ -3956,6 +3955,8 @@ function fw_on() {
 }
 function fw_setOn(v) {
     g_fw_on = !!v;
+    /* 各面板收到 fullscreenWallpaper / …Repaint 时都会走这里 */
+    g_fw_live = !!v;
 }
 
 function fw_glass() {
@@ -4007,6 +4008,7 @@ function fw_broadcast(on) {
     try { fw_sharedSet(v); } catch (eS) {}
     try { fw_cfgWrite(); } catch (eW) {}
     try { g_fw_sharedRaw = null; } catch (eC) {}
+    try { g_fw_live = v; } catch (eL) {}
     try { window.NotifyOthers("fullscreenWallpaper", v); } catch (e) {}
     try { window.NotifyOthers("wallpaper", { enabled: v }); } catch (e2) {}
     try { window.Repaint(); } catch (e3) {}
@@ -4042,3 +4044,118 @@ function CreatePlaylist(pl_place, pl_name) {
 	} catch(e) {
 	}
 }
+
+/* ===========================================================================
+ * 洛雪音源广播接收（lx_now_*）
+ *
+ * 在线流播的播放项在 fb2k 里没有标签：%artist% 恒空、%title% 只是 URL 末段。
+ * Lxbox 面板会广播歌手 / 歌名，并且固定写一份
+ *     <profile>\Lxbox\nowplaying\info.json
+ * 这里统一接住，各面板只调 lxInfoOf() / lxFillFormat() 两个函数：
+ *     g_lx_now    当前曲目
+ *     g_lx_items  按播放项路径(小写)索引的 {artist,title,album,cover}
+ * 面板侧约定：在自己脚本里定义 lxRefresh()，广播一到就会被调用一次，
+ * 用来把已经算好的字符串（标题、行文本）重算。
+ * =========================================================================== */
+var g_lx_now = null;
+var g_lx_items = null;
+var g_lx_file = '';
+
+function lxInfoPaths() {
+	var out = [];
+	if (g_lx_file) out.push(g_lx_file);
+	try {
+		if (fb.ProfilePath) out.push(String(fb.ProfilePath).replace(/[\\\/]+$/, "") + "\\Lxbox\\nowplaying\\info.json");
+	} catch (e) { }
+	return out;
+}
+
+function lxLoadItems(force) {
+	if (!g_lx_items) g_lx_items = {};
+	if (!force) return g_lx_items;
+	if (typeof utils.ReadTextFile !== 'function') return g_lx_items;
+	var paths = lxInfoPaths();
+	for (var i = 0; i < paths.length; i++) {
+		try {
+			var txt = String(utils.ReadTextFile(paths[i], 65001) || "");
+			if (!txt) continue;
+			var j = JSON.parse(txt.replace(/^\uFEFF/, ""));
+			if (j && j.items && typeof j.items === 'object') {
+				for (var k in j.items) {
+					var v = j.items[k];
+					if (v && (v.title || v.artist)) g_lx_items[k.toLowerCase()] = v;
+				}
+			}
+		} catch (e) { }
+	}
+	return g_lx_items;
+}
+
+/* 播放项 -> {artist,title,album}；没有就返回 null，调用方按老逻辑走 */
+function lxInfoOf(metadb) {
+	if (!metadb) return null;
+	var p = '';
+	try { p = String(metadb.Path || '').toLowerCase(); } catch (e) { return null; }
+	if (!p) return null;
+	if (!g_lx_items) lxLoadItems(true);
+	if (!g_lx_items[p]) lxLoadItems(true);
+	return g_lx_items[p] || null;
+}
+
+function lxTfLit(v) {
+	return "'" + String(v == null ? "" : v).replace(/'/g, "''").replace(/\r?\n/g, " ") + "'";
+}
+
+/* 把格式串里的 %artist% / %title% / %album% 换成广播来的值。
+   用 titleformat 的单引号字面量，格式里的 $crlf()、[...] 条件段照常生效。 */
+function lxFillFormat(fmt) {
+	if (!g_lx_now || !fmt) return fmt;
+	var map = { artist: g_lx_now.artist, title: g_lx_now.title, album: g_lx_now.album };
+	var out = String(fmt);
+	for (var k in map) {
+		if (map[k] == null || map[k] === "") continue;
+		out = out.replace(new RegExp("%" + k + "%", "gi"), lxTfLit(map[k]));
+	}
+	return out;
+}
+
+function lxApplyNow(info) {
+	if (!info || (!info.title && !info.artist)) {
+		g_lx_now = null;
+	} else {
+		g_lx_now = info;
+		if (info.file) g_lx_file = String(info.file);
+		if (info.url) {
+			if (!g_lx_items) g_lx_items = {};
+			g_lx_items[String(info.url).toLowerCase()] =
+				{ artist: info.artist || "", title: info.title || "", album: info.album || "", cover: info.cover || "", ts: info.ts || 0 };
+		}
+	}
+	if (typeof lxRefresh === 'function') { try { lxRefresh(); } catch (e) { } }
+	try { window.Repaint(); } catch (e2) { }
+}
+
+/* 各面板的 on_notify_data 里第一句写：if (lxNotify(name, info)) return; */
+function lxNotify(name, info) {
+	switch (name) {
+		case "lx_now_info":
+			lxApplyNow(info);
+			return true;
+		case "lx_now_json":
+			try { lxApplyNow(JSON.parse(String(info))); } catch (e) { }
+			return true;
+		case "lx_now_text":
+			if (typeof info === 'string' && info) {
+				var p = info.split(' - ');
+				lxApplyNow((p.length > 1) ? { artist: p[0], title: p.slice(1).join(' - ') } : { artist: '', title: info });
+			}
+			return true;
+		case "lx_now_clear":
+			lxApplyNow(null);
+			return true;
+	}
+	return false;
+}
+
+/* 面板比 Lxbox 晚加载时，问一句「现在在放什么」 */
+setTimeout(function () { try { window.NotifyOthers('lx_now_request', true); } catch (e) { } }, 1500);

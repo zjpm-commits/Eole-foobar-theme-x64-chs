@@ -1,19 +1,19 @@
 ﻿'use strict';
 
-window.DefineScript('VU表', {author:'Case + marc2003', options:{grab_focus:false}});
+window.DefineScript('Vu Meter', {author:'Case + marc2003', options:{grab_focus:false}});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\vu_meter.js');
 
-// 修改版，自动方向，无标签
+// Modified version, auto orientation, no labels
 
 var vu_meter = new _vu_meter(0, 0, 0, 0);
 
-vu_meter.timer_interval = 1000 / 60; // 单位毫秒（默认：60 fps 刷新率）
-vu_meter.rms_window = 50 / 1000; // 单位秒（默认：50 ms）
-vu_meter.peak_hold = 20; // 单位帧
+vu_meter.timer_interval = 1000 / 60; // in ms (default: 60 fps update rate)
+vu_meter.rms_window = 50 / 1000; // in seconds (default: 50 ms)
+vu_meter.peak_hold = 20; // in frames
 vu_meter.peak_fall_mul = 0.99;
-vu_meter.peak_bar_width = 1; // 单位像素
+vu_meter.peak_bar_width = 1; // in pixels
 
 vu_meter.init();
 

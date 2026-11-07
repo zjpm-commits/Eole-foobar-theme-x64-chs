@@ -1,4 +1,4 @@
-window.DefineScript('遮罩应用', { author: 'T.P Wang / marc2003' });
+﻿window.DefineScript('ApplyMask', { author: 'T.P Wang / marc2003' });
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
@@ -16,7 +16,7 @@ function on_size() {
 
 function on_paint(gr) {
     if (g_img) {
-        // 保持宽高比
+        // Keep aspect ratio
         let scale_w = ww / g_img.Width;
         let scale_h = wh / g_img.Height;
         let scale = Math.min(scale_w, scale_h);
@@ -29,7 +29,7 @@ function on_paint(gr) {
     }
     if (!applied) {
         gr.FillSolidRect(0, 0, ww, 24, RGB(0, 0, 0));
-        gr.GdiDrawText('双击面板以应用遮罩', font, RGB(255, 255, 255), 0, 0, ww, 24, DT_CENTER);
+        gr.GdiDrawText('Double click panel to apply mask', font, RGB(255, 255, 255), 0, 0, ww, 24, DT_CENTER);
     }
 }
 
@@ -41,9 +41,9 @@ function on_mouse_lbtn_dblclk() {
 
 function apply() {
     let g_img_mask = g_mask;
-    // 遮罩 *必须* 与 g_img 尺寸一致
+    // mask *MUST* be the same size as g_img
     let mask = g_img_mask.Resize(g_img.Width, g_img.Height);
-    // 将遮罩应用到 g_img
+    // Apply mask image to g_img
     g_img.ApplyMask(mask);
     applied = true;
     window.Repaint();

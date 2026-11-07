@@ -1,6 +1,18 @@
 ﻿'use strict';
+window.DefineScript('简介 v1.4.2', {author:'WilB（汉化:always beta）', features:{drag_n_drop:true}});
 
-if (typeof my_utils === 'undefined') include('utils.js');
+let renderMode = window.GetProperty("界面·渲染模式", 1);
+window.DrawMode = renderMode;
+// 主题颜色模式
+let colorMode = window.GetProperty("主题·颜色模式 (0=默认, 1=封面取色)", 1);
+let coverThemeColors = null;
+// 封面取色颜色变量（默认值，由 coverTheme 通知更新）
+let bgColor = window.GetColourDUI(1);
+let textColor = window.GetColourDUI(0);
+let hlColor = window.GetColourDUI(2);
+let stColor = window.GetColourDUI(3);
+
+if (typeof my_utils === 'undefined') include(fb.FoobarPath + 'themes\\foorab\\JavaScript\\Biography\\scripts\\utils.js');
 
 let isRadioStreamParser = false;
 const loadAsync = false; // window.GetProperty('Load Biography Asynchronously', true); // changed to false: issue on loading fth with many panels

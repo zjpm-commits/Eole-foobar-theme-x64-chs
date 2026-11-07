@@ -17,29 +17,29 @@ const fontSection = gdi.Font("Segoe UI", 15, 1);
 const fontLabel = gdi.Font("Segoe UI", 12, 0);
 const fontSmall = gdi.Font("Segoe UI", 10, 0);
 
-// StrokeStyle 对象是设备无关的资源。只需创建一次并
-// 在 on_paint 中复用，而不是每帧都重新构建样式。
+// StrokeStyle objects are device-independent resources. Create them once and
+// reuse them from on_paint instead of rebuilding a style every frame.
 const joinStyles = [
-    ["斜接", d2d.StrokeStyle({ lineJoin: LineJoin.Miter })],
-    ["斜角", d2d.StrokeStyle({ lineJoin: LineJoin.Bevel })],
-    ["圆角", d2d.StrokeStyle({ lineJoin: LineJoin.Round })],
-    ["斜接或斜角", d2d.StrokeStyle({ lineJoin: LineJoin.MiterOrBevel, miterLimit: 2 })]
+    ["Miter", d2d.StrokeStyle({ lineJoin: LineJoin.Miter })],
+    ["Bevel", d2d.StrokeStyle({ lineJoin: LineJoin.Bevel })],
+    ["Round", d2d.StrokeStyle({ lineJoin: LineJoin.Round })],
+    ["Miter or bevel", d2d.StrokeStyle({ lineJoin: LineJoin.MiterOrBevel, miterLimit: 2 })]
 ];
 
 const capStyles = [
-    ["平面", d2d.StrokeStyle({ startCap: CapStyle.Flat, endCap: CapStyle.Flat })],
-    ["方形", d2d.StrokeStyle({ startCap: CapStyle.Square, endCap: CapStyle.Square })],
-    ["圆形", d2d.StrokeStyle({ startCap: CapStyle.Round, endCap: CapStyle.Round })],
-    ["三角形", d2d.StrokeStyle({ startCap: CapStyle.Triangle, endCap: CapStyle.Triangle })]
+    ["Flat", d2d.StrokeStyle({ startCap: CapStyle.Flat, endCap: CapStyle.Flat })],
+    ["Square", d2d.StrokeStyle({ startCap: CapStyle.Square, endCap: CapStyle.Square })],
+    ["Round", d2d.StrokeStyle({ startCap: CapStyle.Round, endCap: CapStyle.Round })],
+    ["Triangle", d2d.StrokeStyle({ startCap: CapStyle.Triangle, endCap: CapStyle.Triangle })]
 ];
 
-const dashStyles = [ // 预定义点样式在省略 dashCap 时自动使用圆形虚线端点。
-    ["实线", d2d.StrokeStyle({ dashStyle: DashStyle.Solid })],
-    ["虚线", d2d.StrokeStyle({ dashStyle: DashStyle.Dash })],
-    ["点线", d2d.StrokeStyle({ dashStyle: DashStyle.Dot })],
-    ["点划线", d2d.StrokeStyle({ dashStyle: DashStyle.DashDot })],
-    ["双点划线", d2d.StrokeStyle({ dashStyle: DashStyle.DashDotDot })],
-    ["自定义 4,2,1,2", d2d.StrokeStyle({
+const dashStyles = [ // Predefined dot styles automatically use a round dash cap when dashCap is omitted.
+    ["Solid", d2d.StrokeStyle({ dashStyle: DashStyle.Solid })],
+    ["Dash", d2d.StrokeStyle({ dashStyle: DashStyle.Dash })],
+    ["Dot", d2d.StrokeStyle({ dashStyle: DashStyle.Dot })],
+    ["Dash dot", d2d.StrokeStyle({ dashStyle: DashStyle.DashDot })],
+    ["Dash dot dot", d2d.StrokeStyle({ dashStyle: DashStyle.DashDotDot })],
+    ["Custom 4,2,1,2", d2d.StrokeStyle({
         dashes: [4, 2, 1, 2],
         dashCap: CapStyle.Round
     })]
@@ -87,7 +87,7 @@ function sectionTitle(gr, text, x, y, w) {
 }
 
 function drawJoinSection(gr, x, y, w, h) {
-    sectionTitle(gr, "线条连接", x, y, w);
+    sectionTitle(gr, "Line joins", x, y, w);
     y += 32;
     h -= 32;
 
@@ -112,7 +112,7 @@ function drawJoinSection(gr, x, y, w, h) {
 }
 
 function drawCapSection(gr, x, y, w, h) {
-    sectionTitle(gr, "线条端点", x, y, w);
+    sectionTitle(gr, "Line caps", x, y, w);
     y += 32;
     h -= 32;
 
@@ -128,7 +128,7 @@ function drawCapSection(gr, x, y, w, h) {
         const x1 = cx + Math.max(30, cw * 0.24);
         const x2 = cx + cw - Math.max(30, cw * 0.24);
 
-        // 参考线用于显示每个端点超出线条终点的延伸量。
+        // Guides make the amount by which each cap extends past the endpoints visible.
         gr.DrawLine(x1, cy - 22, x1, cy + 22, 1, GUIDE);
         gr.DrawLine(x2, cy - 22, x2, cy + 22, 1, GUIDE);
         gr.DrawLine(x1, cy, x2, cy, 14, ACCENT, capStyles[i][1]);
@@ -136,7 +136,7 @@ function drawCapSection(gr, x, y, w, h) {
 }
 
 function drawDashSection(gr, x, y, w, h) {
-    sectionTitle(gr, "虚线样式", x, y, w);
+    sectionTitle(gr, "Dash styles", x, y, w);
     y += 32;
     h -= 32;
 
@@ -160,7 +160,7 @@ function drawDashSection(gr, x, y, w, h) {
 }
 
 function drawShapeSection(gr, x, y, w, h) {
-    sectionTitle(gr, "使用 StrokeStyle 的形状", x, y, w);
+    sectionTitle(gr, "Shapes using StrokeStyle", x, y, w);
     y += 32;
     h -= 32;
 
@@ -204,14 +204,14 @@ function on_paint(gr) {
 
     const margin = 18;
 
-    // 在面板尺寸较小时保持示例可读：布局可以随面板
-    // 增大，但绝不会缩小到此画布以下。如果面板更小，
-    // 正常的窗口裁剪会自动隐藏超出视口的部分。
+    // Keep the sample readable at small panel sizes: the layout may grow with the
+    // panel, but it never shrinks below this canvas. If the panel is smaller, the
+    // normal window clipping simply hides the part that is outside the viewport.
     const contentW = Math.max(900, ww - margin * 2);
 
-    gr.DrawText("Direct2D 线条样式", fontTitle, TEXT,
+    gr.DrawText("Direct2D StrokeStyle", fontTitle, TEXT,
         margin, 10, contentW, 34, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
-    gr.DrawText("可复用的端点、连接和虚线样式，用于 DrawLine / DrawLines / DrawPolygon 及形状轮廓",
+    gr.DrawText("Reusable caps, joins and dash patterns for DrawLine / DrawLines / DrawPolygon and shape outlines",
         fontSmall, MUTED, margin, 43, contentW, 22, DT_LEFT | DT_VCENTER | DT_SINGLELINE);
 
     const top = 75;

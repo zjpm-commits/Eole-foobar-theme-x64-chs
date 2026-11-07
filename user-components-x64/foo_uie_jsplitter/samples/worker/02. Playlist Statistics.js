@@ -1,12 +1,12 @@
 ﻿'use strict';
 
-// Worker 示例 2：播放列表统计
-// 演示：克隆 FbMetadbHandleList、在 主线程/Worker 中进行批量元数据/文件信息聚合，
-// 并在交互式面板 UI 中展示结果。
-// 媒体库与播放列表一同展示，便于测试更大的真实数据批次。
-// 为何使用 Worker：一次元数据批次穿越域边界，而不是让面板线程在逐个检查
-// handle 和 FbFileInfo 对象时一直忙碌。引擎可在 主线程 和 Worker 之间切换，
-// 以对同一分析进行直接的 A/B 比较。
+// Worker sample 2: Playlist Statistics
+// Demonstrates: cloning FbMetadbHandleList, bulk metadata/file-info aggregation in Main/Worker,
+// and presenting the result in an interactive panel UI.
+// Media Library is exposed alongside playlists so larger real-world batches are easy to test.
+// Why a Worker: one metadata batch crosses the realm boundary instead of keeping the panel
+// thread busy while every handle and FbFileInfo object is inspected. Engine switches between
+// Main and Worker for a direct A/B comparison of the same analysis.
 
 window.DrawMode = 0;
 window.DlgCode = 0x0004;
@@ -55,7 +55,7 @@ let loading = false;
 
 function cleanValue(value) {
     const text = String(value == null ? '' : value).trim();
-    return text || '(未知)';
+    return text || '(unknown)';
 }
 
 function normaliseFieldName(name) {
@@ -90,17 +90,17 @@ function topNamedEntries(counts, limit) {
 }
 
 function knownCount(counts) {
-    return counts.size - (counts.has('(未知)') ? 1 : 0);
+    return counts.size - (counts.has('(unknown)') ? 1 : 0);
 }
 
 function extractYear(value) {
     const match = String(value || '').match(/\d{4}/);
-    return match ? match[0] : '(未知)';
+    return match ? match[0] : '(unknown)';
 }
 
 function normaliseSampleRate(value) {
     const text = cleanValue(value);
-    if (text === '(未知)') return text;
+    if (text === '(unknown)') return text;
 
     let rate = parseFloat(text.replace(/[^0-9.]/g, ''));
     if (!Number.isFinite(rate) || rate <= 0) return text;
@@ -152,7 +152,7 @@ function analyseHandles(handles) {
 
                 for (let j = 0; j < valueCount; ++j) {
                     const value = cleanValue(info.MetaValue(i, j));
-                    if (value === '(未知)') continue;
+                    if (value === '(unknown)') continue;
 
                     if (name === 'ARTIST') trackArtists.push(value);
                     else if (name === 'ALBUMARTIST') albumArtists.push(value);
@@ -178,26 +178,26 @@ function analyseHandles(handles) {
         if (trackArtists.length) {
             for (const artist of new Set(trackArtists)) addCount(artistCounts, artist);
         } else {
-            addCount(artistCounts, '(未知)');
+            addCount(artistCounts, '(unknown)');
         }
 
-        const albumOwner = albumArtists[0] || trackArtists[0] || '(未知)';
+        const albumOwner = albumArtists[0] || trackArtists[0] || '(unknown)';
         if (album) {
             const albumKey = `${albumOwner}\u0000${album}`;
-            const albumLabel = albumOwner === '(未知)' ? album : `${album} — ${albumOwner}`;
+            const albumLabel = albumOwner === '(unknown)' ? album : `${album} — ${albumOwner}`;
             addNamedCount(albumCounts, albumKey, albumLabel);
         } else {
-            addNamedCount(albumCounts, '(未知)', '(未知)');
+            addNamedCount(albumCounts, '(unknown)', '(unknown)');
         }
 
         if (genres.length) {
             for (const genre of new Set(genres)) addCount(genreCounts, genre);
         } else {
-            addCount(genreCounts, '(未知)');
+            addCount(genreCounts, '(unknown)');
         }
 
         addCount(yearCounts, extractYear(date));
-        addCount(codecCounts, codec || '(未知)');
+        addCount(codecCounts, codec || '(unknown)');
         addCount(sampleRateCounts, normaliseSampleRate(sampleRate));
 
         if (Number.isFinite(bitrate)) {
@@ -216,7 +216,7 @@ function analyseHandles(handles) {
         totalSeconds,
         totalBytes,
         uniqueArtists: knownCount(artistCounts),
-        uniqueAlbums: albumCounts.size - (albumCounts.has('(未知)') ? 1 : 0),
+        uniqueAlbums: albumCounts.size - (albumCounts.has('(unknown)') ? 1 : 0),
         uniqueGenres: knownCount(genreCounts),
         averageBitrate,
         topArtists: topEntries(artistCounts, 8),
@@ -242,7 +242,7 @@ worker.onmessage = function (event) {
 
 worker.onerror = function (event) {
     loading = false;
-    console.log(`Worker 错误：${event.message}`);
+    console.log(`Worker error: ${event.message}`);
     window.Repaint();
 };
 
@@ -290,7 +290,7 @@ function refreshSources() {
         ? sourceKey(sources[selectedSource])
         : '';
 
-    sources = [{ library: true, index: -1, name: '媒体库' }];
+    sources = [{ library: true, index: -1, name: 'Media Library' }];
     for (let i = 0; i < plman.PlaylistCount; ++i) {
         sources.push({ library: false, index: i, name: plman.GetPlaylistName(i) });
     }
@@ -325,12 +325,12 @@ function analyseSelectedSource() {
     window.Repaint();
 
     if (engine === 'worker') {
-        // FbMetadbHandleList 是可克隆的。面板保留其自己可用的列表。
+        // FbMetadbHandleList is CLONEABLE. The panel keeps its own usable list.
         worker.postMessage({ requestId: id, handles });
         return;
     }
 
-    // 推迟一个任务，使面板能在同步基线之前呈现加载状态。
+    // Defer one task so the panel can present the loading state before the synchronous baseline.
     const started = pendingStarted;
     setTimeout(() => {
         if (id !== pendingRequestId || engine !== 'main') return;
@@ -445,54 +445,54 @@ function on_paint(gr) {
 
     const engineUi = engineRects();
     const titleRight = Math.max(x + 1, engineUi.label.x - 10);
-    gr.GdiDrawText('统计', FONT_TITLE, COLOUR_TEXT, x, y,
+    gr.GdiDrawText('Statistics', FONT_TITLE, COLOUR_TEXT, x, y,
         Math.max(1, titleRight - x), 34,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-    gr.GdiDrawText('引擎：', FONT, COLOUR_DIM,
+    gr.GdiDrawText('Engine:', FONT, COLOUR_DIM,
         engineUi.label.x, engineUi.label.y, engineUi.label.w, engineUi.label.h,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    drawChoice(gr, engineUi.main, '主线程', engine === 'main');
+    drawChoice(gr, engineUi.main, 'Main', engine === 'main');
     drawChoice(gr, engineUi.worker, 'Worker', engine === 'worker');
     y += 42;
 
     if (loading) {
-        gr.GdiDrawText(`正在${engine === 'worker' ? 'Worker' : '主线程'}计算…`, FONT, COLOUR_DIM, x, y, w, 28,
+        gr.GdiDrawText(`Calculating in ${engine === 'worker' ? 'Worker' : 'Main'}…`, FONT, COLOUR_DIM, x, y, w, 28,
             DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
         return;
     }
 
     if (!stats) return;
 
-    gr.GdiDrawText(`${engine === 'worker' ? 'Worker' : '主线程'}  •  计算 ${stats.calcElapsed.toFixed(1)} ms  •  总计 ${stats.totalElapsed.toFixed(1)} ms`,
+    gr.GdiDrawText(`${engine === 'worker' ? 'Worker' : 'Main'}  •  calc ${stats.calcElapsed.toFixed(1)} ms  •  total ${stats.totalElapsed.toFixed(1)} ms`,
         FONT, COLOUR_DIM, x, y, w, 24,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     y += 28;
 
-    gr.GdiDrawText(`曲目  ${formatCount(stats.tracks)}`, FONT_BOLD, COLOUR_TEXT, x, y, w / 2, 26,
+    gr.GdiDrawText(`Tracks  ${formatCount(stats.tracks)}`, FONT_BOLD, COLOUR_TEXT, x, y, w / 2, 26,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    gr.GdiDrawText(`时长  ${formatDuration(stats.totalSeconds)}`, FONT_BOLD, COLOUR_TEXT, x + w / 2, y, w / 2, 26,
+    gr.GdiDrawText(`Duration  ${formatDuration(stats.totalSeconds)}`, FONT_BOLD, COLOUR_TEXT, x + w / 2, y, w / 2, 26,
         DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     y += 26;
 
-    gr.GdiDrawText(`大小  ${formatBytes(stats.totalBytes)}`, FONT_BOLD, COLOUR_TEXT, x, y, w / 2, 26,
+    gr.GdiDrawText(`Size  ${formatBytes(stats.totalBytes)}`, FONT_BOLD, COLOUR_TEXT, x, y, w / 2, 26,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    gr.GdiDrawText(`平均比特率  ${Math.round(stats.averageBitrate || 0)} kbps`, FONT_BOLD, COLOUR_TEXT, x + w / 2, y, w / 2, 26,
+    gr.GdiDrawText(`Avg bitrate  ${Math.round(stats.averageBitrate || 0)} kbps`, FONT_BOLD, COLOUR_TEXT, x + w / 2, y, w / 2, 26,
         DT_RIGHT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     y += 30;
 
-    gr.GdiDrawText(`艺术家  ${formatCount(stats.uniqueArtists)}  •  专辑  ${formatCount(stats.uniqueAlbums)}  •  风格  ${formatCount(stats.uniqueGenres)}`,
+    gr.GdiDrawText(`Artists  ${formatCount(stats.uniqueArtists)}  •  Albums  ${formatCount(stats.uniqueAlbums)}  •  Genres  ${formatCount(stats.uniqueGenres)}`,
         FONT, COLOUR_DIM, x, y, w, 24,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
     y += 34;
 
     const sections = [
-        { title: '热门艺术家', entries: stats.topArtists },
-        { title: '热门专辑', entries: stats.topAlbums },
-        { title: '风格', entries: stats.topGenres },
-        { title: '年份', entries: stats.topYears },
-        { title: '编码', entries: stats.codecs },
-        { title: '采样率', entries: stats.sampleRates }
+        { title: 'Top artists', entries: stats.topArtists },
+        { title: 'Top albums', entries: stats.topAlbums },
+        { title: 'Genres', entries: stats.topGenres },
+        { title: 'Years', entries: stats.topYears },
+        { title: 'Codecs', entries: stats.codecs },
+        { title: 'Sample rates', entries: stats.sampleRates }
     ];
 
     const columns = w >= 560 ? 2 : 1;

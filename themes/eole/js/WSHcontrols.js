@@ -709,6 +709,12 @@ function build_buttons(){
 	if(typeof g_rating !== 'undefined') setRatingBtn();
 }
 
+var g_cur_metadb_for_text = null;
+/* 广播到了以后重算控件上那两行 */
+function lxRefresh() {
+	try { get_text(g_cur_metadb_for_text || fb.GetNowPlaying()); window.Repaint(); } catch (e) { }
+}
+
 function get_text(metadb) {
 	metadb = typeof metadb !== 'undefined' ? metadb : fb.GetNowPlaying();
     g_text_title_prefix = "";	
@@ -722,6 +728,12 @@ function get_text(metadb) {
 		if(properties.custom_firstRow=="") {
 			var infos = properties.default_firstRow.Eval();
 			infos = infos.replace(/\r?\n/gm, ' ').split(" ^^ ");
+			/* 流播项没有标签：用洛雪广播来的歌手 / 歌名顶上 */
+			var _lxi = lxInfoOf(metadb);
+			if (_lxi) {
+				if (_lxi.title) infos[1] = _lxi.title;
+				infos[2] = _lxi.artist || '';
+			}
 			g_text_title = infos[1];		
 			if(infos[2]) g_text_artist = " -  "+infos[2];
 			if (properties.showTrackPrefix) g_text_title_prefix = infos[0]+".  ";
@@ -740,8 +752,11 @@ function get_text(metadb) {
 			if(!mini_controlbar.isActive() && properties.twoLinesDetails) g_text_second_line = properties.tf_custom_secondRow.Eval();
 		}
 		if(TimeTotal=="直播中") {
-			if(!mini_controlbar.isActive() && properties.twoLinesDetails) g_text_second_line = metadb.RawPath;
-			else if(g_text_artist == "") g_text_artist = " -  "+metadb.RawPath;
+			/* 有广播值时不要拿 RawPath（那条一长串直链）去顶 */
+			var _lxi2 = lxInfoOf(metadb);
+			if(!mini_controlbar.isActive() && properties.twoLinesDetails)
+				g_text_second_line = _lxi2 ? (_lxi2.album || '') : metadb.RawPath;
+			else if(g_text_artist == "" && !_lxi2) g_text_artist = " -  "+metadb.RawPath;
 			g_text_title_prefix = "";
 		}		
     } else {
@@ -1331,6 +1346,7 @@ function on_playback_dynamic_info_track() {
 	if(old_artist!=g_text_artist || old_title!=g_text_title) window.Repaint();
 }
 function on_playback_new_track(metadb) {
+	g_cur_metadb_for_text = metadb;
 	if(properties.displayStop) {
 		adapt_display_to_layout(true);
 		calculate_onsize_vars(ww, wh);
@@ -1636,6 +1652,8 @@ function on_key_down(vkey) {
 	};
 }
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "fullscreenWallpaper":
 			fw_setOn(info);

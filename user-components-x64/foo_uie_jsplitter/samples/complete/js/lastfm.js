@@ -19,7 +19,7 @@ function _lastfm() {
 	}
 
 	this.update_username = () => {
-		const username = utils.InputBox(window.ID, '输入您的 Last.fm 用户名', window.ScriptInfo.Name, this.username);
+		const username = utils.InputBox(window.ID, 'Enter your Last.fm username', window.ScriptInfo.Name, this.username);
 		if (username != this.username) {
 			this.write_ini('username', username);
 			this.update_sk('');

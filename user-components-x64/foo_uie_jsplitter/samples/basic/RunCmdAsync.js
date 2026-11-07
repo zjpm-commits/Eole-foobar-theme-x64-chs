@@ -2,21 +2,21 @@
 
 include(`${fb.ComponentPath}\\docs\\Flags.js`);
 
-// JSplitter 的 RunCmdAsync 示例
+// RunCmdAsync sample for JSplitter
 //
-// 演示内容：
-// - 异步启动外部命令；
-// - 按 task_id 匹配回调；
-// - 处理 stdout/stderr；
-// - 处理非零退出代码；
-// - 处理超时；
-// - 使用参数数组进行安全引用；
-// - 使用工作目录；
-// - 使用 FFmpeg 和 Essentia 等真实工具。
+// Demonstrates:
+// - starting external commands asynchronously;
+// - matching callbacks by task_id;
+// - handling stdout/stderr;
+// - handling non-zero exit codes;
+// - handling timeouts;
+// - using argument arrays for safe quoting;
+// - using a working directory;
+// - using real-world tools such as FFmpeg and Essentia.
 //
-// 重要提示：
-// 完成回调是异步的，到达顺序可能与 RunCmdAsync 的调用顺序不同。
-// 务必始终使用 task_id 匹配结果。
+// Important:
+// Completion callbacks are asynchronous and may arrive in a different order
+// than the RunCmdAsync calls were made. Always use task_id to match results.
 
 const TIMEOUT_EXIT_CODE = 0xFFFFFFFF;
 
@@ -34,9 +34,9 @@ function runCommand(name, app, args, options) {
     try {
         taskId = utils.RunCmdAsync(app, args, workingDir, show, timeoutMs);
     } catch (e) {
-        // 同步异常保留给 API 使用错误，
-        // 例如参数无效，或在初始化期间过早调用。
-        console.log("[RunCmdAsync] 无法启动 '" + name + "': " + e);
+        // Synchronous exceptions are reserved for API usage errors,
+        // for example invalid args or calling too early during initialization.
+        console.log("[RunCmdAsync] Failed to start '" + name + "': " + e);
         return 0;
     }
 
@@ -45,7 +45,7 @@ function runCommand(name, app, args, options) {
         startedAt: Date.now()
     });
 
-    console.log("[RunCmdAsync] 已启动 #" + taskId + ": " + name);
+    console.log("[RunCmdAsync] Started #" + taskId + ": " + name);
 
     return taskId;
 }
@@ -54,9 +54,9 @@ function on_run_cmd_async_done(task_id, success, exit_code, stdout, stderr) {
     const command = pendingCommands.get(task_id);
 
     if (!command) {
-        // 如果另一个脚本部分也使用了 RunCmdAsync，
-        // 或者该 task_id 未由本示例注册，就可能发生这种情况。
-        console.log("[RunCmdAsync] 完成未知任务 #" + task_id);
+        // This can happen if another script part also uses RunCmdAsync,
+        // or if the task_id was not registered by this sample.
+        console.log("[RunCmdAsync] Completed unknown task #" + task_id);
         return;
     }
 
@@ -64,10 +64,10 @@ function on_run_cmd_async_done(task_id, success, exit_code, stdout, stderr) {
 
     const elapsedMs = Date.now() - command.startedAt;
 
-    console.log("[RunCmdAsync] 完成 #" + task_id + ": " + command.name);
-    console.log("  耗时: " + elapsedMs + " 毫秒");
-    console.log("  成功: " + success);
-    console.log("  退出代码: " + exit_code);
+    console.log("[RunCmdAsync] Completed #" + task_id + ": " + command.name);
+    console.log("  elapsed: " + elapsedMs + " ms");
+    console.log("  success: " + success);
+    console.log("  exit_code: " + exit_code);
 
     if (stdout.length > 0) {
         console.log("  stdout:");
@@ -75,56 +75,56 @@ function on_run_cmd_async_done(task_id, success, exit_code, stdout, stderr) {
     }
 
     if (stderr.length > 0) {
-        // 某些工具（包括 FFmpeg）即使成功完成，也会把正常的
-        // 进度/日志输出写到 stderr。
-        // 非空 stderr 不一定意味着失败。
+        // Some tools, including FFmpeg, write normal progress/log output
+        // to stderr even when they complete successfully.
+        // Non-empty stderr does not necessarily mean failure.
         console.log("  stderr:");
         console.log(stderr.trim());
     }
 
     if (exit_code === TIMEOUT_EXIT_CODE) {
-        // 超时时，RunCmdAsync 会终止整个进程树。
-        console.log("  结果: 超时");
+        // On timeout, RunCmdAsync terminates the whole process tree.
+        console.log("  result: timed out");
     } else if (!success) {
-        // success=false 也涵盖正常的非零进程退出代码。
-        // 例如 "exit /b 7" 会得到 success=false、exit_code=7。
-        console.log("  结果: 进程失败、超时，或返回了非零退出代码");
+        // success=false also covers normal non-zero process exit codes.
+        // For example, "exit /b 7" produces success=false, exit_code=7.
+        console.log("  result: process failed, timed out, or returned a non-zero exit code");
     }	 else {
-        console.log("  结果: 正常");
+        console.log("  result: OK");
     }
 }
 
-// 示例 1。
-// 尽量优先使用参数数组。
-// 每个参数会在需要时自动加引号。
+// Example 1.
+// Prefer an argument array when possible.
+// Each argument is quoted automatically when needed.
 runCommand(
-    "回显文本",
+    "Echo text",
     "cmd.exe",
     ["/c", "echo", "hello"]
 );
 
-// 示例 2。
-// stdout 和 stderr 会被分开捕获。
+// Example 2.
+// stdout and stderr are captured separately.
 runCommand(
-    "捕获 stdout 和 stderr",
+    "Capture stdout and stderr",
     "cmd.exe",
     '/c "echo stdout text & echo stderr text 1>&2"'
 );
 
-// 示例 3。
-// 非零退出代码不是传输/API 失败。
-// 回调会收到 success=false 和实际的进程退出代码。
+// Example 3.
+// A non-zero exit code is not a transport/API failure.
+// The callback receives success=false and the actual process exit code.
 runCommand(
-    "返回退出代码 7",
+    "Return exit code 7",
     "cmd.exe",
     '/c "exit /b 7"'
 );
 
-// 示例 4。
-// 工作目录会传递给 CreateProcess。
-// 此命令应打印 C:\Windows。
+// Example 4.
+// The working directory is passed to CreateProcess.
+// This command should print C:\Windows.
 runCommand(
-    "在 C:\\Windows 中运行",
+    "Run in C:\\Windows",
     "cmd.exe",
     '/c "cd"',
     {
@@ -132,15 +132,15 @@ runCommand(
     }
 );
 
-// 示例 5。
-// 超时以毫秒为单位指定。
-// 超时值为 0 表示无限等待。
-// 超时时，回调会收到：
+// Example 5.
+// Timeout is specified in milliseconds.
+// A timeout value of 0 means wait indefinitely.
+// On timeout, the callback receives:
 //   success=false
 //   exit_code=0xFFFFFFFF
-//   stderr 包含超时消息
+//   stderr containing a timeout message
 runCommand(
-    "5 秒后超时",
+    "Timeout after 5 seconds",
     "cmd.exe",
     '/c "ping 127.0.0.1 -n 11 >nul"',
     {
@@ -148,22 +148,22 @@ runCommand(
     }
 );
 
-// 示例 6。
-// 空 app 会通过回调异步报告，
-// 而不是作为同步异常抛出。
+// Example 6.
+// Empty app is reported asynchronously through the callback,
+// not as a synchronous exception.
 runCommand(
-    "空应用示例",
+    "Empty app example",
     "",
     ""
 );
 
-// 下方真实示例用到的路径。
+// Paths used by the real-world examples below.
 //
-// 本示例使用 fb.ProfilePath 而不是硬编码的绝对路径，
-// 因此不依赖某个特定的驱动器或用户配置文件。
+// The sample uses fb.ProfilePath instead of hard-coded absolute paths,
+// so it does not depend on a particular drive or user profile.
 //
-// 运行 FFmpeg/Essentia 示例前，请将名为 "run_cmd_input.flac"
-// 的测试音频文件放入 foobar2000 配置文件文件夹。
+// Put a test audio file named "run_cmd_input.flac" into the foobar2000
+// profile folder before running the FFmpeg/Essentia examples.
 
 function combinePath(base, name) {
     if (base.length > 0 && base.charAt(base.length - 1) !== "\\" && base.charAt(base.length - 1) !== "/") {
@@ -178,18 +178,19 @@ const sampleMp3Output = combinePath(fb.ProfilePath, "run_cmd_output.mp3");
 const sampleCoverOutput = combinePath(fb.ProfilePath, "run_cmd_cover.jpg");
 const sampleFeaturesOutput = combinePath(fb.ProfilePath, "run_cmd_features.json");
 
-// 如果工具不在 PATH 中，请使用完整的可执行文件路径。
+// Use a full executable path if the tool is not available through PATH.
 const ffmpegExe = "ffmpeg.exe";
 const essentiaExe = "essentia_streaming_extractor_music.exe";
 
-// 示例 7。
-// FFmpeg：转码一个音频文件。
+// Example 7.
+// FFmpeg: transcode an audio file.
 //
-// FFmpeg 即使成功，也会把进度和诊断信息写到 stderr。
-// 请检查 success 和 exit_code，而不要把非空 stderr 当作失败。
+// FFmpeg normally writes progress and diagnostic messages to stderr
+// even on success. Check success and exit_code instead of treating
+// non-empty stderr as failure.
 
 runCommand(
-    "FFmpeg 转码 FLAC 为 MP3",
+    "FFmpeg transcode FLAC to MP3",
     ffmpegExe,
     [
         "-hide_banner",
@@ -202,14 +203,14 @@ runCommand(
     ]
 );
 
-// 示例 8。
-// FFmpeg：从音频文件提取内嵌封面。
+// Example 8.
+// FFmpeg: extract embedded cover art from an audio file.
 //
-// 这是为什么优先使用参数数组的很好的例子：
-// 文件路径可能包含空格，每个参数都会被自动加引号。
+// This is a good example of why argument arrays are preferred:
+// file paths may contain spaces, and each argument will be quoted automatically.
 
 runCommand(
-    "FFmpeg 提取内嵌封面",
+    "FFmpeg extract embedded cover",
     ffmpegExe,
     [
         "-hide_banner",
@@ -224,17 +225,17 @@ runCommand(
     }
 );
 
-// 示例 9。
-// Essentia：提取音频特征。
+// Example 9.
+// Essentia: extract audio features.
 //
-// 可执行文件的名称/路径取决于 Essentia 的安装或打包方式。
-// 常见名称是 "streaming_extractor_music.exe" 或
-// "essentia_streaming_extractor_music.exe"。
+// The executable name/path depends on how Essentia was installed or packaged.
+// Common names are "streaming_extractor_music.exe" or
+// "essentia_streaming_extractor_music.exe".
 //
-// 请根据你的 Essentia 构建/配置调整可执行文件名称和参数。
+// Adjust the executable name and arguments to your Essentia build/profile.
 
 runCommand(
-    "Essentia 提取音乐特征",
+    "Essentia extract music features",
     essentiaExe,
     [
         sampleInputAudio,

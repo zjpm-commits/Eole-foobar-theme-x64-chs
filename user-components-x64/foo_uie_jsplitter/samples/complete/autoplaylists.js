@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('自动播放列表', {author:'marc2003'});
+window.DefineScript('Autoplaylists', {author:'marc2003'});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');

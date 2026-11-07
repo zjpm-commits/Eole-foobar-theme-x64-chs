@@ -75,8 +75,8 @@ function on_paint(gr) {
 		);
 	}
 
-	gr.GdiDrawText(`模式：${window.DrawMode == 0 ? "GDI+" : "Direct2D"}`, font, 0xFFFFFFFF, 5, 0, ww, 45);
-	gr.GdiDrawText(`图片：${iconsCount}`, font, 0xFFFFFFFF, 5, 40, ww, 45);
+	gr.GdiDrawText(`Mode: ${window.DrawMode == 0 ? "GDI+" : "Direct2D"}`, font, 0xFFFFFFFF, 5, 0, ww, 45);
+	gr.GdiDrawText(`Images: ${iconsCount}`, font, 0xFFFFFFFF, 5, 40, ww, 45);
 	
 	worked += performance.now() - now;
 	frameCounter++;

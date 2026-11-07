@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('广播频道演示', {
+window.DefineScript('BroadcastChannel demo', {
     author: 'LUR',
     features: { drag_n_drop: true }
 });
@@ -8,19 +8,21 @@ include('docs/Flags.js');
 include('docs/Helpers.js');
 
 /*
-    如何使用本示例
-    --------------
-    1. 将同一个脚本添加到两个（或更多）JSplitter 面板中。
-    2. 在其中一个面板的上部区域点击，即可广播一条简单的结构化消息。
-    3. 将一个或多个曲目拖放到下部区域，即可广播一个 FbMetadbHandleList。
-       频道中的每个面板都会显示第一个曲目的元数据，并从克隆的句柄在本地加载其封面。
-       发送方会直接更新自己的视图，因为 BroadcastChannel 永远不会接收到自己的消息。
-    4. 若想使用独立的频道组，请在所有副本中修改 CHANNEL_NAME。
+    HOW TO USE THIS SAMPLE
+    ----------------------
+    1. Add this same script to two (or more) JSplitter panels.
+    2. Click the upper area in one panel to broadcast a simple structured message.
+    3. Drop one or more tracks into the lower area to broadcast an FbMetadbHandleList.
+       Every panel in the channel displays metadata for the first track and loads its
+       artwork locally from the cloned handle. The sender updates its own view directly,
+       because a BroadcastChannel never receives its own messages.
+    4. Change CHANNEL_NAME in all copies if you want a separate group.
 
-    BroadcastChannel 是异步的并使用结构化克隆，因此接收方会获得消息数据
-    和宿主包装对象的独立副本。它没有转移列表：广播消息会克隆数据，绝不会
-    分离发送方的对象。当某个可转移资源的所有权应转移到特定的 Worker 时，
-    请使用 Worker.postMessage()。
+    BroadcastChannel is asynchronous and uses structured clone, so receivers get
+    their own copy of the message data and host wrappers. It has no transfer list:
+    broadcast messages clone data and never detach the sender's objects. Use
+    Worker.postMessage() when ownership of a transferable resource should move to
+    one specific Worker.
 */
 
 const CHANNEL_NAME = 'jsplitter.broadcast-channel.demo';
@@ -36,14 +38,14 @@ const titleFont = gdi.Font('Segoe UI', 15, 1);
 const headingFont = gdi.Font('Segoe UI', 12, 1);
 const textFont = gdi.Font('Segoe UI', 11, 0);
 
-const tfArtist = fb.TitleFormat('$if2(%artist%,(未知艺术家))');
+const tfArtist = fb.TitleFormat('$if2(%artist%,(unknown artist))');
 const tfTitle = fb.TitleFormat('$if2(%title%,%filename%)');
-const tfAlbum = fb.TitleFormat("$if2(%album%,(无专辑)) $if2('('%date%')',)");
+const tfAlbum = fb.TitleFormat("$if2(%album%,(no album)) $if2('('%date%')',)");
 
 const channel = new BroadcastChannel(CHANNEL_NAME);
 let sentCount = 0;
 let receivedCount = 0;
-let statusText = '请在另一个 JSplitter 面板中打开此示例。';
+let statusText = 'Open this sample in another JSplitter panel.';
 let dragOverDropZone = false;
 
 let currentHandles = null;
@@ -53,7 +55,7 @@ let currentArtist = '';
 let currentTitle = '';
 let currentAlbum = '';
 let currentTrackCount = 0;
-let currentSourceText = '请在此拖入一个或多个曲目。';
+let currentSourceText = 'Drop one or more tracks here.';
 let artworkGeneration = 0;
 
 function layout() {
@@ -135,7 +137,7 @@ function showTracks(handles, sourceText) {
         }
 
         currentArtwork = null;
-        console.log('广播频道演示 封面加载错误', String(error));
+        console.log('BroadcastChannel demo ARTWORK ERROR', String(error));
         window.Repaint();
     });
 }
@@ -148,14 +150,14 @@ function broadcastHello() {
         kind: 'hello',
         from: INSTANCE_ID,
         sequence: sentCount,
-        text: '来自另一个 JSplitter 面板的问候',
+        text: 'Hello from another JSplitter panel',
         sentAt: Date.now()
     };
 
     channel.postMessage(message);
-    statusText = `已发送消息 #${sentCount}。`;
+    statusText = `Sent message #${sentCount}.`;
 
-    console.log('广播频道演示 发送', {
+    console.log('BroadcastChannel demo SEND', {
         channel: channel.name,
         thisPanel: INSTANCE_ID,
         message: message
@@ -169,7 +171,7 @@ function broadcastTracks(handles) {
 
     showTracks(
         handles,
-        `已在本地拖入，并以消息 #${sentCount} 广播。`
+        `Dropped locally and broadcast as message #${sentCount}.`
     );
 
     const message = {
@@ -181,9 +183,9 @@ function broadcastTracks(handles) {
     };
 
     channel.postMessage(message);
-    statusText = `已将 ${handles.Count} 个曲目作为消息 #${sentCount} 广播。`;
+    statusText = `Broadcast ${handles.Count} track${handles.Count === 1 ? '' : 's'} as message #${sentCount}.`;
 
-    console.log('广播频道演示 发送曲目', {
+    console.log('BroadcastChannel demo SEND TRACKS', {
         channel: channel.name,
         thisPanel: INSTANCE_ID,
         sequence: sentCount,
@@ -204,14 +206,14 @@ channel.onmessage = function (event) {
     if (message.kind === 'tracks' && message.handles && message.handles.Count) {
         showTracks(
             message.handles,
-            `已从面板 ${message.from} 收到 ${message.handles.Count} 个曲目。`
+            `Received ${message.handles.Count} track${message.handles.Count === 1 ? '' : 's'} from panel ${message.from}.`
         );
-        statusText = `已收到来自面板 ${message.from} 的曲目消息 #${message.sequence}。`;
+        statusText = `Received track message #${message.sequence} from panel ${message.from}.`;
     } else {
-        statusText = `已收到来自面板 ${message.from} 的消息 #${message.sequence}：${message.text}`;
+        statusText = `Received message #${message.sequence} from panel ${message.from}: ${message.text}`;
     }
 
-    console.log('广播频道演示 接收', {
+    console.log('BroadcastChannel demo RECEIVE', {
         channel: channel.name,
         thisPanel: INSTANCE_ID,
         message: message
@@ -221,9 +223,9 @@ channel.onmessage = function (event) {
 };
 
 channel.onmessageerror = function (event) {
-    statusText = '无法重建收到的消息：' +
-        (event.errorMessage || '（无诊断文本）');
-    console.log('广播频道演示 消息错误', statusText);
+    statusText = 'Could not reconstruct an incoming message: ' +
+        (event.errorMessage || '(no diagnostic text)');
+    console.log('BroadcastChannel demo MESSAGEERROR', statusText);
     window.Repaint();
 };
 
@@ -232,7 +234,7 @@ function drawArtwork(gr, image, x, y, size) {
         gr.FillSolidRect(x, y, size, size, RGB(224, 224, 224));
         gr.DrawRect(x, y, size, size, 1, RGB(185, 185, 185));
         gr.GdiDrawText(
-            '无封面',
+            'No artwork',
             textFont,
             RGB(110, 110, 110),
             x + 6, y + 6, Math.max(0, size - 12), Math.max(0, size - 12),
@@ -299,8 +301,8 @@ function on_drag_drop(action, x, y) {
         broadcastTracks(handles);
     } else {
         statusText = inside
-            ? '拖放的数据中不包含任何曲目句柄。'
-            : '拖放已取消。';
+            ? 'The dropped data did not contain any track handles.'
+            : 'Drop cancelled.';
         window.Repaint();
     }
 }
@@ -320,18 +322,18 @@ function on_paint(gr) {
     gr.FillSolidRect(0, 0, w, h, background);
 
     gr.GdiDrawText(
-        '广播频道演示',
+        'BroadcastChannel demo',
         titleFont,
         RGB(35, 35, 35),
         16, 12, Math.max(0, w - 32), 28,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX
     );
 
-    // 上部点击区域：原始的简单结构化消息演示。
+    // Upper click area: the original simple structured-message demo.
     gr.FillSolidRect(areas.click.x, areas.click.y, areas.click.w, areas.click.h, card);
     gr.DrawRect(areas.click.x, areas.click.y, areas.click.w, areas.click.h, 1, border);
     gr.GdiDrawText(
-        '点击以广播',
+        'CLICK TO BROADCAST',
         headingFont,
         accent,
         areas.click.x + 12, areas.click.y + 8, Math.max(0, areas.click.w - 24), 22,
@@ -339,8 +341,8 @@ function on_paint(gr) {
     );
 
     const topText =
-        `频道：${CHANNEL_NAME}\n` +
-        `本面板：${INSTANCE_ID}    已发送：${sentCount}    已接收：${receivedCount}\n` +
+        `Channel: ${CHANNEL_NAME}\n` +
+        `This panel: ${INSTANCE_ID}    Sent: ${sentCount}    Received: ${receivedCount}\n` +
         statusText;
 
     gr.GdiDrawText(
@@ -352,14 +354,14 @@ function on_paint(gr) {
         DT_LEFT | DT_TOP | DT_WORDBREAK | DT_NOPREFIX
     );
 
-    // 下部拖放区域：广播真实的 foobar2000 曲目句柄。
+    // Lower drop area: broadcasts real foobar2000 track handles.
     const dropFill = dragOverDropZone ? RGB(235, 243, 252) : card;
     const dropBorder = dragOverDropZone ? accent : border;
     gr.FillSolidRect(areas.drop.x, areas.drop.y, areas.drop.w, areas.drop.h, dropFill);
     gr.DrawRect(areas.drop.x, areas.drop.y, areas.drop.w, areas.drop.h, dragOverDropZone ? 2 : 1, dropBorder);
 
     gr.GdiDrawText(
-        dragOverDropZone ? '拖放曲目' : '曲目广播',
+        dragOverDropZone ? 'DROP TRACKS' : 'TRACK BROADCAST',
         headingFont,
         dragOverDropZone ? accent : text,
         areas.drop.x + 12, areas.drop.y + 8, Math.max(0, areas.drop.w - 24), 22,
@@ -371,9 +373,9 @@ function on_paint(gr) {
 
     if (!currentTrack) {
         gr.GdiDrawText(
-            '请在此拖入一个或多个曲目。\n\n' +
-            '完整的 FbMetadbHandleList 会通过 BroadcastChannel 发送。\n' +
-            '每个已订阅的面板都会读取第一个曲目的元数据，并在本地加载其封面。',
+            'Drop one or more tracks here.\n\n' +
+            'The complete FbMetadbHandleList is sent through BroadcastChannel.\n' +
+            'Every subscribed panel reads the first track metadata and loads its artwork locally.',
             textFont,
             secondary,
             areas.drop.x + 16, contentY,
@@ -393,8 +395,8 @@ function on_paint(gr) {
     const infoY = contentY + 4;
 
     const trackCountLine = currentTrackCount > 1
-        ? `已收到 ${currentTrackCount} 个曲目 — 正在显示第一个曲目`
-        : '1 个曲目';
+        ? `${currentTrackCount} tracks received — showing the first track`
+        : '1 track';
 
     const info =
         `${currentArtist}\n` +
@@ -413,7 +415,7 @@ function on_paint(gr) {
 }
 
 function on_script_unload() {
-    // 面板重载/卸载时频道会被自动清理，但当活动脚本只是要结束使用它时，
-    // 显式调用 close() 才是正确做法。
+    // Panel reload/unload would clean the channel up automatically, but explicit
+    // close() is the right pattern when a live script is simply done using it.
     channel.close();
 }

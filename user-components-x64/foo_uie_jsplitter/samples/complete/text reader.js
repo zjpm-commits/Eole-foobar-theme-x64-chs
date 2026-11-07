@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('文本阅读器', {author:'marc2003'});
+window.DefineScript('Text Reader', {author:'marc2003'});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');

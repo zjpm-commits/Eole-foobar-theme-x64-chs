@@ -1,5 +1,18 @@
 ﻿'use strict';
 
+/* 洛雪音源广播：按播放项取 artist / title / album（没有就返回 null） */
+function namesLxInfo(focus, ignoreLock) {
+	try {
+		if (typeof lxInfoOf !== 'function') return null;
+		let h = null;
+		try { h = $.handle(focus, ignoreLock); } catch (e) { h = null; }
+		if (!h && fb.IsPlaying) h = fb.GetNowPlaying();
+		const r = h ? lxInfoOf(h) : null;
+		if (!r && fb.IsPlaying) { const n = lxInfoOf(fb.GetNowPlaying()); if (n) return n; }
+		return r || null;
+	} catch (e) { return null; }
+}
+
 class Names {
 	constructor() {
 		this.cur_artist = '';
@@ -35,6 +48,8 @@ class Names {
 	}
 
 	albumArtist(focus, ignoreLock) {
+		const lx = namesLxInfo(focus, ignoreLock);
+		if (lx && (lx.artist || lx.album)) return lx.artist || lx.album;
 		let albumArtist = $.eval('[$trim(' + cfg.tf.albumArtist + ')]', focus, ignoreLock);
 		const radioTrackArtist = !isRadioStreamParser || !panel.isRadio(focus) ? '' : radioStreamParser.getStreamInfo(focus, ignoreLock).artist;
 		return radioTrackArtist || albumArtist;
@@ -48,7 +63,10 @@ class Names {
 		return n.replace(/CD(\s*\d|\.0\d)|CD\s*(One|Two|Three)|Dis(c|k)\s*\d|Dis(c|k)\s*(III|II|I|One|Two|Three)\b/gi, '').replace(/\(\s*\)|\[\s*\]/g, ' ').replace(/\s\s+/g, ' ').replace(/-\s*$/g, ' ').trim();
 	}
 
+	/* 洛雪广播优先：流播项没有标签，直接给歌手名 */
 	artist(focus, ignoreLock) {
+		const lx = namesLxInfo(focus, ignoreLock);
+		if (lx && lx.artist) return lx.artist;
 		let artist = $.eval('[$trim(' + cfg.tf.artist + ')]', focus, ignoreLock);
 		const radioTrackArtist = !isRadioStreamParser || !panel.isRadio(focus) ? '' : radioStreamParser.getStreamInfo(focus, ignoreLock).artist;
 		return radioTrackArtist || artist;
@@ -69,6 +87,8 @@ class Names {
 	}
 
 	title(focus, ignoreLock) {
+		const lx = namesLxInfo(focus, ignoreLock);
+		if (lx && lx.title) return lx.title;
 		let title = $.eval('[$trim(' + cfg.tf.title + ')]', focus, ignoreLock);
 		const radioTrackTitle = !isRadioStreamParser || !panel.isRadio(focus) ? '' : radioStreamParser.getStreamInfo(focus, ignoreLock).title;
 		return radioTrackTitle || title;

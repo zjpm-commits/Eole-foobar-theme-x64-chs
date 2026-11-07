@@ -13,7 +13,7 @@ function _text(mode, x, y, w, h) {
 
 	this.paint = (gr) => {
 		if (this.mode === 'lastfm_bio' && !lastfm.api_key.value.length) {
-			gr.GdiDrawText('未找到 API 密钥。使用右键点击添加。', panel.fonts.normal, panel.colours.text, this.x, this.y + _scale(12), this.w, panel.row_height, LEFT);
+			gr.GdiDrawText('No API key found. Add it using R. Click.', panel.fonts.normal, panel.colours.text, this.x, this.y + _scale(12), this.w, panel.row_height, LEFT);
 			return;
 		}
 
@@ -45,7 +45,7 @@ function _text(mode, x, y, w, h) {
 				this.allmusic_url = false;
 				if (_isFile(this.filename)) {
 					this.content = _.trim(_open(this.filename));
-					// 内容是静态的，因此仅在之前未找到评论时才检查更新
+					// content is static so only check for updates if no review found previously
 					if (!this.content.length && _fileExpired(this.filename, ONE_DAY)) {
 						this.get();
 					}
@@ -76,7 +76,7 @@ function _text(mode, x, y, w, h) {
 					return;
 				}
 				this.filename = temp_filename;
-				if (_isFolder(this.filename)) { // 如果是文件夹，使用第一个 txt/log 文件
+				if (_isFolder(this.filename)) { // if folder, use first txt/log file
 					this.content = _open(_.first(_getFiles(this.filename, this.exts)));
 				} else {
 					this.content = _open(this.filename);
@@ -145,33 +145,33 @@ function _text(mode, x, y, w, h) {
 		switch (this.mode) {
 		case 'allmusic':
 			this.cb = _getClipboardData();
-			panel.m.AppendMenuItem(panel.metadb && _.isString(this.cb) && _tagged(this.artist) && _tagged(this.album) ? MF_STRING : MF_GRAYED, 1000, '从剪贴板粘贴文本');
+			panel.m.AppendMenuItem(panel.metadb && _.isString(this.cb) && _tagged(this.artist) && _tagged(this.album) ? MF_STRING : MF_GRAYED, 1000, 'Paste text from clipboard');
 			panel.m.AppendMenuSeparator();
 			break;
 		case 'lastfm_bio':
-			panel.m.AppendMenuItem(panel.metadb ? MF_STRING : MF_GRAYED, 1100, '强制更新');
+			panel.m.AppendMenuItem(panel.metadb ? MF_STRING : MF_GRAYED, 1100, 'Force update');
 			panel.m.AppendMenuSeparator();
 			_.forEach(this.langs, (item, i) => {
 				panel.s10.AppendMenuItem(MF_STRING, i + 1110, item);
 			});
 			panel.s10.CheckMenuRadioItem(1110, 1121, this.properties.lang.value + 1110);
-			panel.s10.AppendTo(panel.m, MF_STRING, 'Last.fm 语言');
+			panel.s10.AppendTo(panel.m, MF_STRING, 'Last.fm language');
 			panel.m.AppendMenuSeparator();
-			panel.m.AppendMenuItem(MF_STRING, 1199, 'Last.fm API 密钥');
+			panel.m.AppendMenuItem(MF_STRING, 1199, 'Last.fm API key');
 			panel.m.AppendMenuSeparator();
 			break;
 		case 'text_reader':
-			panel.m.AppendMenuItem(MF_STRING, 1200, '刷新');
+			panel.m.AppendMenuItem(MF_STRING, 1200, 'Refresh');
 			panel.m.AppendMenuSeparator();
-			panel.m.AppendMenuItem(MF_STRING, 1210, '自定义标题...');
-			panel.m.AppendMenuItem(MF_STRING, 1220, '自定义路径...');
+			panel.m.AppendMenuItem(MF_STRING, 1210, 'Custom title...');
+			panel.m.AppendMenuItem(MF_STRING, 1220, 'Custom path...');
 			panel.m.AppendMenuSeparator();
-			panel.m.AppendMenuItem(MF_STRING, 1230, '等宽字体');
+			panel.m.AppendMenuItem(MF_STRING, 1230, 'Fixed width font');
 			panel.m.CheckMenuItem(1230, this.properties.fixed.enabled);
 			panel.m.AppendMenuSeparator();
 			break;
 		}
-		panel.m.AppendMenuItem(_isFile(this.filename) || _isFolder(this.filename) ? MF_STRING : MF_GRAYED, 1999, '打开所在文件夹');
+		panel.m.AppendMenuItem(_isFile(this.filename) || _isFolder(this.filename) ? MF_STRING : MF_GRAYED, 1999, 'Open containing folder');
 		panel.m.AppendMenuSeparator();
 	}
 
@@ -202,7 +202,7 @@ function _text(mode, x, y, w, h) {
 			panel.item_focus_change();
 			break;
 		case 1199:
-			lastfm.api_key.value = utils.InputBox(window.ID, '自 2024 年 8 月 31 日起，多年来一直使用的 Last.fm API 密钥因使用过度而被封禁。\n您可以从此链接获取：\n\nhttps://www.last.fm/api/account/create\n\n请输入您自己的 API 密钥：', 'Last.fm API 密钥', lastfm.api_key.value, false);
+			lastfm.api_key.value = utils.InputBox(window.ID, 'On the 31st August 2024, it was noticed that the Last.fm API key supplied for many years has been blocked for excessive usage.\nYou can get one from this link:\n\nhttps://www.last.fm/api/account/create\n\nInput your own API key:', 'Last.fm API key', lastfm.api_key.value, false);
 			window.Reload();
 			break;
 		case 1200:
@@ -210,7 +210,7 @@ function _text(mode, x, y, w, h) {
 			panel.item_focus_change();
 			break;
 		case 1210:
-			this.properties.title_tf.value = utils.InputBox(window.ID, '此处可使用完整标题格式。', window.ScriptInfo.Name, this.properties.title_tf.value);
+			this.properties.title_tf.value = utils.InputBox(window.ID, 'You can use full title formatting here.', window.ScriptInfo.Name, this.properties.title_tf.value);
 			window.Repaint();
 			break;
 		case 1220:
@@ -319,12 +319,12 @@ function _text(mode, x, y, w, h) {
 					var content = this.parse_review(response_text);
 
 					if (content.length) {
-						console.log(N, '已找到并保存评论。');
+						console.log(N, 'A review was found and saved.');
 						_save(filename, content);
 						this.reset();
 						this.metadb_changed();
 					} else {
-						console.log(N, '未在此专辑页面上找到评论。');
+						console.log(N, 'No review was found on the page for this album.');
 					}
 				} else {
 					this.parse_search_results(response_text);
@@ -377,13 +377,13 @@ function _text(mode, x, y, w, h) {
 						}, this);
 
 					if (this.review_url.length) {
-						console.log(N, '已找到 ' + _q(this.album) + ' 的页面。正在检查评论...');
+						console.log(N, 'A page was found for ' + _q(this.album) + '. Now checking for review...');
 						this.get();
 					} else {
-						console.log(N, '无法为 ' + _q(this.album) + ' 找到匹配项。');
+						console.log(N, 'A match could not be found for ' + _q(this.album));
 					}
 				} catch (e) {
-					console.log(N, '无法解析 Allmusic 服务器响应。');
+					console.log(N, 'Could not parse Allmusic server response.');
 				}
 			}
 

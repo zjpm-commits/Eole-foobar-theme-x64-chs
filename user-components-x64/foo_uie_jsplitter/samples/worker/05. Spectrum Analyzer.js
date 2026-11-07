@@ -1,30 +1,30 @@
 ﻿'use strict';
 
-// Worker 示例 5：频谱分析仪
-// 演示：在 Worker 中进行实时音频/FFT 分析、直接面板渲染以及
-// 可转移 Float32Array 帧的乒乓交换。Worker 仅发送频谱电平/峰值；
-// on_paint() 使用面板图形对象直接绘制，因此每帧不创建离屏位图。
-// 一帧绘制完成后，前一个 Float32Array 被转回 Worker 并复用于后续帧。
-// 前两帧之后，同两个缓冲区在 Worker 与面板之间乒乓交换。
+// Worker sample 5: Spectrum Analyzer
+// Demonstrates: real-time audio/FFT analysis in a Worker, direct panel rendering and
+// transferable Float32Array frame ping-pong. The Worker sends only spectrum levels/peaks;
+// on_paint() draws them directly with the panel graphics object, so no offscreen bitmap is
+// created per frame. After a frame has painted, the previous Float32Array is transferred back
+// to the Worker and reused for a later frame. After the first two frames, the same two buffers
+// ping-pong between Worker and panel.
 //
-// 主线程模式在面板线程上运行相同的分析引擎以便对比。GDI/D2D 仅选择
-// 面板渲染后端；两种模式使用相同的频谱数据和直接绘制路径。
-// 使用面板内的开关对比执行模式、渲染后端、FFT 大小和速率限制。
-// 同一时间只允许一帧已完成的 Worker 帧在途；下一帧在上一帧
-// 已绘制并确认后才开始。
+// Main mode runs the same analysis engine on the panel thread for comparison. GDI/D2D selects
+// the panel rendering backend only; both modes use the same spectrum data and direct paint path.
+// Use the in-panel switches to compare execution mode, rendering backend, FFT size and rate limit.
+// Only one completed Worker frame is allowed in flight at a time; the next frame starts after
+// the previous one has been painted and acknowledged.
 
 let engineMode = 'worker';
 let drawMode = 1;
 let fftSize = 4096;
-let rateMode = '120';
+let rateMode = '60';
 window.DrawMode = drawMode;
-
-const TARGET_FPS = 120;
-const FRAME_TIME = 1000 / TARGET_FPS;
 const BAR_WIDTH = 5;
 const BAR_GAP = 2;
 const BAR_COLOUR = 0xFF42A5F5;
 const SPECTRUM_TOP = 92;
+const MIN_FREQUENCY = 30;
+const MAX_FREQUENCY = 16000;
 
 const DT_LEFT = 0x0000;
 const DT_CENTER = 0x0001;
@@ -48,10 +48,8 @@ let paintCount = 0;
 let frameWindowStart = performance.now();
 let paintWindowStart = frameWindowStart;
 
-function createSpectrumEngine(currentFftSize) {
+function createSpectrumEngine(currentFftSize, minFrequencyLimit, maxFrequencyLimit) {
     const FFT_SIZE = currentFftSize;
-    const FLOOR_LEVEL = 0.04;
-    const IDLE_LEVEL = 0.015;
     let bandCount = 1;
     let bandSampleRate = 0;
     let windowLength = 0;
@@ -69,6 +67,8 @@ function createSpectrumEngine(currentFftSize) {
     let windowCoefficients = new Float64Array(1);
     let bandStart = new Int32Array(1);
     let bandEnd = new Int32Array(1);
+    let bandPosition0 = new Float64Array(1);
+    let bandPosition1 = new Float64Array(1);
 
     function ensureWindow(length) {
         length = Math.max(1, Math.min(FFT_SIZE, length | 0));
@@ -138,8 +138,8 @@ function createSpectrumEngine(currentFftSize) {
         bandSampleRate = sampleRate;
 
         const nyquist = sampleRate * 0.5;
-        const minFrequency = Math.min(30, nyquist * 0.5);
-        const maxFrequency = Math.max(minFrequency + 1, Math.min(16000, nyquist * 0.96));
+        const minFrequency = Math.min(minFrequencyLimit, nyquist * 0.5);
+        const maxFrequency = Math.max(minFrequency + 1, Math.min(maxFrequencyLimit, nyquist * 0.96));
         const ratio = maxFrequency / minFrequency;
         const half = FFT_SIZE >> 1;
 
@@ -148,24 +148,30 @@ function createSpectrumEngine(currentFftSize) {
             const t1 = (band + 1) / bandCount;
             const f0 = minFrequency * Math.pow(ratio, t0);
             const f1 = minFrequency * Math.pow(ratio, t1);
-            const bin0 = Math.max(1, Math.floor(f0 * FFT_SIZE / sampleRate));
-            const bin1 = Math.min(half + 1, Math.max(bin0 + 1, Math.ceil(f1 * FFT_SIZE / sampleRate)));
+            const fftScale = FFT_SIZE / sampleRate;
+            const binPosition0 = f0 * fftScale;
+            const binPosition1 = f1 * fftScale;
+            const bin0 = Math.max(1, Math.floor(binPosition0));
+            const bin1 = Math.min(half + 1, Math.max(bin0 + 1, Math.ceil(binPosition1)));
+            bandPosition0[band] = binPosition0;
+            bandPosition1[band] = binPosition1;
             bandStart[band] = bin0;
             bandEnd[band] = bin1;
         }
     }
 
-    function updateDynamics(dt, floorLevel) {
+    function updateDynamics(dt, stopped = false) {
         const attack = 1 - Math.exp(-dt / 0.018);
         const release = 1 - Math.exp(-dt / 0.095);
         const gravity = 3.0;
         const peakHoldSeconds = 0.10;
+        const inactiveEpsilon = 1e-3;
 
         for (let i = 0; i < bandCount; ++i) {
             const target = targets[i];
             let level = smoothed[i] || 0;
             level += (target - level) * (target >= level ? attack : release);
-            level = Math.max(floorLevel, Math.min(0.98, level));
+            level = Math.max(0, Math.min(0.98, level));
             smoothed[i] = level;
 
             let peak = peaks[i] || 0;
@@ -186,15 +192,29 @@ function createSpectrumEngine(currentFftSize) {
                     }
                 }
             }
-            peaks[i] = Math.max(level, Math.min(0.98, peak));
+            peak = Math.max(level, Math.min(0.98, peak));
+
+            if (stopped) {
+                if (level < inactiveEpsilon) {
+                    level = 0;
+                    smoothed[i] = 0;
+                }
+                if (level === 0 && peak < inactiveEpsilon) {
+                    peak = 0;
+                    peakVelocity[i] = 0;
+                    peakHold[i] = 0;
+                }
+            }
+
+            peaks[i] = peak;
         }
     }
 
-    function analyse(data, sampleCount, channels, sampleRate, available, dt) {
+    function analyse(data, sampleCount, channels, sampleRate, available, dt, stopped) {
         const required = sampleCount * channels;
         if (!data || !sampleCount || !channels || !sampleRate || available < required) {
-            targets.fill(IDLE_LEVEL);
-            updateDynamics(dt, IDLE_LEVEL);
+            targets.fill(0);
+            updateDynamics(dt, stopped);
             return;
         }
 
@@ -225,22 +245,39 @@ function createSpectrumEngine(currentFftSize) {
         }
 
         for (let band = 0; band < bandCount; ++band) {
-            let energy = 0;
-            const bin0 = bandStart[band];
-            const bin1 = bandEnd[band];
+            const binPosition0 = bandPosition0[band];
+            const binPosition1 = bandPosition1[band];
+            let bandMagnitude = 0;
 
-            for (let bin = bin0; bin < bin1; ++bin) {
-                const magnitude = magnitudes[bin];
-                energy += magnitude * magnitude;
+            if (binPosition1 - binPosition0 < 1) {
+                // A logarithmic band can be narrower than a single FFT bin at low frequencies.
+                // Interpolate the magnitude at the geometric centre of such a band instead,
+                // preserving independent motion without increasing the FFT size.
+                const centrePosition = Math.sqrt(binPosition0 * binPosition1);
+                const position = Math.max(1, Math.min(half, centrePosition));
+                const bin = Math.floor(position);
+                const nextBin = Math.min(half, bin + 1);
+                const fraction = position - bin;
+                bandMagnitude = magnitudes[bin] + (magnitudes[nextBin] - magnitudes[bin]) * fraction;
+            } else {
+                let energy = 0;
+                const bin0 = bandStart[band];
+                const bin1 = bandEnd[band];
+
+                for (let bin = bin0; bin < bin1; ++bin) {
+                    const magnitude = magnitudes[bin];
+                    energy += magnitude * magnitude;
+                }
+
+                bandMagnitude = Math.sqrt(energy / Math.max(1, bin1 - bin0));
             }
 
-            const rms = Math.sqrt(energy / Math.max(1, bin1 - bin0));
-            const db = 20 * Math.log10(Math.max(1e-12, rms));
+            const db = 20 * Math.log10(Math.max(1e-12, bandMagnitude));
             const level = Math.max(0, Math.min(1, (db + 72) / 72));
-            targets[band] = Math.max(FLOOR_LEVEL, Math.min(0.98, level));
+            targets[band] = Math.min(0.98, level);
         }
 
-        updateDynamics(dt, FLOOR_LEVEL);
+        updateDynamics(dt, stopped);
     }
 
     function makeSpectrumFrame() {
@@ -252,8 +289,8 @@ function createSpectrumEngine(currentFftSize) {
         const frame = outputFrame;
         for (let i = 0; i < bandCount; ++i) {
             const at = i * 2;
-            frame[at] = smoothed[i] || FLOOR_LEVEL;
-            frame[at + 1] = peaks[i] || FLOOR_LEVEL;
+            frame[at] = smoothed[i];
+            frame[at + 1] = peaks[i];
         }
         return frame;
     }
@@ -272,6 +309,8 @@ function createSpectrumEngine(currentFftSize) {
             peakHold = new Float64Array(bandCount);
             bandStart = new Int32Array(bandCount);
             bandEnd = new Int32Array(bandCount);
+            bandPosition0 = new Float64Array(bandCount);
+            bandPosition1 = new Float64Array(bandCount);
             bandSampleRate = 0;
             outputFrame = null;
         },
@@ -283,8 +322,8 @@ function createSpectrumEngine(currentFftSize) {
                 : null;
         },
 
-        renderFrame: function (interval) {
-            const dt = Math.max(0.001, Math.min(0.2, (interval > 0 ? interval : FRAME_TIME) / 1000));
+        renderFrame: function (interval, frameTime) {
+            const dt = Math.max(0.001, Math.min(0.2, (interval > 0 ? interval : frameTime) / 1000));
             const audioStart = performance.now();
             let data = null;
             let sampleCount = 0;
@@ -317,7 +356,7 @@ function createSpectrumEngine(currentFftSize) {
             }
             const audioEnd = performance.now();
 
-            analyse(data, sampleCount, channels, sampleRate, available, dt);
+            analyse(data, sampleCount, channels, sampleRate, available, dt, !fb.IsPlaying);
             const analysisEnd = performance.now();
 
             const frame = makeSpectrumFrame();
@@ -337,15 +376,15 @@ function createSpectrumEngine(currentFftSize) {
     };
 }
 
-function makeWorkerSource(currentFftSize, uncapped) {
+function makeWorkerSource(currentFftSize, currentRate) {
     return String.raw`
 'use strict';
 
-const TARGET_FPS = ${TARGET_FPS};
+const TARGET_FPS = ${currentRate === '60' ? 60 : 120};
 const FRAME_TIME = 1000 / TARGET_FPS;
-const UNCAPPED = ${uncapped};
+const UNCAPPED = ${currentRate === 'max'};
 const createSpectrumEngine = ${createSpectrumEngine.toString()};
-const engine = createSpectrumEngine(${currentFftSize});
+const engine = createSpectrumEngine(${currentFftSize}, ${MIN_FREQUENCY}, ${MAX_FREQUENCY});
 
 let configured = false;
 let waitingForPanel = false;
@@ -372,11 +411,11 @@ function produceFrame() {
     const interval = lastFrameStart ? frameStart - lastFrameStart : 0;
     lastFrameStart = frameStart;
 
-    const result = engine.renderFrame(interval);
+    const result = engine.renderFrame(interval, FRAME_TIME);
     const frame = result.frame;
 
-    // 此 ArrayBuffer 的所有权转移到面板。Worker 不再保留另一个
-    // 输出缓冲区；面板在绘制后通过 ACK 返回其之前显示的帧。
+    // Ownership of this ArrayBuffer moves to the panel. The Worker does not retain another
+    // output buffer; the panel returns its previous displayed frame with the ACK after paint.
     engine.setOutputFrame(null);
     waitingForPanel = true;
     frameMessage.frame = frame;
@@ -467,10 +506,14 @@ function stopEngine() {
     mainWaitingForPaint = false;
 }
 
+function getFrameTime() {
+    return 1000 / (rateMode === '60' ? 60 : 120);
+}
+
 function scheduleMain() {
     if (engineMode !== 'main' || !mainEngine || mainTimerId || mainWaitingForPaint) return;
     const elapsed = performance.now() - mainLastFrameStart;
-    const delay = rateMode === 'max' ? 0 : Math.max(0, FRAME_TIME - elapsed);
+    const delay = rateMode === 'max' ? 0 : Math.max(0, getFrameTime() - elapsed);
 
     mainTimerId = setTimeout(function () {
         mainTimerId = 0;
@@ -485,7 +528,7 @@ function renderMainFrame() {
     const interval = mainLastFrameStart ? frameStart - mainLastFrameStart : 0;
     mainLastFrameStart = frameStart;
 
-    const result = mainEngine.renderFrame(interval);
+    const result = mainEngine.renderFrame(interval, getFrameTime());
     mainWaitingForPaint = true;
     recordFrame(result.frame, ++mainSequence, result.timing);
 }
@@ -503,7 +546,7 @@ function startEngine() {
     }
 
     if (engineMode === 'worker') {
-        const currentWorker = new Worker(makeWorkerSource(fftSize, rateMode === 'max'), 'spectrum-analyzer');
+        const currentWorker = new Worker(makeWorkerSource(fftSize, rateMode), 'spectrum-analyzer');
         worker = currentWorker;
 
         currentWorker.onmessage = function (event) {
@@ -512,10 +555,10 @@ function startEngine() {
         };
 
         currentWorker.onerror = function (event) {
-            if (worker === currentWorker) console.log(`Worker 错误：${event.message}`);
+            if (worker === currentWorker) console.log(`Worker error: ${event.message}`);
         };
     } else {
-        mainEngine = createSpectrumEngine(fftSize);
+        mainEngine = createSpectrumEngine(fftSize, MIN_FREQUENCY, MAX_FREQUENCY);
     }
 
     sendSize();
@@ -549,8 +592,9 @@ const RENDERER_D2D = { x: 322, y: SETTINGS_Y, w: 52, h: SETTINGS_H };
 const FFT_1024 = { x: 426, y: SETTINGS_Y, w: 52, h: SETTINGS_H };
 const FFT_2048 = { x: 482, y: SETTINGS_Y, w: 52, h: SETTINGS_H };
 const FFT_4096 = { x: 538, y: SETTINGS_Y, w: 52, h: SETTINGS_H };
-const RATE_120 = { x: 644, y: SETTINGS_Y, w: 46, h: SETTINGS_H };
-const RATE_MAX = { x: 694, y: SETTINGS_Y, w: 46, h: SETTINGS_H };
+const RATE_60 = { x: 644, y: SETTINGS_Y, w: 40, h: SETTINGS_H };
+const RATE_120 = { x: 688, y: SETTINGS_Y, w: 46, h: SETTINGS_H };
+const RATE_MAX = { x: 738, y: SETTINGS_Y, w: 46, h: SETTINGS_H };
 
 function contains(rect, x, y) {
     return x >= rect.x && x < rect.x + rect.w && y >= rect.y && y < rect.y + rect.h;
@@ -575,6 +619,7 @@ function on_mouse_lbtn_up(x, y) {
     else if (contains(FFT_1024, x, y)) nextFft = 1024;
     else if (contains(FFT_2048, x, y)) nextFft = 2048;
     else if (contains(FFT_4096, x, y)) nextFft = 4096;
+    else if (contains(RATE_60, x, y)) nextRate = '60';
     else if (contains(RATE_120, x, y)) nextRate = '120';
     else if (contains(RATE_MAX, x, y)) nextRate = 'max';
     else return;
@@ -603,15 +648,20 @@ function drawSpectrumFrame(gr, spectrumFrame) {
 
     for (let i = 0; i < count; ++i) {
         const x = firstX + i * (barWidth + BAR_GAP);
-        const level = spectrumFrame[i * 2] || 0.04;
-        const peak = spectrumFrame[i * 2 + 1] || 0.04;
-        const barHeight = Math.max(1, level * usableHeight);
-        const y = plotBottom - barHeight;
+        const level = spectrumFrame[i * 2] || 0;
+        const peak = spectrumFrame[i * 2 + 1] || 0;
+        const barHeight = level * usableHeight;
 
-        gr.FillSolidRect(x, y, barWidth, barHeight, BAR_COLOUR);
+        if (barHeight > 0) {
+            const y = plotBottom - barHeight;
+            gr.FillSolidRect(x, y, barWidth, barHeight, BAR_COLOUR);
+        }
 
-        const peakY = plotBottom - peak * usableHeight;
-        gr.DrawLine(x, peakY, x + barWidth - 1, peakY, 1, 0xFFE8EDF2);
+        const peakHeight = peak * usableHeight;
+        if (peakHeight >= 1) {
+            const peakY = plotBottom - peakHeight;
+            gr.DrawLine(x, peakY, x + barWidth - 1, peakY, 1, 0xFFE8EDF2);
+        }
     }
 }
 
@@ -656,35 +706,36 @@ function on_paint(gr) {
         }
     }
 
-    const engine = engineMode === 'worker' ? 'Worker' : '主线程';
+    const engine = engineMode === 'worker' ? 'Worker' : 'Main';
     const backend = drawMode === 1 ? 'D2D' : 'GDI';
-    const overlay = `${engine}/${backend}   帧 ${frameFps.toFixed(1)} FPS   绘制 ${paintFps.toFixed(1)} FPS   间隔 ${timing.interval.toFixed(1)} ms   音频 ${timing.audio.toFixed(2)}   FFT ${timing.analysis.toFixed(2)}   打包 ${timing.pack.toFixed(2)}   总计 ${timing.total.toFixed(2)} ms`;
+    const overlay = `${engine}/${backend}   frame ${frameFps.toFixed(1)} FPS   paint ${paintFps.toFixed(1)} FPS   interval ${timing.interval.toFixed(1)} ms   audio ${timing.audio.toFixed(2)}   FFT ${timing.analysis.toFixed(2)}   pack ${timing.pack.toFixed(2)}   total ${timing.total.toFixed(2)} ms`;
     gr.FillSolidRect(8, 8, Math.max(1, Math.min(window.Width - 16, 760)), 28, 0xC0101319);
     gr.DrawText(overlay, INFO_FONT, 0xFFE8EDF2, 14, 8, Math.max(1, window.Width - 28), 28,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
 
-    gr.DrawText('引擎：', INFO_FONT, 0xFFB7C1CB, 14, SETTINGS_Y, 50, SETTINGS_H,
+    gr.DrawText('Engine:', INFO_FONT, 0xFFB7C1CB, 14, SETTINGS_Y, 50, SETTINGS_H,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
-    drawChoice(gr, ENGINE_MAIN, '主线程', engineMode === 'main');
+    drawChoice(gr, ENGINE_MAIN, 'Main', engineMode === 'main');
     drawChoice(gr, ENGINE_WORKER, 'Worker', engineMode === 'worker');
 
-    gr.DrawText('渲染器：', INFO_FONT, 0xFFB7C1CB, 196, SETTINGS_Y, 74, SETTINGS_H,
+    gr.DrawText('Renderer:', INFO_FONT, 0xFFB7C1CB, 196, SETTINGS_Y, 74, SETTINGS_H,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     drawChoice(gr, RENDERER_GDI, 'GDI', drawMode === 0);
     drawChoice(gr, RENDERER_D2D, 'D2D', drawMode === 1);
 
-    gr.DrawText('FFT：', INFO_FONT, 0xFFB7C1CB, 388, SETTINGS_Y, 34, SETTINGS_H,
+    gr.DrawText('FFT:', INFO_FONT, 0xFFB7C1CB, 388, SETTINGS_Y, 34, SETTINGS_H,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
     drawChoice(gr, FFT_1024, '1024', fftSize === 1024);
     drawChoice(gr, FFT_2048, '2048', fftSize === 2048);
     drawChoice(gr, FFT_4096, '4096', fftSize === 4096);
 
-    gr.DrawText('速率：', INFO_FONT, 0xFFB7C1CB, 604, SETTINGS_Y, 36, SETTINGS_H,
+    gr.DrawText('Rate:', INFO_FONT, 0xFFB7C1CB, 604, SETTINGS_Y, 36, SETTINGS_H,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX);
+    drawChoice(gr, RATE_60, '60', rateMode === '60');
     drawChoice(gr, RATE_120, '120', rateMode === '120');
     drawChoice(gr, RATE_MAX, 'Max', rateMode === 'max');
 
-    gr.DrawText('提示：如需更精细的定时器粒度，请在 高级 > 工具 > JSplitter > 性能 中启用“使用高分辨率定时器”（需重启）。',
+    gr.DrawText('Tip: for finer timer granularity, enable "Use high-resolution timers" in Advanced > Tools > JSplitter > Performance (restart required).',
         INFO_FONT, 0xFF7E8A96, 14, 68, Math.max(1, window.Width - 28), 18,
         DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS | DT_NOPREFIX);
 }

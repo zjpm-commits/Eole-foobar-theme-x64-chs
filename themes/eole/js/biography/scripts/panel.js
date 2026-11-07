@@ -657,10 +657,14 @@ class Panel {
 
 	getList(p_clear, isAlbum) {
 		if (!this.id.lookUp) return;
-		const artist = name.artist(this.id.focus, true) || lg['Artist Unknown'];
+		/* 流播项没有标签：洛雪广播里有歌手就用它，否则走原逻辑 */
+		let lxFocus = this.id.focus;
+		if (!lxFocus && fb.IsPlaying) { try { lxFocus = fb.GetNowPlaying(); } catch (eLx) { } }
+		const lxBio = (typeof lxInfoOf === 'function') ? lxInfoOf(lxFocus) : null;
+		const artist = (lxBio && lxBio.artist) ? lxBio.artist : (name.artist(this.id.focus, true) || lg['Artist Unknown']);
 		const albumArtist = (!panel.isRadio(this.id.focus) ? name.albumArtist(this.id.focus, true) : artist) || lg['Artist Unknown'];
 		const composition = isAlbum ? false : ppt.classicalMusicMode && (txt.rev.loaded.am && !txt.rev.amFallback || txt.rev.loaded.wiki && !txt.rev.wikiFallback);
-		const album = !composition ? name.album(this.id.focus, true) || lg['Album Unknown'] : name.composition(this.id.focus, true) || lg['Composition Unknown'];
+		const album = !composition ? ((lxBio && lxBio.album) ? lxBio.album : (name.album(this.id.focus, true) || lg['Album Unknown'])) : name.composition(this.id.focus, true) || lg['Composition Unknown'];
 		if (this.lock) {
 			this.logArtistHistory(artist);
 			this.logAlbumHistory(albumArtist, album, composition);

@@ -1,8 +1,8 @@
-window.DefineScript('GetAlbumArtV2', { author: 'T.P Wang' });
+﻿window.DefineScript('GetAlbumArtV2', { author: 'T.P Wang' });
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
-// 在开始播放新曲目之前不会显示任何内容
+// Nothing will show until you start playing a new track
 
 let g_img = null;
 let ww = 0, wh = 0;
@@ -13,7 +13,7 @@ function on_paint(gr) {
         return;
     }
 
-    // 保持宽高比
+    // Keep aspect ratio
     let scale_w = ww / g_img.Width;
     let scale_h = wh / g_img.Height;
     let scale = Math.min(scale_w, scale_h);

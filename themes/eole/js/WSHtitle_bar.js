@@ -1110,7 +1110,11 @@ function on_playback_new_track(metadb){
 }
 function eval_caption_title(metadb){
 	if(metadb)
-		caption_title = fb.TitleFormat(properties.tracktitle_format).EvalWithMetadb(metadb).replace(/\r?\n/gm, ' ');
+		caption_title = fb.TitleFormat(lxFillFormat(properties.tracktitle_format)).EvalWithMetadb(metadb).replace(/\r?\n/gm, ' ');
+}
+/* 广播到了以后重算一次标题 */
+function lxRefresh() {
+	try { eval_caption_title(fb.GetNowPlaying()); window.Repaint(); } catch (e) { }
 }
 function on_playback_stop(reason) {
 	switch(reason) {
@@ -2433,6 +2437,8 @@ function on_focus(is_focused) {
 	g_searchbox.on_focus(is_focused)
 }
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "fw_theme_request": {
 			/* 简介 / Lxbox 这类外部面板启动时会来问一次当前深浅（它们读不到本主题的
@@ -3223,7 +3229,7 @@ function on_init(){
 	g_uihacks.setAeroEffect(2);
 	g_uihacks.setAero(0,0,1,0);
 
-	if(fb.IsPlaying) caption_title = fb.TitleFormat("[%artist%  -  ][%album%[  -  %tracknumber%] : ]%title%[  -  %date%]").Eval();
+	if(fb.IsPlaying) caption_title = fb.TitleFormat(lxFillFormat("[%artist%  -  ][%album%[  -  %tracknumber%] : ]%title%[  -  %date%]")).Eval();
 	if(settings_file_not_found){
 		var welcome_msg_timer = setTimeout(function(){
 			chooseMemorySettings(" ", "<div class='titleBig'>看起来您刚刚安装了此主题？</div><div class='separator'></div><br/>请完整阅读此弹窗，尤其是底部文字，以了解 Eole 图像缓存的工作方式。\n\n下方设置会影响性能、封面分辨率以及此皮肤的内存占用。\n\n如果之后遇到性能问题或内存不足错误，可以前往 Foobar > 皮肤设置 > 封面与内存占用 将其调低。相反，如果一切运行正常，则可以调高。如果您不完全理解这些内容，请保留默认设置。",'<br/>实用提示：大多数面板都可右键单击打开设置菜单。<br/><br/>注意：Eole 使用封面缓存。封面缓存是一点一点建立的：当显示封面时，如果尚未存入缓存，就会加入缓存，因此首次显示任意封面时会稍慢，但第二次显示会快得多。<br/><br/>此缓存基于 %album artist% 与 %album% 标签。<br/><br/>如果更新了已有封面，需要触发缓存刷新：右键单击需要刷新的封面，会出现相应菜单项。<br/><br/>','MemoryDialog','您可以在下方减小内存中封存的封面宽度。此数值越低，此皮肤的内存占用就越低。注意：如果降得太低，封面会显得模糊。');

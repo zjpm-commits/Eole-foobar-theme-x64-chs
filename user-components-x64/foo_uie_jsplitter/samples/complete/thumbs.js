@@ -1,6 +1,6 @@
 ﻿'use strict';
 
-window.DefineScript('缩略图', {author:'marc2003'});
+window.DefineScript('Thumbs', {author:'marc2003'});
 include(fb.ComponentPath + 'samples\\complete\\js\\lodash.min.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\helpers.js');
 include(fb.ComponentPath + 'samples\\complete\\js\\panel.js');

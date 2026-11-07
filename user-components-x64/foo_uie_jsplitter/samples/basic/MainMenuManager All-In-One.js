@@ -1,4 +1,4 @@
-window.DefineScript('主菜单管理器（整合）', { author: 'YBStone / T.P Wang / marc2003' });
+﻿window.DefineScript('MainMenuManager All-In-One', { author: 'YBStone / T.P Wang / marc2003' });
 include('docs/Flags.js');
 include('docs/Helpers.js');
 
@@ -19,13 +19,13 @@ function menu() {
     let contextman = fb.CreateContextMenuManager();
     contextman.InitNowPlaying();
     
-    let child1 = window.CreatePopupMenu(); //文件
-    let child2 = window.CreatePopupMenu(); //编辑
-    let child3 = window.CreatePopupMenu(); //视图
-    let child4 = window.CreatePopupMenu(); //播放
-    let child5 = window.CreatePopupMenu(); //媒体库
-    let child6 = window.CreatePopupMenu(); //帮助
-    let child7 = window.CreatePopupMenu(); //正在播放
+    let child1 = window.CreatePopupMenu(); //File
+    let child2 = window.CreatePopupMenu(); //Edit
+    let child3 = window.CreatePopupMenu(); //View
+    let child4 = window.CreatePopupMenu(); //Playback
+    let child5 = window.CreatePopupMenu(); //Library
+    let child6 = window.CreatePopupMenu(); //Help
+    let child7 = window.CreatePopupMenu(); //Now playing
     
     let menuman1 = fb.CreateMainMenuManager();
     let menuman2 = fb.CreateMainMenuManager();
@@ -34,15 +34,15 @@ function menu() {
     let menuman5 = fb.CreateMainMenuManager();
     let menuman6 = fb.CreateMainMenuManager();
     
-    // MF_STRING 定义在 docs/Flags.js 中
-    child1.AppendTo(basemenu, MF_STRING, '文件');
-    child2.AppendTo(basemenu, MF_STRING, '编辑');
-    child3.AppendTo(basemenu, MF_STRING, '视图');
-    child4.AppendTo(basemenu, MF_STRING, '播放');
-    child5.AppendTo(basemenu, MF_STRING, '媒体库');
-    child6.AppendTo(basemenu, MF_STRING, '帮助');
+    // MF_STRING is defined in docs/Flags.js
+    child1.AppendTo(basemenu, MF_STRING, 'File');
+    child2.AppendTo(basemenu, MF_STRING, 'Edit');
+    child3.AppendTo(basemenu, MF_STRING, 'View');
+    child4.AppendTo(basemenu, MF_STRING, 'Playback');
+    child5.AppendTo(basemenu, MF_STRING, 'Library');
+    child6.AppendTo(basemenu, MF_STRING, 'Help');
     basemenu.AppendMenuSeparator();
-    child7.AppendTo(basemenu, MF_STRING, '正在播放');
+    child7.AppendTo(basemenu, MF_STRING, 'Now Playing');
     
     menuman1.Init('file');
     menuman2.Init('edit');

@@ -1,6 +1,6 @@
-﻿// 使用可复用的 Uint8Array 缓冲区进行流式二进制 I/O。
-// Read() 会填充传入的缓冲区，而不是为每个分块分配新的类型化数组。
-// 完整的复制操作运行在临时 Worker 中，因此面板 UI 保持响应。
+﻿// Streaming binary I/O with a reusable Uint8Array buffer.
+// Read() fills the supplied buffer instead of allocating a new typed array for each chunk.
+// The complete copy operation runs in a temporary Worker so the panel UI remains responsive.
 
 const sourcePath = `${fb.ProfilePath}streaming-source.bin`;
 const copyPath = `${fb.ProfilePath}streaming-copy.bin`;
@@ -12,13 +12,13 @@ async function copyFile() {
 
             const reader = utils.OpenBinaryReader(sourcePath);
             if (!reader) {
-                throw new Error(`无法打开：${sourcePath}`);
+                throw new Error(`Unable to open: ${sourcePath}`);
             }
 
             const writer = utils.OpenBinaryWriter(copyPath);
             if (!writer) {
                 reader.Close();
-                throw new Error(`无法创建：${copyPath}`);
+                throw new Error(`Unable to create: ${copyPath}`);
             }
 
             try {
@@ -28,14 +28,14 @@ async function copyFile() {
                         break;
                     }
 
-                    // 只有前 bytesRead 个字节包含新读取的数据。
+                    // Only the first bytesRead bytes contain newly read data.
                     if (!writer.Write(buffer, 0, bytesRead)) {
-                        throw new Error('写入失败');
+                        throw new Error('Write failed');
                     }
                 }
 
                 if (!writer.Flush()) {
-                    throw new Error('刷新失败');
+                    throw new Error('Flush failed');
                 }
 
                 return writer.Position;
@@ -46,10 +46,10 @@ async function copyFile() {
             }
         }, sourcePath, copyPath);
 
-        console.log(`已复制 ${bytesCopied} 字节`);
+        console.log(`Copied ${bytesCopied} bytes`);
     }
     catch (error) {
-        console.log(`复制失败：${error.name}: ${error.message}`);
+        console.log(`Copy failed: ${error.name}: ${error.message}`);
     }
 }
 

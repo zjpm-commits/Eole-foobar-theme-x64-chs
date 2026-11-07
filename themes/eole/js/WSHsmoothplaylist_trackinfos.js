@@ -194,26 +194,6 @@ var PROP_KEY_MINI = {
 		"autocollapse": "迷你·自动折叠", 	"addedRows_end_default": "迷你·末尾空行数"
 };
 
-(function migrateMiskeyedProperties() {
-	try {
-	if (window.GetProperty("_属性键已修正迁移", false)) return;
-	var scopes = [["大面板·通用", PROP_KEY_BIG], ["迷你·通用", PROP_KEY_MINI]];
-	for (var s = 0; s < scopes.length; s++) {
-		var prefix = scopes[s][0], tbl = scopes[s][1];
-		for (var k in tbl) {
-			var bad = prefix + k, good = tbl[k];
-			var v = window.GetProperty(bad, null);
-			if (v !== null && typeof v !== "undefined") {
-				if (window.GetProperty(good, null) === null) window.SetProperty(good, v);
-				window.SetProperty(bad, null);
-			}
-		}
-	}
-	window.SetProperty("_属性键已修正迁移", true);
-	} catch (e) {
-	}
-})();
-
 function propKey(scope, name) {
 	var tbl = (scope == 'mini') ? PROP_KEY_MINI : PROP_KEY_BIG;
 	return tbl[name] || ((scope == 'mini' ? '迷你·通用' : '大面板·通用') + name);
@@ -1928,11 +1908,23 @@ oBrowser = function(name) {
 
 		this.groups.splice(0, this.groups.length);
 		this.rows.splice(0, this.rows.length);
+		/* 每次重建都重读一次广播表：Lxbox 刚写进去的那首不会因为时序错过 */
+		try { lxLoadItems(true); } catch (eLx0) { }
         var tf = properties.tf_groupkey;
         var str_filter = process_string(filter_text);
 		for(var i = 0; i < total; i++) {
 			handle = this.list[i];
             arr = tf.EvalWithMetadb(handle).replace(/\r?\n/gm, ' ').split(/ ## ([^]*)/);
+			/* 洛雪广播里有这首的歌手 / 歌名就用它（流播项自身没有标签） */
+			try {
+				var lxInfo0 = lxRowInfo(handle);
+				if (lxInfo0 && arr.length > 1) {
+					var lxParts = String(arr[1] || '').split(" ^^ ");
+					if (lxInfo0.artist) lxParts[0] = String(lxInfo0.artist).replace(/\s*\^\^\s*/g, ' ');
+					if (lxInfo0.title) lxParts[1] = String(lxInfo0.title).replace(/\s*\^\^\s*/g, ' ');
+					arr[1] = lxParts.join(" ^^ ");
+				}
+			} catch (eLx4) { }
             current = arr[0].toLowerCase();
             if(str_filter.length > 0) {
                 var toAdd = match(arr[0]+" "+arr[1], str_filter);
@@ -1964,6 +1956,13 @@ oBrowser = function(name) {
                         tr.push(arr[1].split(" ^^ "));
                         t++;
                         this.groups.push(new oGroup(g, i, handle, arr[0]));
+						if (lxInfo0) {
+							var lxGs = this.groups[g].groupkeysplit;
+							if (lxGs) {
+								if (lxInfo0.artist) lxGs[0] = String(lxInfo0.artist);
+								if (lxInfo0.title) lxGs[1] = String(lxInfo0.title);
+							}
+						}
 						this.groups[g].TotalTime+=handle.Length;
 						this.groups[g].load_requested = 0;
 						this.groups[g].cover_formated = false;
@@ -6109,6 +6108,17 @@ function on_char(code) {
 };
 
 //=================================================// Playback Callbacks
+/* 广播到了：重读表 + 重建分组 + 重画 */
+function lxRefresh() {
+	try {
+		lxLoadItems(true);
+		brw.populate(false, 29, false);
+		brw.repaint();
+	} catch (e) { }
+}
+
+function lxRowInfo(handle) { return lxInfoOf(handle); }
+
 function on_playback_stop(reason) {
 	g_elapsed_seconds = null;
 	g_time_remaining = null;
@@ -6134,8 +6144,8 @@ function on_playback_stop(reason) {
 	g_radio_artist = "";
 };
 function on_playback_dynamic_info_track() {
-	g_radio_title = TF.title.Eval(true);
-	g_radio_artist = TF.artist.Eval(true);
+	g_radio_title = (g_lx_now && g_lx_now.title) ? g_lx_now.title : TF.title.Eval(true);
+	g_radio_artist = (g_lx_now) ? (g_lx_now.artist || '') : TF.artist.Eval(true);
 	if(g_time_remaining=="ON AIR" || g_total_seconds=="ON AIR") {
 		g_radio_title = g_radio_title + ((g_radio_artist.length>0)?' - '+g_radio_artist:'');
 		g_radio_artist = "";
@@ -6201,8 +6211,8 @@ function on_playback_time(time) {
 		}
 		// radio Tags (live)
 		if(g_metadb && g_metadb.Length < 0) {
-			g_radio_title = TF.title.Eval(true);
-			g_radio_artist = TF.radio_artist.Eval(true);
+			g_radio_title = (g_lx_now && g_lx_now.title) ? g_lx_now.title : TF.title.Eval(true);
+			g_radio_artist = (g_lx_now) ? (g_lx_now.artist || '') : TF.radio_artist.Eval(true);
 		} else if(!g_metadb) g_metadb = fb.GetNowPlaying();
 
 		if(!cSettings.visible) {
@@ -6490,6 +6500,8 @@ function stopFlashNowPlaying() {
 	cNowPlaying.flash = false;
 }
 function on_notify_data(name, info) {
+	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
+	if (lxNotify(name, info)) return;
     switch(name) {
 		case "fullscreenWallpaper":
 			fw_setOn(info);
