@@ -140,7 +140,7 @@ FAQ 超时     皮肤面板显示的还是 hash（列表行 / 标题栏）
        确认覆盖的是面板实际加载目录中的 main.js，并重新加载脚本 / 面板。
 
    ========================================================================== */
-var APP_VERSION = '2.2.3';
+var APP_VERSION = '2.1.9';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
 /* 早期版本把 lx.* 属性改成「lx.xxx·中文」时留下的迁移标记，已经没用，读到就删掉 */
@@ -293,9 +293,13 @@ var HEAD_H = 62;
 var FOOT_H = 24;
 var ROW_H = 44;
 var ROW_H_ONE = 30;
-var BOARD_W = 190;
+var BOARD_W = 130;           /* 左栏默认宽度，可拖拽，实际值存在 lx.sideW */
 var BOARD_ROW_H = 27;
 var SIDE_RAIL_W = 26;
+var RIGHT_W = 260;            /* 右侧播放列表栏展开宽度 */
+var RIGHT_ROW_H = 26;
+var RIGHT_HEAD_H = 26;        /* 栏标题区高度，和左栏一致 */
+var RIGHT_MIN_W = 700;        /* 窗口窄于这个就不显示右栏 */
 var LIST_ROW_H = 38;
 var PLAYLIST_NAME = '洛雪音源';
 
@@ -657,6 +661,16 @@ var mouseX = 0;
 
 var sideCollapsed = !!Number(getP('lx.sideCollapsed', 0));
 var sideTogHot = false;
+var rightCollapsed = !!Number(getP('lx.rightCollapsed', 1));
+/* 两栏宽度都可以拖，值分别存 lx.sideW / lx.rightW */
+var sideWUser = Math.max(100, Number(getP('lx.sideW', BOARD_W)) || BOARD_W);
+var rightWUser = Math.max(160, Number(getP('lx.rightW', RIGHT_W)) || RIGHT_W);
+var colDrag = null;          /* { side:'left'|'right', x0, w0 } */
+var colHotEdge = '';         /* 鼠标停在哪个边缘上，用来改光标 */
+var rightTogHot = false;
+var rightScroll = 0;
+var rightHoverRow = -1;
+var rightSel = -1;
 var mouseY = 0;
 var cursorHand = false;
 var busy = false;
@@ -2596,7 +2610,111 @@ function drawBackdrop(gr) {
   try { gr.FillSolidRect(0, 0, W, H, C.bg); } catch (e3) {}
 }
 function sideW() {
-  return sideCollapsed ? SIDE_RAIL_W : BOARD_W;
+  return sideCollapsed ? SIDE_RAIL_W : sideWUser;
+}
+
+/* 两栏边缘的拖拽热区。收在边界前后 4px 里，别往栏内伸太多 ——
+   内容区的滚动条就贴在边上，热区宽了会把滚动条的点击抢走。 */
+function colEdgeAt(x, y) {
+  if (L.board && !sideCollapsed && L.board.w > SIDE_RAIL_W + 10) {
+    var ex = L.board.x + L.board.w;
+    if (x >= ex - 1 && x <= ex + 3 && y >= L.board.y && y <= L.board.y + L.board.h) return 'left';
+  }
+  if (L.right && !rightCollapsed && L.right.w > SIDE_RAIL_W + 10) {
+    var ex2 = L.right.x;
+    if (x >= ex2 - 1 && x <= ex2 + 3 && y >= L.right.y && y <= L.right.y + L.right.h) {
+      var rt = rightToggleRect();
+      if (rt && inRect(rt, x, y)) return '';   /* 右栏折叠按钮在这条带上，先让给它 */
+      return 'right';
+    }
+  }
+  return '';
+}
+
+function colDragTo(x) {
+  if (!colDrag) return;
+  var d = Math.round(x - colDrag.x0);
+
+  if (colDrag.side === 'left') {
+    /* 左栏：留 200 给内容区，再留出右栏 */
+    var maxL = Math.min(420, Math.max(120, W - rightW() - 200));
+    sideWUser = clamp(colDrag.w0 + d, 100, maxL);
+  } else {
+    var maxR = Math.min(560, Math.max(180, W - sideW() - 200));
+    rightWUser = clamp(colDrag.w0 - d, 160, maxR);
+  }
+
+  computeLayout();
+  clampScroll();
+  repaint();
+}
+
+function endColDrag() {
+  if (!colDrag) return;
+  if (colDrag.side === 'left') setP('lx.sideW', Math.round(sideWUser));
+  else setP('lx.rightW', Math.round(rightWUser));
+  colDrag = null;
+  sbGeom = {};
+  sbDrag = null;
+  repaint();
+}
+
+/* 右侧播放列表栏：宽度 0 表示不显示（窗口太窄） */
+/* 鼠标中键的四种去向。'off' 是彻底不参与：连坐标都不转换、直接 return false，
+   让事件留给别的面板（jsplaylist 那套列表也注册了中键）。 */
+function mbtnMode() {
+  var v = String(getP('lx.mbtn', 'left'));
+  return (v === 'right' || v === 'none' || v === 'off') ? v : 'left';
+}
+
+function mbtnLabel(v) {
+  if (v === 'right') return '弹右栏';
+  if (v === 'none') return '都不弹';
+  if (v === 'off') return '禁用';
+  return '弹左栏';
+}
+
+function rightW() {
+  if (!(W >= RIGHT_MIN_W)) return 0;
+  return rightCollapsed ? SIDE_RAIL_W : rightWUser;
+}
+
+function rightToggleRect() {
+  if (!L.right || L.right.w <= 0) return null;
+  /* 贴右边界，按钮放左边缘，和左栏的右边缘按钮对称 */
+  return { x: L.right.x + 4, y: L.right.y + 3, w: 18, h: 18 };
+}
+
+function toggleRight() {
+  rightCollapsed = !rightCollapsed;
+  try { setP('lx.rightCollapsed', rightCollapsed ? 1 : 0); } catch (e) {}
+  computeLayout();
+  clampScroll();
+  sbGeom = {};
+  sbDrag = null;
+  var r = rightToggleRect();
+  rightTogHot = !!(r && inRect(r, mouseX, mouseY));
+  repaint();
+}
+
+/* 在 computeLayout 末尾调用：把内容区右侧让出来 */
+function applyRightPanel() {
+  var rw = rightW();
+  if (rw <= 0) { L.right = null; return 0; }
+
+  L.right = {
+    x: Math.max(0, W - rw),
+    y: L.bodyTop,
+    w: rw,
+    h: Math.max(0, L.bodyBottom - L.bodyTop)
+  };
+  L.rightHeadY = L.bodyTop;
+  L.rightListY = L.bodyTop + RIGHT_HEAD_H;
+  L.rightListH = Math.max(0, L.bodyBottom - L.rightListY);
+
+  if (L.search) L.search.w = Math.max(80, L.search.w - rw);
+  if (L.track) L.track.w = Math.max(80, L.track.w - rw);
+  return rw;
 }
 
 function sideToggleRect() {
@@ -2670,10 +2788,14 @@ function computeLayout() {
     }
   }
 
+  /* 右侧播放列表栏：先算它，内容区再让位 */
+  var rw = 0;
+  try { rw = applyRightPanel(); } catch (eRP) { rw = 0; }
+
   // 内容区：左侧栏右边那一整块（底部状态栏不归它管）
   var cx0 = (L.board ? L.board.x + L.board.w : 0);
   var cy0 = (tab === 0) ? L.bodyTop : L.bodyTop + L.search.h;
-  L.content = { x: cx0, y: cy0, w: Math.max(0, W - cx0), h: Math.max(0, L.bodyBottom - cy0) };
+  L.content = { x: cx0, y: cy0, w: Math.max(0, W - cx0 - rw), h: Math.max(0, L.bodyBottom - cy0) };
 
   L.overlay = { x: 0, y: L.bodyTop, w: Math.max(80, W), h: Math.max(0, L.bodyBottom - L.bodyTop) };
 }
@@ -2726,6 +2848,8 @@ function clampScroll() {
   collScroll = clamp(collScroll, 0, maxB);
   var maxO = Math.max(0, overlayRowCount() - visOverlayLines());
   overlayScroll = clamp(overlayScroll, 0, maxO);
+  var maxR = Math.max(0, rightTotal - (L.right ? rightVisRows() : 1));
+  rightScroll = clamp(rightScroll, 0, maxR);
 }
 
 function repaint() {
@@ -4047,7 +4171,7 @@ function cleanPlaylistDeadCache() {
   var prefixes = [];
   for (var d = 0; d < dirs.length; d++) prefixes.push((dirs[d] + '\\').toLowerCase());
   var total = 0;
-  try { total = plman.PlaylistItemCount(idx); } catch (e) { return; }
+  try { total = lxItemCount(idx); } catch (e) { return; }
   if (!total) return;
 
   var dead = [];
@@ -4078,37 +4202,6 @@ function cleanPlaylistDeadCache() {
     NM.lx.pushLog('info', '已从「' + PLAYLIST_NAME + '」清掉 ' + dead.length + ' 条失效缓存条目');
   } catch (e) {
     NM.lx.pushLog('warn', '清理失效播放列表条目失败：' + ((e && e.message) || e));
-  }
-}
-
-/* 旧版本写进列表的 127.0.0.1 代理地址（那个功能已经取消），重启后全是死链。
-   这些条目本来就是面板加的，启动时顺手清掉，免得用户点到一条播不了的。 */
-function cleanProxyPlaylistItems() {
-  var idx = cachePlaylistIndex();
-  if (idx < 0) return;
-  var total = 0;
-  try { total = plman.PlaylistItemCount(idx); } catch (e) { return; }
-  if (!total) return;
-
-  var dead = [];
-  for (var i = 0; i < total; i++) {
-    var p = '';
-    try {
-      var h = plman.GetPlaylistItemHandle(idx, i);
-      p = h ? String(h.Path || '') : '';
-    } catch (e2) { p = ''; }
-    if (p && /^https?:\/\/127\.0\.0\.1:\d+\/lx\//i.test(p)) dead.push(i);
-  }
-  if (!dead.length) return;
-
-  try { if (plman.UndoBackup) plman.UndoBackup(idx); } catch (e3) {}
-  try {
-    plman.ClearPlaylistSelection(idx);
-    dead.forEach(function (n) { plman.SetPlaylistSelectionSingle(idx, n, true); });
-    plman.RemovePlaylistSelection(idx);
-    NM.lx.pushLog('info', '已从「' + PLAYLIST_NAME + '」清掉 ' + dead.length + ' 条失效条目');
-  } catch (e4) {
-    NM.lx.pushLog('warn', '清理失效条目失败：' + ((e4 && e4.message) || e4));
   }
 }
 
@@ -4507,7 +4600,7 @@ function playlistTagTargets(onlySelected) {
   try { idx = plman.ActivePlaylist; } catch (e) { idx = -1; }
   if (idx == null || idx < 0) return { idx: -1, list: [] };
   var n = 0;
-  try { n = plman.PlaylistItemCount(idx) || 0; } catch (e) { n = 0; }
+  try { n = lxItemCount(idx) || 0; } catch (e) { n = 0; }
   var list = [], anySel = false, i, sel;
   for (i = 0; i < n; i++) {
     sel = false;
@@ -5065,20 +5158,507 @@ function attachImageAsync(handle, coverFile, why) {
   });
 }
 
+/* 播放列表项数。各家宿主签名不一样，这里依次试：
+     Spider Monkey Panel : plman.PlaylistItemCount(playlistIndex)  方法
+     JScript Panel       : plman.PlaylistItemCount                 属性（当前列表）
+                           plman.GetPlaylistItemCount(playlistIndex) 方法
+   原来直接写 plman.PlaylistItemCount(idx)，属性型的宿主会在这一步抛异常，
+   被外面的 try/catch 吞掉后一律返回 -1 —— 于是「查找已有项」永远查不到，
+   每次播放都当成新的一项加进列表，这就是同名项越堆越多的根因。
+   返回 -1 表示拿不到（调用方按 0 处理）。 */
+function lxItemCount(idx) {
+  var n = null;
+  try { n = plman.GetPlaylistItemCount(idx); } catch (e1) { n = null; }
+  if (typeof n === 'number' && n >= 0) return n;
+  try { n = plman.PlaylistItemCount(idx); } catch (e2) { n = null; }
+  if (typeof n === 'number' && n >= 0) return n;
+  try { n = plman.PlaylistItemCount; } catch (e3) { n = null; }
+  if (typeof n === 'number' && n >= 0) return n;
+  return -1;
+}
+
+/* 一次取出这个播放列表里所有项的路径。
+   GetPlaylistItems 返回的不是 JS 数组，而是 FbMetadbHandleList 这类容器对象
+   （有 Count / Item(i)，有的还提供 Convert() 转成数组）—— 直接取 .length
+   永远拿不到东西，这就是之前「项数读得到、路径全是空」的原因。
+   所以依次试：Convert() → Count/Item → 逐个 GetPlaylistItemHandle。 */
+
+function lxPathOfHandle(h) {
+  var p = '';
+  try { p = h ? String(h.Path || '') : ''; } catch (e0) { p = ''; }
+  if (!p) { try { p = h ? String(h.RawPath || '') : ''; } catch (e1) { p = ''; } }
+  return p;
+}
+
+function lxPlaylistPaths(idx) {
+  var out = [];
+  if (idx == null || idx < 0) return out;
+
+  var list = null;
+  try { list = plman.GetPlaylistItems(idx); } catch (eL) { list = null; }
+
+  if (list) {
+    /* ① Convert() → JS 数组 */
+    try {
+      var arr = (typeof list.Convert === 'function') ? list.Convert() : null;
+      if (arr && typeof arr.length === 'number' && arr.length > 0) {
+        out = [];
+        for (var a = 0; a < arr.length; a++) out.push(lxPathOfHandle(arr[a]));
+        if (out.length) return out;
+      }
+    } catch (e1) { }
+
+    /* ② Count + Item(i) */
+    try {
+      var cnt = 0;
+      try { cnt = Number(list.Count); } catch (e2) { cnt = 0; }
+      if (!(cnt > 0)) { try { cnt = Number(list.Count()); } catch (e3) { cnt = 0; } }
+      if (cnt > 0) {
+        out = [];
+        for (var i = 0; i < cnt; i++) {
+          var h = null;
+          try { h = list.Item(i); } catch (e4) { h = null; }
+          if (!h) { try { h = list.get_Item(i); } catch (e5) { h = null; } }
+          out.push(lxPathOfHandle(h));
+        }
+        if (out.length) return out;
+      }
+    } catch (e6) { }
+  }
+
+  /* ③ 逐个取 */
+  var n = lxItemCount(idx);
+  if (n < 0) n = 0;
+  out = [];
+  for (var k = 0; k < n; k++) {
+    var pth = '';
+    try { pth = lxPathOfHandle(plman.GetPlaylistItemHandle(idx, k)); } catch (e7) { pth = ''; }
+    out.push(pth);
+  }
+  return out;
+}
+
 function playlistIndexOfPath(idx, path) {
   var low = String(path || '').toLowerCase();
   if (!low) return -1;
-  var total = 0;
-  try { total = plman.PlaylistItemCount(idx) || 0; } catch (e) { return -1; }
-  for (var i = 0; i < total; i++) {
-    var p = '';
-    try {
-      var h = plman.GetPlaylistItemHandle(idx, i);
-      p = h ? String(h.Path || '') : '';
-    } catch (e) { p = ''; }
-    if (p && p.toLowerCase() === low) return i;
+  var paths = lxPlaylistPaths(idx);
+  for (var i = 0; i < paths.length; i++) {
+    if (paths[i] && paths[i].toLowerCase() === low) return i;
   }
   return -1;
+}
+
+/* 从路径里取文件名并去掉扩展名。缓存文件名就是 docBase(track)，所以
+   同名 = 同一首歌，这条对应关系不依赖 index.json，最可靠。 */
+function lxBaseOfPath(p) {
+  var s = String(p || '');
+  if (!s) return '';
+  s = s.replace(/[?#].*$/, '');          /* URL 的查询串 / 锚点不该算进文件名 */
+  var i = Math.max(s.lastIndexOf('\\'), s.lastIndexOf('/'));
+  var name = i >= 0 ? s.slice(i + 1) : s;
+  return name.replace(/\.[A-Za-z0-9]{1,5}$/, '');
+}
+
+/* 按文件名找列表项。路径字符串比较会因为编码、分隔符、尾部差异整条走空，
+   那时每次播放都当成新的一项加进去 —— 这就是同名项越堆越多的直接原因。 */
+function playlistIndexOfBase(idx, base) {
+  var b = String(base || '').toLowerCase();
+  if (!b) return -1;
+  var paths = lxPlaylistPaths(idx);
+  for (var i = 0; i < paths.length; i++) {
+    var pth = paths[i];
+    if (!pth) continue;
+    if (/^https?:\/\//i.test(pth)) continue;
+    if (lxBaseOfPath(pth).toLowerCase() === b) return i;
+  }
+  return -1;
+}
+
+/* ===== 直链 -> 曲目 映射 =====
+   播放列表里存的是带签名的直链，签名过期后再点就是 403，URL 本身救不回来。
+   唯一能做的是「换一条新链播同一首歌」，前提是能反查出这是哪首。
+   写进播放列表的那一刻 URL 和 track 都在手上，顺手记一条就够了。 */
+var LX_URL_MAP = null;
+
+function lxUrlMapFile() {
+  var d = cacheDir();
+  return d ? (d + '\\urlmap.json') : '';
+}
+
+function lxUrlMapLoad() {
+  if (LX_URL_MAP) return LX_URL_MAP;
+  LX_URL_MAP = {};
+  var f = lxUrlMapFile();
+  if (!f) return LX_URL_MAP;
+  try {
+    if (!utils.FileExists(f)) return LX_URL_MAP;
+    var j = JSON.parse(String(utils.ReadTextFile(f, 65001) || '{}').replace(/^﻿/, ''));
+    if (j && j.items && typeof j.items === 'object') LX_URL_MAP = j.items;
+  } catch (e) { }
+  return LX_URL_MAP;
+}
+
+function lxUrlMapSave() {
+  var f = lxUrlMapFile();
+  if (!f) return;
+  try {
+    ensureFolder(dirOfFile(f));
+    utils.WriteTextFile(f, JSON.stringify({ v: 1, items: LX_URL_MAP }));
+  } catch (e) { }
+}
+
+/* 只留取链用得到的字段：raw 里是平台原始 JSON，不能丢 */
+function lxSlimTrack(t) {
+  var o = {};
+  ['source', 'songmid', 'songId', 'mediaMid', 'albumId', 'id', 'hash', 'rid', 'types',
+   'title', 'artist', 'album', 'duration', 'pic', 'cover', 'raw'].forEach(function (k) {
+    if (t[k] != null) o[k] = t[k];
+  });
+  return o;
+}
+
+/* 入队时记一份「地址 -> 曲目」。
+   入队的歌不是「刚点的那首」，LAST_PLAY_URL 不会指向它；等队列轮到它时，
+   广播判定和封面挂载都靠 LAST_PLAY_URL 比对，一律判不过，于是就出现
+   「能播、但没歌手歌名也没封面」。这里按地址反查，切歌时把它认回来。 */
+var LX_QUEUED = {};
+var LX_QUEUED_MAX = 300;
+
+function lxQueueRemember(url, track) {
+  var k = String(url || '').toLowerCase();
+  if (!k || !track) return;
+  try { LX_QUEUED[k] = lxSlimTrack(track); } catch (e) { return; }
+  var keys = Object.keys(LX_QUEUED);
+  var over = keys.length - LX_QUEUED_MAX;
+  if (over > 0) {
+    for (var i = 0; i < over && i < keys.length; i++) delete LX_QUEUED[keys[i]];
+  }
+}
+
+function lxUrlMapPut(url, track) {
+  var u = String(url || '');
+  if (!track || !/^https?:\/\//i.test(u)) return;
+  var m = lxUrlMapLoad();
+  try {
+    m[u] = { t: Date.now(), tr: lxSlimTrack(track) };
+  } catch (e) { return; }
+  var keys = Object.keys(m);
+  if (keys.length > 400) {
+    keys.sort(function (a, b) { return (m[b].t || 0) - (m[a].t || 0); });
+    keys.slice(400).forEach(function (k) { delete m[k]; });
+  }
+  lxUrlMapSave();
+}
+
+/* 直链有效期：各平台短则 20 分钟、长不过两三小时。留着过期的项，
+   点它就是 403，所以超过 30 分钟就当成可能失效，直接从播放列表摘掉。 */
+var LX_URL_TTL = 30 * 60 * 1000;
+var LX_URL_MAP_MAX = 100;
+var lxSweepAt = 0;
+
+function lxSweepStaleUrls(force) {
+  var now = Date.now();
+  if (!force && now - lxSweepAt < 60 * 1000) return;   /* 一分钟内不重复扫 */
+  lxSweepAt = now;
+
+  var m = lxUrlMapLoad();
+  var keys = Object.keys(m);
+  if (!keys.length) return;
+
+  var idx = -1;
+  try { idx = plman.FindPlaylist(PLAYLIST_NAME); } catch (e0) { idx = -1; }
+
+  /* 正在播的那一项永远留着：单曲循环超过 30 分钟时把它删掉会打乱列表状态 */
+  var playingPath = '';
+  if (idx >= 0) {
+    try {
+      if (plman.PlayingPlaylist === idx && plman.PlayingItemIndex >= 0) {
+        var ph = plman.GetPlaylistItemHandle(idx, plman.PlayingItemIndex);
+        if (ph) playingPath = String(ph.Path || '');
+      }
+    } catch (e1) { }
+  }
+
+  var dead = {};
+  keys.forEach(function (k) {
+    if (k === playingPath) return;
+    var it = m[k] || {};
+    if (now - (Number(it.t) || 0) > LX_URL_TTL) dead[k] = 1;
+  });
+
+  /* 超出上限的按时间从旧到新补刀 */
+  var alive = [];
+  keys.forEach(function (k) { if (!dead[k]) alive.push(k); });
+  if (alive.length > LX_URL_MAP_MAX) {
+    alive.sort(function (a, b) { return (Number(m[a].t) || 0) - (Number(m[b].t) || 0); });
+    var over = alive.length - LX_URL_MAP_MAX;
+    for (var oi = 0; oi < over; oi++) {
+      if (alive[oi] === playingPath) continue;
+      dead[alive[oi]] = 1;
+    }
+  }
+
+  var deadKeys = Object.keys(dead);
+  if (!deadKeys.length) return;
+
+  /* 从「洛雪音源」播放列表里摘掉 */
+  var removed = 0;
+  if (idx >= 0) {
+    var n = 0;
+    try { n = lxItemCount(idx); } catch (e2) { n = 0; }
+    var bad = [];
+    for (var i = 0; i < n; i++) {
+      var h = null;
+      try { h = plman.GetPlaylistItemHandle(idx, i); } catch (e3) { h = null; }
+      if (!h) continue;
+      var pth = '';
+      try { pth = String(h.Path || ''); } catch (e4) { pth = ''; }
+      if (pth && dead[pth]) bad.push(i);
+    }
+    if (bad.length) {
+      try {
+        plman.UndoBackup(idx);
+        plman.ClearPlaylistSelection(idx);
+        for (var b = 0; b < bad.length; b++) {
+          try { plman.SetPlaylistSelectionSingle(idx, bad[b], true); } catch (e5) { }
+        }
+        plman.RemovePlaylistSelection(idx, false);
+        removed = bad.length;
+      } catch (e6) { removed = 0; }
+    }
+  }
+
+  deadKeys.forEach(function (k) { delete m[k]; });
+  lxUrlMapSave();
+
+  if (removed) {
+    try {
+      NM.lx.pushLog('info', '清理过期直链：' + removed + ' 条（超过 ' + Math.round(LX_URL_TTL / 60000) + ' 分钟）');
+    } catch (e7) { }
+  }
+}
+
+/* 播放列表里「我们自己写的项」只保留最近 N 条。
+   本地文件（下完再播 / 边下边播第二次）没有过期时间，听一张专辑就堆十几条，
+   而 TTL 那条只认 http 直链，管不到它们 —— 所以这里改成按条数裁：
+   本地项 + 直链项一起算，超出上限的从最老的开始删。 */
+var LX_LIST_KEEP = 30;
+var lxTrimBusy = false;
+
+/* 这一项是不是面板自己加进去的：直链查 urlmap，本地文件查缓存索引。
+   都不是（用户自己拖进来的）就一律不动。 */
+function lxItemIsOurs(path, um, paths) {
+  var pth = String(path || '');
+  if (!pth) return false;
+
+  /* 这个列表是面板专用的（PLAYLIST_NAME，面板自己 FindOrCreate 出来的），
+     里面的直链项一律算我们的 —— urlmap 只记录升级之后播过的，
+     更早的项查不到，不这样兜一层就永远清不掉。 */
+  if (/^https?:\/\//i.test(pth)) return true;
+
+  var low = pth.toLowerCase();
+  if (paths[low]) return true;
+
+  /* 索引里没有也别放过：老版本下的文件、索引被清过的文件都查不到 key，
+     但它们的路径就在缓存目录下面，那必然是面板放的。 */
+  var dirs = [];
+  try { dirs.push(String(cacheDir() || '')); } catch (e1) { }
+  try { dirs.push(String(cacheRoot() || '')); } catch (e2) { }
+  for (var i = 0; i < dirs.length; i++) {
+    var d = dirs[i].replace(/[\\\/]+$/, '').toLowerCase();
+    if (d.length < 4) continue;                 /* 光秃秃的盘符不当依据 */
+    if (low.indexOf(d + '\\') === 0 || low.indexOf(d + '/') === 0) return true;
+  }
+  return false;
+}
+
+function lxTrimPlaylist(idx) {
+  if (idx == null || idx < 0 || lxTrimBusy) return 0;
+  /* 监视缓存开着就不裁剪：裁掉的老项文件还在缓存目录里，下一轮监视会把它当成
+     「不在列表」又补回尾部，形成删头补尾的循环，列表看上去一直在重排。 */
+  if (WATCH_ON) return 0;
+
+  var allPaths = lxPlaylistPaths(idx);
+  var n = allPaths.length;
+  if (n <= LX_LIST_KEEP) return 0;
+
+  var um = null, paths = null;
+  try { um = lxUrlMapLoad(); } catch (eU) { um = {}; }
+  try { paths = lxPathKeyMap(); } catch (eP) { paths = {}; }
+
+  /* 正在播的那一项永远不删：删掉它会让列表状态错乱 */
+  var playingItem = -1;
+  try {
+    if (plman.PlayingPlaylist === idx) playingItem = plman.PlayingItemIndex;
+  } catch (e1) { }
+
+  var ours = [];
+  for (var i = 0; i < n; i++) {
+    var pth = allPaths[i] || '';
+    if (!pth) continue;
+    if (lxItemIsOurs(pth, um, paths)) ours.push(i);
+  }
+
+  var over = ours.length - LX_LIST_KEEP;
+  if (over <= 0) return 0;
+
+  /* ours 是按列表顺序升序的，也就是从老到新 —— 从前面拿就是要删的 */
+  var bad = [];
+  for (var k = 0; k < ours.length && bad.length < over; k++) {
+    if (ours[k] === playingItem) continue;
+    bad.push(ours[k]);
+  }
+  if (!bad.length) return 0;
+
+  lxTrimBusy = true;
+  var removed = 0;
+  try {
+    var cntBefore = 0;
+    try { cntBefore = lxItemCount(idx); } catch (eB) { cntBefore = 0; }
+    plman.UndoBackup(idx);
+    plman.ClearPlaylistSelection(idx);
+    for (var b = 0; b < bad.length; b++) {
+      try { plman.SetPlaylistSelectionSingle(idx, bad[b], true); } catch (e3) { }
+    }
+    plman.RemovePlaylistSelection(idx, false);
+    /* 回读确认：删完不数一遍，删失败也会当成成功，下次又加一条，越堆越多 */
+    var cntAfter = cntBefore;
+    try { cntAfter = lxItemCount(idx); } catch (eA) { cntAfter = cntBefore; }
+    removed = cntBefore - cntAfter;
+  } catch (e4) { removed = 0; }
+  lxTrimBusy = false;
+
+  if (removed > 0) {
+    try {
+      NM.lx.pushLog('info', '播放列表只保留最近 ' + LX_LIST_KEEP + ' 条，已清掉 ' + removed + ' 条');
+    } catch (e5) { }
+    try { lxPathKeyCache = null; } catch (e6) { }
+  } else if (bad.length) {
+    try { NM.lx.pushLog('warn', '播放列表裁剪没生效（选中 ' + bad.length + ' 条，实际删掉 0 条）'); } catch (e7) { }
+  }
+  return removed;
+}
+
+function lxUrlMapGet(url) {
+  var m = lxUrlMapLoad();
+  var hit = m[String(url || '')];
+  if (!hit || !hit.tr) return null;
+  var tr = hit.tr;
+  return (tr.songmid || tr.id || tr.hash || tr.rid) ? tr : null;
+}
+
+/* ===== 同一首歌在列表里只留一条 =====
+   本地项原来只按「完整路径」去重，可同一首曲目可能落下好几个文件：
+   换过音质、扩展名被修正过、或者旧直链和本地各一条 —— 路径不同就匹配不上，
+   于是列表里堆一串同名项。这里改成按曲目身份（source + songmid）去重。 */
+var lxPathKeyCache = null, lxPathKeyAt = 0;
+
+/* 本地路径(小写) -> "source|songmid|quality"，来源是缓存索引 */
+function lxPathKeyMap() {
+  var now = Date.now();
+  if (lxPathKeyCache && now - lxPathKeyAt < 30000) return lxPathKeyCache;
+  var out = {};
+  try {
+    var ci = cacheIndex();
+    Object.keys(ci).forEach(function (k) {
+      var it = ci[k];
+      if (!it || !it.f) return;
+      var abs = '';
+      try { abs = cacheAbsPath(it.f); } catch (e) { abs = ''; }
+      if (abs) out[abs.toLowerCase()] = k;
+    });
+  } catch (e) { }
+  lxPathKeyCache = out;
+  lxPathKeyAt = now;
+  return out;
+}
+
+function lxTrackIdOf(t) {
+  if (!t) return '';
+  var id = t.songmid || t.id || t.hash || t.rid || '';
+  return id ? (String(t.source || '') + '|' + id) : '';
+}
+
+/* 删掉列表里「同一首歌、但不是 keepPath 那一条」的项，正在播的永远跳过 */
+function lxDedupeTrack(idx, track, keepPath) {
+  var id = lxTrackIdOf(track);
+  if (!id) return 0;
+  var allPaths = lxPlaylistPaths(idx);
+  var n = allPaths.length;
+  if (n < 2) return 0;
+
+  var um = lxUrlMapLoad();
+  var paths = lxPathKeyMap();
+  var keepLow = String(keepPath || '').toLowerCase();
+  /* 本地文件名就是 docBase(track)，所以这个比对不依赖缓存索引 */
+  var baseWanted = '';
+  try { baseWanted = docBase(track).toLowerCase(); } catch (eBW) { baseWanted = ''; }
+
+  var playingItem = -1;
+  try {
+    if (plman.PlayingPlaylist === idx) playingItem = plman.PlayingItemIndex;
+  } catch (e0) { }
+
+  var bad = [];
+  var keepIdx = -1;            /* 同路径的第一条要留着，其余同路径的才删 */
+
+  /* 正在播的那条如果就是 keepPath，它本身就是「要留的那条」，
+     别再另外保一条，否则同路径会剩两条 */
+  if (playingItem >= 0 && keepLow) {
+    var ppth = allPaths[playingItem] || '';
+    if (ppth && ppth.toLowerCase() === keepLow) keepIdx = playingItem;
+  }
+
+  for (var i = 0; i < n; i++) {
+    if (i === playingItem) continue;
+    var pth = allPaths[i] || '';
+    if (!pth) continue;
+
+    if (pth.toLowerCase() === keepLow) {
+      if (keepIdx < 0) { keepIdx = i; continue; }
+      bad.push(i);             /* 同一条路径被加了好几遍 */
+      continue;
+    }
+
+    var other = '';
+    if (/^https?:\/\//i.test(pth)) {
+      var rec = um[pth];
+      if (rec && rec.tr) other = lxTrackIdOf(rec.tr);
+    } else {
+      var ck = paths[pth.toLowerCase()];
+      if (ck) {
+        var seg = String(ck).split('|');
+        other = seg[0] + '|' + seg[1];
+      } else if (baseWanted && lxBaseOfPath(pth).toLowerCase() === baseWanted) {
+        /* 索引里没有这个文件（老版本下的、索引被清过）也要认得出来：
+           缓存文件名就是 docBase(track)，一样就是同一首 */
+        other = id;
+      }
+    }
+    if (other && other === id) bad.push(i);
+  }
+  if (!bad.length) return 0;
+
+  var removed = 0;
+  try {
+    var cntBefore = 0;
+    try { cntBefore = lxItemCount(idx); } catch (eB) { cntBefore = 0; }
+    plman.UndoBackup(idx);
+    plman.ClearPlaylistSelection(idx);
+    for (var b = 0; b < bad.length; b++) {
+      try { plman.SetPlaylistSelectionSingle(idx, bad[b], true); } catch (e2) { }
+    }
+    plman.RemovePlaylistSelection(idx, false);
+    /* 回读确认：原来直接 removed = bad.length 是「以为删了」，
+       删失败时日志照样报成功，而下一次又会 AddLocations 一条，越堆越多 */
+    var cntAfter = cntBefore;
+    try { cntAfter = lxItemCount(idx); } catch (eA) { cntAfter = cntBefore; }
+    removed = cntBefore - cntAfter;
+    if (removed < bad.length) {
+      NM.lx.pushLog('warn', '去重只删掉 ' + removed + '/' + bad.length + ' 条（列表可能正在播放或被锁定）');
+    }
+  } catch (e3) { removed = 0; }
+  return removed;
 }
 
 function addToFoobar(url, enqueue, track, q, local, opts) {
@@ -5092,8 +5672,26 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
     return;
   }
 
+  /* 直链项记下来：日后在播放列表里点它，才反查得出是哪首歌 */
+  if (!local) { try { lxUrlMapPut(url, track); } catch (eUM) { } }
+
+  /* 先把同一首歌的其它项清掉：换过音质、扩展名修过、旧直链都算同一条。
+     保留 keepPath（这次要播的那条），正在播的项内部会跳过。 */
+  try {
+    var dd = lxDedupeTrack(idx, track, url);
+    if (dd) {
+      NM.lx.pushLog('info', '播放列表去重：清掉 ' + dd + ' 条同名项（' + (track.title || '') + '）');
+      lxPathKeyCache = null;
+    }
+  } catch (eDD) { }
+
   if (local) {
     var at = playlistIndexOfPath(idx, url);
+    /* 完整路径没对上时再按文件名找一次：同一个缓存文件不该因为路径写法有差异
+       就被反复当成新的一项加进去 */
+    if (at < 0) {
+      try { at = playlistIndexOfBase(idx, docBase(track)); } catch (eFB) { at = -1; }
+    }
     if (at >= 0) {
       if (!tokenAlive(opts.token)) { finishOnce(opts, false, '已被新的播放请求取消'); return; }
       try {
@@ -5116,12 +5714,17 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
   }
 
   var before = 0;
-  try { before = plman.PlaylistItemCount(idx); } catch (e) {}
+  try { before = lxItemCount(idx); } catch (e) {}
 
-  /* 只记真正要播的那条；纯入队不算，免得兜底时认错播放项 */
-  if (!enqueue) LAST_PLAY_URL = local ? String(url) : safeUrl(url);
+  /* 要加进列表的地址。入队和播放用的是同一个值，区别只在 LAST_PLAY_URL
+     要不要记 —— 那是「我刚点的是哪首」的标记，纯入队不该改它。
+     原来这里写成先判断再取 LAST_PLAY_URL 去 AddLocations，入队时
+     LAST_PLAY_URL 还是上一首的值，于是队列里加进去的是上一首的地址，
+     点它自然播不了（直链还会过期）。 */
+  var addUrl = local ? String(url) : safeUrl(url);
+  if (!enqueue) LAST_PLAY_URL = addUrl;
   try {
-    plman.AddLocations(idx, [LAST_PLAY_URL], !enqueue);
+    plman.AddLocations(idx, [addUrl], !enqueue);
   } catch (e) {
     setStatus('加入播放列表失败：' + ((e && e.message) || e), true);
     finishOnce(opts, false, '加入播放列表失败');
@@ -5130,15 +5733,37 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
 
   if (enqueue) {
     if (!opts.silentStatus) setStatus('已加入「' + PLAYLIST_NAME + '」：' + track.title);
+    /* 记下来，轮到它播时才能认出是哪首歌（见 lxQueueRemember 注释） */
+    try {
+      lxQueueRemember(url, track);
+      if (addUrl !== url) lxQueueRemember(addUrl, track);
+    } catch (eQR) { }
+    /* 顺手把封面挂到刚加的那一项上：队列轮播时没有「刚点」这个时机，
+       等它开播再挂就慢了半拍，别的面板早取过图了。 */
+    setTimeout(function () {
+      try {
+        var cnt = lxItemCount(idx);
+        if (cnt > before) {
+          var hq = plman.GetPlaylistItemHandle(idx, before);
+          if (hq) preAttachCover(track, hq);
+        }
+      } catch (eQC) { }
+    }, 300);
     finishOnce(opts, true);
     return;
   }
+
+  /* 加完项再排一次裁剪。放在 3 秒后是因为此刻 item 索引还在用，
+     这会儿删前面的项会让 afterAdded 里的 handle 取错 */
+  setTimeout(function () {
+    try { lxTrimPlaylist(idx); } catch (eTp3) { }
+  }, 3000);
 
   setStatus('正在添加到播放列表…');
   var tries = 0;
   (function waitAdded() {
     var count = 0;
-    try { count = plman.PlaylistItemCount(idx); } catch (e) {}
+    try { count = lxItemCount(idx); } catch (e) {}
     if (count > before) {
       afterAdded(idx, before);
       return;
@@ -5657,6 +6282,8 @@ function downloadTracks(list, wantQ) {
               (skipped ? '，已在缓存 ' + skipped + ' 首' : '');
     NM.lx.pushLog(failN ? 'warn' : 'ok', msg + '（' + (cacheDir() || '?') + '）');
     setStatus(msg, failN > 0);
+    /* 监视开着的话，刚下完的这些立刻补进播放列表 */
+    try { if (okN > 0) watchScan(true); } catch (eW) { }
   }
 
   var i = 0;
@@ -7333,6 +7960,7 @@ function drawVersionTag(gr) {
   if (headCompact()) return;
   var r = importRect();
   if (W < 220 || r.w < 30 || r.h < 10) return;
+
   var full = 'Lxbox v' + APP_VERSION;
   var text = textWidth(gr, full, F.small, FONT_BASE) <= r.w - 4 ? full : ('v' + APP_VERSION);
   gr.GdiDrawText(text, F.small, C.dim, r.x, r.y, r.w, r.h, FLAG_CENTER);
@@ -7644,7 +8272,7 @@ function togglePlayback() {
 
   try {
     var pl = plman.ActivePlaylist;
-    if (pl >= 0 && plman.PlaylistItemCount(pl) > 0) {
+    if (pl >= 0 && lxItemCount(pl) > 0) {
       var f = plman.GetPlaylistFocusItemIndex(pl);
       if (f < 0) f = 0;
       plman.SetPlaylistFocusItem(pl, f);
@@ -8202,9 +8830,12 @@ function activeScrollIds() {
     if (overlay === 'bio' && bioSplitOn()) return ['biosongs', 'overlay'];
     return ['overlay'];
   }
-  if (tab === 0) return sideCollapsed ? ['track'] : ['board', 'track'];
-  if (isBrowseTab()) return sideCollapsed ? ['track'] : ['coll', 'track'];
-  return ['track'];
+  var ids = [];
+  if (tab === 0) { if (!sideCollapsed) ids.push('board'); }
+  else if (isBrowseTab()) { if (!sideCollapsed) ids.push('coll'); }
+  ids.push('track');
+  if (L.right && !rightCollapsed) ids.push('right');
+  return ids;
 }
 
 function scrollbarHit(x, y) {
@@ -8227,6 +8858,7 @@ function scrollSet(id, v) {
   else if (id === 'overlay') overlayScroll = v;
   else if (id === 'biosongs') bioSongScroll = v;
   else if (id === 'set') setScroll = v;
+  else if (id === 'right') rightScroll = v;
   else return;
   g.offset = v;
   repaint();
@@ -8246,9 +8878,10 @@ function drawSideToggle(gr) {
   var r = sideToggleRect();
   if (!r) return;
   var hot = sideTogHot;
+  /* 和右栏的折叠按钮同一套透明度 */
   gr.FillSolidRect(r.x, r.y, r.w, r.h,
-                   hot ? tint(C.btnHot, BG_A.btnHot) : tint(C.btn, BG_A.chip));
-  gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1, A(C.line, hot ? 235 : 185));
+                   hot ? solidTint(C.btnHot, 96) : solidTint(C.btn, 52));
+  gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1, A(C.line, hot ? 190 : 120));
 
   var cx = Math.round(r.x + r.w / 2);
   var cy = Math.round(r.y + r.h / 2);
@@ -8271,6 +8904,1098 @@ function drawSideRail(gr, label) {
     gr.GdiDrawText(t.charAt(i), F.small, C.dim, r.x, y0 + i * lh, r.w - 1, lh, FLAG_CENTER);
   }
   drawSideToggle(gr);
+}
+
+/* ===== 右侧播放列表栏 =====
+   显示 foobar2000 当前活动播放列表，四列：序号 / 歌手 / 歌名 / 时长。
+   流播项没有标签，歌手歌名先问广播表（lxInfoOf），查不到再退回 %artist% / %title%。 */
+var rightHandles = null;
+var rightPaths = null;        /* 与 rightHandles 一一对应，handle 取不到时用它兜底显示 */
+var rightTotal = 0;
+var rightSig = '';
+var tfRArtist = null, tfRTitle = null, tfRLen = null;
+/* 播放列表里每一项的时长文本，按路径小写存。缓存视图直接拿来用 ——
+   同一个文件在播放列表里能显示，这里就没道理显示不出。 */
+var PL_LEN = {};
+
+function rebuildPlLen() {
+  PL_LEN = {};
+  if (!tfRLen) { try { tfRLen = fb.TitleFormat('%length%'); } catch (e0) { return; } }
+
+  /* 独立读一遍活动播放列表：不管右栏当前显示的是列表还是缓存，
+     这份表都要有，缓存视图直接按路径查。 */
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e1) { pl = -1; }
+  if (!(pl >= 0)) return;
+
+  var arr = null;
+  try {
+    var list = plman.GetPlaylistItems(pl);
+    arr = (list && typeof list.Convert === 'function') ? list.Convert() : null;
+  } catch (e2) { arr = null; }
+  if (!arr || !arr.length) return;
+
+  for (var i = 0; i < arr.length; i++) {
+    var hp = '';
+    try { hp = String(lxPathOfHandle(arr[i]) || ''); } catch (e3) { hp = ''; }
+    if (!hp) continue;
+    var d = '';
+    try { d = String(tfRLen.EvalWithMetadb(arr[i]) || ''); } catch (e4) { d = ''; }
+    if (!d || d === '0:00' || d === '?') continue;
+    PL_LEN[hp.toLowerCase()] = d;
+    /* 再存一份按文件名的：Glob 出来的路径和 handle.Path 偶尔写法不一样
+       （相对 / 绝对、斜杠方向），名字总是一样的。 */
+    var bn2 = '';
+    try { bn2 = String(baseName(hp) || '').toLowerCase(); } catch (e5) { bn2 = ''; }
+    if (bn2 && !PL_LEN['n:' + bn2]) PL_LEN['n:' + bn2] = d;
+  }
+}
+
+/* ===== 监视缓存 =====
+   右栏标题右侧的按钮：单击 = 开始监视，先把缓存里已有的音乐去重后追加进当前
+   播放列表，之后新下载完成的曲目也会跟着进；再单击停。双击 = 只显示缓存里的
+   音乐（不写播放列表）。右键有打开所在文件夹和 foobar2000 原生菜单。 */
+
+var WATCH_ON = propOn('lx.watchCache', '0');
+var rightMode = 'pl';              /* 'pl' = 活动播放列表，'cache' = 只显示缓存 */
+var CACHE_VER = 0;                 /* 每次重扫加一，rightEnsure 靠它判断要不要重建 */
+var WATCH_BUSY = false;
+var WATCH_BOOTED = false;
+var WATCH_SEEN = null;             /* 上一轮扫到的文件集合；第一次为 null 表示全量补 */
+var WATCH_AT = 0;
+var rightCacheHot = false;
+var cacheBtnAt = 0, cacheBtnTimer = 0;
+var CACHE_SCAN_MAX = 4000;
+var CACHE_RETRY = 0;
+
+/* 缓存是平铺的（cachePathFor 拼的是 目录 + 曲名 + 扩展名），扫三个目录的顶层就够 */
+function scanCacheFiles() {
+  var out = [];
+  var seen = {};
+  var dirs = [];
+  try { dirs = cacheAllDirs(); } catch (e0) { dirs = []; }
+
+  for (var d = 0; d < dirs.length; d++) {
+    var base = String(dirs[d] || '').replace(/[\\\/]+$/, '');
+    if (!base) continue;
+    for (var e = 0; e < AUDIO_EXT.length; e++) {
+      var hit = [];
+      try { hit = utils.Glob(base + '\\*.' + AUDIO_EXT[e]) || []; } catch (e1) { hit = []; }
+      for (var i = 0; i < hit.length; i++) {
+        var p = String(hit[i] || '');
+        if (!p) continue;
+        var low = p.toLowerCase();
+        if (seen[low]) continue;
+        seen[low] = 1;
+        if (!fileReady(p)) continue;
+        out.push(p);
+        if (out.length >= CACHE_SCAN_MAX) return out;
+      }
+    }
+  }
+  return out;
+}
+
+function cacheEnsure() {
+  var sig = 'c|' + CACHE_VER;
+  if (rightHandles && rightSig === sig) return;
+  rightSig = sig;
+
+  var files = scanCacheFiles();
+
+  /* 已经在活动播放列表里的，直接借那一份 handle —— 那边 fb2k 已经解过，
+     %artist% / %title% / %length% 都拿得到。取法和播放列表视图完全一样：
+     GetPlaylistItems().Convert()，这条路验证过能用；GetPlaylistItemHandle
+     在有些宿主上会给 null。 */
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
+  var plMap = {};
+  if (pl >= 0) {
+    var arr0 = null;
+    try {
+      var list0 = plman.GetPlaylistItems(pl);
+      arr0 = (list0 && typeof list0.Convert === 'function') ? list0.Convert() : null;
+    } catch (e1) { arr0 = null; }
+
+    if (arr0 && arr0.length) {
+      for (var m = 0; m < arr0.length; m++) {
+        var hp = '';
+        try { hp = String(lxPathOfHandle(arr0[m]) || ''); } catch (e1b) { hp = ''; }
+        if (hp) plMap[hp.toLowerCase()] = arr0[m];
+      }
+    } else {
+      var ps0 = [];
+      try { ps0 = lxPlaylistPaths(pl); } catch (e1c) { ps0 = []; }
+      for (var m2 = 0; m2 < ps0.length; m2++) {
+        var hk = null;
+        try { hk = plman.GetPlaylistItemHandle(pl, m2); } catch (e1d) { hk = null; }
+        if (hk) plMap[String(ps0[m2]).toLowerCase()] = hk;
+      }
+    }
+  }
+
+  rightHandles = [];
+  rightPaths = [];
+  for (var i = 0; i < files.length; i++) {
+    var low = files[i].toLowerCase();
+    var h = plMap[low] || null;
+    if (!h) { try { h = fb.CreateHandle(files[i]); } catch (e3) { h = null; } }
+    rightHandles.push(h);
+    rightPaths.push(files[i]);
+  }
+  rightTotal = rightHandles.length;
+  rightSel = -1;
+  if (rightScroll > rightTotal - 1) rightScroll = Math.max(0, rightTotal - 1);
+  rebuildPlLen();
+
+  /* CreateHandle 那批要等 fb2k 读一次文件头才有 length，隔一下重建一两次，
+     第二遍基本都能补上时长。最多两次，不循环。 */
+  if (CACHE_RETRY < 2 && rightTotal) {
+    CACHE_RETRY++;
+    setTimeout(function () {
+      if (rightMode !== 'cache') return;
+      CACHE_VER++;
+      rightHandles = null;
+      rightSig = '';
+      repaint();
+    }, 500 * CACHE_RETRY);
+  }
+}
+
+function setRightMode(m) {
+  rightMode = (m === 'cache') ? 'cache' : 'pl';
+  rightHandles = null;
+  rightPaths = null;
+  rightTotal = 0;
+  rightSig = '';
+  rightScroll = 0;
+  rightSel = -1;
+  rightHoverRow = -1;
+  if (rightMode === 'cache') {
+    CACHE_RETRY = 0;
+    CACHE_VER++;
+    if (WATCH_ON) setWatchOn(false, true);   /* 两个状态互斥：看缓存时不再往列表里写 */
+    cacheEnsure();
+  }
+  clampScroll();
+  repaint();
+}
+
+function toggleCacheView() {
+  var to = (rightMode === 'cache') ? 'pl' : 'cache';
+  setRightMode(to);
+  if (to === 'cache') {
+    setStatus('只显示缓存音乐：' + rightTotal + ' 首（再双击按钮回到播放列表；监视已暂停）');
+  } else {
+    setStatus('回到播放列表');
+  }
+}
+
+function setWatchOn(on, silent) {
+  WATCH_ON = !!on;
+  try { setProp('lx.watchCache', WATCH_ON ? '1' : '0'); } catch (e) {}
+  if (WATCH_ON) {
+    WATCH_SEEN = null;                 /* 每次开启都先按全量补一遍 */
+    if (!silent) setStatus('监视缓存：已开启，正在把已缓存的音乐加进播放列表…');
+    watchScan(true);
+  } else if (!silent) {
+    setStatus('监视缓存：已停止');
+  }
+  repaint();
+}
+
+function watchScan(force) {
+  if (!WATCH_ON || WATCH_BUSY || rightMode === 'cache') return;
+  var now = Date.now();
+  if (!force && now - WATCH_AT < 3000) return;   /* 切歌会反复调，节流三秒 */
+  WATCH_AT = now;
+
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
+  if (!(pl >= 0)) return;
+
+  var files = scanCacheFiles();
+  if (!files.length) {
+    if (force) setStatus('监视缓存：缓存目录里还没有音乐', true);
+    return;
+  }
+
+  var have = {};
+  var cur = [];
+  try { cur = lxPlaylistPaths(pl); } catch (e1) { cur = []; }
+  for (var i = 0; i < cur.length; i++) have[String(cur[i]).toLowerCase()] = 1;
+
+  /* 第一轮（刚开监视）把缓存里已有的全加进去；之后只加「这一轮才出现」的文件。
+     被用户或裁剪移出列表的老文件不再补回 —— 否则每次都会重排一遍。 */
+  var firstRun = (WATCH_SEEN === null);
+  var add = [];
+  for (var k = 0; k < files.length; k++) {
+    var kf = files[k].toLowerCase();
+    if (have[kf]) continue;
+    if (!firstRun && WATCH_SEEN[kf]) continue;
+    add.push(files[k]);
+  }
+
+  /* 快照先更新，加不进去的下轮也不会被当成新文件反复尝试 */
+  var snap = {};
+  for (var s = 0; s < files.length; s++) snap[files[s].toLowerCase()] = 1;
+  WATCH_SEEN = snap;
+
+  if (!add.length) {
+    if (force && firstRun) setStatus('监视缓存：缓存里的 ' + files.length + ' 首都已经在播放列表里了');
+    else if (force) setStatus('监视缓存：没有新缓存的曲目');
+    return;
+  }
+
+  WATCH_BUSY = true;
+  addPathsBatched(pl, add, 0, add.length, firstRun);
+}
+
+function addPathsBatched(pl, arr, from, total, firstRun) {
+  var end = Math.min(arr.length, from + 120);
+  var chunk = arr.slice(from, end);
+  var ok = true;
+  try { plman.AddLocations(pl, chunk, false); } catch (e) { ok = false; }
+
+  if (!ok) {
+    WATCH_BUSY = false;
+    setStatus('监视缓存：加入播放列表失败（列表可能已不存在）', true);
+    return;
+  }
+  if (end < arr.length) {
+    setTimeout(function () { addPathsBatched(pl, arr, end, total, firstRun); }, 40);
+    return;
+  }
+
+  WATCH_BUSY = false;
+  rightInvalidate();
+  if (total) {
+    var pn = '';
+    try { pn = String(plman.GetPlaylistName(pl) || ''); } catch (e1) { pn = ''; }
+    setStatus('监视缓存：' + (firstRun ? '已加入 ' : '新增 ') + total + ' 首' +
+              (pn ? '到「' + pn + '」' : ''));
+  }
+  repaint();
+}
+
+function cacheBtnRect() {
+  var r = L.right;
+  if (!r || r.w <= 0 || rightCollapsed) return null;   /* 收起时是 26px 窄条，放不下 */
+  if (r.w < 150) return null;                          /* 太窄就让位给标题，右键菜单里还有入口 */
+  /* 标题至少留 60，按钮最宽 84、最窄 46 */
+  var w = Math.max(46, Math.min(84, r.w - 32 - 60 - 12));
+  return { x: r.x + r.w - 8 - w, y: r.y + 3, w: w, h: 18 };
+}
+
+function cacheBtnLabel(r) {
+  return (r && r.w >= 72) ? '监视缓存' : '缓存';
+}
+
+/* 单击 / 双击要分开：单击延迟两百多毫秒再执行，双击会在这个窗口内取消它 */
+function onCacheBtnClick() {
+  var now = Date.now();
+  if (now - cacheBtnAt < 380) {
+    if (cacheBtnTimer) { clearTimeout(cacheBtnTimer); cacheBtnTimer = 0; }
+    cacheBtnAt = 0;
+    toggleCacheView();
+    return;
+  }
+  cacheBtnAt = now;
+  if (cacheBtnTimer) clearTimeout(cacheBtnTimer);
+  cacheBtnTimer = setTimeout(function () {
+    cacheBtnTimer = 0;
+    cacheBtnAt = 0;
+    setWatchOn(!WATCH_ON, false);
+  }, 400);
+}
+
+function openPathDir(path) {
+  var dir = dirOfFile(String(path || ''));
+  if (!dir) { setStatus('拿不到这个文件的所在目录', true); return; }
+  if (openDirWithShell(dir)) setStatus('已打开：' + dir);
+  else setStatus('打不开目录：' + dir, true);
+}
+
+/* 这条路径在活动播放列表里的索引；不在就追加进去再取末位 */
+function addPathToPlaylist(path, pl) {
+  path = String(path || '');
+  if (!path || !(pl >= 0)) return -1;
+
+  var ps = [];
+  try { ps = lxPlaylistPaths(pl); } catch (e1) { ps = []; }
+  var low = path.toLowerCase();
+  for (var i = 0; i < ps.length; i++) {
+    if (String(ps[i]).toLowerCase() === low) return i;
+  }
+
+  var n0 = 0;
+  try { n0 = lxItemCount(pl); } catch (e2) { n0 = 0; }
+  var added = true;
+  try { plman.AddLocations(pl, [path], false); } catch (e3) { added = false; }
+  if (!added) return -1;
+
+  /* 缓存视图的内容没变，不用重扫目录；播放列表视图才需要重建 */
+  if (rightMode !== 'cache') rightInvalidate();
+
+  var n1 = 0;
+  try { n1 = lxItemCount(pl); } catch (e4) { n1 = 0; }
+  if (n1 > n0) return n1 - 1;
+  return -1;
+}
+
+function playRightPath(path, pl) {
+  path = String(path || '');
+  if (!path || !(pl >= 0)) { setStatus('没有活动播放列表', true); return; }
+
+  var ps = [];
+  try { ps = lxPlaylistPaths(pl); } catch (e0) { ps = []; }
+  var low = path.toLowerCase(), idx = -1;
+  for (var i = 0; i < ps.length; i++) {
+    if (String(ps[i]).toLowerCase() === low) { idx = i; break; }
+  }
+
+  if (idx < 0) {
+    /* 不在列表里：让 foobar 自己追加并播，省得算末位索引 */
+    var ok = true;
+    try { plman.AddLocations(pl, [path], true); } catch (e1) { ok = false; }
+    if (!ok) { setStatus('加不进播放列表，播不了这首', true); return; }
+    if (rightMode !== 'cache') rightInvalidate();
+    repaint();
+    return;
+  }
+
+  try {
+    plman.SetPlaylistFocusItem(pl, idx);
+    plman.ClearPlaylistSelection(pl);
+    plman.SetPlaylistSelectionSingle(pl, idx, true);
+    plman.ExecutePlaylistDefaultAction(pl, idx);
+  } catch (e2) {}
+  repaint();
+}
+
+/* foobar2000 原生菜单：SMP / JSplitter 走的是 ContextMenuManager，
+   不是 plman.ShowPlaylistItemContextMenu（那个在这个宿主里根本不存在）。
+   用法：InitContext(handleList) → BuildMenu(菜单, 起始ID, -1) → 返回的 ID 减起始 ID 交给 ExecuteByID。
+   起始 ID 取 20，我们自己的项都排在 1~8，不会撞。 */
+var CTX_BASE = 2;
+
+/* 原生菜单上下文：照 Eole 的做法 —— 先选中那一行，再用 plman.GetPlaylistSelectedItems
+   取一份真正的 FbMetadbHandleList 交给 InitContext。
+   自己 fb.CreateHandleList() + Add() 拼出来的列表在部分 JSplitter 版本上 InitContext 会失败。 */
+function nativeMenuContext(path, pl) {
+  path = String(path || '');
+  if (!path || !(pl >= 0)) return null;
+
+  var ps = [];
+  try { ps = lxPlaylistPaths(pl); } catch (e0) { ps = []; }
+  var low = path.toLowerCase(), idx = -1;
+  for (var i = 0; i < ps.length; i++) {
+    if (String(ps[i]).toLowerCase() === low) { idx = i; break; }
+  }
+  if (idx < 0) idx = addPathToPlaylist(path, pl);   /* 不在列表就先补进去 */
+  if (idx < 0) return null;
+
+  try {
+    plman.ClearPlaylistSelection(pl);
+    plman.SetPlaylistSelectionSingle(pl, idx, true);
+  } catch (e1) { }
+
+  var items = null;
+  try { items = plman.GetPlaylistSelectedItems(pl); } catch (e2) { items = null; }
+  if (!items) return null;
+
+  var cnt = 0;
+  try { cnt = Number(items.Count); } catch (e3) { cnt = 0; }
+  if (!(cnt > 0)) { try { cnt = Number(items.Count()); } catch (e4) { cnt = 0; } }
+  if (!(cnt > 0)) return null;
+
+  var ctx = null;
+  try {
+    ctx = fb.CreateContextMenuManager();
+    ctx.InitContext(items);
+  } catch (e5) { return null; }
+
+  try { ctx._keep = items; } catch (e6) { }
+  return ctx;
+}
+
+function rightContextMenu(x, y) {
+  var ri = rightRowAtY(y, x);
+  var isCache = (rightMode === 'cache');
+  var path = (ri >= 0 && rightPaths) ? String(rightPaths[ri] || '') : '';
+
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
+
+  var m = window.CreatePopupMenu();
+  var ctx = null;
+  var ctxWhy = '';
+
+  if (ri >= 0 && path) {
+    var nm = '';
+    try { nm = rightRowAt(ri).t; } catch (e1) { nm = ''; }
+    if (!nm) { try { nm = lxBaseOfPath(path); } catch (e2) { nm = ''; } }
+    m.AppendMenuItem(MF_STRING, 801, '播放：' + nm);
+    m.AppendMenuItem(MF_STRING, 802, '打开所在文件夹');
+    if (isCache) m.AppendMenuItem(MF_STRING, 803, '加入当前播放列表');
+    m.AppendMenuSeparator();
+
+    /* 原生那一整块接在这儿：属性、标签、转换、工具…
+       base_id 用 2，和 Eole 一样，原生项占 2~799，我们自己的项排在 800 以上。 */
+    ctx = nativeMenuContext(path, pl);
+    if (ctx) {
+      try { ctx.BuildMenu(m, CTX_BASE, -1); }
+      catch (e3) { ctx = null; ctxWhy = (e3 && e3.message) || String(e3); }
+    } else {
+      ctxWhy = '拿不到选中项或没有 ContextMenuManager';
+    }
+    if (!ctx) m.AppendMenuItem(MF_GRAYED, 900, '（原生菜单不可用：' + ctxWhy + '）');
+    m.AppendMenuSeparator();
+  } else {
+    m.AppendMenuItem(MF_STRING, 808, '打开缓存文件夹');
+    m.AppendMenuSeparator();
+  }
+  m.AppendMenuItem(MF_STRING, 805, isCache ? '返回播放列表' : '只看缓存音乐（不写列表）');
+  m.AppendMenuItem(MF_STRING, 806, WATCH_ON ? '停止监视缓存' : '监视缓存：把已缓存的加入播放列表');
+  m.AppendMenuItem(MF_STRING, 807, '重新扫描缓存');
+
+  var id = m.TrackPopupMenu(x, y);
+  if (!id) return true;
+
+  /* 原生项：Eole 就是这么判断的 —— 2~799 都算原生，减 2 交给 ExecuteByID */
+  if (ctx && id > 1 && id < 800) {
+    try { ctx.ExecuteByID(id - CTX_BASE); } catch (e9) { }
+    repaint();
+    return true;
+  }
+
+  if (id === 801) playRightPath(path, pl);
+  else if (id === 802) openPathDir(path);
+  else if (id === 803) {
+    if (addPathToPlaylist(path, pl) >= 0) setStatus('已加入当前播放列表：' + lxBaseOfPath(path));
+    else setStatus('加入失败', true);
+    repaint();
+  }
+  else if (id === 805) toggleCacheView();
+  else if (id === 806) setWatchOn(!WATCH_ON, false);
+  else if (id === 808) {
+    var cd0 = '';
+    try { cd0 = String(cacheDir() || ''); } catch (e8) { cd0 = ''; }
+    if (!cd0) setStatus('缓存目录还没确定，先在「音源」页选目录', true);
+    else if (openDirWithShell(cd0)) setStatus('已打开缓存文件夹：' + cd0);
+    else setStatus('打不开目录：' + cd0, true);
+  }
+  else if (id === 807) {
+    CACHE_RETRY = 0;
+    CACHE_VER++;
+    rightHandles = null;
+    rightSig = '';
+    if (WATCH_ON) watchScan(true);
+    repaint();
+    setStatus(rightMode === 'cache' ? '缓存已重新扫描' : '缓存已重新扫描，监视中会同步补进列表');
+  }
+  return true;
+}
+
+function rightEnsure() {
+  if (rightMode === 'cache') { cacheEnsure(); return; }
+
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
+
+  /* 用「列表号 + 项数」当签名：增删会变，切列表也会变。
+     重排不变项数，靠 on_playlist_items_reordered 那类回调补一次置空。 */
+  var sig = (pl < 0) ? 'none' : (pl + '|' + lxItemCount(pl));
+  if (rightHandles && sig === rightSig) return;
+
+  rightSig = sig;
+  rightHandles = [];
+  rightPaths = [];
+  rightTotal = 0;
+  if (pl < 0) return;
+
+  var list = null;
+  try { list = plman.GetPlaylistItems(pl); } catch (e1) { list = null; }
+
+  if (list) {
+    /* ① Convert() → JS 数组。和 lxPlaylistPaths 走同一条路 —— 那条已经验证能用；
+       只走 Count/Item 的话，Item() 在有些宿主上返回 null，handle 就全是空的，
+       结果右栏只剩序号，歌手歌名时长一片空白。 */
+    try {
+      var arr = (typeof list.Convert === 'function') ? list.Convert() : null;
+      if (arr && typeof arr.length === 'number' && arr.length > 0) {
+        for (var a = 0; a < arr.length; a++) {
+          rightHandles.push(arr[a]);
+          rightPaths.push(lxPathOfHandle(arr[a]));
+        }
+      }
+    } catch (e2) { }
+
+    /* ② 没有 Convert() 才退回 Count + Item */
+    if (!rightHandles.length) {
+      try {
+        var cnt = 0;
+        try { cnt = Number(list.Count); } catch (e3) { cnt = 0; }
+        if (!(cnt > 0)) { try { cnt = Number(list.Count()); } catch (e4) { cnt = 0; } }
+        for (var i = 0; i < cnt; i++) {
+          var h = null;
+          try { h = list.Item(i); } catch (e5) { h = null; }
+          if (!h) { try { h = list.get_Item(i); } catch (e6) { h = null; } }
+          rightHandles.push(h);
+          rightPaths.push(lxPathOfHandle(h));
+        }
+      } catch (e7) { }
+    }
+
+    /* ③ 前两条都空：路径直接问 lxPlaylistPaths（它自己会试 Convert / Item / 逐个），
+       handle 再逐个补。拿不到 handle 也不至于空白 —— 行文本会用文件名顶上。 */
+    if (!rightHandles.length) {
+      var ps = [];
+      try { ps = lxPlaylistPaths(pl); } catch (e8) { ps = []; }
+      for (var k = 0; k < ps.length; k++) {
+        var hk = null;
+        try { hk = plman.GetPlaylistItemHandle(pl, k); } catch (e9) { hk = null; }
+        rightHandles.push(hk);
+        rightPaths.push(ps[k]);
+      }
+    }
+  }
+
+  rightTotal = rightHandles.length;
+  var maxOff = Math.max(0, rightTotal - 1);
+  if (rightScroll > maxOff) rightScroll = maxOff;
+  rebuildPlLen();
+}
+
+function rightInvalidate() {
+  rightSig = '';
+  rightHandles = null;
+  rightPaths = null;
+}
+
+/* ===== 正在播放那一行的进度条 =====
+   样式照抄 WSHsmoothplaylist_trackinfos：整行当进度底，已播部分铺一层淡色，
+   上下各一条 1px 亮线，右端一根 1px 竖线加一点阴影，左端留一段渐变过渡。
+   颜色也照它的深浅两套。 */
+function rightPlayingRow() {
+  var pl = -1;
+  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
+
+  if (rightMode === 'pl') {
+    var loc = null;
+    try { loc = plman.GetPlayingItemLocation(); } catch (e1) { loc = null; }
+    if (!loc || !loc.IsValid) return -1;
+    if (Number(loc.PlaylistIndex) !== pl) return -1;
+    return Number(loc.PlaylistItemIndex);
+  }
+
+  /* 缓存视图不在播放列表里，只能按路径比 */
+  var pp = '';
+  try { pp = String(fb.GetNowPlaying().Path || '').toLowerCase(); } catch (e2) { pp = ''; }
+  if (!pp) return -1;
+  for (var i = 0; i < rightTotal; i++) {
+    if (String(rightPaths[i] || '').toLowerCase() === pp) return i;
+  }
+  return -1;
+}
+
+function drawRowProgress(gr, x, y, w, h) {
+  var len = 0, cur = 0;
+  try { len = Number(fb.PlaybackLength) || 0; } catch (e0) { len = 0; }
+  if (!(len > 0)) return;
+  try { cur = Number(fb.PlaybackTime) || 0; } catch (e1) { cur = 0; }
+
+  var ratio = clamp(cur / len, 0, 1);
+  if (!(ratio > 0)) return;
+
+  var dark = luminanceOf(C.bg) < 0.5;
+  var pb = dark ? A(0xFFFFFF, 45) : A(0x000000, 70);      /* 上下细线 */
+  var pbOn = dark ? A(0xFFFFFF, 20) : A(0xFFFFFF, 60);    /* 已播区域 */
+  var pbOff = dark ? A(0x000000, 0) : A(0xFFFFFF, 0);     /* 渐变起点（全透） */
+  var pbSh = dark ? A(0x000000, 15) : A(0x000000, 5);     /* 阴影 */
+
+  var gsz = Math.min(13, Math.max(5, Math.round(w * 0.05)));
+  var fw = gsz + Math.round((w - gsz) * ratio);
+  if (fw > w) fw = w;
+  if (fw < 1) return;
+
+  var gw = Math.min(gsz, fw);
+
+  /* 上下两条 1px：先渐变再实线 */
+  gr.FillGradRect(x, y, gw, 1, 0, pbOff, pb, 1.0);
+  if (fw > gsz) gr.FillSolidRect(x + gsz, y, fw - gsz, 1, pb);
+  gr.FillGradRect(x, y + h - 1, gw, 1, 0, pbOff, pb, 1.0);
+  if (fw > gsz) gr.FillSolidRect(x + gsz, y + h - 1, fw - gsz, 1, pb);
+
+  /* 中间那层底色 */
+  gr.FillGradRect(x, y + 1, gw, h - 2, 0, pbOff, pbOn, 1.0);
+  if (fw > gsz) gr.FillSolidRect(x + gsz, y + 1, fw - gsz, h - 2, pbOn);
+
+  /* 右端竖线 + 阴影，都收在行内 */
+  if (fw > 2 && fw < w - 3) {
+    gr.FillSolidRect(x + fw - 1, y + 1, 1, h - 2, pb);
+    gr.FillSolidRect(x + fw, y + 1, 2, h - 2, pbSh);
+  } else if (fw > 2) {
+    gr.FillSolidRect(x + fw - 1, y + 1, 1, h - 2, pb);
+  }
+}
+
+/* 进度条要跟着走：面板没有播放进度回调，自己开一个低频定时器，
+   只在「在播 + 右栏展开 + 那一行确实在可视区」时才重绘。 */
+var PROG_TIMER = 0;
+
+function ensureProgressTimer() {
+  if (PROG_TIMER) return;
+  PROG_TIMER = setInterval(function () {
+    var playing = false;
+    try { playing = !!fb.IsPlaying && !fb.IsPaused; } catch (e0) { playing = false; }
+    if (!playing) return;
+    if (!L.right || rightCollapsed || !rightTotal) return;
+    if (rightPlayingRow() < 0) return;
+    repaint();
+  }, 800);
+}
+
+function rightRowAt(i) {
+  var h = rightHandles && rightHandles[i];
+  var p = (rightPaths && rightPaths[i]) || '';
+  if (!h && !p) return { a: '', t: '', d: '' };
+  if (!tfRArtist) tfRArtist = fb.TitleFormat('%artist%');
+  if (!tfRTitle) tfRTitle = fb.TitleFormat('%title%');
+  if (!tfRLen) tfRLen = fb.TitleFormat('%length%');
+
+  var a = '', t = '', d = '';
+  try {
+    var info = lxInfoOf(h);
+    if (info) { a = String(info.artist || ''); t = String(info.title || ''); }
+  } catch (e1) { }
+  if (!a) { try { a = String(tfRArtist.EvalWithMetadb(h) || ''); } catch (e2) { a = ''; } }
+  if (!t) { try { t = String(tfRTitle.EvalWithMetadb(h) || ''); } catch (e3) { t = ''; } }
+  try { d = String(tfRLen.EvalWithMetadb(h) || ''); } catch (e4) { d = ''; }
+  if (d === '0:00' || d === '?') d = '';
+
+  if (!d) {
+    /* ① 播放列表里同一个文件的时长：列表那边能显示，这里就一定拿得到 */
+    try {
+      var lc0 = String(p).toLowerCase();
+      d = PL_LEN[lc0] || PL_LEN['n:' + String(baseName(p) || '').toLowerCase()] || '';
+    } catch (e4a) { d = ''; }
+  }
+
+  if (!d) {
+    /* ② handle 自己的长度（有就会直接给秒数） */
+    var hv = 0;
+    try {
+      var lv = h && h.Length;
+      hv = Number(lv);
+      if (!(hv > 0) && typeof lv === 'string' && /^\d+:\d\d$/.test(lv)) { d = lv; hv = 0; }
+    } catch (e4b) { hv = 0; }
+    if (!d && hv > 0) d = durText(hv);
+
+    /* ② 还是没有：自己读文件头算。CreateHandle 出来的 handle 不在播放列表里，
+        fb2k 没解过它，%length% 和 Length 都会是空的。 */
+    if (!d) {
+      var psec = durProbe(p);
+      if (psec > 0) d = durText(psec);
+    }
+  }
+
+  /* 缓存里的文件多半没标签，文件名本身就是「歌手 - 歌名」（cachePathFor 就是这么拼的），
+     拆开填进两列，跟播放列表那边的排版对齐。无标签时 fb2k 会把整串文件名当 %title%，
+     所以 t === 文件名 也要换掉。 */
+  var bn = '';
+  try { bn = lxBaseOfPath(p); } catch (e5) { bn = ''; }
+  if (rightMode === 'cache' && bn) {
+    var m2 = /^(.+?)\s+-\s+(.+)$/.exec(bn);
+    if (m2) {
+      if (!a) a = m2[1];
+      if (!t || t === bn) t = m2[2];
+    }
+  }
+
+  /* handle 读不出标签时（或干脆是 null）至少显示文件名，别留一行空白 */
+  if (!t) t = bn || '(未知曲目)';
+  return { a: a, t: t, d: d };
+}
+
+/* ===== 本地文件时长探测 =====
+   缓存里的文件不一定在播放列表里，CreateHandle 出来的 handle 没解过，
+   %length% 和 handle.Length 都可能是空的。这里直接读文件头自己算：
+   flac 看 STREAMINFO、mp3 看首帧/Xing、m4a 看 mvhd、wav 看 byteRate、
+   ape 看 MAC 头。算不出来就返回 0，调用方留空。 */
+
+var DUR_CACHE = {};
+
+var DUR_SR = {
+  3: [44100, 48000, 32000],
+  2: [22050, 24000, 16000],
+  0: [11025, 12000, 8000]
+};
+var DUR_BR_M1 = [
+  [0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448],
+  [0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384],
+  [0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320]
+];
+var DUR_BR_M2 = [
+  [0, 32, 48, 56, 64, 80, 96, 112, 128, 144, 160, 176, 192, 224, 256],
+  [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160],
+  [0, 8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160]
+];
+
+var DUR_SEEK_OK = true;
+
+function durRead(path, pos, n) {
+  var rd = null;
+  try { rd = utils.OpenBinaryReader(path); } catch (e) { rd = null; }
+  if (!rd) return null;
+  var buf = new Uint8Array(n);
+  var got = 0;
+  try {
+    if (pos > 0) {
+      if (DUR_SEEK_OK) { try { rd.Seek(pos, 0); } catch (e0) { DUR_SEEK_OK = false; } }
+    }
+    got = Number(rd.Read(buf, 0, n)) || 0;
+  } catch (e1) { got = 0; }
+  try { rd.Close(); } catch (e2) { }
+  if (!got) return null;
+  return got >= n ? buf : buf.subarray(0, got);
+}
+
+function durFlac(b) {
+  if (b.length < 8 + 18) return 0;
+  var type = b[4] & 0x7F;
+  if (type !== 0) return 0;                 /* 第一块应为 STREAMINFO */
+  var d = 8;
+  var rate = (b[d + 10] << 12) | (b[d + 11] << 4) | (b[d + 12] >> 4);
+  var total = (b[d + 13] & 0x0F) * 4294967296 +
+              b[d + 14] * 16777216 + b[d + 15] * 65536 + b[d + 16] * 256 + b[d + 17];
+  if (!rate || !total) return 0;
+  return total / rate;
+}
+
+function durWav(b) {
+  var byteRate = 0, dataSize = 0, p = 12;
+  while (p + 8 <= b.length) {
+    var id = String.fromCharCode(b[p], b[p + 1], b[p + 2], b[p + 3]);
+    var sz = b[p + 4] + (b[p + 5] << 8) + (b[p + 6] << 16) + b[p + 7] * 16777216;
+    if (id === 'fmt ' && p + 19 < b.length) {
+      byteRate = b[p + 16] + (b[p + 17] << 8) + (b[p + 18] << 16) + b[p + 19] * 16777216;
+    } else if (id === 'data') {
+      dataSize = sz;
+      break;
+    }
+    if (!(sz > 0)) break;
+    p += 8 + sz + (sz & 1);
+  }
+  if (!byteRate || !dataSize) return 0;
+  return dataSize / byteRate;
+}
+
+function durApe(b) {
+  /* APE_DESCRIPTOR 32 字节后才是 APE_HEADER：块大小 / 末帧 / 总帧 / 采样率 */
+  if (b.length < 56) return 0;
+  var blocksPerFrame = b[36] + (b[37] << 8) + (b[38] << 16) + b[39] * 16777216;
+  var finalFrame = b[40] + (b[41] << 8) + (b[42] << 16) + b[43] * 16777216;
+  var totalFrames = b[44] + (b[45] << 8) + (b[46] << 16) + b[47] * 16777216;
+  var rate = b[52] + (b[53] << 8) + (b[54] << 16) + b[55] * 16777216;
+  if (!rate || !totalFrames || !blocksPerFrame) return 0;
+  var samples = (totalFrames - 1) * blocksPerFrame + finalFrame;
+  if (!(samples > 0)) return 0;
+  return samples / rate;
+}
+
+function mp4MvhdAt(b, start, end, depth) {
+  if (depth > 4) return -1;
+  var i = start;
+  while (i + 8 <= end) {
+    var sz = b[i] * 16777216 + (b[i + 1] << 16) + (b[i + 2] << 8) + b[i + 3];
+    var type = String.fromCharCode(b[i + 4], b[i + 5], b[i + 6], b[i + 7]);
+    var body = i + 8;
+    if (sz === 1) {
+      sz = b[i + 8] * 16777216 + (b[i + 9] << 16) + (b[i + 10] << 8) + b[i + 11];
+      body = i + 16;
+    } else if (sz === 0) {
+      sz = end - i;
+    }
+    if (sz < 8) return -1;
+    if (type === 'mvhd') return body;
+    if (type === 'moov' || type === 'trak' || type === 'mdia') {
+      var r = mp4MvhdAt(b, body, Math.min(end, i + sz), depth + 1);
+      if (r >= 0) return r;
+    }
+    i += sz;
+  }
+  return -1;
+}
+
+function durMp4(b) {
+  var at = mp4MvhdAt(b, 0, b.length, 0);
+  if (at < 0 || at + 20 >= b.length) return 0;
+  var ver = b[at];
+  if (ver === 1) {
+    if (at + 32 >= b.length) return 0;
+    var ts1 = b[at + 20] * 16777216 + (b[at + 21] << 16) + (b[at + 22] << 8) + b[at + 23];
+    var du1 = b[at + 28] * 16777216 + (b[at + 29] << 16) + (b[at + 30] << 8) + b[at + 31];
+    if (!ts1) return 0;
+    return du1 / ts1;
+  }
+  var ts = b[at + 12] * 16777216 + (b[at + 13] << 16) + (b[at + 14] << 8) + b[at + 15];
+  var du = b[at + 16] * 16777216 + (b[at + 17] << 16) + (b[at + 18] << 8) + b[at + 19];
+  if (!ts) return 0;
+  return du / ts;
+}
+
+function durMp3(b, size) {
+  var i = 0;
+  if (b.length > 10 && b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33) {
+    var tag = (b[6] & 0x7F) * 2097152 + (b[7] & 0x7F) * 16384 + (b[8] & 0x7F) * 128 + (b[9] & 0x7F);
+    i = 10 + tag;
+  }
+
+  var rate = 0, br = 0, layer = 0, ver = 0, at = -1;
+  for (; i < b.length - 4; i++) {
+    if (b[i] !== 0xFF || (b[i + 1] & 0xE0) !== 0xE0) continue;
+    var v = (b[i + 1] >> 3) & 0x03;
+    var l = (b[i + 1] >> 1) & 0x03;
+    var bi = (b[i + 2] >> 4) & 0x0F;
+    var si = (b[i + 2] >> 2) & 0x03;
+    if (v === 1 || l === 0 || bi === 0 || bi === 15 || si === 3) continue;
+    var rt = DUR_SR[v] && DUR_SR[v][si];
+    var bt = (v === 3 ? DUR_BR_M1 : DUR_BR_M2)[3 - l] && (v === 3 ? DUR_BR_M1 : DUR_BR_M2)[3 - l][bi];
+    if (!rt || !bt) continue;
+    rate = rt; br = bt; layer = l; ver = v; at = i;
+    break;
+  }
+  if (at < 0 || !rate) return 0;
+
+  /* 帧内找 Xing / Info：有总帧数就最准 */
+  var lim = Math.min(at + 64, b.length - 12);
+  for (var k = at + 4; k < lim; k++) {
+    var isX = (b[k] === 0x58 && b[k + 1] === 0x69 && b[k + 2] === 0x6E && b[k + 3] === 0x67);
+    var isI = (b[k] === 0x49 && b[k + 1] === 0x6E && b[k + 2] === 0x66 && b[k + 3] === 0x6F);
+    if (!isX && !isI) continue;
+    var flags = b[k + 4] * 16777216 + (b[k + 5] << 16) + (b[k + 6] << 8) + b[k + 7];
+    if (!(flags & 0x01)) break;
+    var frames = b[k + 8] * 16777216 + (b[k + 9] << 16) + (b[k + 10] << 8) + b[k + 11];
+    if (!frames) break;
+    var spf = (layer === 3) ? 384 : ((layer === 2) ? 1152 : (ver === 3 ? 1152 : 576));
+    return frames * spf / rate;
+  }
+
+  /* CBR：按首帧码率折算 */
+  if (size > at && br > 0) return (size - at) * 8 / (br * 1000);
+  return 0;
+}
+
+/* 每帧预算：一次绘制最多解析这么多文件，剩下的排到下一帧，
+   免得缓存里有几百首时首帧卡住不动。 */
+var DUR_BUDGET = 0;
+var DUR_PENDING = 0;
+
+function durProbeLater() {
+  if (DUR_PENDING) return;
+  DUR_PENDING = setTimeout(function () { DUR_PENDING = 0; repaint(); }, 30);
+}
+
+function durProbe(path) {
+  var p = String(path || '');
+  if (!p) return 0;
+  if (/^https?:/i.test(p)) return 0;                 /* 网络地址读不了文件头 */
+  var key = p.toLowerCase();
+  if (DUR_CACHE[key] !== undefined) return DUR_CACHE[key];
+
+  if (DUR_BUDGET <= 0) { durProbeLater(); return 0; }
+  DUR_BUDGET--;
+
+  var sec = 0;
+  try {
+    var size = Number(utils.GetFileSize(p)) || 0;
+
+    /* mp3 前面可能压着很大的 ID3（内嵌封面常有几 MB），先跳过再读帧 */
+    var pos = 0;
+    var head = durRead(p, 0, 16);
+    if (head && head.length >= 10 &&
+        head[0] === 0x49 && head[1] === 0x44 && head[2] === 0x33) {
+      var tag = (head[6] & 0x7F) * 2097152 + (head[7] & 0x7F) * 16384 +
+                (head[8] & 0x7F) * 128 + (head[9] & 0x7F);
+      pos = 10 + tag;
+    }
+
+    var base = pos;
+    var b = durRead(p, pos, 128 * 1024);
+
+    /* Seek 没生效时读回来还是 ID3 头：直接把 ID3 一起读进来，
+       durMp3 内部会跳过它再找首帧（面板自己会往 ID3 里塞封面，常有几 MB）。 */
+    if (b && b.length > 10 &&
+        b[0] === 0x49 && b[1] === 0x44 && b[2] === 0x33) {
+      var tag2 = (b[6] & 0x7F) * 2097152 + (b[7] & 0x7F) * 16384 +
+                 (b[8] & 0x7F) * 128 + (b[9] & 0x7F);
+      if (10 + tag2 < 6 * 1024 * 1024) {
+        var big = durRead(p, 0, 10 + tag2 + 256 * 1024);
+        if (big && big.length > b.length) { b = big; base = 0; }
+      }
+    }
+
+    if (b && b.length > 12) {
+      if (b[0] === 0x66 && b[1] === 0x4C && b[2] === 0x61 && b[3] === 0x43) sec = durFlac(b);
+      else if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[3] === 0x46 &&
+               b[8] === 0x57 && b[9] === 0x41 && b[10] === 0x56 && b[11] === 0x45) sec = durWav(b);
+      else if (b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) {
+        sec = durMp4(b);
+        /* m4a 的 moov 可能在文件尾部（流式下载的常见），再读一块尾巴找 */
+        if (!(sec > 0) && size > 256 * 1024) {
+          var tail = durRead(p, Math.max(0, size - 512 * 1024), 512 * 1024);
+          if (tail) sec = durMp4(tail);
+        }
+      }
+      else if (b[0] === 0x4D && b[1] === 0x41 && b[2] === 0x43 && b[3] === 0x20) sec = durApe(b);
+      else sec = durMp3(b, size - base);
+    }
+  } catch (e) { sec = 0; }
+
+  if (!(sec > 0) || !isFinite(sec)) sec = 0;
+  DUR_CACHE[key] = sec;
+  return sec;
+}
+
+/* 四列的横向位置。右栏宽度固定，直接按比例分。 */
+function rightCols() {
+  var r = L.right;
+  var pad = 8;
+  var wNum = 26, wDur = 40, wArt = 78;
+  var gap = 4;
+  var x = r.x + pad;
+  var wTitle = Math.max(30, r.w - pad * 2 - wNum - wArt - wDur - gap * 3);
+  return {
+    num:   { x: x, w: wNum },
+    art:   { x: x + wNum + gap, w: wArt },
+    title: { x: x + wNum + gap + wArt + gap, w: wTitle },
+    dur:   { x: x + wNum + gap + wArt + gap + wTitle + gap, w: wDur }
+  };
+}
+
+function rightVisRows() {
+  return Math.max(1, Math.floor(L.rightListH / RIGHT_ROW_H));
+}
+
+function rightRowAtY(y, x) {
+  if (!L.right || !L.rightListH) return -1;
+  /* 必须同时落在右栏横向范围内。只看 y 的话，左栏的折叠按钮和榜单行会被
+     右栏行抢走 —— 分类界面左栏顶部正好和右栏列表落在同一个纵向区间。 */
+  if (x !== undefined && (x < L.right.x || x >= L.right.x + L.right.w)) return -1;
+  if (y < L.rightListY || y >= L.rightListY + L.rightListH) return -1;
+  var i = rightScroll + Math.floor((y - L.rightListY) / RIGHT_ROW_H);
+  return (i >= 0 && i < rightTotal) ? i : -1;
+}
+
+function drawCacheBtn(gr) {
+  var r = cacheBtnRect();
+  if (!r) return;
+  var isCache = (rightMode === 'cache');
+  var hot = rightCacheHot;
+  var bg, bd, fg;
+
+  if (isCache) {
+    bg = solidTint(C.accent, hot ? 92 : 70);
+    bd = A(C.accent, hot ? 235 : 200);
+    fg = C.accent;
+  } else if (WATCH_ON) {
+    bg = solidTint(C.accent, hot ? 66 : 46);
+    bd = A(C.accent, hot ? 210 : 165);
+    fg = C.accent;
+  } else {
+    bg = solidTint(C.btn, hot ? 84 : 52);
+    bd = A(C.line, hot ? 190 : 120);
+    fg = hot ? C.text : C.dim;
+  }
+
+  gr.FillSolidRect(r.x, r.y, r.w, r.h, bg);
+  gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1, bd);
+  gr.GdiDrawText(cacheBtnLabel(r), F.small, fg, r.x, r.y, r.w, r.h, FLAG_CENTER);
+}
+
+function drawRightToggle(gr) {  var r = rightToggleRect();
+  if (!r) return;
+  var hot = rightTogHot;
+  /* 底色压得很淡，只留一点底感；边框跟着变淡，避免形成一块实心方块 */
+  gr.FillSolidRect(r.x, r.y, r.w, r.h,
+                   hot ? solidTint(C.btnHot, 96) : solidTint(C.btn, 52));
+  gr.DrawRect(r.x + 0.5, r.y + 0.5, r.w - 1, r.h - 1, 1, A(C.line, hot ? 190 : 120));
+
+  var cx = Math.round(r.x + r.w / 2);
+  var cy = Math.round(r.y + r.h / 2);
+  var col = hot ? C.accent : C.dim;
+  /* 收起时箭头朝左（点它会展开），展开时朝右 */
+  var dir = rightCollapsed ? -1 : 1;
+  gr.DrawLine(cx + dir * 3, cy, cx - dir * 2, cy - 4, 1, col);
+  gr.DrawLine(cx + dir * 3, cy, cx - dir * 2, cy + 4, 1, col);
+}
+
+function drawRightRail(gr) {
+  var r = L.right;
+  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('side', BG_A.side)));
+  gr.DrawLine(r.x, r.y, r.x, r.y + r.h, 1, A(C.line, 205));
+
+  var t = (rightMode === 'cache') ? '缓存' : '播放列表';
+  var lh = clamp(FONT_BASE + 2, 13, 17);
+  var y0 = r.y + 30;
+  for (var i = 0; i < t.length; i++) {
+    if (y0 + i * lh > r.y + r.h - lh) break;
+    gr.GdiDrawText(t.charAt(i), F.small, C.dim, r.x, y0 + i * lh, r.w - 1, lh, FLAG_CENTER);
+  }
+  drawRightToggle(gr);
+}
+
+function drawRightPanel(gr) {
+  if (!L.right || L.right.w <= 0) return;
+  if (rightCollapsed) { drawRightRail(gr); return; }
+
+  var r = L.right;
+  rightEnsure();
+  DUR_BUDGET = 10;                 /* 本帧最多解析 10 个文件的时长 */
+
+  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('side', BG_A.side)));
+  gr.DrawLine(r.x, r.y, r.x, r.y + r.h, 1, A(C.line, 205));
+
+  var headH = Math.min(24, Math.max(20, FONT_BASE + 4));
+  var cbx = cacheBtnRect();
+  var headW = Math.max(30, cbx ? (cbx.x - (r.x + 32) - 6) : (r.w - 20 - 26));
+  var isCache = (rightMode === 'cache');
+  gr.GdiDrawText((isCache ? '缓存音乐（' : '播放列表（') + rightTotal + '）',
+                 F.small, isCache ? C.accent : C.dim,
+                 r.x + 32, r.y + 2, headW, headH, FLAG_LEFT);
+  drawRightToggle(gr);
+  drawCacheBtn(gr);
+
+  var c = rightCols();
+  var vis = rightVisRows();
+  var end = Math.min(rightTotal, rightScroll + vis + 1);
+  var playRow = rightPlayingRow();
+
+  for (var i = rightScroll; i < end; i++) {
+    var ry = L.rightListY + (i - rightScroll) * RIGHT_ROW_H;
+    var on = (i === rightSel);
+    var hot = (i === rightHoverRow);
+
+    if (on) drawSelFrame(gr, r.x + 2, ry, r.w - 4, RIGHT_ROW_H, C.accent);
+    else if (hot) gr.FillSolidRect(r.x, ry, r.w, RIGHT_ROW_H, tint(C.hover, BG_A.rowHot));
+
+    if (i === playRow) drawRowProgress(gr, r.x, ry, r.w, RIGHT_ROW_H);
+
+    var row = rightRowAt(i);
+    gr.GdiDrawText(String(i + 1), F.small, C.dim, c.num.x, ry, c.num.w, RIGHT_ROW_H, FLAG_RIGHT);
+    gr.GdiDrawText(row.a, F.small, C.dim, c.art.x, ry, c.art.w, RIGHT_ROW_H, FLAG_LEFT);
+    gr.GdiDrawText(row.t, F.small, on ? C.accent : C.text, c.title.x, ry, c.title.w, RIGHT_ROW_H, FLAG_LEFT);
+    gr.GdiDrawText(row.d, F.small, C.dim, c.dur.x, ry, c.dur.w, RIGHT_ROW_H, FLAG_RIGHT);
+  }
+
+  if (!rightTotal) {
+    gr.GdiDrawText('（空列表）', F.small, C.dim, r.x + 8, L.rightListY,
+                   r.w - 16, RIGHT_ROW_H, FLAG_LEFT);
+  }
+
+  drawScrollbar(gr, 'right', r.x + r.w - 4, L.rightListY, L.rightListH,
+                rightTotal, vis, rightScroll);
 }
 
 function drawBoardList(gr) {
@@ -9357,7 +11082,31 @@ function lookSections() {
                  (fontSizeFollow() ? '（跟随 foobar2000 字体 ' + (d.size || '?') + 'px）' : '（手动）') +
                  ' · 缩放 ' + Math.round(UI_S * 100) + '%（探测 ' + Math.round(UI_AUTO * 100) + '%）';
         } },
-      { kind: 'note', text: '字号只动字；整体放大调「界面缩放」。文字色跟 foobar2000 走。' }
+      { kind: 'note', text: '字号只动字；整体放大调「界面缩放」。文字色跟 foobar2000 走。' },
+      { kind: 'seg', id: 'mbtn', label: '鼠标中键', value: mbtnMode(),
+        options: [['left', '弹左栏'], ['right', '弹右栏'], ['none', '都不弹'], ['off', '禁用']],
+        onPick: function (v) {
+          setProp('lx.mbtn', v);
+          setStatus('鼠标中键：' + mbtnLabel(v));
+          repaint();
+        } },
+      { kind: 'note', text: function () {
+          var m = mbtnMode();
+          if (m === 'off') {
+            return '已禁用：中键完全不响应，事件原样放过去，留给别的面板' +
+                   '（jsplaylist 那套列表也用了中键）。';
+          }
+          if (m === 'none') {
+            return '中键会被面板吞掉，但什么也不做 —— 注意别的面板同样收不到。' +
+                   '要和其它面板共存，选「禁用」。';
+          }
+          return '中键切换' + (m === 'right' ? '右侧播放列表栏' : '左侧栏') +
+                 '的展开 / 收起；每一栏自己也有小箭头按钮。';
+        } },
+      { kind: 'note', text: function () {
+          return '右侧播放列表栏显示 foobar2000 当前播放列表（序号 / 歌手 / 歌名 / 时长），' +
+                 '单击选中、双击播放。窗口宽度小于 ' + RIGHT_MIN_W + ' 时自动隐藏。';
+        } }
     ] }
   ];
 
@@ -9987,7 +11736,6 @@ function drawSettings(gr) {
   paintOverlayBg(gr, { x: 0, y: 0, w: W, h: H });      // 和简介 / 评论浮层同一套底
 
   gr.FillSolidRect(0, 0, W, SET_HEAD_H, overlayFill(C.panel, 244));
-  gr.DrawLine(0, SET_HEAD_H, W, SET_HEAD_H, 1, A(C.line, 220));
   gr.GdiDrawText('面板设置', F.head, C.accent, 16, 1, Math.max(60, W - 200), 24, FLAG_LEFT);
   gr.GdiDrawText('改动即时生效，并写进面板属性', F.tiny, C.dim, 17, 21, Math.max(60, W - 210), 24, FLAG_LEFT);
 
@@ -10004,7 +11752,6 @@ function drawSettings(gr) {
   gr.GdiDrawText('退出设置', F.small, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
 
   if (P.wide) {
-    gr.DrawLine(P.navW, SET_HEAD_H + 1, P.navW, H - SET_FOOT_H, 1, A(C.line, 170));
     for (i = 0; i < P.navs.length; i++) {
       var nv = P.navs[i], nr = nv.rect;
       var non = nv.id === setCat;
@@ -10047,9 +11794,9 @@ function drawSettings(gr) {
   }
 
   var fy = H - SET_FOOT_H;
-  gr.FillSolidRect(0, fy, W, SET_FOOT_H, tint(C.panel, 230));
+  gr.FillSolidRect(0, fy, W, SET_FOOT_H, overlayFill(C.panel, 244));
   var hint = SET_CATS[catIndexOf(setCat)].hint;
-  gr.GdiDrawText(hint, F.tiny, A(C.dim, 235), 16, fy, Math.max(40, W - 32), SET_FOOT_H, FLAG_LEFT);
+  gr.GdiDrawText(hint, F.tiny, C.dim, 16, fy, Math.max(40, W - 32), SET_FOOT_H, FLAG_LEFT);
 }
 
 function drawProbePanel(gr, it, P) {
@@ -10541,6 +12288,13 @@ function drawFooter(gr) {
 function on_paint(gr) {
   if (W <= 0 || H <= 0) return;
 
+  /* 面板重载后如果监视还开着，补一次全量扫描（只做一次） */
+  if (!WATCH_BOOTED) {
+    WATCH_BOOTED = true;
+    ensureProgressTimer();
+    if (WATCH_ON) setTimeout(function () { try { watchScan(true); } catch (eW0) { } }, 2000);
+  }
+
   gr = scaledGraphics(gr);
 
   gr.SetTextRenderingHint(5);
@@ -10569,6 +12323,7 @@ function on_paint(gr) {
     drawTrackList(gr);
   }
 
+  drawRightPanel(gr);
   drawFooter(gr);
 
   if (overlay) {
@@ -10609,6 +12364,22 @@ function on_size() {
 // 注意 Cfg 那条不能漏 —— TitleBar 点开关时先发 Cfg、宿主随后才发 Repaint，
 // 只监听后两者的话，切歌换图那一瞬间本面板会残留上一张壁纸的像素。
 function on_notify_data(name, info) {
+  /* 别的面板点了播放列表里的洛雪直链项：反查曲目，重新取链播放。
+     Eole 的列表面板会发这条，收到就回 ack，它那边就不再让 fb2k 自己播。 */
+  if (name === 'lx_play_url') {
+    var uu = (info && (info.url || info.path)) || (typeof info === 'string' ? info : '');
+    var tr = uu ? lxUrlMapGet(uu) : null;
+    try { window.NotifyOthers('lx_play_ack', { url: uu, ok: !!tr }); } catch (eAck) { }
+    if (tr) {
+      NM.lx.pushLog('info', '播放列表死链 → 重新取链：' + (tr.artist ? tr.artist + ' - ' : '') + (tr.title || ''));
+      setStatus('重新取链：' + (tr.title || '') + ' …');
+      playTrack(tr, false, {});
+    } else {
+      NM.lx.pushLog('warn', '播放列表死链，且没有对应曲目记录：' + String(uu).slice(0, 80));
+      setStatus('这一项没有曲目记录，只能从面板重新搜一次', true);
+    }
+    return;
+  }
   /* 别的面板刚加载完，问一句「现在在放什么」——重发一遍就行 */
   if (name === 'lx_now_request') {
     /* 皮肤里有六七个面板都会在启动时问一次，回一次就够 */
@@ -10694,7 +12465,40 @@ function on_mouse_move(x, y, mask) {
   mouseX = x;
   mouseY = y;
 
+  /* 拖栏宽：优先级最高，拖的时候别的悬停都不算 */
+  if (colDrag) {
+    var held = (typeof mask === 'number') ? !!(mask & 1) : true;
+    if (!held) endColDrag();
+    else { colDragTo(x); return; }
+  }
+
   var drawHover = hoverPaintProp();
+
+  /* 栏边缘悬停：换左右箭头光标，这一像素带不做行悬停 */
+  if (!setOpen && !overlay) {
+    var edgeHover = colEdgeAt(x, y);
+    if (edgeHover !== colHotEdge) {
+      colHotEdge = edgeHover;
+      try { window.SetCursor(edgeHover ? 32644 : 32512); } catch (eCH) { }
+      cursorHand = false;
+    }
+    if (edgeHover) return;
+  }
+
+  /* 右侧播放列表栏的悬停：按钮 + 行 */
+  if (!setOpen && !overlay && L.right) {
+    var rt = rightToggleRect();
+    var rTogHot = !!(rt && inRect(rt, x, y));
+    var cbH = cacheBtnRect();
+    var rCbHot = !!(cbH && inRect(cbH, x, y));
+    var rRow = rightRowAtY(y, x);
+    if (rTogHot !== rightTogHot || rRow !== rightHoverRow || rCbHot !== rightCacheHot) {
+      rightTogHot = rTogHot;
+      rightHoverRow = rRow;
+      rightCacheHot = rCbHot;
+      repaint();
+    }
+  }
 
   if (setOpen) {
     if (sbDrag) {
@@ -10809,6 +12613,8 @@ function on_mouse_move(x, y, mask) {
   else if ((tab === 1 || isBrowseTab()) && inRect(L.search, x, y)) hand = true;
   else if (collRecRect() && inRect(collRecRect(), x, y)) hand = true;
   else if (sideToggleRect() && inRect(sideToggleRect(), x, y)) hand = true;
+  else if (rightToggleRect() && inRect(rightToggleRect(), x, y)) hand = true;
+  else if (cacheBtnRect() && inRect(cacheBtnRect(), x, y)) hand = true;
   else {
     for (var i = 0; i < TAB_DEFS.length; i++) if (inRect(tabRect(i), x, y)) hand = true;
     for (var j = 0; j < NM.providers.order.length; j++) if (inRect(platformRect(j), x, y)) hand = true;
@@ -10858,10 +12664,17 @@ function on_mouse_move(x, y, mask) {
 }
 
 function on_mouse_leave() {
+  if (colDrag) endColDrag();
+  if (colHotEdge) {
+    colHotEdge = '';
+    try { window.SetCursor(32512); } catch (eCL) { }
+  }
   sbDrag = null;
   setCursorHand(false);
   if (sbHotId) { sbHotId = ''; repaint(); }
   if (sideTogHot) { sideTogHot = false; repaint(); }
+  if (rightTogHot) { rightTogHot = false; repaint(); }
+  if (rightHoverRow >= 0) { rightHoverRow = -1; repaint(); }
   if (scriptHot) { scriptHot = false; repaint(); }
   if (qBarHot) { qBarHot = false; repaint(); }
   if (probeHot) { probeHot = false; repaint(); }
@@ -10879,10 +12692,24 @@ function on_mouse_leave() {
 }
 
 function on_mouse_mbtn_up(x, y) {
+  var mode = mbtnMode();
+  /* 禁用要放在最前面：不转坐标、不判断、不写状态栏，原样放过去 */
+  if (mode === 'off') return false;
+
   x = toLogical(x);
   y = toLogical(y);
-  if (setOpen || overlay) return;
-  if (!L.board) return;
+  if (setOpen || overlay) return false;
+
+  if (mode === 'none') return true;        /* 吞掉，但什么也不做 */
+
+  if (mode === 'right') {
+    if (!L.right) return false;
+    toggleRight();
+    setStatus('右栏已' + (rightCollapsed ? '收起' : '展开') + '（鼠标中键切换）');
+    return true;
+  }
+
+  if (!L.board) return false;
   toggleSide();
   setStatus('左栏已' + (sideCollapsed ? '收起' : '展开') + '（鼠标中键切换）');
   return true;
@@ -10892,6 +12719,16 @@ function on_mouse_lbtn_down(x, y) {
   x = toLogical(x);
   y = toLogical(y);
   if (setOpen) return settingsMouseDown(x, y);
+
+  /* 栏边缘优先于滚动条：内容区的滚动条就贴在栏边界上，命中区会压过来，
+     先判拖宽，否则右边有滚动条时右栏永远拖不动。 */
+  var edge0 = colEdgeAt(x, y);
+  if (edge0) {
+    colDrag = { side: edge0, x0: x, w0: (edge0 === 'left' ? sideWUser : rightWUser) };
+    try { window.SetCursor(32644); } catch (eCE) { }
+    return true;
+  }
+
   var id = scrollbarHit(x, y);
   if (!id) {
     sbGuard = false;
@@ -10913,6 +12750,7 @@ function on_mouse_lbtn_up(x, y) {
   x = toLogical(x);
   y = toLogical(y);
   if (setOpen) { settingsMouseUp(x, y); return; }
+  if (colDrag) { endColDrag(); return true; }
   sbDrag = null;
   if (sbGuard) {
     sbGuard = false;
@@ -10921,6 +12759,28 @@ function on_mouse_lbtn_up(x, y) {
     hoverBtn = '';
     repaint();
     return;
+  }
+
+  /* 右侧播放列表栏：监视缓存按钮 / 收起按钮 / 选中一行 */
+  if (L.right && !overlay) {
+    var cb0 = cacheBtnRect();
+    if (cb0 && inRect(cb0, x, y)) { onCacheBtnClick(); return true; }
+
+    var rt0 = rightToggleRect();
+    if (rt0 && inRect(rt0, x, y)) { toggleRight(); return true; }
+    var ri0 = rightRowAtY(y, x);
+    if (ri0 >= 0) {
+      rightSel = ri0;
+      if (rightMode === 'cache') { repaint(); return true; }
+      var pl0 = plman.ActivePlaylist;
+      try {
+        plman.SetPlaylistFocusItem(pl0, ri0);
+        plman.ClearPlaylistSelection(pl0);
+        plman.SetPlaylistSelectionSingle(pl0, ri0, true);
+      } catch (eRS) { }
+      repaint();
+      return true;
+    }
   }
 
   if (overlay) {
@@ -11143,6 +13003,25 @@ function on_mouse_lbtn_dblclk(x, y) {
     return;
   }
   if (scrollbarHit(x, y)) return;
+
+  /* 右侧栏双击 = 播放这一行 */
+  if (L.right) {
+    var cbD = cacheBtnRect();
+    if (cbD && inRect(cbD, x, y)) return;     /* 单击 / 双击已在 lbtn_up 里分流 */
+    var ri1 = rightRowAtY(y, x);
+    if (ri1 >= 0) {
+      rightSel = ri1;
+      if (rightMode === 'cache') {
+        playRightPath(String((rightPaths && rightPaths[ri1]) || ''), plman.ActivePlaylist);
+        return;
+      }
+      rightSel = ri1;
+      try { plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist, ri1); } catch (eRD) { }
+      repaint();
+      return;
+    }
+  }
+
   if (checkAt(x, y) >= 0) return;
   var ti = trackAt(x, y);
   if (ti >= 0 && !buttonAt(x, y)) {
@@ -11189,6 +13068,15 @@ function on_mouse_wheel(step) {
   if (setOpen) {
     var P = settingsLayout();
     setScroll = clamp(setScroll - step * SET_WHEEL_STEP, 0, P.maxScroll);
+    repaint();
+    return;
+  }
+
+  /* 鼠标停在右侧播放列表栏上：滚它，不动内容区 */
+  if (!overlay && L.right && mouseX >= L.right.x &&
+      mouseY >= L.right.y && mouseY <= L.right.y + L.right.h) {
+    var rMax = Math.max(0, rightTotal - rightVisRows());
+    rightScroll = clamp(rightScroll - step * 3, 0, rMax);
     repaint();
     return;
   }
@@ -11387,6 +13275,9 @@ function on_mouse_rbtn_up(x, y) {
     return true;
   }
 
+  /* 右侧播放列表栏：整栏都归它，行内的菜单里再带 foobar2000 原生菜单 */
+  if (L.right && L.right.w > 0 && x >= L.right.x) return rightContextMenu(x, y);
+
   if (inRect(L.board, x, y)) return compactContextMenu(x, y);
 
   syncMulti();
@@ -11532,15 +13423,55 @@ function init() {
   setTimeout(function () {
     pruneCacheIndex();
     cleanPlaylistDeadCache();
-    cleanProxyPlaylistItems();
+    try { lxSweepStaleUrls(true); } catch (eSw2) { }
+    try { lxTrimPlaylist(plman.FindPlaylist(PLAYLIST_NAME)); } catch (eTp2) { }
   }, 1200);
 
   repaint();
 }
 
+/* ===== 播放列表变化：右栏要重建 =====
+   签名只看「列表号 + 项数」，重排和改名不会变，靠这些回调补上。 */
+function rightTouched() {
+  try { rightInvalidate(); } catch (e) { }
+  try { repaint(); } catch (e2) { }
+}
+function on_playlist_switch() { rightTouched(); }
+function on_playlists_changed() { rightTouched(); }
+function on_playlist_items_added() { rightTouched(); }
+function on_playlist_items_removed() { rightTouched(); }
+function on_playlist_items_reordered() { rightTouched(); }
+function on_playlist_items_replaced() { rightTouched(); }
+function on_item_focus_change() {
+  try {
+    if (!L.right || rightCollapsed) return;
+    var fi = -1;
+    try { fi = Number(plman.GetPlaylistFocusItemIndex(plman.ActivePlaylist)); } catch (e4) { fi = -1; }
+    if (fi >= 0) { rightSel = fi; repaint(); }
+  } catch (e3) { }
+}
+
 function on_playback_new_track(handle) {
   /* 每次切歌都允许重挂一次：列表项是新 handle，即使 path 和上次一样也得重挂 */
   ATTACH_KEY = '';
+
+  /* 队列轮到的歌不是刚点的那首：按地址把它认回来，顺带把 LAST_PLAY_URL
+     指到当前项 —— 广播、封面、ESLyric 三条链路都是靠它判断「这首是不是我们的」。 */
+  try {
+    var qp = String(handle && handle.Path || '');
+    if (qp) {
+      var qt = LX_QUEUED[qp.toLowerCase()];
+      if (qt) { lastTrack = qt; LAST_PLAY_URL = qp; }
+    }
+  } catch (eQP) { }
+  /* 顺手清一遍过期直链（内部有一分钟节流，不会每次都真扫） */
+  setTimeout(function () {
+    try { lxSweepStaleUrls(false); } catch (eSw) { }
+    /* 再裁一次条数：本地文件没有过期时间，只能按条数兜住 */
+    try { lxTrimPlaylist(plman.FindPlaylist(PLAYLIST_NAME)); } catch (eTp) { }
+    /* 开着监视缓存的话，趁换歌的空当把新落盘的补进去（内部三秒节流） */
+    try { watchScan(false); } catch (eWc) { }
+  }, 1500);
   setTimeout(function () { refreshBackground(true); }, 0);
   try { pushCoverForHandle(handle); } catch (e) {}
   /* 流播换歌时封面往往还在下载/还没落盘，隔一下再补挂一次。

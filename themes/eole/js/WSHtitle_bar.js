@@ -196,7 +196,7 @@ var btn = {
 var update_wallpaper = false;
 
 var ww = 0, wh = 0;
-var caption_title_default = "无声 - 未播放";
+var caption_title_default = "无音频输出（未播放音乐）";
 var caption_title = caption_title_default;
 
 var Settings_width = 102;
