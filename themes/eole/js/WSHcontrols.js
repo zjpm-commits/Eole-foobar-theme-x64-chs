@@ -618,7 +618,7 @@ function build_buttons(){
 		},rating0_img,rating0_img_hover),
 		Equalizer: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "均衡器", "显示均衡器",false, function () {
 			g_tooltip.Deactivate();
-			runMainMenuCommand("查看/DSP/均衡器");
+			runMainMenuCommand("视图/DSP/均衡器");
 		},false,equalizer_img,equalizer_img_hover),
 		Device: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "设备", "输出设备和 DSP 预设", function () {
 			g_tooltip.Deactivate();
@@ -2609,7 +2609,7 @@ function moreMenu(x, y){
                 break;
 
 			case (idx == 3017):
-				runMainMenuCommand("查看/DSP/均衡器");
+				runMainMenuCommand("视图/DSP/均衡器");
 				break;
 			case (idx == 3018):
 				setScheduler(0);

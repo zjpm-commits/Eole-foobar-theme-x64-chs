@@ -1817,7 +1817,7 @@ function draw_main_menu(x,y){
 
     child1.AppendTo(basemenu, MF_STRING, "文件");
     child2.AppendTo(basemenu, MF_STRING, "编辑");
-    child3.AppendTo(basemenu, MF_STRING, "查看");
+    child3.AppendTo(basemenu, MF_STRING, "视图");
     child4.AppendTo(basemenu, MF_STRING, "播放");
     child5.AppendTo(basemenu, MF_STRING, "媒体库");
     child6.AppendTo(basemenu, MF_STRING, "帮助");
