@@ -1,48 +1,13 @@
 ﻿/* ==========================================================================
    Lxbox · 洛雪音源 JSplitter 面板
    发布页：https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter
-
    一、这是什么
      运行在 foobar2000 的 foo_uie_jsplitter 面板中，用来浏览、搜索和播放
      多平台在线音乐。数据可来自 QQ、网易云、酷我、酷狗、咪咕；实际播放
      直链由音源脚本提供，可按加载顺序自动选择，也可为每个平台指定脚本。
      播放前默认先缓存到本地；同名、同扩展名的音频已存在时直接播放，
      不重复取链、下载或写入标签。关掉「检测扩展名」后，同名文件不论
-     扩展名（mp3 / flac / m4a…）都直接播那一份。
-
-   二、主要功能
-     1. 浏览与搜索
-        - 排行榜：QQ / 网易 / 酷我 / 酷狗 / 咪咕。
-        - 搜索：在当前平台搜索单曲；不输关键词时显示热门推荐。
-        - 歌单 / 播客 / 歌手：进入后显示推荐，也可输入关键词搜索。
-        - 推荐内容随当前平台切换；播客推荐仅网易云提供，其它平台会提示。
-     2. 播放与曲目管理
-        - 双击曲目播放；曲目行首方框支持多选，Shift 可连续选择。
-        - 右键可把选中的曲目批量加入「洛雪音源」播放列表，或批量下载到缓存并写标签。
-        - 播放列表中已有同一缓存文件时直接播放该条目，不重复添加。
-     3. 评论与艺人资料
-        - 顶栏「评论」或 F3：打开 / 关闭当前歌曲评论浮层。
-        - 顶栏「简介」或 F4：打开 / 关闭当前艺人介绍浮层。
-        - 浮层打开时，F3 / F4 可在评论与艺人介绍之间切换，Esc 关闭。
-     4. 外观与背景
-        - 字体、字号、文字颜色默认跟随 foobar2000 的显示设置。
-        - 可调整配色、曲目清单行数、行距，以及背景效果 / 四个区块 / 浮层三段设置。
-        - 面板内容较宽时曲目可排成两列；设置项修改后即时生效并写入属性。
-     5. 缓存与音源维护
-        - mp3 / flac 分目录缓存，缓存目录和音源目录均可修改。
-        - 播放方式三选一：在线流播 / 边下边播 / 下完再播。
-        - 流播时可把封面挂到播放项、并可选留一份 cover.jpg。
-        - 曲目信息广播：直链项在 fb2k 里没有标签，皮肤面板从 metadb 取 %artist% /
-          %title% 只能拿到空和 URL 末段。面板把自己手上的歌手 / 歌名广播出去
-          （lx_now_info / lx_now_json / lx_now_text），并写一份
-          nowplaying\info.json（含 items 路径索引），皮肤的面板接住即可显示。
-        - 流播时直接把歌手 / 歌名交给 ESLyric 搜词（IESLyricControl.RequestLyric），
-          不依赖 fb2k 的 %artist%（流播项里它恒空），歌词搜索框两栏都有值。
-        - 支持封面写入音频标签、额外保存同名 jpg。
-        - 支持导入 / 重载音源、重嵌封面、清理缓存、音质检测和诊断日志。
-        - 可填写在线音源 .js 直链：启动时检查，有变化则下载覆盖并重载。
-
-   三、安装与目录
+   二、安装与目录
      1. 将 main.js、crypto.js、lx.js、providers.js 放在同一模块目录，
         通常为 JSplitter\net；tagwriter.js 可选，建议一起放置以支持
         更完整的音频标签 / 封面写入。
@@ -54,22 +19,7 @@
           flac 音频      <profile>\Lxbox\flac
           索引 / 封面等  <profile>\Lxbox\cache
         <profile> 指 foobar2000 的配置目录。
-
-   四、基本使用
-     1. 在顶栏选择数据平台，再进入排行榜、搜索、歌单、播客或歌手页面。
-     2. 搜索框中直接输入关键词；中文输入法不便输入时可 Ctrl+V 粘贴。
-     3. 双击曲目播放；需要批量加入播放列表 / 批量下载时，先勾选再使用右键菜单。
-     4. 顶栏「简介」「评论」查看当前艺人资料和歌曲评论。
-     5. 顶栏「设置」调整外观、背景、音源、标签、检测与维护选项。
-     6. 设置 → 维护 底部的「Lxbox 界面发布页」可打开本面板发布页。
-     7. 设置 → 标签 可开「苹果标签源」：默认一律用播放音源的 TITLE /
-        ARTIST / ALBUM / DATE，只有勾上的字段才用 Apple Music 中国区的值；
-        网易来源的发行日改从腾讯取（腾讯没有再退苹果）。勾「作品/乐章」
-        时古典曲目还会写 WORK / MOVEMENTNAME / MOVEMENT / MOVEMENTTOTAL /
-        SHOWMOVEMENT（数据来自 classical.music.apple.com 中国区）。
-
-   五、快捷键与鼠标
-     直接打字       在搜索框输入关键词
+   三、快捷键与鼠标
      Ctrl+V         向搜索框粘贴剪贴板文字
      F3             开关歌曲评论浮层
      F4             开关艺人介绍浮层
@@ -78,75 +28,9 @@
      Ctrl + 滚轮    调整面板字号（每格 1px，范围 9～18；改为手动字号）
      鼠标中键       展开 / 收起左栏（设置、浮层等无左栏界面不适用）
      Shift + 点击   在曲目多选框中连续选择
-     双击曲目       播放该曲目
-
-   六、设置面板速查
-     外观           缩放、字号、配色、曲目清单行数、第二排平台（以及
-                    隐藏第二排时单独用的音质）。
-     背景           分三段：
-                    ① 背景效果 —— 全屏透明、封面背景、调色、遮罩、模糊、亮度、饱和度。
-                    ② 四个区块 —— 标题栏 / 搜索栏 / 左侧栏 / 内容区各一条透明度（内容区 = 左侧栏
-                       右边那整块，状态栏不在内），内容区还能染色。
-                    ③ 浮层 —— 设置界面 / 简介界面 / 评论界面共用浮层遮罩（底下垫一张虚化封面）
-                       与浮层不透明度（无图时的实色浓度，0~100）。
-     音源           mp3 / flac / 缓存目录、扩展名检测、播放方式（在线流播 /
-                    边下边播 / 下完再播，三选一按钮）、流播封面挂载（流播时
-                    把封面写成 nowplaying\cover.jpg 给 foobar 读）、曲目信息广播
-                    （把歌手 / 歌名推给皮肤面板）、让 ESLyric 代搜歌词、音源目录、
-                    播放音源、全局音质（自动 / 128K / 320K / FLAC / FLAC 24 /
-                    Hi-Res / 全景声 / 全景声+ / 母带，下拉选）、在线音源网址。
-     标签           封面嵌入音频、同时写同名 jpg；
-                    苹果标签源（可选）：总开关、逐字段勾选、1200px封面、
-                    播放后自动补、补当前 / 选中 / 整张列表、清缓存。
-     检测           音源音质检测（右栏内嵌，左栏不关闭：勾平台 / 档位
-                    （128Kbps / 320Kbps / FLAC / Hi-Res）、选脚本、
-                    开始 / 停止检测、看各平台逐档结果；上次的结果会存下来，
-                    重开面板还看得到）。
-     维护           刷新列表、重载 / 导入音源、重嵌封面、清空缓存、
-                    清空搜索历史、诊断日志、Lxbox 界面发布页。
-     每页的「恢复默认」只恢复当前分类；「退出设置」返回主界面。
-
-   七、常见问题
-     没有可用音源脚本
-       检查 crypto.js / lx.js / providers.js 是否齐全、音源脚本是否在
-       sources 目录；必要时指定音源目录并在维护页重载。点状态栏或打开
-       诊断 / 日志可查看失败原因。
-     播放或下载异常
-       先看状态栏与诊断日志；可切换播放音源、平台或音质，必要时清理缓存。
-       清空缓存只删除音频和 index.json，评论与艺人资料保留。
-     发布页链接没有打开浏览器
-       状态栏会显示实际结果；诊断日志中的 Win32Error / ShellCode 可用于
-       排查系统默认浏览器或 URL 关联问题。
-     ESLyric 播流时搜不到歌词 / 搜索框两个字段都是空的
-       fb2k 没有给流式项目写文本标签的接口，流播项的 %artist% 恒空，而 ESLyric
-       的搜索框是分开取 %title% 和 %artist% 的，所以光把标题塞进 URL 也不够。
-       真正的解法是走 ESLyric 自己的 COM 接口 IESLyricControl.RequestLyric(标题,
-       艺术家) —— 面板把手上的歌手 / 歌名直接喂过去，完全不经过 metadb。
-       设置 → 音源里「流播时让 ESLyric 按面板信息搜词」默认就是开的，换歌后
-       800ms 自动发一次；「立即让 ESLyric 搜一次」可以手动补一发。
-       皮肤面板上的显示另走一条：广播（见下面「皮肤面板显示的还是 hash」）。
-       本地文件（下完再播 / 边下边播第二次起）有真标签，两条都用不上。
-FAQ 超时     皮肤面板显示的还是 hash（列表行 / 标题栏）
-       流播项的 %artist% 恒空、%title% 只是 URL 末段，这是 fb2k 的硬限制：
-       没有给流式项目写文本标签的接口。解法是让面板把信息广播出去 ——
-       设置 → 音源里「把曲目信息广播给皮肤面板」默认开，每首流播曲目广播
-       lx_now_info（对象）/ lx_now_json（JSON 串）/ lx_now_text（纯文本），
-       切回本地文件时发 lx_now_clear。同时写 <缓存目录>\nowplaying\info.json，
-       里面的 items 以播放项路径为键，列表面板逐行查表即可显示正确名字。
-       接收端在 on_notify_data 里加一个 case 就行；晚加载的面板发一次
-       lx_now_request 就能要到当前曲目。
-
-     修改脚本后没有生效
-       确认覆盖的是面板实际加载目录中的 main.js，并重新加载脚本 / 面板。
-
    ========================================================================== */
-var APP_VERSION = '2.1.9';
+var APP_VERSION = '2.1.8';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
-
-/* 早期版本把 lx.* 属性改成「lx.xxx·中文」时留下的迁移标记，已经没用，读到就删掉 */
-(function purgeLegacyPropMarks() {
-  try { if (window.GetProperty('Lxbox·属性还原') !== undefined) window.SetProperty('Lxbox·属性还原', null); } catch (e) {}
-})();
 
 function getP(k, d) {
   try { return window.GetProperty(k, d); } catch (e) { return d; }
@@ -2476,14 +2360,20 @@ function paintContentVeil(gr) {
 var SURF_CLEAR_PROPS = {
   head:   'lx.clearHead',
   search: 'lx.clearSearch',
-  side:   'lx.clearSide'
+  side:   'lx.clearSide',
+  right:  'lx.clearRight'
 };
 
 function surfClear(surf) {
   var k = SURF_CLEAR_PROPS[surf];
   if (!k) return 0;
-  var v = parseInt(getP(k, 50), 10);
-  if (!(v >= 0)) return 50;
+  var v = parseInt(getP(k, -1), 10);
+  if (!(v >= 0)) {
+    /* 右侧栏是后加的独立项：老配置里没有 lx.clearRight，
+       首次升级先沿用左侧栏的值，免得观感和以前对不上 */
+    if (surf === 'right') return surfClear('side');
+    return 50;
+  }
   return clamp(v, 0, 100);
 }
 
@@ -4195,6 +4085,7 @@ function cleanPlaylistDeadCache() {
 
   try { if (plman.UndoBackup) plman.UndoBackup(idx); } catch (e) {}
 
+  var selSnap = lxSnapshotSelection(idx);
   try {
     plman.ClearPlaylistSelection(idx);
     dead.forEach(function (n) { plman.SetPlaylistSelectionSingle(idx, n, true); });
@@ -4203,6 +4094,7 @@ function cleanPlaylistDeadCache() {
   } catch (e) {
     NM.lx.pushLog('warn', '清理失效播放列表条目失败：' + ((e && e.message) || e));
   }
+  lxRestoreSelection(selSnap);
 }
 
 function cachedFileFor(track, q) {
@@ -5356,6 +5248,60 @@ var LX_URL_TTL = 30 * 60 * 1000;
 var LX_URL_MAP_MAX = 100;
 var lxSweepAt = 0;
 
+/* ===== 选中状态保护 =====
+   「洛雪音源」这个列表的几处清理（过期直链 / 只留最近 N 条 / 失效缓存）
+   都是 ClearPlaylistSelection + RemovePlaylistSelection 干的，顺手就把用户
+   在这个列表里点选的项整体抹掉了 —— 而且这几处都在切歌后被触发，
+   所以表现是「刚点中，切首歌就全没了」，看上去就像项目点不上。
+   做法：清理前记住被选中的路径，删完按路径找回新索引重新选上。 */
+function lxSnapshotSelection(idx) {
+  var snap = { idx: idx, paths: [], focusPath: '' };
+  if (idx == null || idx < 0) return snap;
+  try {
+    var n = lxItemCount(idx);
+    if (n <= 0) return snap;
+    for (var i = 0; i < n; i++) {
+      var sel = false;
+      try { sel = plman.IsPlaylistItemSelected(idx, i); } catch (e1) { sel = false; }
+      if (!sel) continue;
+      var h = null;
+      try { h = plman.GetPlaylistItemHandle(idx, i); } catch (e2) { h = null; }
+      var p = lxPathOfHandle(h);
+      if (p) snap.paths.push(p);
+    }
+    try {
+      var fi = plman.GetPlaylistFocusItemIndex(idx);
+      if (fi >= 0 && fi < n) snap.focusPath = lxPathOfHandle(plman.GetPlaylistItemHandle(idx, fi));
+    } catch (e3) { }
+  } catch (e4) { }
+  return snap;
+}
+
+function lxRestoreSelection(snap) {
+  if (!snap || !snap.paths.length) return 0;
+  var idx = snap.idx;
+  var restored = 0, focusRow = -1;
+  try {
+    if (idx == null || idx < 0 || idx >= plman.PlaylistCount) return 0;
+    var want = {};
+    for (var k = 0; k < snap.paths.length; k++) want[snap.paths[k]] = 1;
+    var n = lxItemCount(idx);
+    for (var i = 0; i < n; i++) {
+      var h = null;
+      try { h = plman.GetPlaylistItemHandle(idx, i); } catch (e1) { h = null; }
+      var p = lxPathOfHandle(h);
+      if (!p || !want[p]) continue;
+      try { plman.SetPlaylistSelectionSingle(idx, i, true); } catch (e2) { continue; }
+      if (focusRow < 0 || (snap.focusPath && p === snap.focusPath)) focusRow = i;
+      restored++;
+    }
+    if (focusRow > -1) {
+      try { plman.SetPlaylistFocusItem(idx, focusRow); } catch (e3) { }
+    }
+  } catch (e4) { }
+  return restored;
+}
+
 function lxSweepStaleUrls(force) {
   var now = Date.now();
   if (!force && now - lxSweepAt < 60 * 1000) return;   /* 一分钟内不重复扫 */
@@ -5416,6 +5362,7 @@ function lxSweepStaleUrls(force) {
       if (pth && dead[pth]) bad.push(i);
     }
     if (bad.length) {
+      var selSnap = lxSnapshotSelection(idx);
       try {
         plman.UndoBackup(idx);
         plman.ClearPlaylistSelection(idx);
@@ -5425,6 +5372,7 @@ function lxSweepStaleUrls(force) {
         plman.RemovePlaylistSelection(idx, false);
         removed = bad.length;
       } catch (e6) { removed = 0; }
+      lxRestoreSelection(selSnap);
     }
   }
 
@@ -5512,6 +5460,7 @@ function lxTrimPlaylist(idx) {
 
   lxTrimBusy = true;
   var removed = 0;
+  var selSnap = lxSnapshotSelection(idx);
   try {
     var cntBefore = 0;
     try { cntBefore = lxItemCount(idx); } catch (eB) { cntBefore = 0; }
@@ -5527,6 +5476,7 @@ function lxTrimPlaylist(idx) {
     removed = cntBefore - cntAfter;
   } catch (e4) { removed = 0; }
   lxTrimBusy = false;
+  lxRestoreSelection(selSnap);
 
   if (removed > 0) {
     try {
@@ -5640,6 +5590,7 @@ function lxDedupeTrack(idx, track, keepPath) {
   if (!bad.length) return 0;
 
   var removed = 0;
+  var selSnap = lxSnapshotSelection(idx);
   try {
     var cntBefore = 0;
     try { cntBefore = lxItemCount(idx); } catch (eB) { cntBefore = 0; }
@@ -5658,6 +5609,7 @@ function lxDedupeTrack(idx, track, keepPath) {
       NM.lx.pushLog('warn', '去重只删掉 ' + removed + '/' + bad.length + ' 条（列表可能正在播放或被锁定）');
     }
   } catch (e3) { removed = 0; }
+  lxRestoreSelection(selSnap);
   return removed;
 }
 
@@ -9471,6 +9423,11 @@ function rightInvalidate() {
   rightSig = '';
   rightHandles = null;
   rightPaths = null;
+  /* 项数要一起清零：置空数组却留着旧项数，那 800ms 的进度定时器
+     可能抢在下一次 rightEnsure() 之前进来，拿着旧项数去索引 null，
+     就是 "can't access property 0, rightPaths is null"。
+     清零后定时器第一道判断（!rightTotal）就退出了。 */
+  rightTotal = 0;
 }
 
 /* ===== 正在播放那一行的进度条 =====
@@ -9493,7 +9450,10 @@ function rightPlayingRow() {
   var pp = '';
   try { pp = String(fb.GetNowPlaying().Path || '').toLowerCase(); } catch (e2) { pp = ''; }
   if (!pp) return -1;
-  for (var i = 0; i < rightTotal; i++) {
+  /* 双保险：rightPaths 可能刚被 rightInvalidate() 置空，这里自己也要挡得住 */
+  if (!rightPaths) return -1;
+  var n = Math.min(rightTotal, rightPaths.length);
+  for (var i = 0; i < n; i++) {
     if (String(rightPaths[i] || '').toLowerCase() === pp) return i;
   }
   return -1;
@@ -9933,7 +9893,7 @@ function drawRightToggle(gr) {  var r = rightToggleRect();
 
 function drawRightRail(gr) {
   var r = L.right;
-  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('side', BG_A.side)));
+  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('right', BG_A.side)));
   gr.DrawLine(r.x, r.y, r.x, r.y + r.h, 1, A(C.line, 205));
 
   var t = (rightMode === 'cache') ? '缓存' : '播放列表';
@@ -9954,7 +9914,7 @@ function drawRightPanel(gr) {
   rightEnsure();
   DUR_BUDGET = 10;                 /* 本帧最多解析 10 个文件的时长 */
 
-  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('side', BG_A.side)));
+  gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.panel, surfA('right', BG_A.side)));
   gr.DrawLine(r.x, r.y, r.x, r.y + r.h, 1, A(C.line, 205));
 
   var headH = Math.min(24, Math.max(20, FONT_BASE + 4));
@@ -10918,7 +10878,7 @@ var HUE_PRESETS = [
 
 var SET_CATS = [
   { id: 'look', name: '外观', hint: '缩放、字号、配色、曲目清单行数、第二排平台、隐藏时的音质。改完立刻生效。' },
-  { id: 'bg', name: '背景', hint: '三段：背景效果（底图）、四个区块（标题栏 / 搜索栏 / 左侧栏 / 内容区的蒙版）、浮层（设置 / 简介 / 评论三个整屏界面）。' },
+  { id: 'bg', name: '背景', hint: '三段：背景效果（底图）、五个区块（标题栏 / 搜索栏 / 左侧栏 / 右侧栏 / 内容区的蒙版）、浮层（设置 / 简介 / 评论三个整屏界面）。' },
   { id: 'src', name: '音源', hint: '播放方式（在线流播 / 边下边播 / 下完再播）、流播封面挂载、曲目信息广播（把歌手 / 歌名推给皮肤面板）、让 ESLyric 代搜歌词、缓存 / 音源目录、扩展名检测、播放音源、全局音质、在线音源网址。目录留空用默认。' },
   { id: 'tag', name: '标签', hint: '封面嵌入音频、同时写同名 jpg；苹果标签源（可选，逐字段勾选，含古典作品 / 乐章）。播放方式与流播封面推送在「音源」页。' },
   { id: 'probe', name: '检测', hint: '音源音质检测：各平台到底能出哪几档。左栏不用关，右栏勾平台 / 档位、选脚本、开始 / 停止检测。' },
@@ -11131,7 +11091,7 @@ function lookSections() {
   return secs;
 }
 
-// 背景三段：背景效果（底图）→ 四个区块（各自蒙版）→ 浮层（设置 / 简介 / 评论）
+// 背景三段：背景效果（底图）→ 五个区块（各自蒙版）→ 浮层（设置 / 简介 / 评论）
 function bgSections() {
   var hue = bgHue();
   return [
@@ -11148,7 +11108,7 @@ function bgSections() {
         options: [['1', '开'], ['0', '关']],
         onPick: function (v) { setBgArt(v === '1'); } },
       { kind: 'note', text: '上面两项是总闸。下面六项调的是铺在整块面板底下的那张封面图——' +
-                            '四个区块和浮层都盖在它上面，所以图一变，全局都跟着变。' },
+                            '五个区块和浮层都盖在它上面，所以图一变，全局都跟着变。' },
       { kind: 'swatch', id: 'hue', label: '背景调色', value: hue,
         options: HUE_PRESETS,
         onPick: function (v) {
@@ -11167,9 +11127,10 @@ function bgSections() {
                   after: function () { queueBackdrop(90); } })
     ] },
 
-    { cat: 'bg', title: '四个区块（标题栏 / 搜索栏 / 左侧栏 / 内容区）', rows: [
-      { kind: 'note', text: '对应主界面的四块：最上面一条是标题栏，标题栏下面一条是搜索栏，' +
-                            '左下那一列是左侧栏，左侧栏右边那整片是内容区。四条各管自己那层蒙版，互不影响；' +
+    { cat: 'bg', title: '五个区块（标题栏 / 搜索栏 / 左侧栏 / 右侧栏 / 内容区）', rows: [
+      { kind: 'note', text: '对应主界面的五块：最上面一条是标题栏，标题栏下面一条是搜索栏，' +
+                            '左下那一列是左侧栏，右边那一列是右侧栏（播放列表 / 缓存），' +
+                            '左右两栏中间那整片是内容区。五条各管自己那层蒙版，互不影响；' +
                             '最底下的状态栏（点一下看诊断日志那行）没有单独的滑杆，它和标题栏同色，' +
                             '跟着「标题栏透明度」一起变。' },
       setSlider({ id: 'clearhead', label: '标题栏透明度', key: 'lx.clearHead',
@@ -11178,19 +11139,22 @@ function bgSections() {
                   value: function () { return surfClear('search'); } }),
       setSlider({ id: 'clearside', label: '左侧栏透明度', key: 'lx.clearSide',
                   value: function () { return surfClear('side'); } }),
+      setSlider({ id: 'clearright', label: '右侧栏透明度', key: 'lx.clearRight',
+                  value: function () { return surfClear('right'); } }),
       setSlider({ id: 'clear', label: '内容区透明度', key: 'lx.bgClear', value: bgClear }),
       setSlider({ id: 'tint', label: '内容区染色', key: 'lx.bgTint', value: bgTint, max: 30,
                   fmt: function (v) { return v === 0 ? '不染色' : v + '%'; } }),
       { kind: 'note', text: function () {
-          return '四条同一套算法：0% = 原样，越大越透，100% = 这一层完全不盖（字、按钮、列表照旧，只没了底）。' +
-                 '内容区只盖左侧栏右边那一块，和状态栏、前面三块都互不影响；染色也只掺内容区这一层。' +
-                 (bgArtEnabled() ? '' : '（封面背景关着，四条和染色都看不出效果）');
+          return '五条同一套算法：0% = 原样，越大越透，100% = 这一层完全不盖（字、按钮、列表照旧，只没了底）。' +
+                 '左右两栏各管各的，右栏收起成窄条时也照这条走；' +
+                 '内容区只盖左右两栏之间那一块，和状态栏、前面四块都互不影响；染色也只掺内容区这一层。' +
+                 (bgArtEnabled() ? '' : '（封面背景关着，五条和染色都看不出效果）');
         } }
     ] },
 
     { cat: 'bg', title: '浮层（设置界面 / 简介界面 / 评论界面）', rows: [
       { kind: 'note', text: '浮层指的是整块盖住面板的三个界面：面板设置、歌曲简介（F4）、歌曲评论（F3）。' +
-                            '它们共用下面两项，和四个区块的位置、透明度都无关。' },
+                            '它们共用下面两项，和五个区块的位置、透明度都无关。' },
       setSlider({ id: 'ovscrim', label: '浮层遮罩', key: 'lx.bgOverlayScrim', value: bgOverlayScrimPct,
                   fmt: function (v) { return v === 0 ? '透出底图' : v + '%'; } }),
       { kind: 'note', text: '浮层遮罩：浮层底下垫一张重度虚化的封面（壁纸，没有就拿封面），' +
@@ -12159,6 +12123,7 @@ function resetSettingCat() {
     setProp('lx.clearHead', 50);
     setProp('lx.clearSearch', 50);
     setProp('lx.clearSide', 50);
+    setProp('lx.clearRight', 50);
     setProp('lx.bgOverlay', 90);
     setProp('lx.bgOverlayScrim', 80);
     setProp('lx.bgArtAlpha', '');

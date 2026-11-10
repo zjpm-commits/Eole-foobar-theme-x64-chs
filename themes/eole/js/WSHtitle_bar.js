@@ -635,7 +635,7 @@ function build_buttons(){
 				toggleSearch();
 				g_cursor.setCursor(IDC_ARROW,2);
 			}, false,false,images.search_toggle_img,images.search_toggle_img,-1, false, false, true),
-			Settings: new JSButton(2, -1, Settings_width, btn.height-3, "Foobar", "Foobar", "主菜单", function () {
+			Settings: new JSButton(2, -1, Settings_width, btn.height-3, "Foobar Eole", "Foobar", "主菜单", function () {
 				g_tooltip.Deactivate();
 				draw_main_menu(0, 28);
 			}, false,false,((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),-1, false, false, false),
@@ -711,7 +711,7 @@ function setFoobarWindowWidth(newWidth) {
 			return true;
 		}
 	} catch (e) {}
-	console.log("迷你模式：当前 JSplitter 不支持修改窗口宽度，请在 CUI 里手动调整");
+	console.log("迷你模式：当前 JSplitter 不支持修改窗口宽度，请在 DUI 里手动调整");
 	return false;
 }
 
@@ -3073,9 +3073,10 @@ function toggleBlurWallpaper(wallpaper_blur_state){
 var fw_menu = null;
 
 function fwGetMenu() {
-    if (!fw_menu) {
-        try { build_fw_menu(); } catch (e) { fw_menu = null; }
-    }
+    /* 每次右键都重建：img\Background 里可能刚放了新图，缓存住菜单就永远看不到。
+       重建只是一次 Glob 加几十条 AppendMenuItem，代价可以忽略。 */
+    fw_menu = null;
+    try { build_fw_menu(); } catch (e) { fw_menu = null; }
     if (!fw_menu) { try { fw_menu = window.CreatePopupMenu(); } catch (e2) {} }
     return fw_menu;
 }
@@ -3091,15 +3092,37 @@ function build_fw_menu() {
 	fw_menu.AppendMenuSeparator();
 
 	var src_menu = window.CreatePopupMenu();
-	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC0, "跟随当前封面");
-	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC1, "固定图片");
-	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC2, "优先用图片");
+	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC0, "跟随封面");
+	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC1, "本地图片");
+	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC2, "封面优先");
 	var src = fw_source();
 	src_menu.CheckMenuRadioItem(FW_ID_SRC0, FW_ID_SRC2,
 		src === 1 ? FW_ID_SRC1 : (src === 2 ? FW_ID_SRC2 : FW_ID_SRC0));
 	src_menu.AppendMenuSeparator();
 	var p = fw_imagePath();
-	src_menu.AppendMenuItem(MF_STRING, FW_ID_PICK, "选择图片...");
+	src_menu.AppendMenuItem(MF_STRING, FW_ID_PICK, "选择图片");
+
+	/* 预置背景：img\Background 下的图片直接列成子菜单，点一下就换 */
+	var presets = [];
+	try { presets = fw_presetFiles(); } catch (ePR) { presets = []; }
+	fw_presetCache = presets;
+	var pre_menu = window.CreatePopupMenu();
+	if (presets.length) {
+		var curLow = String(fw_imagePath() || "").toLowerCase();
+		var nPre = Math.min(presets.length, FW_PRESET_MAX);
+		for (var pi = 0; pi < nPre; pi++) {
+			var pid = FW_ID_PRESET_BASE + pi;
+			pre_menu.AppendMenuItem(MF_STRING, pid, presets[pi].name);
+			if (presets[pi].path.toLowerCase() === curLow) pre_menu.CheckMenuItem(pid, true);
+		}
+		if (presets.length > FW_PRESET_MAX) {
+			pre_menu.AppendMenuItem(MF_GRAYED, 0, "（还有 " + (presets.length - FW_PRESET_MAX) + " 张未列出）");
+		}
+	} else {
+		pre_menu.AppendMenuItem(MF_GRAYED, 0, "（先把图片放进 img\\Background）");
+	}
+	pre_menu.AppendTo(src_menu, MF_STRING, "预置背景");
+	src_menu.AppendMenuSeparator();
 	src_menu.AppendMenuItem(MF_STRING, FW_ID_CLEAR, "清除已选图片");
 	src_menu.AppendMenuItem((p ? MF_STRING : MF_GRAYED), 0, p ? ("当前：" + p.split("\\").pop()) : "当前：未选择");
 	src_menu.AppendTo(fw_menu, MF_STRING, "壁纸来源");
@@ -3139,7 +3162,7 @@ function build_fw_menu() {
 	q_menu.AppendTo(fw_menu, MF_STRING, "壁纸质量");
 
 	fw_menu.AppendMenuSeparator();
-	fw_menu.AppendMenuItem(MF_STRING, FW_ID_REFRESH, "重新生成壁纸");
+	fw_menu.AppendMenuItem(MF_STRING, FW_ID_REFRESH, "刷新壁纸");
 	return fw_menu;
 }
 
@@ -3158,15 +3181,33 @@ function fw_handle_menu(idx) {
 		case (idx == FW_ID_SRC1): window.SetProperty(FW_PROP_SOURCE, 1); dirty = true; break;
 		case (idx == FW_ID_SRC2): window.SetProperty(FW_PROP_SOURCE, 2); dirty = true; break;
 		case (idx == FW_ID_PICK): {
-			var f = null;
+			/* SMP / JSplitter 的 utils 里没有 OpenFileDialog：原来那句一调用就抛
+			   TypeError，又被下面的 catch 吞掉，所以点了菜单完全没有反应。
+			   这里改成输入框粘贴路径（同一主题里别处也这么用，API 稳）。 */
+			var cur0 = fw_imagePath();
+			var inp = null;
 			try {
-				f = utils.OpenFileDialog(0, "图片文件|*.jpg;*.jpeg;*.png;*.bmp;*.gif;*.webp|所有文件|*.*", fw_imagePath() || "");
-			} catch (e) { f = null; }
-			if (f) {
-				fw_setImagePath(f);
-				if (fw_source() === 0) window.SetProperty(FW_PROP_SOURCE, 1);
-				dirty = true;
+				inp = utils.InputBox(window.ID,
+					"粘贴图片完整路径（jpg / png / bmp / gif / webp 均可）。\n\n" +
+					"支持三种写法：\n" +
+					"  绝对路径      C:\\Pictures\\wall.jpg\n" +
+					"  带变量        %profile%\\themes\\eole\\img\\wall.jpg\n" +
+					"  相对 profile  themes\\eole\\img\\wall.jpg",
+					"全屏壁纸图片", cur0 || "", true);
+			} catch (eIB) { inp = null; }
+			if (inp === null || inp === undefined) break;                  /* 取消 */
+			var pnew = String(inp).replace(/^\s+|\s+$/g, "").replace(/^"|"$/g, "");
+			if (pnew === cur0) break;                                      /* 没改 */
+			if (!pnew) { fw_setImagePath(""); dirty = true; break; }        /* 清空 = 回默认壁纸 */
+			var pabs = fw_absImagePath(pnew);
+			if (!pabs) {
+				fb.ShowPopupMessage("找不到这个图片文件：\n" + pnew +
+					"\n\n可以填绝对路径，或用 %profile%\\ 开头的路径。", "全屏壁纸");
+				break;
 			}
+			fw_setImagePath(pabs);
+			if (fw_source() === 0) window.SetProperty(FW_PROP_SOURCE, 1);
+			dirty = true;
 			break;
 		}
 		case (idx == FW_ID_CLEAR):
@@ -3195,6 +3236,19 @@ function fw_handle_menu(idx) {
 		case (idx == FW_ID_REFRESH):
 			dirty = true;
 			break;
+
+		default: {
+			/* 预置背景：ID 是基址 + 序号，序号对应 build 时的缓存顺序 */
+			if (idx >= FW_ID_PRESET_BASE && idx < FW_ID_PRESET_BASE + FW_PRESET_MAX) {
+				var pit = fw_presetCache[idx - FW_ID_PRESET_BASE];
+				if (pit && pit.path) {
+					fw_setImagePath(pit.path);
+					if (fw_source() === 0) window.SetProperty(FW_PROP_SOURCE, 1);
+					dirty = true;
+				}
+			}
+			break;
+		}
 	}
 	if (!dirty) return false;
 

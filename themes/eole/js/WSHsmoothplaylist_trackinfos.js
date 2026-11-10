@@ -248,6 +248,15 @@ var gradient_w = 31;
 var gradient_m = 15;
 var draw_right_line = false;
 var g_active_playlist = null;
+/* 用户亲手激活的播放列表（-1 表示没有）。
+   「锁定正在播放」开着的时候，panel 原来无条件把 g_active_playlist 拽回在播列表，
+   而 plman.ActivePlaylist 已经被用户切走了：表头读的是 plman.ActivePlaylist，
+   正文和鼠标点选读的是 g_active_playlist，两者分叉 —— 在洛雪音源里点项目
+   全部打到在播列表上，看起来就是「点了选不上」。记下用户的选择，让两边始终一致。 */
+var g_playlist_user_override = -1;
+/* 记下这次手动选择发生时的「正在播放」列表。一旦播放跳到别的列表，
+   说明上下文变过了，手动指定的优先级就作废，面板重新跟随在播列表。 */
+var g_playlist_override_playing = -1;
 var Update_Required_function = "";
 var playing_track_playcount = 0;
 var update_size = true;
@@ -1679,12 +1688,20 @@ oBrowser = function(name) {
                 this.nowplaying = plman.GetPlayingItemLocation();
                 if(this.nowplaying.IsValid) {
                     if(plman.PlayingPlaylist != g_active_playlist) {
-						if(!properties.lockOnPlaylistNamed=="") {
+						/* 原写法 (!properties.lockOnPlaylistNamed=="") 恒为 false
+						   （先对字符串取反得到布尔值，再拿它和 "" 比），
+						   所以「锁定指定列表时不跳到在播列表」这道保护从来没生效过。
+						   改成真正的判空。 */
+						if(properties.lockOnPlaylistNamed != "") {
 							if(properties.enableAutoSwitchPlaylistMode) {
 								brw.setDisplayedPlaylistProperties(false);
 							}
 							return;
 						}
+						/* 用户手动选定了别的列表就不要再抢：抢过去以后表头换了、
+						   正文换了，用户正点着的那一行却还在旧列表里。 */
+						if(g_playlist_user_override > -1 && g_playlist_user_override == g_active_playlist
+							&& g_playlist_override_playing == plman.PlayingPlaylist) return;
                         g_active_playlist = plman.ActivePlaylist = plman.PlayingPlaylist;
 						this.showNowPlaying_trigger = true;
 						this.populate(is_first_populate = true,21);
@@ -1844,8 +1861,23 @@ oBrowser = function(name) {
 	this.setActivePlaylist = function(call){
 		var g_active_playlist_new=-1;
 		if(g_active_playlist<0 || g_active_playlist==null) g_active_playlist = 0;
+
+		/* 用户的选择只在「锁定正在播放确实生效、且它还是系统激活的那个列表」时才算数；
+		   列表被删掉、用户又切回在播列表、关掉锁定、改成锁定指定列表，一律作废。 */
+		if(g_playlist_user_override > -1) {
+			if(g_playlist_user_override > plman.PlaylistCount - 1
+				|| g_playlist_user_override != plman.ActivePlaylist
+				|| g_playlist_override_playing != plman.PlayingPlaylist
+				|| !properties.lockOnNowPlaying
+				|| properties.lockOnPlaylistNamed != "") g_playlist_user_override = -1;
+		}
+
 		if(this.playlist_on_next_populate>-1){
 			g_active_playlist_new = this.playlist_on_next_populate;
+		} else if(g_playlist_user_override > -1) {
+			/* 用户手动选定的列表优先于「锁定正在播放」，否则每一次延时刷新/
+			   换曲都会把面板拽回在播列表，用户刚激活的列表立刻又点不中。 */
+			g_active_playlist_new = g_playlist_user_override;
 		} else if(properties.lockOnPlaylistNamed!="") {
 			g_active_playlist_new = check_playlist(properties.lockOnPlaylistNamed);
 			if(g_active_playlist_new==-1) {
@@ -1856,6 +1888,8 @@ oBrowser = function(name) {
 		else if(fb.IsPlaying && properties.lockOnNowPlaying) g_active_playlist_new = plman.PlayingPlaylist;
 		else if(properties.lockOnNowPlaying && !properties.displayActiveOnPlaybackStopped) g_active_playlist_new = g_active_playlist;
 		else g_active_playlist_new = plman.ActivePlaylist;
+
+		if(g_active_playlist_new < 0 || g_active_playlist_new > plman.PlaylistCount - 1) g_active_playlist_new = (plman.ActivePlaylist >= 0) ? plman.ActivePlaylist : 0;
 
 		if(g_active_playlist!=g_active_playlist_new) changed = true;
 		else changed = false;
@@ -3324,6 +3358,22 @@ oBrowser = function(name) {
         };
     };
     this.on_mouse = function(event, x, y) {
+        /* 兜底自愈：万一还有别的地方让「显示的列表」和「系统激活的列表」分叉
+           （回调被 callback_avoid_populate 挡掉、窗口当时不可见等），
+           先把自己对齐，再花一次点击把列表刷正确。
+           不对齐就直接点选，选中会用旧列表的行号打到新列表上，等于点了没反应。 */
+        if(plman.ActivePlaylist > -1 && plman.ActivePlaylist < plman.PlaylistCount
+            && plman.ActivePlaylist != g_active_playlist) {
+            if(properties.lockOnPlaylistNamed == "") {
+                g_playlist_user_override = plman.ActivePlaylist;
+                g_playlist_override_playing = plman.PlayingPlaylist;
+            }
+            g_active_playlist = plman.ActivePlaylist;
+            try { g_focus_id = getFocusId(g_active_playlist); } catch (eF) { g_focus_id = 0; }
+            set_update_function("brw.populate(true,72, false)");
+            this.repaint();
+            return;
+        }
         this.ishover = (x >= this.x && x <= this.x + this.w && y >= this.y && y <= this.y + this.h);
         // get hover row index (mouse cursor hover)
         if(y > this.y && y < this.y + this.h) {
@@ -3439,6 +3489,16 @@ oBrowser = function(name) {
                             break;
                         case (rowType == 0):                    // ----------------> track row
                             var playlistTrackId = this.rows[this.activeRow].playlistTrackId_original;
+                            /* 行是旧表留下来的（洛雪音源边播边往里加/删项时很容易这样）：
+                               这个行号在现在的播放列表里已经不存在，plman 会直接拒绝，
+                               外层 catch 一吞就变成「点了完全没反应」。先刷新一次再点。 */
+                            var live_count = -1;
+                            try { live_count = plman.GetPlaylistItemCount(g_active_playlist); } catch (eLC) { live_count = -1; }
+                            if(live_count > 0 && (playlistTrackId < 0 || playlistTrackId >= live_count)) {
+                                if(plman.ActivePlaylist == g_active_playlist) set_update_function("brw.populate(true,73, false)");
+                                this.repaint();
+                                break;
+                            }
                             if(utils.IsKeyPressed(VK_SHIFT)) {
                                 if(g_focus_id != playlistTrackId) {
                                     if (this.SHIFT_start_id != null) {
@@ -6236,6 +6296,36 @@ function on_playback_seek(time) {
 	} else recalculate_time = true;
 };
 //=================================================// Playlist Callbacks
+
+/* 把「面板显示的列表」（g_active_playlist）对齐到「系统当前激活的列表」
+   （plman.ActivePlaylist）。这两者一旦分叉，表头读 plman、正文和鼠标点选读
+   g_active_playlist：表头写着「洛雪音源」，点下去却全打在在播列表上，
+   表现就是「洛雪音源里的项目点不动、选不上」。
+   返回 true 表示刚刚同步过（调用方应直接返回，别再用旧状态走一遍流程）。 */
+function playlist_display_resync(call_id) {
+	if(typeof window === "undefined" || !window.IsVisible) return false;
+	if(typeof pman !== "undefined" && pman && pman.drop_done) return false;
+	if(plman.ActivePlaylist < 0 || plman.ActivePlaylist > plman.PlaylistCount - 1) return false;
+	if(plman.ActivePlaylist == g_active_playlist) return false;
+
+	if(properties.lockOnPlaylistNamed == "") {
+		g_playlist_user_override = plman.ActivePlaylist;
+		g_playlist_override_playing = plman.PlayingPlaylist;
+	}
+	g_active_playlist = plman.ActivePlaylist;
+	try { g_focus_id = getFocusId(g_active_playlist); } catch (eF) { g_focus_id = 0; }
+	try { g_filterbox.clearInputbox(); } catch (eI) {}
+	callback_avoid_populate = true;
+	try { brw.populate(true, call_id, false); } catch (eP) {}
+	try { brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist); } catch (eS) {}
+	if(properties.DropInplaylist) { try { pman.populate(false, false); pman.populate(false); } catch (eM) {} }
+	timers.callback_avoid_populate = setTimeout(function() {
+		callback_avoid_populate = false;
+		clearTimeout(timers.callback_avoid_populate);
+	}, 30);
+	return true;
+}
+
 function on_playlists_changed() {
 	if(!g_avoid_on_playlists_changed){
 		if(!(properties.lockOnNowPlaying || properties.lockOnPlaylistNamed!="") && window.IsVisible) {
@@ -6251,6 +6341,12 @@ function on_playlists_changed() {
 				};
 			};
 		} else {
+			/* 锁定状态下列表被增删（Lxbox 会频繁建/删播放列表，索引会整体移位），
+			   ActivePlaylist 可能已经指向别的列表，而 g_active_playlist 还是旧值。 */
+			if(playlist_display_resync(7)) {
+				if(properties.DropInplaylist) pman.refresh_required = true;
+				return;
+			}
 			set_update_function('on_playlists_changed();');
 			if(properties.DropInplaylist) pman.refresh_required = true;
 		}
@@ -6259,6 +6355,10 @@ function on_playlists_changed() {
 
 function on_playlist_switch() {
 	if(!callback_avoid_populate){
+		/* 用户在播放列表管理器 / 表头下拉里激活了另一个列表（例如洛雪音源）：
+		   这里以用户的选择为准，不再被「锁定正在播放」挡回去排队，
+		   否则正文永远停在在播列表上，点击也就永远落在在播列表上。 */
+		if(playlist_display_resync(8)) return;
 		if(!(properties.lockOnNowPlaying || properties.lockOnPlaylistNamed!="") && window.IsVisible) {
 			if(pman.drop_done) return;
 			changed = brw.setActivePlaylist(3);

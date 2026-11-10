@@ -3748,6 +3748,80 @@ function fw_setImagePath(p) {
     try { window.SetProperty(FW_PROP_IMAGE, String(p || "")); } catch (e) {}
 }
 
+/* 把「显示·全屏壁纸图片路径」里存的字符串规整成真正能加载的绝对路径。
+   三种写法都认：① 绝对路径 ② %profile%\ / %foobar%\ 前缀 ③ 相对写法（相对
+   profile 目录、再相对 foobar2000 目录各试一次）。都找不到返回 ""。
+   说明：SMP / JSplitter 的 gdi.Image 对相对路径的基准随宿主和启动目录变，
+   所以统一在入口处折算成绝对路径，别再让相对路径流到 gdi.Image。 */
+function fw_absImagePath(p) {
+    p = String(p == null ? "" : p).replace(/^\s+|\s+$/g, "").replace(/^"|"$/g, "");
+    if (!p) return "";
+    var prof = String(typeof fb.ProfilePath === "string" ? fb.ProfilePath : "").replace(/[\\\/]+$/, "");
+    var fbr = String(typeof fb.FoobarPath === "string" ? fb.FoobarPath : "").replace(/[\\\/]+$/, "");
+
+    var cands = [];
+    if (/^%profile%[\\\/]?/i.test(p)) cands.push(prof + "\\" + p.replace(/^%profile%[\\\/]?/i, ""));
+    if (/^%foobar%[\\\/]?/i.test(p)) cands.push(fbr + "\\" + p.replace(/^%foobar%[\\\/]?/i, ""));
+    cands.push(p);
+    if (!/^[a-z]:[\\\/]/i.test(p) && !/^\\\\/.test(p)) {
+        if (prof) cands.push(prof + "\\" + p);
+        if (fbr) cands.push(fbr + "\\" + p);
+    }
+
+    for (var i = 0; i < cands.length; i++) {
+        var c = cands[i];
+        var ok = false;
+        try { ok = (typeof utils !== "undefined" && utils.IsFile) ? !!utils.IsFile(c) : false; } catch (e1) { ok = false; }
+        if (!ok) {
+            try {
+                var im = gdi.Image(c);
+                ok = !!(im && im.Width > 0 && im.Height > 0);
+            } catch (e2) { ok = false; }
+        }
+        if (ok) return c;
+    }
+    return "";
+}
+
+/* ===== 预置背景（img\Background）=====
+   把图片丢进 themes\eole\img\Background，标题栏右键「全屏壁纸 → 壁纸来源 →
+   预置背景」里就会直接列出来，点一下即设为固定图片。
+   只认图片扩展名；子目录不递归；文件多了只列前 FW_PRESET_MAX 张。 */
+var FW_PRESET_SUBDIR = "Background";
+var FW_ID_PRESET_BASE = 7300;
+var FW_PRESET_MAX = 40;
+var fw_presetCache = [];
+
+function fw_presetDir() {
+    var base = (typeof theme_img_path === "string" && theme_img_path)
+        ? theme_img_path
+        : (String(typeof fb.ProfilePath === "string" ? fb.ProfilePath : "").replace(/[\\\/]+$/, "") + "\\themes\\eole\\img");
+    return base + "\\" + FW_PRESET_SUBDIR;
+}
+
+function fw_presetFiles() {
+    var out = [];
+    var list = null;
+    try { list = utils.Glob(fw_presetDir() + "\\*.*"); } catch (e) { list = null; }
+    if (!list || !list.length) return out;
+    var seen = {};
+    for (var i = 0; i < list.length; i++) {
+        var fp = String(list[i] || "");
+        if (!fp) continue;
+        if (!/\.(jpe?g|png|bmp|gif|webp|tif|tiff)$/i.test(fp)) continue;   /* 说明.txt 之类直接跳过 */
+        var low = fp.toLowerCase();
+        if (seen[low]) continue;
+        seen[low] = 1;
+        var base = fp.split("\\").pop();
+        out.push({ name: base.replace(/\.[^.]+$/, ""), file: base, path: fp });
+    }
+    out.sort(function (a, b) {
+        var x = a.name.toLowerCase(), y = b.name.toLowerCase();
+        return x < y ? -1 : (x > y ? 1 : 0);
+    });
+    return out;
+}
+
 function fw_blurValue() {
     var key = fw_isDark() ? FW_PROP_BLUR : FW_PROP_BLUR_LT;
     var def = fw_isDark() ? 30 : 20;
@@ -3792,10 +3866,16 @@ function fw_pickSource() {
     var src = fw_source(), p = fw_imagePath();
     if (src === 1 || src === 2) {
         if (p) {
+            /* 属性里可能是相对写法或带 %profile%，先折算成绝对路径再交给 gdi.Image；
+               折算不出来就退回原值，行为和以前一致 */
+            var pa = "";
+            try { pa = fw_absImagePath(p); } catch (e0) { pa = ""; }
+            if (!pa) pa = p;
             try {
-                var im = gdi.Image(p);
-                if (isImage(im)) return { img: im, path: p };
+                var im = gdi.Image(pa);
+                if (isImage(im)) return { img: im, path: pa };
             } catch (e) {}
+            p = pa;
         }
         if (src === 1) return { img: null, path: p };
     }

@@ -19,7 +19,7 @@ var properties = {
     displayRating: window.GetProperty("显示·评级", true),
     displayPlayRandom: window.GetProperty("显示·随机播放按钮", true),
     displayShuffle: window.GetProperty("显示·随机切换按钮", true),
-    displayRepeat: window.GetProperty("显示·重复按钮", true),
+    displayRepeat: window.GetProperty("显示·循环按钮", true),
     displayOpen: window.GetProperty("显示·打开按钮", true),
     displayStop: window.GetProperty("显示·停止按钮", false),
     showTrackPrefix: window.GetProperty("显示·曲目标题前缀", false),
@@ -632,7 +632,7 @@ function build_buttons(){
 			g_tooltip.Deactivate();
 			randomPlayMenu(window.Width-button_right_m-(button_width+button_padding)*1-130, 15);
 		},false,false,random_img,random_img_hover),
-		Shuffle: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "乱序", "随机开/关"+"\n"+"（双击随机化当前播放列表）",false, function () {
+		Shuffle: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "乱序", "乱序开/关"+"\n"+"（双击随机化当前播放列表）",false, function () {
 			g_tooltip.Deactivate();
 			old_playback_order = plman.PlaybackOrder;
 			if(plman.PlaybackOrder!=4 && plman.PlaybackOrder!=3 && plman.PlaybackOrder!=5 && plman.PlaybackOrder!=6) plman.PlaybackOrder=4;
@@ -651,7 +651,7 @@ function build_buttons(){
 			else plman.SortByFormat(plman.PlayingPlaylist,sort_by_album_artist);
 			Randomize=!Randomize
 		},shuffle_img_active,shuffle_img_hover),
-		Repeat: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "重复", "重复模式",false, function () {
+		Repeat: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "循环", "循环模式",false, function () {
 			g_tooltip.Deactivate();
 			if(plman.PlaybackOrder==0 && !properties.playandrandom && properties.repeatRandom) {
 				properties.playandrandom = true;
@@ -2373,8 +2373,8 @@ function moreMenu(x, y){
 		_controlsMenu.AppendMenuSeparator();
 			var _playbackOrder = window.CreatePopupMenu();
 			_playbackOrder.AppendMenuItem(MF_STRING, 3007, "默认");
-			_playbackOrder.AppendMenuItem(MF_STRING, 3008, "重复（列表）");
-			_playbackOrder.AppendMenuItem(MF_STRING, 3009, "重复（单曲）");
+			_playbackOrder.AppendMenuItem(MF_STRING, 3008, "循环（列表）");
+			_playbackOrder.AppendMenuItem(MF_STRING, 3009, "循环（单曲）");
 			_playbackOrder.AppendMenuItem(MF_STRING, 3010, "随机");
 			_playbackOrder.AppendMenuItem(MF_STRING, 3011, "乱序（曲目）");
 			_playbackOrder.AppendMenuItem(MF_STRING, 3012, "乱序（专辑）");
@@ -2469,19 +2469,19 @@ function moreMenu(x, y){
 
 		var _menu_button = window.CreatePopupMenu();
 		_moreMenu.AppendMenuSeparator();
-		_menu_button.AppendMenuItem(MF_STRING, 4016, "停止按钮");
+		_menu_button.AppendMenuItem(MF_STRING, 4016, "停止");
 		_menu_button.CheckMenuItem(4016, properties.displayStop);
-		_menu_button.AppendMenuItem(MF_STRING, 4022, "重复");
+		_menu_button.AppendMenuItem(MF_STRING, 4022, "循环");
 		_menu_button.CheckMenuItem(4022, properties.displayRepeat);
 		_menu_button.AppendMenuItem(MF_STRING, 4021, "乱序");
 		_menu_button.CheckMenuItem(4021, properties.displayShuffle);
 		_menu_button.AppendMenuItem(MF_STRING, 4023, "打开");
 		_menu_button.CheckMenuItem(4023, properties.displayOpen);
-		_menu_button.AppendMenuItem(MF_STRING, 4020, "随机播放");
+		_menu_button.AppendMenuItem(MF_STRING, 4020, "随机");
 		_menu_button.CheckMenuItem(4020, properties.displayPlayRandom);
 		_menu_button.AppendMenuItem(MF_STRING, 4017, "均衡器");
 		_menu_button.CheckMenuItem(4017, properties.displayEqualizer);
-		_menu_button.AppendMenuItem(MF_STRING, 4024, "输出设备和 DSP 预设");
+		_menu_button.AppendMenuItem(MF_STRING, 4024, "输出设备和DSP预设");
 		_menu_button.CheckMenuItem(4024, properties.displayDevice);		
 		_menu_button.AppendMenuItem(MF_STRING, 4018, "评级");
 		_menu_button.CheckMenuItem(4018, properties.displayRating);
@@ -2689,7 +2689,7 @@ function moreMenu(x, y){
                 break;
             case (idx == 4022):
 				properties.displayRepeat = !properties.displayRepeat;
-				window.SetProperty("显示·重复按钮", properties.displayRepeat);
+				window.SetProperty("显示·循环按钮", properties.displayRepeat);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -2835,8 +2835,8 @@ function draw_controls_menu(x,y){
 
 		var _playbackOrder = window.CreatePopupMenu();
 		_playbackOrder.AppendMenuItem(MF_STRING, 3007, "默认");
-		_playbackOrder.AppendMenuItem(MF_STRING, 3008, "重复（列表）");
-		_playbackOrder.AppendMenuItem(MF_STRING, 3009, "重复（单曲）");
+		_playbackOrder.AppendMenuItem(MF_STRING, 3008, "循环（列表）");
+		_playbackOrder.AppendMenuItem(MF_STRING, 3009, "循环（单曲）");
 		_playbackOrder.AppendMenuItem(MF_STRING, 3010, "随机");
 		_playbackOrder.AppendMenuItem(MF_STRING, 3011, "乱序（曲目）");
 		_playbackOrder.AppendMenuItem(MF_STRING, 3012, "乱序（专辑）");
@@ -3051,17 +3051,17 @@ function draw_settings_menu(x,y){
 		_menu_slider.AppendTo(_menu,MF_STRING, "滑块光标");
 
 		_menu.AppendMenuSeparator();
-		_menu_button.AppendMenuItem(MF_STRING, 3028, "停止按钮");
+		_menu_button.AppendMenuItem(MF_STRING, 3028, "停止");
 		_menu_button.CheckMenuItem(3028, properties.displayStop);
-		_menu_button.AppendMenuItem(MF_STRING, 3022, "重复");
+		_menu_button.AppendMenuItem(MF_STRING, 3022, "循环");
 		_menu_button.CheckMenuItem(3022, properties.displayRepeat);
 		_menu_button.AppendMenuItem(MF_STRING, 3021, "乱序");
 		_menu_button.CheckMenuItem(3021, properties.displayShuffle);
-		_menu_button.AppendMenuItem(MF_STRING, 3020, "随机播放");
+		_menu_button.AppendMenuItem(MF_STRING, 3020, "随机");
 		_menu_button.CheckMenuItem(3020, properties.displayPlayRandom);		
 		_menu_button.AppendMenuItem(MF_STRING, 3023, "打开");
 		_menu_button.CheckMenuItem(3023, properties.displayOpen);
-		_menu_button.AppendMenuItem(MF_STRING, 3029, "输出设备和 DSP 预设");
+		_menu_button.AppendMenuItem(MF_STRING, 3029, "输出设备和DSP预设");
 		_menu_button.CheckMenuItem(3029, properties.displayDevice);				
 		_menu_button.AppendMenuItem(MF_STRING, 3017, "均衡器");
 		_menu_button.CheckMenuItem(3017, properties.displayEqualizer);	
@@ -3186,7 +3186,7 @@ function draw_settings_menu(x,y){
                 break;
             case (idx == 3022):
 				properties.displayRepeat = !properties.displayRepeat;
-				window.SetProperty("显示·重复按钮", properties.displayRepeat);
+				window.SetProperty("显示·循环按钮", properties.displayRepeat);
 				build_buttons();
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
@@ -3349,7 +3349,7 @@ function SimpleButton(x, y, w, h, text, tooltip_text, fonDown, fonUp, fonDbleCli
 
         if (this.state == ButtonStates.hide || this.hide) return;
         b_img=this.N_img;
-        if(this.text=="重复"){
+        if(this.text=="循环"){
             if(plman.PlaybackOrder==1 || plman.PlaybackOrder==4){
 				this.N_img=repeat_all;
 				this.H_img=repeat_all_hover;
