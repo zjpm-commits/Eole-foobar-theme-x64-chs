@@ -1,13 +1,6 @@
 ﻿var theme_name = "eole";
-
-//无边框 + 无标题栏——	fb.Window.FrameStyle = 2——1082行
-//可拖动 / 双击最大化——fb.Window.SetPseudoCaption(x, y-2, w, h, true)——1083行
-//无原生菜单栏——fb.Window.MainMenuHidden = true——1136行
-//无状态栏	——fb.Window.StatusBarHidden = true	——1137行
-
 var ProfilePath = fb.ProfilePath;
 var FoobarPath = fb.FoobarPath;
-
 var skin_global_path = ProfilePath + "themes\\"+theme_name;
 var theme_img_path = skin_global_path + "\\img";
 var theme_scripts_path = skin_global_path + "\\js";
@@ -23,147 +16,9 @@ var sort_by_date_added = "$sub(9999,$year(%added%))-$sub(9999,$month(%added%))-$
 var sort_by_rating = "$sub(10,%rating%)|%album artist%|%album%";
 var sort_by_time = "%length%|%album artist%|%date%|%album%";
 var randomBtnTimer = false;
-
 var last_mouse_move_notified = (new Date).getTime();
 var foo_playcount = utils.CheckComponent("foo_playcount", true);
 var timers = [];
-(function MigrateLegacyProperties() {
-    var KEYPAIRS = [
-    "Eole 标题栏控制项 v1\u0001Eole x64 header controls v1", "主面板·专辑排序依据\u0001MAINPANEL Sort albums by", "主面板·允许拖拽到播放列表\u0001MAINPANEL Enable dragging to a playlist", "主面板·右侧面板跟随光标\u0001_MAINPANEL: right_panel_follow_cursor",
-    "主面板·始终显示整个媒体库\u0001MAINPANEL Always display full library", "主面板·媒体库分组标题格式\u0001MAINPANEL Library Group TitleFormat", "主面板·媒体库排序格式\u0001MAINPANEL Library Sort TitleFormat", "主面板·媒体库自定义分组第一行\u0001MAINPANEL Library Custom Group First Row",
-    "主面板·媒体库自定义分组第一行格式\u0001MAINPANEL Library Custom Group First Row TitleFormat", "主面板·媒体库自定义分组第二行\u0001MAINPANEL Library Custom Group Second Row", "主面板·媒体库自定义分组第二行格式\u0001MAINPANEL Library Custom Group Second Row TitleFormat", "主面板·媒体库默认排序格式\u0001MAINPANEL Default library Sort TitleFormat",
-    "主面板·媒体库默认排序格式(备用)\u0001MAINPANEL Library Default Sort TitleFormat", "主面板·左侧筛选面板状态\u0001MAINPANEL Left filter state", "主面板·平滑滚动强度(0=关闭)\u0001MAINPANEL Smooth Scroll value (0 to disable)", "主面板·播放列表排序格式\u0001MAINPANEL Playlist Sort TitleFormat",
-    "主面板·显示工具提示\u0001MAINPANEL Show tooltips", "主面板·显示标题栏\u0001MAINPANEL Show Header Bar", "主面板·显示筛选框\u0001MAINPANEL Show filter box", "主面板·显示筛选框(筛选停用时)\u0001MAINPANEL Show filter box (filter inactive)",
-    "主面板·显示筛选框(筛选启用时)\u0001MAINPANEL Show filter box (filter active)", "主面板·正在播放适配(右播放列表关)\u0001MAINPANEL adapt now playing to left menu righ playlist off", "主面板·正在播放适配(右播放列表开)\u0001MAINPANEL adapt now playing to left menu righ playlist on", "主面板·滚动条可见\u0001MAINPANEL Scrollbar - Visible",
-    "主面板·禁用媒体库分组标题\u0001MAINPANEL Library Group Header Disable", "主面板·筛选曲目\u0001MAINPANEL filter tracks", "主面板·自动切换显示的播放列表\u0001MAINPANEL Automatically change displayed playlist", "主面板·跟随正在播放的播放列表\u0001MAINPANEL Follow playing playlist",
-    "主面板·跟随活动播放列表\u0001MAINPANEL Follow active playlist", "主面板·锁定指定播放列表名称\u0001MAINPANEL lock on specific playlist name", "主面板·降序排列\u0001MAINPANEL sort descending", "主面板·面板字体调整\u0001MAINPANEL: Panel font Adjustement",
-    "信息·圆形倒计时(3000-60000毫秒)\u0001Info: Circle time, 3000~60000ms", "全局·主面板配色\u0001GLOBAL colorsMainPanel", "全局·保持比例\u0001GLOBAL keepProportion", "全局·内存占用策略\u0001GLOBAL memory solicitation",
-    "全局·启用可调整边框\u0001GLOBAL enableResizableBorders", "全局·启用屏保\u0001GLOBAL enable screensaver", "全局·字体调整\u0001GLOBAL Font Adjustement", "全局·封面缓存最大宽度\u0001GLOBAL cover cache width max",
-    "全局·屏保激活等待毫秒\u0001GLOBAL screensaver mseconds before activation", "全局·控制栏配色\u0001GLOBAL colorsControls", "全局·播放与随机\u0001GLOBAL play and random", "全局·移动鼠标退出屏保\u0001GLOBAL screensaver escape on mouse move",
-    "全局·缩略图最大宽度\u0001GLOBAL thumbnail width max", "全局·评级存入文件标签\u0001GLOBAL use ratings in file tags", "全局·迷你播放器配色\u0001GLOBAL colorsMiniPlayer", "全局·通用\u0001GLOBAL ",
-    "全局·高分屏适配模式\u0001GLOBAL HiRes display mode", "双击动作(0=资源管理器 1=播放)\u0001Double-Click Action: ExplorerStyle-0 Play-1", "可视化·深色主题\u0001VISUALIZATION dark theme", "启动时恢复面板状态(可视化页除外)\u0001Resume panel state on startup, except on visualization tab",
-    "壁纸(0=填充 1=适应 2=拉伸)\u0001Wallpaper 0=Filling 1=Adjust 2=Stretch", "大面板·专辑封面进度条\u0001BIG:AlbumArtProgressbar", "大面板·交替行背景\u0001BIG:drawAlternateBG", "大面板·停止播放时仍显示活动项\u0001BIG:displayActiveOnPlaybackStopped",
-    "大面板·分组标题行数\u0001BIG:groupHeaderRowsNumber", "大面板·分组标题行数(双行)\u0001BIG:groupHeaderRowsNumberDouble", "大面板·单击展开\u0001BIG:expandBySingleClick", "大面板·双行文本\u0001BIG:doubleRowText",
-    "大面板·双行显示封面\u0001BIG:doubleRowShowCover", "大面板·可拖入播放列表\u0001BIG:DropInplaylist", "大面板·可视化深色主题\u0001BIG:visualization_dark_theme", "大面板·启用触摸控制\u0001BIG:enableTouchControl",
-    "大面板·圆形模式\u0001BIG:circleMode", "大面板·壁纸显示方式\u0001BIG:wallpaperdisplay", "大面板·壁纸模式\u0001BIG:wallpapermode", "大面板·壁纸模糊\u0001BIG:wallpaperblurred",
-    "大面板·壁纸模糊强度\u0001BIG:wallpaperblurvalue", "大面板·始终显示艺术家\u0001BIG:showArtistAlways", "大面板·媒体库深色主题\u0001BIG:library_dark_theme", "大面板·播放列表深色主题\u0001BIG:playlists_dark_theme",
-    "大面板·播放列表默认点击动作\u0001BIG:defaultPlaylistItemAction", "大面板·显示上下滚动按钮\u0001BIG:drawUpAndDownScrollbar", "大面板·显示分组标题\u0001BIG:showGroupHeaders", "大面板·显示壁纸\u0001BIG:showwallpaper",
-    "大面板·显示工具提示\u0001BIG:showToolTip", "大面板·显示情绪\u0001BIG:showMood", "大面板·显示播放次数\u0001BIG:showPlaycount", "大面板·显示标题栏\u0001BIG:showHeaderBar",
-    "大面板·显示标题栏(曲目信息关)\u0001BIG:showHeaderBarTrackInfosOff", "大面板·显示标题栏(曲目信息开)\u0001BIG:showHeaderBarTrackInfosOn", "大面板·显示比特率\u0001BIG:showBitrate", "大面板·显示筛选框\u0001BIG:showFilterBox",
-    "大面板·显示编码\u0001BIG:showCodec", "大面板·显示设置菜单\u0001BIG:showSettingsMenu", "大面板·显示评级\u0001BIG:showRating", "大面板·显示评级(已评级行)\u0001BIG:showRatingRated",
-    "大面板·显示评级(选中行)\u0001BIG:showRatingSelected", "大面板·末尾空行数\u0001BIG:addedRows_end_default", "大面板·每组最少行数\u0001BIG:minimumRowsNumberPerGroup", "大面板·深色布局\u0001BIG:darklayout",
-    "大面板·父面板名称\u0001BIG:ParentName", "大面板·绘制进度条\u0001BIG:drawProgressBar", "大面板·缩略图宽度\u0001BIG:thumbnailWidth", "大面板·缩略图最小宽度\u0001BIG:thumbnailWidthMin",
-    "大面板·自动切换播放列表模式\u0001BIG:enableAutoSwitchPlaylistMode", "大面板·自动折叠\u0001BIG:autocollapse", "大面板·艺术家简介深色主题\u0001BIG:bio_dark_theme", "大面板·艺术家简介跟随深色布局\u0001BIG:bio_stick2darklayout",
-    "大面板·跟随正在播放\u0001BIG:FollowNowPlaying", "大面板·迷你模式深色主题\u0001BIG:minimode_dark_theme", "大面板·通用\u0001BIG:", "大面板·锁定指定播放列表\u0001BIG:lockOnPlaylistNamed",
-    "大面板·锁定正在播放\u0001BIG:lockOnNowPlaying", "大面板·额外行数\u0001BIG:extraRowsNumber", "大面板·默认行高\u0001BIG:defaultRowHeight", "媒体库·深色主题\u0001LIBRARY dark theme",
-    "媒体库同步(0=自动 1=仅初始化)\u0001Library Sync: Auto-0, Initialisation Only-1", "完整模式·保存宽度\u0001Full mode saved width", "完整模式·播放列表管理器保存高度\u0001Full mode pmanager saved height", "封面·下次启动时删除缓存\u0001COVER delete cover cache on next startup",
-    "封面·从日期提取年份\u0001COVER extract year from date", "封面·切到正在播放时动画\u0001COVER animate on show now playing", "封面·启动时全部加载\u0001COVER Load all at startup", "封面·回退到专辑封面\u0001COVER Fallback to album art",
-    "封面·回退到专辑封面(标签模式1)\u0001COVER Fallback to album art for tag mode 1", "封面·回退到专辑封面(标签模式2)\u0001COVER Fallback to album art for tag mode 2", "封面·回退到专辑封面(标签模式3)\u0001COVER Fallback to album art for tag mode 3", "封面·回退到专辑封面(标签模式全选)\u0001COVER Fallback to album art for tag mode ",
-    "封面·圆形封面\u0001COVER Circle artwork", "封面·外边距\u0001Margin", "封面·宽度\u0001COVER Width", "封面·宽度(标签模式1)\u0001COVER Width for tag mode 1",
-    "封面·宽度(标签模式2)\u0001COVER Width for tag mode 2", "封面·宽度(标签模式3)\u0001COVER Width for tag mode 3", "封面·宽度(标签模式全选)\u0001COVER Width for tag mode ", "封面·封面上显示日期\u0001COVER Show Date over album art",
-    "封面·封面上显示碟号\u0001COVER Show Disc number over album art", "封面·封面蒙版(磁盘缓存用)\u0001COVER album art masks (for disk cache)", "封面·小激活区域\u0001COVER Small active zone", "封面·已加载封面保留在内存\u0001COVER keep loaded covers in memory",
-    "封面·待删除缓存的键(下次启动)\u0001COVER cachekey of covers to delete on next startup", "封面·文字居中\u0001COVER Center text", "封面·无留白无文字\u0001COVER no padding, no texts", "封面·显示加载进度\u0001COVER Show loading progress",
-    "封面·显示阴影\u0001COVER show shadow", "封面·最小侧边距\u0001COVER Side margin min", "封面·最小宽度\u0001COVER Width Minimal", "封面·最少列数\u0001COVER Minimum number of columns",
-    "封面·磁盘缓存\u0001COVER Disk Cache", "封面·自动适应\u0001Auto Fit", "封面·阴影不透明度\u0001COVER Shadow Opacity", "属性·专辑格式\u0001_PROPERTY Album TitleFormat",
-    "属性·交替行背景\u0001PROPERTY: Alternate row background", "属性·交替行背景(备用)\u0001_PROPERTY: Alternate row background", "属性·从活动播放列表填充\u0001_PROPERTY: populate from active playlist", "属性·分组内显示条目数量\u0001_PROPERTY: Show numbers of items in group",
-    "属性·单击动作\u0001PROPERTY single_click_action", "属性·双击动作\u0001PROPERTY double click action", "属性·右侧绘制分隔线\u0001_PROPERTY: Draw a line on the right side", "属性·启用滚动触摸控制\u0001_PROPERTY: Enable Scroll Touch Control",
-    "属性·启用筛选框\u0001PROPERTY: Enable Filter Box", "属性·启用筛选框(备用)\u0001_PROPERTY: Enable Filter Box", "属性·圆形模式\u0001_PROPERTY: Circle Mode", "属性·圆形模式(标签1)\u0001_PROPERTY: Circle Mode for tag mode 1",
-    "属性·圆形模式(标签2)\u0001_PROPERTY: Circle Mode for tag mode 2", "属性·圆形模式(标签3)\u0001_PROPERTY: Circle Mode for tag mode 3", "属性·圆形模式(标签全选)\u0001_PROPERTY: Circle Mode for tag mode ", "属性·封面蒙版(磁盘缓存用)\u0001_PROPERTY: Cover art masks (for disk cache)",
-    "属性·已保存的筛选状态\u0001_PROPERTY: Saved filter state", "属性·忽略前缀\u0001_PROPERTY: ignore prefix", "属性·忽略前缀(标签1)\u0001_PROPERTY: ignore prefix for tag mode 1", "属性·忽略前缀(标签2)\u0001_PROPERTY: ignore prefix for tag mode 2",
-    "属性·忽略前缀(标签3)\u0001_PROPERTY: ignore prefix for tag mode 3", "属性·忽略前缀(标签全选)\u0001_PROPERTY: ignore prefix for tag mode ", "属性·播放列表名前显示图标\u0001_PROPERTY: show an icon before the playlist name", "属性·播放列表按字母排序\u0001_PROPERTY: sort playlist alphabetically",
-    "属性·播放列表管理器显示总数\u0001_PROPERTY.PlaylistManager.ShowTotalItems", "属性·显示上下滚动按钮\u0001PROPERTY: Draw Up and Down Scrollbar Buttons", "属性·显示上下滚动按钮(备用)\u0001_PROPERTY: Draw Up and Down Scrollbar Buttons", "属性·显示全部项\u0001_PROPERTY: Show ALL item",
-    "属性·显示全部项(标签1)\u0001_PROPERTY: Show ALL item for tag mode 1", "属性·显示全部项(标签2)\u0001_PROPERTY: Show ALL item for tag mode 2", "属性·显示全部项(标签3)\u0001_PROPERTY: Show ALL item for tag mode 3", "属性·显示全部项(标签全选)\u0001_PROPERTY: Show ALL item for tag mode ",
-    "属性·显示可视化标签页\u0001_PROPERTY show visualization tab", "属性·显示媒体库树切换\u0001_PROPERTY: Show library tree switch", "属性·显示工具提示\u0001_PROPERTY: Show tooltips", "属性·显示条目数量\u0001PROPERTY: Show numbers of items",
-    "属性·显示条目数量(标签1)\u0001_PROPERTY: Show numbers of items for tag mode 1", "属性·显示条目数量(标签2)\u0001_PROPERTY: Show numbers of items for tag mode 2", "属性·显示条目数量(标签3)\u0001_PROPERTY: Show numbers of items for tag mode 3", "属性·显示条目数量(标签全选)\u0001_PROPERTY: Show numbers of items for tag mode ",
-    "属性·显示模式\u0001_PROPERTY: Display Mode", "属性·显示模式(标签1)\u0001_PROPERTY: Display Mode for tag mode 1", "属性·显示模式(标签2)\u0001_PROPERTY: Display Mode for tag mode 2", "属性·显示模式(标签3)\u0001_PROPERTY: Display Mode for tag mode 3",
-    "属性·显示模式(标签全选)\u0001_PROPERTY: Display Mode for tag mode ", "属性·显示模式(网格无文字)\u0001_PROPERTY: Display Mode Grid No Text", "属性·显示筛选切换按钮\u0001_PROPERTY: show filters toggler btn", "属性·显示面板切换按钮\u0001_PROPERTY: showPanelToggleButtons",
-    "属性·显示顶栏(标签1)\u0001_PROPERTY: Show Top Bar for tag mode 1", "属性·显示顶栏(标签2)\u0001_PROPERTY: Show Top Bar for tag mode 2", "属性·显示顶栏(标签3)\u0001_PROPERTY: Show Top Bar for tag mode 3", "属性·显示顶栏(标签全选)\u0001_PROPERTY: Show Top Bar for tag mode ",
-    "属性·末尾空行\u0001_PROPERTY: empty rows at the end", "属性·来源播放列表\u0001_PROPERTY: Source Playlist", "属性·来源模式\u0001_PROPERTY: Source Mode", "属性·标签模式\u0001_PROPERTY: Tag Mode",
-    "属性·流派格式\u0001_PROPERTY Genre TitleFormat", "属性·父面板\u0001_PROPERTY: Parent Panel", "属性·筛选结果播放列表索引\u0001_PROPERTY: filtred playlist idx", "属性·筛选顺序\u0001_PROPERTY: filter Order",
-    "属性·精简面板按钮\u0001_PROPERTY: Compactify panels buttons", "属性·自定义颜色\u0001_PROPERTY: Custom Colors", "属性·艺术家格式\u0001_PROPERTY Artist TitleFormat", "属性·行高\u0001PROPERTY: Row Height",
-    "属性·触摸控制\u0001PROPERTY: Touch control", "属性·跟随焦点变化\u0001_PROPERTY: Follow focus change", "属性·选择的播放列表\u0001_PROPERTY: Selection Playlist", "属性·顶栏启用播放列表筛选框\u0001PROPERTY: Enable Playlist Filterbox in Top Bar",
-    "属性·顶部显示来源标签按钮\u0001_PROPERTY: show buttons on top to change the source tag", "工具提示\u0001Tooltips", "按文件夹结构视图·名称 // 规则\u0001View by Folder Structure: Name // Pattern", "排序·专辑格式\u0001Sort Order - Album TitleFormat",
-    "排序·流派格式\u0001Sort Order - Genre TitleFormat", "排序·艺术家格式\u0001Sort Order - Artist TitleFormat", "搜索历史最大条数\u0001Max items in search history", "搜索栏(0=隐藏 1=仅搜索 2=搜索+筛选)\u0001Search: Hide-0, SearchOnly-1, Search+Filter-2",
-    "搜索栏·线条颜色(0=灰 1=混合 2=文字)\u0001Search: Line Colour: Grey-0 Blend-1 Text-2", "搜索样式(0=渐隐 1=混合 2=常规 3=高亮)\u0001Search Style: Fade-0 Blend-1 Norm-2 Highlight-3", "播放列表·从菜单发送时播放\u0001Playlist: Play On Send From Menu", "播放列表·深色主题\u0001PLAYLISTS dark theme",
-    "播放列表·自定义排序\u0001Playlist: Custom Sort", "播放列表使用(0 或 1)\u0001Playlist Use: 0 or 1", "显示·专辑自定义分组名称\u0001_DISPLAY: album customGroup name", "显示·主布局深色\u0001_DISPLAY: Main layout:Dark",
-    "显示·信息显示两行\u0001_DISPLAY details on two lines", "显示·信息格式化\u0001_DISPLAY: infos titleformat", "显示·停止按钮\u0001_DISPLAY stop btn", "显示·全局明暗切换按钮\u0001_DISPLAY: light switch btn global",
-    "显示·切换按钮\u0001_DISPLAY: Toggle buttons", "显示·双行文本\u0001_DISPLAY: doubleRowText", "显示·固定深色布局\u0001_DISPLAY: stick to Dark layout", "显示·圆形模式\u0001_DISPLAY: circle mode",
-    "显示·均衡器\u0001_DISPLAY equalizer", "显示·壁纸(0=填充 1=适应 2=拉伸)\u0001_DISPLAY: Wallpaper 0=Filling 1=Adjust 2=Stretch", "显示·壁纸模糊\u0001_DISPLAY: Wallpaper Blurred", "显示·壁纸模糊强度\u0001_DISPLAY: Wallpaper Blur Value",
-    "显示·始终显示搜索框\u0001_DISPLAY: always show search box", "显示·始终显示音量条\u0001_DISPLAY always show volume bar", "显示·定时关机\u0001_DISPLAY scheduler", "显示·封面无留白\u0001_DISPLAY: cover no padding",
-    "显示·封面调整器\u0001_DISPLAY: Cover resizer", "显示·封面跟随光标\u0001_DISPLAY: cover follow cursor", "显示·强制深色布局\u0001_DISPLAY: force dark layout", "显示·总时长\u0001_DISPLAY: Total time",
-    "显示·打开按钮\u0001_DISPLAY open btn", "显示·显示全屏按钮\u0001_DISPLAY: show fullscreen btn", "显示·显示右侧栏按钮\u0001_DISPLAY: show right sidebar btn", "显示·显示壁纸\u0001_DISPLAY: Show Wallpaper",
-    "显示·显示布局配置按钮\u0001_DISPLAY: show configure layout btn", "显示·显示明暗切换按钮\u0001_DISPLAY: show light switch btn", "显示·显示正在播放按钮\u0001_DISPLAY: show now playing btn", "显示·显示滚动条\u0001_DISPLAY: Show Scrollbar",
-    "显示·显示评级\u0001_DISPLAY: showRating", "显示·显示面板按钮文字\u0001_DISPLAY: show panels btn text", "显示·显示顶栏\u0001_DISPLAY: Show Top Bar", "显示·曲目标题\u0001_DISPLAY: Track title",
-    "显示·曲目标题前缀\u0001_DISPLAY show track title prefix", "显示·曲目标题格式\u0001_DISPLAY: Track title format", "显示·流派自定义分组名称\u0001_DISPLAY: genre customGroup name", "显示·深色布局\u0001_DISPLAY: Dark layout",
-    "显示·深色布局跟随CUI\u0001_DISPLAY: Dark layout follow CUI", "显示·滑块样式\u0001_DISPLAY slider cursor style", "显示·禁用封面缓存\u0001_DISPLAY: disable cover cache", "显示·网格模式按钮\u0001_DISPLAY: grid mode button",
-    "显示·自动搜索\u0001_DISPLAY: autosearch", "显示·自定义第一行\u0001_DISPLAY: custom first row", "显示·自定义第二行\u0001_DISPLAY: custom second row", "显示·艺术家自定义分组名称\u0001_DISPLAY: artist customGroup name",
-    "显示·评级\u0001_DISPLAY rating", "显示·输出设备\u0001_DISPLAY device", "显示·迷你主菜单按钮\u0001_DISPLAY: mini main menu button", "显示·迷你布局深色\u0001_DISPLAY: Mini layout:Dark",
-    "显示·重复按钮\u0001_DISPLAY repeat btn", "显示·随机切换按钮\u0001_DISPLAY shuffle btn", "显示·随机播放按钮\u0001_DISPLAY play random btn", "显示·面板按钮文字大写\u0001_DISPLAY: panels btn text to uppercase",
-    "显示·首项顶部边距\u0001_DISPLAY first item top margin", "显示内圈\u0001Show Inner Cirle", "显示剩余时间\u0001Show remaining time", "显示可视化\u0001Show Visualization",
-    "显示曲目信息\u0001Show track info", "显示项·显示新建播放列表按钮\u0001DISPLAY: Show new playlist button", "显示项·显示滚动条\u0001DISPLAY: Show Scrollbar", "显示项·显示顶栏\u0001DISPLAY: Show Top Bar",
-    "曲目列表·两行曲目信息(自定义标签)\u0001TRACKLIST track details on 2 rows - custom tag", "曲目列表·单列\u0001TRACKLIST one column", "曲目列表·原地展开\u0001TRACKLIST Expand in place", "曲目列表·原地展开(旧)\u0001TRACKLIST expand in place",
-    "曲目列表·始终跟随正在播放\u0001TRACKLIST Always Follow Now Playing", "曲目列表·已评级行显示评级\u0001TRACKLIST Show rating in Rated Track Row", "曲目列表·平滑展开强度(0=关闭)\u0001TRACKLIST Smooth Expand value (0 to disable)", "曲目列表·悬停展开\u0001TRACKLIST Expand on hover",
-    "曲目列表·悬停展开(旧)\u0001TRACKLIST expand on hover", "曲目列表·按封面取色\u0001TRACKLIST Color according to albumart", "曲目列表·按封面取色(主色)\u0001TRACKLIST Color according to albumart (main color)", "曲目列表·按封面取色(模糊)\u0001TRACKLIST Color according to albumart (blurred)",
-    "曲目列表·按封面取色(混合)\u0001TRACKLIST Color according to albumart (mix of both)", "曲目列表·显示封面\u0001TRACKLIST Show cover", "曲目列表·显示播放次数\u0001TRACKLIST Show playcount", "曲目列表·显示比特率\u0001TRACKLIST Show bitrate",
-    "曲目列表·显示编码\u0001TRACKLIST Show codec", "曲目列表·显示艺术家\u0001TRACKLIST Show artist name", "曲目列表·曲目信息显示两行\u0001TRACKLIST Show track details on 2 rows", "曲目列表·标题下绘制进度条\u0001TRACKLIST Draw a progress bar under song title",
-    "曲目列表·模糊封面进度条\u0001TRACKLIST Blurred album art progress bar", "曲目列表·水平滚动条\u0001TRACKLIST horizontal scrollbar", "曲目列表·行内显示评级\u0001TRACKLIST Show rating in Track Row", "曲目列表·选中行显示评级\u0001TRACKLIST Show rating in Selected Track Row",
-    "标签切换条\u0001Tag switcher bar", "树缩进\u0001Tree Indent", "树节点·字号\u0001Node: Size", "树节点·显示全部音乐项\u0001Node: Show All Music",
-    "树节点·显示曲目\u0001Node: Show Tracks", "树节点·显示条目数量\u0001Node: Show Item Counts", "树节点·显示汇总项\u0001Node: Show Aggregate Item", "树节点·自动展开唯一子项\u0001Node: Auto Expand Single Childs",
-    "树节点·自动折叠\u0001Node: Auto Collapse", "树节点·自定义符号(0=细 1=粗 2=其它)\u0001Node: Custom Symbols-0 Soft-1 Bold-2", "树节点·自定义符号(折叠|展开)\u0001Node: Custom Symbols: Collapse|Expand", "树节点·跟随主题配色\u0001Node: Themed nodes",
-    "树节点·连接线(0=隐藏 1=灰线 2=混合 3=文字)\u0001Node: Lines: Hide-0 Grey-1 Blend-2 Text-3", "滚动·平滑滚动\u0001Scroll: Smooth Scroll", "滚动·平滑滚动级别(0-1)\u0001Scroll: Smooth Scroll Level 0-1", "滚动·滚轮翻页\u0001Scroll - Mouse Wheel: Page Scroll",
-    "滚动条·宽度\u0001Scrollbar Width", "滚动条·显示\u0001Scrollbar Show", "系统·允许拖入播放列表\u0001_SYSTEM: Allow to drag items into a playlist", "系统·壁纸模式\u0001_SYSTEM: Wallpaper Mode",
-    "系统·多碟合用一个缩略图\u0001_SYSTEM: Display one thumbnail for multi discs", "系统·字号\u0001SYSTEM.Font Size", "系统·播放列表已勾选\u0001SYSTEM.Playlist Checked", "系统·显示专辑评论\u0001_SYSTEM: Display album review",
-    "系统·最小行高\u0001SYSTEM Minimal Line Height", "系统·最小行高(标签模式1)\u0001SYSTEM Minimal Line Height for tag mode 1", "系统·最小行高(标签模式2)\u0001SYSTEM Minimal Line Height for tag mode 2", "系统·最小行高(标签模式3)\u0001SYSTEM Minimal Line Height for tag mode 3",
-    "系统·最小行高(标签模式全选)\u0001SYSTEM Minimal Line Height for tag mode ", "系统·查看依据\u0001SYSTEM.View By", "系统·滚动行分隔线\u0001SYSTEM Scroll Row Divider", "系统·筛选依据\u0001SYSTEM.Filter By",
-    "系统·重置树\u0001SYSTEM.Reset Tree", "背景颜色\u0001Background color", "自定义颜色·使用自定义\u0001_CUSTOM COLOURS: USE", "自定义颜色·启用\u0001CUSTOM COLOR: enable",
-    "自定义颜色·搜索名称\u0001_Custom.Colour Search Name", "自定义颜色·普通文字\u0001CUSTOM COLOR: text normal", "自定义颜色·普通背景\u0001CUSTOM COLOR: background normal", "自定义颜色·树连接线\u0001_Custom.Colour Node Lines",
-    "自定义颜色·留空即默认\u0001_CUSTOM COLOURS: EMPTY = DEFAULT", "自定义颜色·选中文字\u0001CUSTOM COLOR: text selected", "自定义颜色·选中背景\u0001CUSTOM COLOR: background selected", "自定义颜色·透明填充\u0001_Custom.Colour Transparent Fill",
-    "自定义颜色·高亮\u0001CUSTOM COLOR: highlight", "艺术家图片·启动时全部加载\u0001ARTIST IMG Load all at startup", "艺术家简介·深色主题\u0001BIO dark theme", "艺术家简介·跟随深色主题\u0001BIO stick to dark theme",
-    "艺术家简介·跟随深色布局\u0001BIO stick to Dark layout", "行内垂直留白\u0001Row Vertical Item Padding", "行条纹\u0001Row Stripes", "视图\u0001View ",
-    "视图01·名称 // 规则\u0001View 01: Name // Pattern", "视图02·名称 // 规则\u0001View 02: Name // Pattern", "视图03·名称 // 规则\u0001View 03: Name // Pattern", "视图04·名称 // 规则\u0001View 04: Name // Pattern",
-    "视图05·名称 // 规则\u0001View 05: Name // Pattern", "视图06·名称 // 规则\u0001View 06: Name // Pattern", "视图·已初始化\u0001View: View Is Inited", "视图筛选\u0001View Filter ",
-    "视图筛选01·名称 // 查询\u0001View Filter 01: Name // Query", "视图筛选02·名称 // 查询\u0001View Filter 02: Name // Query", "视图筛选03·名称 // 查询\u0001View Filter 03: Name // Query", "视图筛选04·名称 // 查询\u0001View Filter 04: Name // Query",
-    "视图筛选05·名称 // 查询\u0001View Filter 05: Name // Query", "视图筛选06·名称 // 查询\u0001View Filter 06: Name // Query", "视图筛选07·名称 // 查询\u0001View Filter 07: Name // Query", "视图筛选08·名称 // 查询\u0001View Filter 08: Name // Query",
-    "视图筛选09·名称 // 查询\u0001View Filter 09: Name // Query", "迷你·专辑封面进度条\u0001MINI:AlbumArtProgressbar", "迷你·交替行背景\u0001MINI:drawAlternateBG", "迷你·停止播放时仍显示活动项\u0001MINI:displayActiveOnPlaybackStopped",
-    "迷你·分组标题行数\u0001MINI:groupHeaderRowsNumber", "迷你·分组标题行数(双行)\u0001MINI:groupHeaderRowsNumberDouble", "迷你·单击展开\u0001MINI:expandBySingleClick", "迷你·双行文本\u0001MINI:doubleRowText",
-    "迷你·双行显示封面\u0001MINI:doubleRowShowCover", "迷你·可拖入播放列表\u0001MINI:DropInplaylist", "迷你·可视化深色主题\u0001MINI:visualization_dark_theme", "迷你·启用触摸控制\u0001MINI:enableTouchControl",
-    "迷你·圆形模式\u0001MINI:circleMode", "迷你·壁纸显示方式\u0001MINI:wallpaperdisplay", "迷你·壁纸模式\u0001MINI:wallpapermode", "迷你·壁纸模糊\u0001MINI:wallpaperblurred",
-    "迷你·壁纸模糊强度\u0001MINI:wallpaperblurvalue", "迷你·始终显示艺术家\u0001MINI:showArtistAlways", "迷你·媒体库深色主题\u0001MINI:library_dark_theme", "迷你·播放列表深色主题\u0001MINI:playlists_dark_theme",
-    "迷你·播放列表默认点击动作\u0001MINI:defaultPlaylistItemAction", "迷你·显示上下滚动按钮\u0001MINI:drawUpAndDownScrollbar", "迷你·显示分组标题\u0001MINI:showGroupHeaders", "迷你·显示壁纸\u0001MINI:showwallpaper",
-    "迷你·显示工具提示\u0001MINI:showToolTip", "迷你·显示情绪\u0001MINI:showMood", "迷你·显示播放次数\u0001MINI:showPlaycount", "迷你·显示标题栏\u0001MINI:showHeaderBar",
-    "迷你·显示标题栏(曲目信息关)\u0001MINI:showHeaderBarTrackInfosOff", "迷你·显示标题栏(曲目信息开)\u0001MINI:showHeaderBarTrackInfosOn", "迷你·显示比特率\u0001MINI:showBitrate", "迷你·显示筛选框\u0001MINI:showFilterBox",
-    "迷你·显示编码\u0001MINI:showCodec", "迷你·显示设置菜单\u0001MINI:showSettingsMenu", "迷你·显示评级\u0001MINI:showRating", "迷你·显示评级(已评级行)\u0001MINI:showRatingRated",
-    "迷你·显示评级(选中行)\u0001MINI:showRatingSelected", "迷你·末尾空行数\u0001MINI:addedRows_end_default", "迷你·每组最少行数\u0001MINI:minimumRowsNumberPerGroup", "迷你·深色布局\u0001MINI:darklayout",
-    "迷你·父面板名称\u0001MINI:ParentName", "迷你·绘制进度条\u0001MINI:drawProgressBar", "迷你·缩略图宽度\u0001MINI:thumbnailWidth", "迷你·缩略图最小宽度\u0001MINI:thumbnailWidthMin",
-    "迷你·自动切换播放列表模式\u0001MINI:enableAutoSwitchPlaylistMode", "迷你·自动折叠\u0001MINI:autocollapse", "迷你·艺术家简介深色主题\u0001MINI:bio_dark_theme", "迷你·艺术家简介跟随深色布局\u0001MINI:bio_stick2darklayout",
-    "迷你·跟随正在播放\u0001MINI:FollowNowPlaying", "迷你·迷你模式深色主题\u0001MINI:minimode_dark_theme", "迷你·通用\u0001MINI:", "迷你·锁定指定播放列表\u0001MINI:lockOnPlaylistNamed",
-    "迷你·锁定正在播放\u0001MINI:lockOnNowPlaying", "迷你·额外行数\u0001MINI:extraRowsNumber", "迷你·默认行高\u0001MINI:defaultRowHeight", "迷你模式·保存宽度\u0001Mini mode saved width",
-    "迷你模式·播放列表保存高度\u0001Mini mode playlist saved height", "迷你模式·深色主题\u0001MINIMODE dark theme", "随机函数\u0001Random function",
-    ];
-    function readProp(k) {
-        return window.GetProperty(k);
-    }
-    try {
-        /* 早期版本做属性汉化时留下的几个标记键，已经没用，读到就删掉 */
-        var _oldMarks = ["_哨兵属性已清理", "_属性键已修正迁移", "_属性名已汉化迁移", "_属性名已修正迁移"];
-        for (var _m = 0; _m < _oldMarks.length; _m++) {
-            if (readProp(_oldMarks[_m]) !== undefined) window.SetProperty(_oldMarks[_m], null);
-        }
-
-        for (var i = 0; i < KEYPAIRS.length; i++) {
-            var p = KEYPAIRS[i].split("\u0001");
-            var nk = p[0], ok = p[1];
-            var old_val = readProp(ok);
-            if (old_val === undefined || old_val === null) continue;
-            var cur = readProp(nk);
-            if (cur === undefined || cur === null) {
-                window.SetProperty(nk, old_val);
-            }
-            window.SetProperty(ok, null);
-        }
-    } catch (e) {
-    }
-})();
 
 var globalProperties = {
 	theme_version: '1.2.3b25',
@@ -1075,9 +930,8 @@ oUIHacks = function () {
     this.SetPseudoCaption = function (x, y, w, h) {
         if (this.useNative) {
             try {
-                //fb.Window.FrameStyle = 0; //Default（有边框、有标题栏）
-                //fb.Window.FrameStyle = 1; //NoCaption（无边框）
-                fb.Window.FrameStyle = 2; //NoBorder（无边框无标题栏）
+                /* 边框/标题栏样式不在这里写死：改由标题栏的「边框控制项」统一管理
+                   （WSHtitle_bar.js 的 chromeApply），否则一开边框就会被这里按回无边框。 */
                 fb.Window.SetPseudoCaption(x, y - 2, w, h, true); 
             } catch(e) { console.log("Native PseudoCaption Err: " + e); }
         }
@@ -1126,13 +980,33 @@ oUIHacks = function () {
 
 var g_uihacks = new oUIHacks();
 
+/* 菜单栏 / 状态栏的显隐由标题栏的「边框控制项」决定，状态存在 profile 下的共享配置文件里，
+   这样每个面板读到的是同一份结果，不会出现「标题栏刚打开、别的面板 300ms 后又关掉」。 */
+function chromeCfgPath() {
+    return fb.ProfilePath + 'wsh-data\\eole-settings\\WINDOWCHROME.cfg';
+}
+function chromeCfgRead() {
+    var st = { frame: false, menu: false, status: false };
+    try {
+        var t = utils.ReadTextFile(chromeCfgPath());
+        if (t) {
+            var c = JSON.parse(String(t).replace(/^\uFEFF/, ""));
+            if (c && typeof c === 'object') {
+                if (typeof c.frame === 'boolean') st.frame = c.frame;
+                if (typeof c.menu === 'boolean') st.menu = c.menu;
+                if (typeof c.status === 'boolean') st.status = c.status;
+            }
+        }
+    } catch (e) {}
+    return st;
+}
 function hideDuiBars() {
     if (window.InstanceType !== 1) return;
-
+    var st = chromeCfgRead();   /* 配置文件还不存在时，就是主题默认的「都隐藏」 */
     try {
         if (fb.Window) {
-            fb.Window.MainMenuHidden = true;
-            fb.Window.StatusBarHidden = true;
+            fb.Window.MainMenuHidden = !st.menu;
+            fb.Window.StatusBarHidden = !st.status;
         }
     } catch (e) {}
 }
@@ -3999,26 +3873,55 @@ function fw_buildWallpaper(w, h, metadb, qOverride) {
             sg.DrawImage(img, 0, 0, sw, sh, cx, cy, cw, ch, 0, 255);
             small.ReleaseGraphics(sg);
             small.StackBlur(Math.max(1, Math.round(blur / 2)));
-            tmp = small.Resize(bw, bh, 1);
+            tmp = fw_scaleClean(small, bw, bh);
         } catch (e) { tmp = null; }
     }
     if (!isImage(tmp)) {
         try {
-            tmp = gdi.CreateImage(bw, bh);
-            var g2 = tmp.GetGraphics();
-            g2.SetInterpolationMode(1);
-            g2.DrawImage(img, 0, 0, bw, bh, cx, cy, cw, ch, 0, 255);
-            tmp.ReleaseGraphics(g2);
-        } catch (e) { tmp = null; }
+            tmp = fw_scaleClean(img, bw, bh, cx, cy, cw, ch);
+        } catch (e2) { tmp = null; }
     }
     if (!isImage(tmp)) tmp = img;
     return tmp;
 }
 
+/* GDI+ 缩放（尤其是放大）时，目标位图右、下边缘的最后几个像素会采样到源图之外，
+   变成半透明像素。壁纸铺满窗口后，这些半透明像素会透出窗口本身的底色，看起来
+   就是右边、下边一条白色渐变高光边（左边和顶部不受影响，所以只在右/下可见）。
+   处理办法：先把内容画到比目标大一圈的画布上，让半透明边落在多出来的那一圈，
+   再按 1:1 只取中间的 w × h（1:1 绘制不会再产生渐变边），输出图四边就完全不透明。
+   那一圈的宽度约等于放大倍数（放大 7.6 倍 ≈ 7 像素），所以按倍数留边再抛一点余量。 */
+function fw_scaleClean(src, w, h, sx, sy, sw, sh) {
+    var rw = (sx === undefined) ? src.Width : sw;
+    var rh = (sx === undefined) ? src.Height : sh;
+    var ratio = Math.max(w / Math.max(1, rw), h / Math.max(1, rh));
+    var pad = Math.max(8, Math.ceil(ratio) + 4);
+    var cw = w + pad * 2, ch = h + pad * 2;
+    var big = gdi.CreateImage(cw, ch);
+    var bg = big.GetGraphics();
+    bg.SetInterpolationMode(1);
+    if (sx === undefined) bg.DrawImage(src, 0, 0, cw, ch, 0, 0, src.Width, src.Height, 0, 255);
+    else bg.DrawImage(src, 0, 0, cw, ch, sx, sy, sw, sh, 0, 255);
+    big.ReleaseGraphics(bg);
+    var out = gdi.CreateImage(w, h);
+    var og = out.GetGraphics();
+    og.DrawImage(big, 0, 0, w, h, pad, pad, w, h, 0, 255);
+    out.ReleaseGraphics(og);
+    return out;
+}
+
 function fw_drawWallpaper(gr, w, h, wallImg) {
     if (!gr) return false;
     if (isImage(wallImg) && wallImg.Width > 0) {
-        gr.DrawImage(wallImg, 0, 0, w, h, 0, 0, wallImg.Width, wallImg.Height, 0, 255);
+        if (wallImg.Width === w && wallImg.Height === h) {
+            /* 尺寸正好一致：1:1 绘制，不会再产生半透明边 */
+            gr.DrawImage(wallImg, 0, 0, w, h, 0, 0, w, h, 0, 255);
+        } else {
+            /* 缓存图比窗口小（刚改完尺寸、低清图还没换掉）时会放大绘制，
+               右/下照样会出现半透明边。往外多画一圈，让半透明边落进面板外被裁掉。 */
+            var ov = 8;
+            gr.DrawImage(wallImg, -ov, -ov, w + ov * 2, h + ov * 2, 0, 0, wallImg.Width, wallImg.Height, 0, 255);
+        }
     } else {
         gr.FillSolidRect(0, 0, w, h, fw_isDark() ? GetGrey(30) : GetGrey(255));
         return false;

@@ -1,0 +1,7 @@
+﻿艺术家: %BIO_ARTIST%$crlf()
+$crlf()
+标题: %BIO_TITLE%$crlf()
+$crlf()
+[专辑: %BIO_ALBUM%$crlf()
+$crlf()]
+$if2(%playback_time%,0:00)[ / %length%]

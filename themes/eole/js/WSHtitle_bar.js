@@ -1265,6 +1265,65 @@ function on_mouse_rbtn_up(x, y){
         _menu = undefined;
         return true;
 }
+/* ===== 窗口外观控制项：原生边框与标题栏 / 原生菜单栏 / 原生状态栏 =====
+   这三项是窗口级设置（fb.Window），面板属性存不住、也同步不到别的面板，
+   所以状态落在 profile 下的共享配置文件里，Eole 的每个面板读同一份
+   （见 JStheme_common.js 的 hideDuiBars）。 */
+function chromeCfgPath() {
+	return fb.ProfilePath + 'wsh-data\\eole-settings\\WINDOWCHROME.cfg';
+}
+/* 主题默认：无边框无标题栏、无菜单栏、无状态栏 */
+function chromeDefaults() {
+	return { frame: false, menu: false, status: false };
+}
+function chromeRead() {
+	var st = chromeDefaults();
+	try {
+		var t = utils.ReadTextFile(chromeCfgPath());
+		if (t) {
+			var c = JSON.parse(String(t).replace(/^\uFEFF/, ""));
+			if (c && typeof c === 'object') {
+				/* 旧版配置里 frame / caption 是分开的两项，现在只认 frame，caption 忽略 */
+				if (typeof c.frame === 'boolean') st.frame = c.frame;
+				if (typeof c.menu === 'boolean') st.menu = c.menu;
+				if (typeof c.status === 'boolean') st.status = c.status;
+			}
+		}
+	} catch (e) {}
+	return st;
+}
+function chromeWrite(st) {
+	try {
+		utils.WriteTextFile(chromeCfgPath(), JSON.stringify({
+			frame: !!st.frame, menu: !!st.menu, status: !!st.status
+		}));
+	} catch (e) {}
+}
+function chromeAvailable() {
+	try { return !!(fb && fb.Window); } catch (e) { return false; }
+}
+/* 只做两档：有边框有标题栏(0) / 无边框无标题栏(2)。
+   FrameStyle 的 1（有边框无标题栏）不开放，否则原生标题栏会和自绘标题栏抢位置。 */
+function chromeFrameStyleOf(st) {
+	return st.frame ? 0 : 2;
+}
+function chromeApply(st) {
+	var s = st || chromeRead();
+	chromeWrite(s);
+	if (!chromeAvailable()) return s;
+	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); } catch (e1) {}
+	try { fb.Window.MainMenuHidden = !s.menu; } catch (e2) {}
+	try { fb.Window.StatusBarHidden = !s.status; } catch (e3) {}
+	/* 换 FrameStyle 会让整窗重排，稍后再确认一次菜单栏/状态栏并重算伪标题栏拖动区 */
+	setTimeout(function () {
+		var c = chromeRead();
+		try { fb.Window.MainMenuHidden = !c.menu; } catch (e4) {}
+		try { fb.Window.StatusBarHidden = !c.status; } catch (e5) {}
+		try { SetPseudoCaption(); } catch (e6) {}
+		try { window.Repaint(); } catch (e7) {}
+	}, 120);
+	return s;
+}
 function draw_settings_menu(x,y){
         var _menu = window.CreatePopupMenu();
 		var _menu3 = window.CreatePopupMenu();
@@ -1277,7 +1336,29 @@ function draw_settings_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");		
 		_menu.CheckMenuRadioItem(1811, 1813, (parseInt(compact_titlebar.getValue())+1811));
 		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(MF_STRING, 1814, "高分屏自动适配：" + ((g_hires_mode==1) ? "强制开启" : (g_hires_mode==2) ? "强制关闭" : "自动（当前" + (g_hires_display ? "已启用" : "未启用") + "）"));
+		/* 高分屏自动适配：改成三选一子菜单，勾选态一眼可见 */
+		var _hires = window.CreatePopupMenu();
+		_hires.AppendMenuItem(MF_STRING, 1814, "自动（当前" + (g_hires_display ? "已启用" : "未启用") + "）");
+		_hires.AppendMenuItem(MF_STRING, 1815, "强制开启");
+		_hires.AppendMenuItem(MF_STRING, 1816, "强制关闭");
+		_hires.CheckMenuRadioItem(1814, 1816, 1814 + ((g_hires_mode === 1 || g_hires_mode === 2) ? g_hires_mode : 0));
+		_hires.AppendTo(_menu, MF_STRING, "高分屏自动适配");
+
+		/* 边框控制项：窗口级外观开关；勾选状态表示「已隐藏」 */
+		var _chrome = window.CreatePopupMenu();
+		var _chrome_st = chromeRead();
+		var _chrome_ok = chromeAvailable();
+		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1820, "隐藏边框标题栏");
+		/* 勾＝隐藏：勾上即关掉该项，与下面「以上全隐藏」语义一致 */
+		_chrome.CheckMenuItem(1820, !_chrome_st.frame);
+		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1821, "隐藏原生菜单栏");
+		_chrome.CheckMenuItem(1821, !_chrome_st.menu);
+		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1822, "隐藏原生状态栏");
+		_chrome.CheckMenuItem(1822, !_chrome_st.status);
+		_chrome.AppendMenuSeparator();
+		/* 动作项：不带勾，点一下把上面三项一起勾上（全隐藏），回到主题默认外观 */
+		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1823, "隐藏以上全部");
+		_chrome.AppendTo(_menu, MF_STRING, "边框控制项");
 		
 		_menu.AppendMenuSeparator();
 		
@@ -1408,10 +1489,35 @@ function draw_settings_menu(x,y){
 				window.Repaint();
 				break;				
 			case (idx == 1814):
-				g_hires_mode = (g_hires_mode + 1) % 3;
+			case (idx == 1815):
+			case (idx == 1816):
+				g_hires_mode = idx - 1814;
 				window.SetProperty("全局·高分屏适配模式", g_hires_mode);
 				window.NotifyOthers("WSH_panels_reload", true);
 				window.Reload();
+				break;
+			case (idx == 1820):
+				var _cs0 = chromeRead();
+				_cs0.frame = !_cs0.frame;
+				chromeApply(_cs0);
+				window.Repaint();
+				break;
+			case (idx == 1821):
+				var _cs1 = chromeRead();
+				_cs1.menu = !_cs1.menu;
+				chromeApply(_cs1);
+				window.Repaint();
+				break;
+			case (idx == 1822):
+				var _cs2 = chromeRead();
+				_cs2.status = !_cs2.status;
+				chromeApply(_cs2);
+				window.Repaint();
+				break;
+			case (idx == 1823):
+				/* 以上全隐藏：三项一起关，回到主题默认的无边框无菜单无状态栏 */
+				chromeApply({ frame: false, menu: false, status: false });
+				window.Repaint();
 				break;
 			case (idx == 1809):
 			case (idx == 1900):
@@ -1498,7 +1604,6 @@ function draw_layout_menu(x,y){
 	wallpaper_blur = window.CreatePopupMenu();
 	wallpaper_blur.AppendMenuItem(MF_STRING, 4007, "启用");
 	wallpaper_blur.AppendMenuItem(MF_STRING, 4008, "禁用");
-	build_fw_menu();
 
 	nowplaying = window.CreatePopupMenu();
 	var now_playing_state = getNowPlayingState();
@@ -1521,11 +1626,7 @@ function draw_layout_menu(x,y){
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4033, "自定义宽度...");
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4032, "重置");
 
-	if(layout_state.isEqual(1)){
-		basemenu.AppendMenuItem(MF_GRAYED, 0, "迷你模式布局");
-		basemenu.AppendMenuSeparator();		
-		fwGetMenu().AppendTo(basemenu,MF_STRING, "全屏壁纸");
-	} else if(main_panel_state.isEqual(0)){
+	if(main_panel_state.isEqual(0)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "媒体库布局");
 		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
@@ -1538,8 +1639,6 @@ function draw_layout_menu(x,y){
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4035, "减小宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4037, "自定义宽度...");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4036, "重置");
-		basemenu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(basemenu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(1)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "播放列表布局");
 		basemenu.AppendMenuSeparator();				
@@ -1567,8 +1666,6 @@ function draw_layout_menu(x,y){
 		FiltersMenu.AppendTo(basemenu, MF_STRING, "筛选器");
 		if(!filters_panel_state.isMaximumValue()) basemenu.AppendMenuItem(MF_STRING, 4996, "隐藏底部播放列表");
 		else basemenu.AppendMenuItem(MF_STRING, 4997, "显示底部播放列表");
-		basemenu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(basemenu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(2)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "正在播放布局");
 		basemenu.AppendMenuSeparator();				
@@ -1587,8 +1684,6 @@ function draw_layout_menu(x,y){
 			LyricsMenu.AppendMenuItem(MF_STRING, 6000, "显示切换按钮");
 			LyricsMenu.AppendMenuItem(MF_STRING, 6001, "隐藏切换按钮");			
 		}
-		basemenu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(basemenu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(3)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "洛雪音源布局");
 		basemenu.AppendMenuSeparator();				
@@ -1824,6 +1919,8 @@ function draw_main_menu(x,y){
 	if(fb.IsPlaying) child7.AppendTo(basemenu, MF_STRING, "正在播放");
 
 	skin_settings_menu = window.CreatePopupMenu();
+	/* 全屏壁纸置顶（子菜单内容由 fwGetMenu() 内部即时重建） */
+	fwGetMenu().AppendTo(skin_settings_menu, MF_STRING, "全屏壁纸");
 	library_menu = window.CreatePopupMenu();
 	playlists_menu = window.CreatePopupMenu();
 	bio_menu = window.CreatePopupMenu();
@@ -1851,7 +1948,6 @@ function draw_main_menu(x,y){
 
 	if(layout_state.isEqual(1)){
 		minimode_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
-		fwGetMenu().AppendTo(minimode_menu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(0)){
 		library_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(library_menu,MF_STRING, "右侧播放列表");
@@ -1864,8 +1960,6 @@ function draw_main_menu(x,y){
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4035, "减小宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4037, "自定义宽度...");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4036, "重置");
-		library_menu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(library_menu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(1)){
 		playlists_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(playlists_menu,MF_STRING, "右侧播放列表");
@@ -1892,8 +1986,6 @@ function draw_main_menu(x,y){
 		FiltersMenu.AppendTo(playlists_menu, MF_STRING, "筛选器");
 		if(!filters_panel_state.isMaximumValue()) playlists_menu.AppendMenuItem(MF_STRING, 4996, "隐藏底部播放列表");
 		else playlists_menu.AppendMenuItem(MF_STRING, 4997, "显示底部播放列表");
-		playlists_menu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(playlists_menu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(2)){
 		bio_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 
@@ -1910,8 +2002,6 @@ function draw_main_menu(x,y){
 			LyricsMenu.AppendTo(bio_menu, MF_STRING, "歌词面板");
 		}
 
-		bio_menu.AppendMenuSeparator();
-		fwGetMenu().AppendTo(bio_menu,MF_STRING, "全屏壁纸");
 	} else if(main_panel_state.isEqual(3)){
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
@@ -2035,9 +2125,6 @@ function draw_main_menu(x,y){
 		}
 	schedulerMenu.CheckMenuRadioItem(3018, 3023, checked_item);
 	schedulerMenu.AppendTo(skin_settings_menu, MF_STRING, "计划任务");
-
-	build_fw_menu();
-	fwGetMenu().AppendTo(skin_settings_menu, MF_STRING, "全屏壁纸");
 
 	if(layout_state.isEqual(0)) {
 		skin_settings_menu.AppendMenuItem(MF_STRING, 4010, "迷你播放器");
@@ -3279,7 +3366,9 @@ function on_init(){
 	adapt_buttons_to_layout();
 	g_genre_cache = new oGenreCache();
 	g_genre_cache.build_from_library();
-	g_uihacks.setFrameStyle(3);
+	/* 窗口外观（边框/标题栏/菜单/状态栏）由「边框控制项」决定，启动时按共享配置恢复 */
+	chromeApply(chromeRead());
+	setTimeout(function () { chromeApply(chromeRead()); }, 600);
 	g_uihacks.setAeroEffect(2);
 	g_uihacks.setAero(0,0,1,0);
 
