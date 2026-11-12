@@ -1,4 +1,21 @@
 ﻿var theme_name = "eole";
+/* JSplitter 4.4.0 exposes no window.Reload at runtime (despite the docs).
+   Keep every panel's reload request safe: use the API when present, otherwise
+   do nothing instead of throwing from on_notify_data. */
+function reloadPanelSafe() {
+	try {
+		if (typeof window.Reload === 'function') { window.Reload(); return true; }
+	} catch (e) {}
+	return false;
+}
+/* Some JSplitter builds (including 4.4.0) do not expose window.Reload at all.
+   Provide an inert fallback so third-party biography scripts cannot throw either;
+   a real Reload is still used above when the host provides it. */
+try {
+	if (typeof window.Reload !== 'function') {
+		window.Reload = function () { return false; };
+	}
+} catch (eReload) {}
 var ProfilePath = fb.ProfilePath;
 var FoobarPath = fb.FoobarPath;
 var skin_global_path = ProfilePath + "themes\\"+theme_name;
@@ -38,6 +55,7 @@ var globalProperties = {
 	fontAdjustement_max:5,
     fontAdjustement: window.GetProperty("全局·字体调整", 0),
 	mem_solicitation:window.GetProperty("全局·内存占用策略", 0),
+	lx_artist_cache_dir: "",
 	loaded_covers2memory:window.GetProperty("封面·已加载封面保留在内存", false),
     load_covers_at_startup: window.GetProperty("封面·启动时全部加载", true),
     load_artist_img_at_startup: window.GetProperty("艺术家图片·启动时全部加载", true),
@@ -132,6 +150,15 @@ function setMemoryParameters(){
 		break;
 	}
 }
+function applyMemoryParametersLocally(info) {
+	globalProperties.mem_solicitation = Number(info);
+	window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
+	setMemoryParameters();
+	try {
+		if (typeof g_image_cache !== 'undefined' && g_image_cache && g_image_cache.resetAll) g_image_cache.resetAll();
+	} catch (e) {}
+	try { window.Repaint(); } catch (e2) {}
+}
 setMemoryParameters();
 var GLOBAL_PARAM_KEY = {
 	"keepProportion": "全局·保持比例",
@@ -155,8 +182,7 @@ function setGlobalParameter(parameter_name, parameter_value, notify_others){
 	eval("globalProperties."+parameter_name+" = "+parameter_value);
 	if(notify_others) window.NotifyOthers("setGlobalParameter",Array(parameter_name,parameter_value));
 	if(parameter_name=="keepProportion") {
-		setImageCachePath();
-		g_image_cache.resetCache();
+g_image_cache.resetCache();
 	}
 }
 var cScrollBar = {
@@ -179,6 +205,343 @@ var cScrollBar = {
     timerID: false,
 	timerCounter: -1
 };
+
+/* Shared vertical scrollbar used by the cover browser and the screensaver. */
+oScrollbar = function(parentObjectName, noText) {
+    this.parentObjName = parentObjectName;
+    this.noTextFn = (typeof noText === 'function') ? noText : null;
+	this.isVisible=false;
+	this.cursorHeight=0;
+    this.buttons = Array(null, null, null);
+    this.draw = function(gr, x, y) {
+        // draw background and buttons up & down
+
+        // draw up & down buttons
+
+        // draw cursor
+        this.buttons[cScrollBar.ButtonType.cursor].draw(gr, this.x, this.cursorPos, 255);
+    }
+	this.get_h_tot = function(){
+		if(g_showlist.idx>-1) {
+			if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.50){
+				return brw.rowHeight*brw.rowsCount + g_showlist.h - g_showlist.h%brw.rowHeight + brw.rowHeight;
+			} else {
+				if(g_showlist.h%brw.rowHeight<20)
+					return brw.rowHeight*brw.rowsCount + g_showlist.h - g_showlist.h%brw.rowHeight;
+				else
+					return brw.rowHeight*brw.rowsCount + g_showlist.h
+			}
+		} else {
+			if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.60){
+				return brw.rowHeight*brw.rowsCount + brw.rowHeight;
+			} else {
+				return brw.rowHeight*brw.rowsCount;
+			}
+		}
+	}
+	this.get_h_vis = function(){
+		return brw.totalRowsVis*brw.rowHeight;
+	}
+	this.check_scroll = function(scroll_to_check){
+		h_vis = this.get_h_vis();
+		h_tot = this.get_h_tot();
+
+		if(scroll_to_check!=0 && scroll_to_check > h_tot - h_vis) {
+			scroll_to_check = h_tot - h_vis;
+		}
+		if(scroll_to_check < 0) scroll_to_check =  0;
+		return scroll_to_check;
+	}
+	this.setCursor = function(h_vis, h_tot, offset) {
+		if(!ww || !wh || wh < 100) {
+			return true;
+		}
+
+		h_vis = this.get_h_vis();
+		h_tot = this.get_h_tot();
+
+		if((h_tot > h_vis) && this.w > 2) {
+			this.isVisible=true;
+			this.cursorWidth = this.w;
+			this.cursorWidthNormal = this.wnormal;
+			// calc cursor height
+			prevCursorHeight = this.cursorHeight
+			this.cursorHeight = Math.round((h_vis / h_tot) * this.area_h);
+			if(this.cursorHeight < cScrollBar.minHeight) this.cursorHeight = cScrollBar.minHeight;
+			// cursor pos
+			var ratio = offset / (h_tot - h_vis);
+			this.cursorPos = this.area_y + Math.round((this.area_h - this.cursorHeight) * ratio);
+			if (typeof this.buttons[0] === 'undefined' || this.buttons[0] == null || prevCursorHeight!=this.cursorHeight) {
+				this.setCursorButton();
+			}
+		} else if(brw.finishLoading) {
+			this.isVisible=false;
+			scroll = 0;
+		}
+	}
+	this.cursor_total_height = function() {
+		try{
+			if(g_showlist.idx>-1){
+				if((window.Height-brw.headerBarHeight)%brw.rowHeight+g_showlist.h<colors.fading_bottom_height*0.66) {
+					return g_showlist.h + (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight - g_showlist.h%brw.rowHeight + brw.rowHeight;
+				} else {
+					return g_showlist.h + (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight
+				}
+			} else {
+				if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.66){
+					return (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight+brw.rowHeight;
+				} else {
+					return (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight;
+				}
+			}
+		} catch (e){}
+	}
+
+    this.setCursorButton = function() {
+        // normal cursor Image
+        this.cursorImage_normal = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
+        var gb = this.cursorImage_normal.GetGraphics();
+			gb.FillSolidRect(this.cursorWidth-this.cursorWidthNormal-1, cScrollBar.marginTop-1, this.cursorWidthNormal, this.cursorHeight-cScrollBar.marginTop-cScrollBar.marginBottom+3, colors.scrollbar_cursor_outline);
+			gb.FillSolidRect(this.cursorWidth-this.cursorWidthNormal, cScrollBar.marginTop, this.cursorWidthNormal-2, this.cursorHeight-cScrollBar.marginTop-cScrollBar.marginBottom+1, colors.scrollbar_normal_cursor);
+        this.cursorImage_normal.ReleaseGraphics(gb);
+
+        // hover cursor Image
+        this.cursorImage_hover = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
+        gb = this.cursorImage_hover.GetGraphics();
+			gb.FillSolidRect(this.cursorWidth-cScrollBar.hoverWidth-1,0, cScrollBar.hoverWidth+2,this.cursorHeight+2,colors.scrollbar_cursor_outline);
+			gb.FillSolidRect(this.cursorWidth-cScrollBar.hoverWidth,1, cScrollBar.hoverWidth,this.cursorHeight,colors.scrollbar_hover_cursor);
+        this.cursorImage_hover.ReleaseGraphics(gb);
+
+        // down cursor Image
+        this.cursorImage_down = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
+        gb = this.cursorImage_down.GetGraphics();
+			gb.FillSolidRect(this.cursorWidth-cScrollBar.downWidth-1,0, cScrollBar.downWidth+2,this.cursorHeight+2,colors.scrollbar_cursor_outline);
+			gb.FillSolidRect(this.cursorWidth-cScrollBar.downWidth,1, cScrollBar.downWidth,this.cursorHeight,colors.scrollbar_down_cursor);
+        this.cursorImage_down.ReleaseGraphics(gb);
+
+        // create/refresh cursor Button in buttons array
+        this.buttons[cScrollBar.ButtonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down,"scrollbarcursor");
+    }
+
+    this.setButtons = function() {
+        // normal scroll_up Image
+        this.upImage_normal = gdi.CreateImage(this.w, this.w);
+        var gb = this.upImage_normal.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
+
+        this.upImage_normal.ReleaseGraphics(gb);
+
+        // hover scroll_up Image
+        this.upImage_hover = gdi.CreateImage(this.w, this.w);
+        gb = this.upImage_hover.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
+
+        this.upImage_hover.ReleaseGraphics(gb);
+
+        // down scroll_up Image
+        this.upImage_down = gdi.CreateImage(this.w, this.w);
+        gb = this.upImage_down.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
+
+        this.upImage_down.ReleaseGraphics(gb);
+
+        // normal scroll_down Image
+        this.downImage_normal = gdi.CreateImage(this.w, this.w);
+        gb = this.downImage_normal.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
+
+        this.downImage_normal.ReleaseGraphics(gb);
+
+        // hover scroll_down Image
+        this.downImage_hover = gdi.CreateImage(this.w, this.w);
+        gb = this.downImage_hover.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
+
+        this.downImage_hover.ReleaseGraphics(gb);
+
+        // down scroll_down Image
+        this.downImage_down = gdi.CreateImage(this.w, this.w);
+        gb = this.downImage_down.GetGraphics();
+        // Draw Themed Scrollbar (lg/col)
+		gb.SetSmoothingMode(2);
+		var mid_x = Math.round(this.w / 2);
+		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
+		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
+
+        this.downImage_down.ReleaseGraphics(gb);
+
+        for(i = 1; i < this.buttons.length; i++) {
+            switch(i) {
+            case cScrollBar.ButtonType.cursor:
+                this.buttons[cScrollBar.ButtonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down,"scrollbarcursor");
+                break;
+            case cScrollBar.ButtonType.up:
+                this.buttons[cScrollBar.ButtonType.up] = new button(this.upImage_normal, this.upImage_hover, this.upImage_down,"scrollbarup");
+                break;
+            case cScrollBar.ButtonType.down:
+                this.buttons[cScrollBar.ButtonType.down] = new button(this.downImage_normal, this.downImage_hover, this.downImage_down,"scrollbardown");
+                break;
+            };
+        };
+    };
+
+    this.setSize = function(x, y, whover, h, wnormal) {
+		this.x = x;
+		this.y = y + (brw.headerBarHeight - ((this.noTextFn && this.noTextFn()) ? 0 : g_headerbar.white_space));
+		this.w = cScrollBar.activeWidth;
+		this.wnormal = wnormal;
+		this.h = h - (brw.headerBarHeight - ((this.noTextFn && this.noTextFn()) ? 0 : g_headerbar.white_space));
+		// scrollbar area for the cursor (<=> scrollbar height minus up & down buttons height)
+		this.area_y = this.y;
+		this.area_h = this.h;
+        this.setButtons();
+    }
+
+	this.setOffsetFromCursorPos = function() {
+        // calc ratio of the scroll cursor to calc the equivalent item for the full playlist (with gh)
+        var ratio = (this.cursorPos - this.area_y) / (this.area_h - this.cursorHeight);
+        // calc idx of the item (of the full playlist with gh) to display at top of the panel list (visible)
+        var newOffset = Math.round(((brw.rowsCount +  Math.round(g_showlist.delta)) - brw.totalRowsVis) * ratio);
+        return newOffset;
+    }
+
+    this.cursorCheck = function(event, x, y) {
+
+        this.ishover = (x >= this.x && x <= this.x + this.w && y >= this.cursorPos && y <= (this.cursorPos + this.cursorHeight));
+
+		if(!this.buttons[0]) return;
+
+        switch(event) {
+        case "down":
+			this.buttons[0].checkstate(event, x, y);
+            if(this.ishover) {
+                this.cursorClickX = x;
+                this.cursorClickY = y;
+                this.cursorDrag = true;
+                this.cursorDragDelta = y - this.cursorPos;
+				this.cursorPrevY = y;
+            }
+            break;
+        case "up":
+			this.buttons[0].checkstate(event, x, y);
+            if(this.cursorDrag) {
+
+				if(g_showlist.y<0 && g_showlist.idx>-1) {
+					if(((scroll-g_showlist.h)%brw.rowHeight)/brw.rowHeight<0.5)
+						scroll = scroll - (scroll-g_showlist.h)%brw.rowHeight;
+					else
+						scroll = scroll + (brw.rowHeight-(scroll-g_showlist.h)%brw.rowHeight);
+				}
+				else  {
+					if((scroll%brw.rowHeight)/brw.rowHeight<0.5)
+						scroll = scroll - scroll%brw.rowHeight;
+					else scroll = scroll + (brw.rowHeight-scroll%brw.rowHeight);
+				}
+				this.repaint();
+            }
+            this.cursorClickX = 0;
+            this.cursorClickY = 0;
+			this.cursorPrevY = 0;
+			this.cursorDragDelta = 0;
+            this.cursorDrag = false;
+            break;
+        case "move":
+
+			this.buttons[0].checkstate(event, x, y);
+
+            if(this.cursorDrag) {
+				scroll += (y - this.cursorPrevY)*((brw.rowsCount/brw.totalRowsVis<1)?1:brw.rowsCount/brw.totalRowsVis);
+				scroll = g_scrollbar.check_scroll(scroll);
+				this.setCursor(brw.totalRowsVis*brw.rowHeight, brw.rowHeight*brw.rowsCount, scroll_);
+				this.cursorPrevY = y
+            }
+            break;
+		case "leave":
+			this.buttons[0].checkstate(event, x, y);
+			break;
+		default:
+        }
+    }
+
+	this.check = function(event, x, y) {
+		this.hover = (x >= this.x && x <= this.x + this.w && y > this.area_y && y < this.area_y + this.area_h);
+
+		// check cursor
+		this.cursorCheck(event, x, y);
+
+		// check other buttons
+		var totalButtonToCheck = 1;
+		for(var i = 1; i < totalButtonToCheck; i++) {
+			switch(event) {
+				case "dblclk":
+					switch(i) {
+						case 1: // up button
+							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
+								brw.buttonclicked = true;
+								this.buttons[i].checkstate("down", x, y);
+                                on_mouse_wheel(1);
+							}
+							break;
+						case 2: // down button
+							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
+								brw.buttonclicked = true;
+								this.buttons[i].checkstate("down", x, y);
+                                on_mouse_wheel(-1);
+							}
+							break;
+					}
+					break;
+				case "down":
+					switch(i) {
+						case 1: // up button
+							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
+								brw.buttonclicked = true;
+                                on_mouse_wheel(1);
+
+							}
+							break;
+						case 2: // down button
+							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
+								brw.buttonclicked = true;
+                                on_mouse_wheel(-1);
+
+							}
+							break;
+					}
+					break;
+				case "up":
+					this.buttons[i].checkstate(event, x, y);
+					break;
+				default:
+					this.buttons[i].checkstate(event, x, y);
+			}
+		}
+	}
+
+    this.repaint = function() {
+		eval(this.parentObjName+".repaint()");
+    }
+}
 
 var WindowState = {
     Normal: 0,
@@ -802,11 +1165,6 @@ g_files.CreateFolder(data_global_path);
 var cover_img_cache = data_global_path+"\\"+theme_name+"-img-cache";
 if(!g_files.FolderExists(cover_img_cache))
 g_files.CreateFolder(cover_img_cache);
-
-function setImageCachePath(){
-}
-setImageCachePath();
-
 var SettingsPath = data_global_path+"\\"+theme_name+"-settings\\";
 if (!g_files.FolderExists(SettingsPath))
 g_files.CreateFolder(SettingsPath);
@@ -1242,6 +1600,10 @@ function findSelectionPlaylist(){
 function setMemoryUsageGlobally(mem_solicitation){
 	globalProperties.mem_solicitation = mem_solicitation;
 	window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
+	setMemoryParameters();
+	try {
+		if (typeof g_image_cache !== 'undefined' && g_image_cache && g_image_cache.resetAll) g_image_cache.resetAll();
+	} catch (e) {}
 	window.NotifyOthers("MemSolicitation",globalProperties.mem_solicitation);
 	window.NotifyOthers("WSH_panels_reload",true);
 }
@@ -1650,7 +2012,6 @@ oGenreCache = function () {
 	}
     this.trace = function (genre) {
 		for (var i = 0; i < this.genreList.length; i++) {
-			console.log(this.genreList[i][0]+","+this.genreList[i][1])
 		}
     };
     this.on_metadb_changed = function (metadbs, fromhook) {
@@ -2609,6 +2970,54 @@ var g_hires_dpi = 96;
 InitHiResDisplay();
 
 var g_font = {};
+var g_font_cache = {};
+
+/* Lazy font cache: previously get_font() created all 46 gdi.Font objects in
+   every panel at startup, although each panel only uses a handful of them.
+   Each slot is now a getter that builds the font on first access and caches
+   it until get_font() runs again (font size / zoom changed). */
+var g_font_specs = [];
+(function () {
+    function add(name, family, offset, style) {
+        g_font_specs.push({ name: name, family: family, offset: offset, style: style });
+    }
+    add('normal', 'normal', 0, 'normal');
+    add('min1', 'normal', -1, 'normal');
+    add('min2', 'normal', -2, 'normal');
+    for (var i = 1; i <= 7; i++) add('plus' + i, 'normal', i, 'normal');
+    add('plus10', 'normal', 10, 'normal');
+    add('bold', 'semibold', 0, 'bold');
+    add('boldplus1', 'semibold', 1, 'bold');
+})();
+
+function g_font_family(kind) {
+    if (kind === 'semibold') return g_fname_semibold;
+    return g_fname;
+}
+function g_font_style(kind) {
+    if (kind === 'bold') return g_fstyle_bold;
+    return g_fstyle;
+}
+function g_font_build(spec) {
+    if (!g_fname || typeof g_fsize !== 'number' || isNaN(g_fsize)) return null;
+    return gdi.Font(g_font_family(spec.family), g_fsize + spec.offset, g_font_style(spec.style));
+}
+(function () {
+    for (var i = 0; i < g_font_specs.length; i++) {
+        (function (spec) {
+            Object.defineProperty(g_font, spec.name, {
+                enumerable: true,
+                configurable: true,
+                get: function () {
+                    if (!Object.prototype.hasOwnProperty.call(g_font_cache, spec.name)) {
+                        g_font_cache[spec.name] = g_font_build(spec);
+                    }
+                    return g_font_cache[spec.name];
+                }
+            });
+        })(g_font_specs[i]);
+    }
+})();
 function get_font() {
     var font_error = false;
     var default_font = null;
@@ -2624,82 +3033,26 @@ function get_font() {
     try {
 		g_fname = "Microsoft YaHei UI";
 		g_fname_light = "Microsoft YaHei UI Light";
-		g_fname_light_italic = "Microsoft YaHei UI Light";
-		g_fname_italic = "Microsoft YaHei UI";
 		g_fname_semibold = "Microsoft YaHei UI Bold";
 		g_fsize = default_font.Size;
 		g_fstyle = 0;
 		g_fstyle_light = 0;
 		g_fstyle_bold = 1;
-		g_fstyle_italic = 0;
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
         g_fname_light = "arial";
-        g_fname_light_italic = "arial";
-        g_fname_italic = "arial";
         g_fname_semibold = "arial";
         g_fsize = 14;
         g_fstyle = 0;
         g_fstyle_light = 0;
         g_fstyle_bold = 0;
-        g_fstyle_italic = 0;
         font_error = true;
     };
     // adjust font size if extra zoom activated
 	globalProperties.fontAdjustement = Math.min(globalProperties.fontAdjustement_max,Math.max(globalProperties.fontAdjustement_min,globalProperties.fontAdjustement));
     g_fsize += globalProperties.fontAdjustement+properties.panelFontAdjustement;
-
-	g_font.normal = gdi.Font(g_fname, g_fsize, g_fstyle);
-	g_font.min1 = gdi.Font(g_fname, g_fsize-1, g_fstyle);
-	g_font.min2 = gdi.Font(g_fname, g_fsize-2, g_fstyle);
-	g_font.min3 = gdi.Font(g_fname, g_fsize-3, g_fstyle);
-	g_font.min4 = gdi.Font(g_fname, g_fsize-4, g_fstyle);
-	g_font.min5 = gdi.Font(g_fname, g_fsize-5, g_fstyle);
-	g_font.plus1 = gdi.Font(g_fname, g_fsize+1, g_fstyle);
-	g_font.plus2 = gdi.Font(g_fname, g_fsize+2, g_fstyle);
-	g_font.plus3 = gdi.Font(g_fname, g_fsize+3, g_fstyle);
-	g_font.plus4 = gdi.Font(g_fname, g_fsize+4, g_fstyle);
-	g_font.plus5 = gdi.Font(g_fname, g_fsize+5, g_fstyle);
-	g_font.plus6 = gdi.Font(g_fname, g_fsize+6, g_fstyle);
-	g_font.plus7 = gdi.Font(g_fname, g_fsize+7, g_fstyle);
-	g_font.plus8 = gdi.Font(g_fname, g_fsize+8, g_fstyle);
-	g_font.plus9 = gdi.Font(g_fname, g_fsize+9, g_fstyle);
-	g_font.plus10 = gdi.Font(g_fname, g_fsize+10, g_fstyle);
-
-	g_font.bold = gdi.Font(g_fname_semibold, g_fsize, g_fstyle_bold);
-	g_font.boldmin1 = gdi.Font(g_fname_semibold, g_fsize-1, g_fstyle_bold);
-	g_font.boldmin2 = gdi.Font(g_fname_semibold, g_fsize-2, g_fstyle_bold);
-	g_font.boldmin3 = gdi.Font(g_fname_semibold, g_fsize-3, g_fstyle_bold);
-	g_font.boldmin4 = gdi.Font(g_fname_semibold, g_fsize-4, g_fstyle_bold);
-	g_font.boldmin5 = gdi.Font(g_fname_semibold, g_fsize-5, g_fstyle_bold);
-	g_font.boldplus1 = gdi.Font(g_fname_semibold, g_fsize+1, g_fstyle_bold);
-	g_font.boldplus2 = gdi.Font(g_fname_semibold, g_fsize+2, g_fstyle_bold);
-	g_font.boldplus3 = gdi.Font(g_fname_semibold, g_fsize+3, g_fstyle_bold);
-	g_font.boldplus4 = gdi.Font(g_fname_semibold, g_fsize+4, g_fstyle_bold);
-	g_font.boldplus5 = gdi.Font(g_fname_semibold, g_fsize+5, g_fstyle_bold);
-	g_font.boldplus6 = gdi.Font(g_fname_semibold, g_fsize+6, g_fstyle_bold);
-	g_font.boldplus7 = gdi.Font(g_fname_semibold, g_fsize+7, g_fstyle_bold);
-	g_font.boldplus8 = gdi.Font(g_fname_semibold, g_fsize+8, g_fstyle_bold);
-
-	g_font.italic = gdi.Font(g_fname_italic, g_fsize, g_fstyle_italic);
-	g_font.italicmin1 = gdi.Font(g_fname_italic, g_fsize-1, g_fstyle_italic);
-	g_font.italicmin2 = gdi.Font(g_fname_italic, g_fsize-2, g_fstyle_italic);
-	g_font.italicmin3 = gdi.Font(g_fname_italic, g_fsize-3, g_fstyle_italic);
-	g_font.italicmin4 = gdi.Font(g_fname_italic, g_fsize-4, g_fstyle_italic);
-	g_font.italicmin5 = gdi.Font(g_fname_italic, g_fsize-5, g_fstyle_italic);
-	g_font.italicplus1 = gdi.Font(g_fname_italic, g_fsize+1, g_fstyle_italic);
-	g_font.italicplus2 = gdi.Font(g_fname_italic, g_fsize+2, g_fstyle_italic);
-	g_font.italicplus3 = gdi.Font(g_fname_italic, g_fsize+3, g_fstyle_italic);
-	g_font.italicplus4 = gdi.Font(g_fname_italic, g_fsize+4, g_fstyle_italic);
-	g_font.italicplus5 = gdi.Font(g_fname, g_fsize+5, g_fstyle_italic);
-	g_font.italicplus6 = gdi.Font(g_fname_italic, g_fsize+6, g_fstyle_italic);
-	g_font.italicplus7 = gdi.Font(g_fname_italic, g_fsize+7, g_fstyle_italic);
-	g_font.italicplus8 = gdi.Font(g_fname_italic, g_fsize+8, g_fstyle_italic);
-
-	g_font.nowplaying_title = gdi.Font(g_fname_light_italic, g_fsize+14, g_fstyle_italic);
-	g_font.nowplaying_subtitle = gdi.Font(g_fname_light_italic, g_fsize+14, g_fstyle_italic);
-
+	g_font_cache = {};
 	if(properties.darklayout) {
 		g_font_light = gdi.Font(g_fname_light, g_fsize, g_fstyle_light);
 		g_font_lightmin1 = gdi.Font(g_fname_light, g_fsize-1, g_fstyle_light);
@@ -2740,6 +3093,18 @@ function isValidHandle(variable){
 	} catch(e){
 		return false;
 	}
+}
+function eoleCleanArtistName(s, max) {
+	var t = String(s == null ? '' : s)
+		.replace(/[\\\/:*?"<>|]/g, ' ')
+		.replace(/[\x00-\x1F]/g, ' ')
+		.replace(/\s+/g, ' ')
+		.trim()
+		.replace(/[. ]+$/, '');
+	max = max || 40;
+	if (t.length > max) t = t.slice(0, max).replace(/[. ]+$/, '');
+	if (/^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i.test(t)) t = '_' + t;
+	return t;
 }
 function process_cachekey(metadb, titleformat, str){
 	var titleformat = typeof titleformat !== 'undefined' ? titleformat : globalProperties.tf_crc;
@@ -2878,7 +3243,6 @@ const get_albumArt_async = async(metadb, albumIndex, cachekey, need_stub, only_e
         return;
     }
 	g_image_cache.loadCounter++;			
-	debugger_hint(window.TotalMemoryUsage+" - "+(window.MemoryLimit-window.TotalMemoryUsage-10000000));
     let result = await utils.GetAlbumArtAsyncV2(0, metadb, AlbumArtId.front, need_stub, only_embed, no_load);
 	try {
 		if(isImage(result.image)) {
@@ -2933,7 +3297,6 @@ function save_image_to_cache(image, albumIndex, cachekey, metadb){
 			brw.groups[albumIndex].mask_applied = false;
 			brw.groups[albumIndex].cover_formated = false;
 			g_image_cache.addToCache(image,cachekey);
-			debugger_hint("addToCache "+albumIndex+" with"+image.Width)			
 			brw.repaint();
 		}
 	} catch(e){}
@@ -2946,7 +3309,7 @@ function createDragText(line1, line2, cover_size){
 	gb.SetTextRenderingHint(2);
 	gb.SetSmoothingMode(1);
 	var text1_width = gb.CalcTextWidth(line1, g_font.boldplus1);
-	var text2_width = gb.CalcTextWidth(line2, g_font.italicmin1);
+	var text2_width = gb.CalcTextWidth(line2, g_font.min1);
 	var rectangle_width = Math.min(Math.max(text1_width,text2_width),cover_size-40);
 
 	var sep_width = Math.min(text1_width,text2_width)+10;
@@ -2957,7 +3320,7 @@ function createDragText(line1, line2, cover_size){
 	gb.DrawRect(Math.round((cover_size-rectangle_width-40)/2),cover_size-75,rectangle_width+39,59,1,colors.dragimage_border);
 
 	gb.GdiDrawText(line1, g_font.boldplus1,  colors.dragimage_text, 10, cover_size-75, cover_size-20, 30, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
-	gb.GdiDrawText(line2, g_font.italicmin1,  colors.dragimage_text, 10, cover_size-45, cover_size-20, 30, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+	gb.GdiDrawText(line2, g_font.min1,  colors.dragimage_text, 10, cover_size-45, cover_size-20, 30, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 	drag_img.ReleaseGraphics(gb);
 
 	return drag_img;
@@ -2975,7 +3338,7 @@ function createDragImg(img, cover_size, count){
     gb.FillSolidRect(left_padding, top_padding, cover_size, cover_size, colors.dragcover_overlay);
 	gb.FillSolidRect(left_padding,top_padding+cover_size-text_height,cover_size,text_height,colors.dragimage_bg);
 	gb.DrawRect(left_padding, top_padding, cover_size-1, cover_size-1, 1.0,colors.dragimage_border);
-	gb.GdiDrawText(count+" tracks", g_font.italicmin1,  colors.dragimage_text, left_padding, top_padding+cover_size-text_height, cover_size, text_height, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+	gb.GdiDrawText(count+" tracks", g_font.min1,  colors.dragimage_text, left_padding, top_padding+cover_size-text_height, cover_size, text_height, DT_CENTER | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
 	drag_img.ReleaseGraphics(gb);
 
 	return drag_img;
@@ -3006,19 +3369,16 @@ oImageCache = function () {
 		this.coverCacheWidthMax = maxWidth;
 	}
     this.resetCache = function () {
-		debugger_hint("-------------- image cache reset --------------");
-		debugger_hint(window.TotalMemoryUsage+" > TotalMemoryUsage");
-		debugger_hint(window.MemoryLimit+" > MemoryLimit");
-		debugger_hint(window.MemoryLimit-window.TotalMemoryUsage+" > MemoryLimit-TotalMemoryUsage");
 		this.cachelist = Array();
 	}
 	this.load_image_from_cache_async = async(albumIndex, cachekey, filename, save, metadb) =>
 	{
 		var save = typeof save !== 'undefined' ? save : false;		
 		if(brw.groups[albumIndex].load_requested == 0){
+			brw.groups[albumIndex].load_requested = 1;
 			try {
 				if(properties.load_image_from_cache_direct) {
-					img = await gdi.LoadImageAsyncV2(window.ID, filename);
+					var img = await gdi.LoadImageAsyncV2(window.ID, filename);
 					this.addToCache(img,cachekey);
 					brw.groups[albumIndex].load_requested = 2;
 					brw.groups[albumIndex].cover_type = 1;
@@ -3034,12 +3394,12 @@ oImageCache = function () {
 					brw.groups[albumIndex].load_requested = 1;
 				}
 			} catch(e) {
-				console.log("timers.coverLoad line 5133 failed")
+				brw.groups[albumIndex].load_requested = 0;
 			};
 			brw.repaint();
 		}
 	};
-    this.hit = function (metadb, albumIndex, direct_return, cachekey, artist_name) {
+    this.hit = function (metadb, albumIndex, direct_return, cachekey, artist_name, async_ok) {
 		var cachekey = typeof cachekey !== 'undefined' ? cachekey : brw.groups[albumIndex].cachekey;
 		var artist_name = typeof artist_name !== 'undefined' ? artist_name : '';
 		var img = this.cachelist[cachekey];
@@ -3049,7 +3409,7 @@ oImageCache = function () {
 					//Dont save as its already in the cache
 					brw.groups[albumIndex].save_requested=true;
 					// load img from cache
-					if(!isScrolling){
+					if(!isScrolling && !async_ok){
 						img = load_image_from_cache_direct(brw.groups[albumIndex].cover_filename);
 						this.addToCache(img,cachekey);
 						brw.groups[albumIndex].cover_type = 1;
@@ -3058,7 +3418,7 @@ oImageCache = function () {
 						brw.groups[albumIndex].cover_formated = false;
 						brw.groups[albumIndex].load_requested = 2;
 						brw.repaint();
-					} else if(!direct_return){
+					} else if(!direct_return || async_ok){
 						this.load_image_from_cache_async(albumIndex, cachekey, brw.groups[albumIndex].cover_filename);
 						return "loading";
 					} else {
@@ -3070,22 +3430,28 @@ oImageCache = function () {
 					}
 			} else {
 				if(artist_name!=''){
+					var artist_name_raw = artist_name;
 					var artist_name = artist_name.sanitise();
-					var path = ProfilePath+"\yttm\\biography-cache\\art_img\\"+artist_name.toLowerCase().charAt(0)+"\\"+artist_name;
 					var filepath = '';
-					var all_files = utils.Glob(path + "\\*");
-					for (var j = 0; j < all_files.length; j++) {
-						if ((/(?:jpe?g|gif|png|bmp)$/i).test(g_files.GetExtensionName(all_files[j]))) {
-							filepath = all_files[j];
-							break;
+					var lx_dir = globalProperties.lx_artist_cache_dir || '';
+					if (lx_dir) {
+						var lx_file = lx_dir + "\\" + eoleCleanArtistName(artist_name_raw, 40) + ".jpg";
+						if (g_files.FileExists(lx_file)) filepath = lx_file;
+					}
+					if (!filepath) {
+						var path = ProfilePath+"\yttm\\biography-cache\\art_img\\"+artist_name.toLowerCase().charAt(0)+"\\"+artist_name;
+						var all_files = utils.Glob(path + "\\*");
+						for (var j = 0; j < all_files.length; j++) {
+							if ((/(?:jpe?g|gif|png|bmp)$/i).test(g_files.GetExtensionName(all_files[j]))) {
+								filepath = all_files[j];
+								break;
+							}
 						}
 					}
 					if(g_files.FileExists(filepath)) {
-						debugger_hint("load_artist");
 						this.load_image_from_cache_async(albumIndex, cachekey, filepath, true, metadb);
 						return "loading";						
 					} else if(properties.AlbumArtFallback){
-						debugger_hint("load_fallback");					
 						brw.groups[albumIndex].cover_img = g_image_cache.hit(metadb, albumIndex, false, brw.groups[albumIndex].cachekey_album);
 						if(brw.groups[albumIndex].cover_img=='loading') {
 							brw.groups[albumIndex].load_requested = 2;
@@ -3096,11 +3462,11 @@ oImageCache = function () {
 						}
 					}
 				} else if(!direct_return){
-					debugger_hint("get_albumArt_async"+albumIndex);						
 					try{
 						get_albumArt_async(metadb,(albumIndex<0)?-1:albumIndex, cachekey);
 						return 'loading';
-					} catch(e){console.log("timers.coverLoad line 5151 failed")}
+					} catch (e) {
+					}
 				} else {
 					img = utils.GetAlbumArtV2(metadb, 0, false);
 					if(img) {
@@ -3170,221 +3536,6 @@ oImageCache = function () {
     };
 };
 
-function Utf8Encode(string) {
-    string = string.replace(/\r\n/g,"\n");
-    var utftext = "";
-    for (var n = 0; n < string.length; n++) {
-        var c = string.charCodeAt(n);
-        if (c < 128) {
-            utftext += String.fromCharCode(c);
-        } else if((c > 127) && (c < 2048)) {
-            utftext += String.fromCharCode((c >> 6) | 192);
-            utftext += String.fromCharCode((c & 63) | 128);
-        } else {
-            utftext += String.fromCharCode((c >> 12) | 224);
-            utftext += String.fromCharCode(((c >> 6) & 63) | 128);
-            utftext += String.fromCharCode((c & 63) | 128);
-        };
-    };
-    return utftext;
-};
-
-function crc32(str) {
-//  discuss at: http://phpjs.org/functions/crc32/
-// original by: Webtoolkit.info (http://www.webtoolkit.info/)
-// improved by: T0bsn
-//  depends on: utf8_encode
-//   returns 1: 1249991249
-
-  str = Utf8Encode(str);
-  var table =
-    '00000000 77073096 EE0E612C 990951BA 076DC419 706AF48F E963A535 9E6495A3 0EDB8832 79DCB8A4 E0D5E91E 97D2D988 09B64C2B 7EB17CBD E7B82D07 90BF1D91 1DB71064 6AB020F2 F3B97148 84BE41DE 1ADAD47D 6DDDE4EB F4D4B551 83D385C7 136C9856 646BA8C0 FD62F97A 8A65C9EC 14015C4F 63066CD9 FA0F3D63 8D080DF5 3B6E20C8 4C69105E D56041E4 A2677172 3C03E4D1 4B04D447 D20D85FD A50AB56B 35B5A8FA 42B2986C DBBBC9D6 ACBCF940 32D86CE3 45DF5C75 DCD60DCF ABD13D59 26D930AC 51DE003A C8D75180 BFD06116 21B4F4B5 56B3C423 CFBA9599 B8BDA50F 2802B89E 5F058808 C60CD9B2 B10BE924 2F6F7C87 58684C11 C1611DAB B6662D3D 76DC4190 01DB7106 98D220BC EFD5102A 71B18589 06B6B51F 9FBFE4A5 E8B8D433 7807C9A2 0F00F934 9609A88E E10E9818 7F6A0DBB 086D3D2D 91646C97 E6635C01 6B6B51F4 1C6C6162 856530D8 F262004E 6C0695ED 1B01A57B 8208F4C1 F50FC457 65B0D9C6 12B7E950 8BBEB8EA FCB9887C 62DD1DDF 15DA2D49 8CD37CF3 FBD44C65 4DB26158 3AB551CE A3BC0074 D4BB30E2 4ADFA541 3DD895D7 A4D1C46D D3D6F4FB 4369E96A 346ED9FC AD678846 DA60B8D0 44042D73 33031DE5 AA0A4C5F DD0D7CC9 5005713C 270241AA BE0B1010 C90C2086 5768B525 206F85B3 B966D409 CE61E49F 5EDEF90E 29D9C998 B0D09822 C7D7A8B4 59B33D17 2EB40D81 B7BD5C3B C0BA6CAD EDB88320 9ABFB3B6 03B6E20C 74B1D29A EAD54739 9DD277AF 04DB2615 73DC1683 E3630B12 94643B84 0D6D6A3E 7A6A5AA8 E40ECF0B 9309FF9D 0A00AE27 7D079EB1 F00F9344 8708A3D2 1E01F268 6906C2FE F762575D 806567CB 196C3671 6E6B06E7 FED41B76 89D32BE0 10DA7A5A 67DD4ACC F9B9DF6F 8EBEEFF9 17B7BE43 60B08ED5 D6D6A3E8 A1D1937E 38D8C2C4 4FDFF252 D1BB67F1 A6BC5767 3FB506DD 48B2364B D80D2BDA AF0A1B4C 36034AF6 41047A60 DF60EFC3 A867DF55 316E8EEF 4669BE79 CB61B38C BC66831A 256FD2A0 5268E236 CC0C7795 BB0B4703 220216B9 5505262F C5BA3BBE B2BD0B28 2BB45A92 5CB36A04 C2D7FFA7 B5D0CF31 2CD99E8B 5BDEAE1D 9B64C2B0 EC63F226 756AA39C 026D930A 9C0906A9 EB0E363F 72076785 05005713 95BF4A82 E2B87A14 7BB12BAE 0CB61B38 92D28E9B E5D5BE0D 7CDCEFB7 0BDBDF21 86D3D2D4 F1D4E242 68DDB3F8 1FDA836E 81BE16CD F6B9265B 6FB077E1 18B74777 88085AE6 FF0F6A70 66063BCA 11010B5C 8F659EFF F862AE69 616BFFD3 166CCF45 A00AE278 D70DD2EE 4E048354 3903B3C2 A7672661 D06016F7 4969474D 3E6E77DB AED16A4A D9D65ADC 40DF0B66 37D83BF0 A9BCAE53 DEBB9EC5 47B2CF7F 30B5FFE9 BDBDF21C CABAC28A 53B39330 24B4A3A6 BAD03605 CDD70693 54DE5729 23D967BF B3667A2E C4614AB8 5D681B02 2A6F2B94 B40BBE37 C30C8EA1 5A05DF1B 2D02EF8D';
-
-  var crc = 0;
-  var x = 0;
-  var y = 0;
-
-  crc = crc ^ (-1);
-  for (var i = 0, iTop = str.length; i < iTop; i++) {
-    y = (crc ^ str.charCodeAt(i)) & 0xFF;
-    x = '0x' + table.substr(y * 9, 8);
-    crc = (crc >>> 8) ^ x;
-  };
-
-  return crc ^ (-1);
-};
-
-function draw_blurred_image(image,ix,iy,iw,ih,bx,by,bw,bh,blur_value,overlay_color,quality) {
-	quality = typeof quality !== 'undefined' ? quality : 1;
-
-	image.StackBlur(130);
-	return image;
-
-    var imgA = image.Resize(Math.max(5,iw*blur_value/100),Math.max(5,ih*blur_value/100),quality);
-    var imgB = imgA.Resize(iw, ih, quality);
-
-    var bbox = gdi.CreateImage(bw, bh);
-    var gb = bbox.GetGraphics();
-    var offset = 190-blur_value;
-    gb.DrawImage(imgB, 0-offset, 0-(ih-bh)-offset, iw+offset*2, ih+offset*2, 0, 0, imgB.Width, imgB.Height, 0, 255);
-
-    if(overlay_color!=null) {
-        gb.FillSolidRect(bx,by,bw,bh,overlay_color);
-    };
-    bbox.ReleaseGraphics(gb);
-
-    return bbox;
-};
-function setWallpaperImgV2(image, metadb, progressbar_art, width, height, blur_value, rawBitmap, quality) {
-    return null;
-	progressbar_art = typeof progressbar_art !== 'undefined' ? progressbar_art : false;
-	rawBitmap = typeof rawBitmap !== 'undefined' ? rawBitmap : false;
-	quality = typeof quality !== 'undefined' ? quality : 1;
-	width = typeof width !== 'undefined' ? width : ww;
-	height = typeof height !== 'undefined' ? height : wh;
-	blur_value = typeof blur_value !== 'undefined' ? blur_value : properties.wallpaperblurvalue;
-    if(isImage(image)) {
-		var tmp_img = image;
-    } else if(metadb && (properties.wallpapermode == 0 || progressbar_art)) {
-		cachekey = process_cachekey(metadb);
-		var tmp_img = get_albumArt(metadb, cachekey);
-    }
-
-    if(!tmp_img) {
-        tmp_img = gdi.Image(globalProperties.default_wallpaper);
-    }
-
-    if(!progressbar_art) {
-		if(metadb!==null) g_wallpaperImg = null;
-		var display = properties.wallpaperdisplay;
-	} else {
-		var display = 2;
-	}
-    var img = FormatWallpaper(tmp_img, width, height, 2, display, 0, "", rawBitmap, progressbar_art, blur_value, quality);
-    return img;
-};
-function setWallpaperImg(defaultpath, metadb, progressbar_art, width, height, blur_value, rawBitmap, quality) {
-    return null;
-	progressbar_art = typeof progressbar_art !== 'undefined' ? progressbar_art : false;
-	rawBitmap = typeof rawBitmap !== 'undefined' ? rawBitmap : false;
-	quality = typeof quality !== 'undefined' ? quality : 1;
-	width = typeof width !== 'undefined' ? width : ww;
-	height = typeof height !== 'undefined' ? height : wh;
-	blur_value = typeof blur_value !== 'undefined' ? blur_value : properties.wallpaperblurvalue;
-
-    if(metadb && (properties.wallpapermode == 0 || progressbar_art)) {
-		cachekey = process_cachekey(metadb);
-		var tmp_img = get_albumArt(metadb, cachekey);
-    };
-
-    if(!tmp_img) {
-        if(defaultpath) {
-            tmp_img = gdi.Image(defaultpath);
-        } else {
-            tmp_img = null;
-        };
-    };
-
-    if(!progressbar_art) {
-		if(metadb!==null) g_wallpaperImg = null;
-		var display = properties.wallpaperdisplay;
-	} else {
-		var display = 2;
-	}
-    var img = FormatWallpaper(tmp_img, width, height, 2, display, 0, "", rawBitmap, progressbar_art, blur_value, quality);
-    return img;
-};
-function FormatWallpaper(image, iw, ih, interpolation_mode, display_mode, angle, txt, rawBitmap, force_blur, blur_value,quality) {
-	force_blur = typeof force_blur !== 'undefined' ? force_blur : false;
-	blur_value = typeof blur_value !== 'undefined' ? blur_value : properties.wallpaperblurvalue;
-	quality = typeof quality !== 'undefined' ? quality : 1;
-	if(!image||!iw||!ih) return image;
-    var i, j;
-
-    var panel_ratio = iw / ih;
-	var wpp_img_info = {orient: 0, cut: 0, cut_offset: 0, ratio: 0, x: 0, y: 0, w: 0, h: 0};
-    wpp_img_info.ratio = image.Width / image.Height;
-    wpp_img_info.orient = 0;
-
-    if(wpp_img_info.ratio > panel_ratio) {
-        wpp_img_info.orient = 1;
-        // 1/3 : default image is in landscape mode
-        switch(display_mode) {
-            case 0:     // Filling
-                wpp_img_info.w = ih * wpp_img_info.ratio;
-                wpp_img_info.h = ih;
-                wpp_img_info.cut = wpp_img_info.w - iw;
-                wpp_img_info.x = 0 - (wpp_img_info.cut / 2);
-                wpp_img_info.y = 0;
-                break;
-            case 1:     // Adjust
-                wpp_img_info.w = iw;
-                wpp_img_info.h = ih / wpp_img_info.ratio * panel_ratio;
-                wpp_img_info.cut = ih - wpp_img_info.h;
-                wpp_img_info.x = 0;
-                wpp_img_info.y = wpp_img_info.cut / 2;
-                break;
-            case 2:     // Stretch
-                wpp_img_info.w = iw;
-                wpp_img_info.h = ih;
-                wpp_img_info.cut = 0;
-                wpp_img_info.x = 0;
-                wpp_img_info.y = 0;
-                break;
-        };
-    } else if(wpp_img_info.ratio < panel_ratio) {
-        wpp_img_info.orient = 2;
-        // 2/3 : default image is in portrait mode
-        switch(display_mode) {
-            case 0:     // Filling
-                wpp_img_info.w = iw;
-                wpp_img_info.h = iw / wpp_img_info.ratio;
-                wpp_img_info.cut = wpp_img_info.h - ih;
-                wpp_img_info.x = 0;
-                wpp_img_info.y = 0 - (wpp_img_info.cut / 4);
-                break;
-            case 1:     // Adjust
-                wpp_img_info.h = ih;
-                wpp_img_info.w = iw * wpp_img_info.ratio / panel_ratio;
-                wpp_img_info.cut = iw - wpp_img_info.w;
-                wpp_img_info.y = 0;
-                wpp_img_info.x = wpp_img_info.cut / 2;
-                break;
-            case 2:     // Stretch
-                wpp_img_info.w = iw;
-                wpp_img_info.h = ih;
-                wpp_img_info.cut = 0;
-                wpp_img_info.x = 0;
-                wpp_img_info.y = 0;
-                break;
-        };
-    } else {
-        // 3/3 : default image is a square picture, ratio = 1
-        wpp_img_info.w = iw;
-        wpp_img_info.h = ih;
-        wpp_img_info.cut = 0;
-        wpp_img_info.x = 0;
-        wpp_img_info.y = 0;
-    };
-
-    var tmp_img = gdi.CreateImage(iw, ih);
-    var gp = tmp_img.GetGraphics();
-	gp.SetInterpolationMode(interpolation_mode);
-    gp.DrawImage(image, wpp_img_info.x, wpp_img_info.y, wpp_img_info.w, wpp_img_info.h, 0, 0, image.Width, image.Height, angle, 255);
-	tmp_img.ReleaseGraphics(gp);
-
-    // blur it!
-    if(properties.wallpaperblurred || force_blur) {
-        var blur_factor = blur_value; // [1-90]
-        tmp_img = draw_blurred_image(tmp_img,0,0,tmp_img.Width,tmp_img.Height,0,0,tmp_img.Width,tmp_img.Height,blur_factor,null,quality);
-    };
-
-    if(rawBitmap) {
-        return tmp_img.CreateRawBitmap();
-    } else {
-        return tmp_img;
-    };
-};
 function openCoverFullscreen(metadb, displayedImage){
 	var img = null;
 	if(isValidHandle(metadb)) {
@@ -3406,8 +3557,7 @@ function openCoverFullscreen(metadb, displayedImage){
 	}
 }
 // Debugger functions
-function debugger_hint(string){
-}
+
 var FW_PROP_ENABLED = "显示·全屏壁纸";
 var FW_PROP_SOURCE  = "显示·全屏壁纸来源(0=封面 1=指定图片 2=优先图片)";
 var FW_PROP_IMAGE   = "显示·全屏壁纸图片路径";
@@ -4121,6 +4271,9 @@ function lxApplyNow(info) {
 /* 各面板的 on_notify_data 里第一句写：if (lxNotify(name, info)) return; */
 function lxNotify(name, info) {
 	switch (name) {
+		case "lx_cache_dir":
+			globalProperties.lx_artist_cache_dir = (typeof info === 'string') ? info : '';
+			return true;
 		case "lx_now_info":
 			lxApplyNow(info);
 			return true;
@@ -4142,3 +4295,7 @@ function lxNotify(name, info) {
 
 /* 面板比 Lxbox 晚加载时，问一句「现在在放什么」 */
 setTimeout(function () { try { window.NotifyOthers('lx_now_request', true); } catch (e) { } }, 1500);
+/* 同样问一次 Lxbox 的艺术家缓存目录（自定义外部目录时尤其需要） */
+setTimeout(function () { try { window.NotifyOthers('lx_cache_dir_request', true); } catch (e) { } }, 1800);
+setTimeout(function () { try { window.NotifyOthers('lx_cache_dir_request', true); } catch (e) { } }, 4500);
+

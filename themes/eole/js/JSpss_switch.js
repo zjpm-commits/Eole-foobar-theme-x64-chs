@@ -1,4 +1,26 @@
 ﻿var settings_file_not_found = false;
+var g_settings_file_index = null;
+
+/* All 34 settings of a panel used to run utils.Glob(prefix + "*") once each,
+   i.e. one directory scan per setting. Build one snapshot of SettingsPath and
+   filter it in memory instead; every setting still behaves the same. */
+function getSettingsFilesForPrefix(prefix) {
+	if (g_settings_file_index === null) {
+		try { g_settings_file_index = utils.Glob(SettingsPath + "*"); }
+		catch (e) { g_settings_file_index = []; }
+		if (!g_settings_file_index) g_settings_file_index = [];
+	}
+	var result = [];
+	for (var i = 0; i < g_settings_file_index.length; i++) {
+		var path = g_settings_file_index[i];
+		var slash = path.lastIndexOf('\\');
+		if (slash < 0) slash = path.lastIndexOf('/');
+		var name = path.substring(slash + 1);
+		if (name.substring(0, prefix.length) === prefix) result.push(path);
+	}
+	result.sort();
+	return result;
+}
 	
 oPanelSetting = function (name, file_prefix, default_value, min_value, max_value, int_value, update_settings_file_not_found) {
 	this.name = name;	
@@ -9,19 +31,22 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 	this.int_value = typeof int_value !== 'undefined' ? int_value : true;	
 	this.update_settings_file_not_found = typeof update_settings_file_not_found !== 'undefined' ? update_settings_file_not_found : true;	
 	this.getFileValue = function () {		
-		setting_file = utils.Glob(SettingsPath+""+this.file_prefix+"*");
+		var setting_file = getSettingsFilesForPrefix(this.file_prefix);
 		if(setting_file.length>=1){
-			last_underscore = setting_file[0].lastIndexOf('_');
+			var last_underscore = setting_file[0].lastIndexOf('_');
 			this.value = setting_file[0].substring(last_underscore + 1);
 			if(this.int_value) this.value = parseInt(this.value);
 			if(setting_file.length>1){
-				for(i=1;i<setting_file.length;i++) {
+				for(var i=1;i<setting_file.length;i++) {
 					g_files.DeleteFile(setting_file[i]);
 				}
+				g_settings_file_index = null;
 			}
 		} else {
 			this.value = this.default_value;
-			g_files.CreateTextFile(SettingsPath+this.file_prefix+this.value, true).Close();
+			var new_path = SettingsPath+this.file_prefix+this.value;
+			g_files.CreateTextFile(new_path, true).Close();
+			if (g_settings_file_index) g_settings_file_index.push(new_path);
 			if(this.update_settings_file_not_found) {
 				settings_file_not_found = true;	
 			}
@@ -42,6 +67,7 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 		if(g_files.FileExists(SettingsPath+this.file_prefix+new_value)) g_files.DeleteFile(SettingsPath+this.file_prefix+new_value);
 		if(!g_files.FileExists(SettingsPath+this.file_prefix+this.value)) g_files.CreateTextFile(SettingsPath+this.file_prefix+this.value, true).Close();	
 		g_files.MoveFile(SettingsPath + this.file_prefix + this.value,SettingsPath + this.file_prefix + new_value);
+		g_settings_file_index = null;
 		g_avoid_on_metadb_changed = true;
 		this.value = new_value;
 		window.NotifyOthers("g_avoid_on_metadb_changed",true);			

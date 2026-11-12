@@ -8,7 +8,6 @@
 	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
 	showwallpaper: window.GetProperty("显示·显示壁纸", true),
 	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-	wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
 	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
 	wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0)
 }
@@ -19,7 +18,6 @@ var g_avoid_on_playlist_items_removed = false;
 var settings_off,settings_hover;
 var showTitleTooltip = false;
 var g_pinfo = null;
-var g_wallpaperImg = null;
 var margin_left=25;
 var rightpadding=6;
 
@@ -588,7 +586,7 @@ function draw_menu(x, y) {
         window.ShowConfigure();
         break;
     case (idx == 5102):
-        window.Reload();
+        reloadPanelSafe();
         break;
     }
     basemenu = undefined;
@@ -785,7 +783,6 @@ playlistInfo = function(){
 		this.main_txt_width = -1;
 	}
 	this.refresh = function(populate_list,call_id) {
-		console.log("--> refresh MainPlaylist Header populate_list:"+populate_list+" call_id:"+call_id)
 		if(populate_list) {
 			this.populate();
 		} else {
@@ -812,7 +809,6 @@ playlistInfo = function(){
 function on_size(w, h) {
     ww = w;
     wh = h;
-	g_wallpaperImg = null;
 	positionButtons();
 }
 
@@ -830,10 +826,10 @@ function on_paint(gr) {
 
 
 	if(g_pinfo.items_width < 0) {
-		g_pinfo.items_width = gr.CalcTextWidth(`${g_pinfo.time_txt} ${g_pinfo.items_txt}`, g_font.italic);
+		g_pinfo.items_width = gr.CalcTextWidth(`${g_pinfo.time_txt} ${g_pinfo.items_txt}`, g_font.normal);
 	}
 	if(g_pinfo.main_txt_width < 0) {
-		g_pinfo.main_txt_width = gr.CalcTextWidth(g_pinfo.main_txt, g_font.italicplus2);
+		g_pinfo.main_txt_width = gr.CalcTextWidth(g_pinfo.main_txt, g_font.plus2);
 	}
 
 	if (properties.displayToggleBtns) {
@@ -844,8 +840,8 @@ function on_paint(gr) {
 		time_txt_right_margin = 115;
 	}
 
-	gr.GdiDrawText(g_pinfo.main_txt, g_font.italicplus2, colors.normal_txt, margin_left, 1, main_txt_space, wh - 2, DT_VCENTER | DT_END_ELLIPSIS | DT_CALCRECT | DT_NOPREFIX);
-	gr.GdiDrawText(g_pinfo.time_txt+((g_pinfo.time_txt !== "") ? ", " : "") + g_pinfo.items_txt, g_font.italic, colors.faded_txt, 53, 0, ww - time_txt_right_margin, wh, DT_VCENTER | DT_END_ELLIPSIS | DT_RIGHT | DT_CALCRECT | DT_NOPREFIX);
+	gr.GdiDrawText(g_pinfo.main_txt, g_font.plus2, colors.normal_txt, margin_left, 1, main_txt_space, wh - 2, DT_VCENTER | DT_END_ELLIPSIS | DT_CALCRECT | DT_NOPREFIX);
+	gr.GdiDrawText(g_pinfo.time_txt+((g_pinfo.time_txt !== "") ? ", " : "") + g_pinfo.items_txt, g_font.normal, colors.faded_txt, 53, 0, ww - time_txt_right_margin, wh, DT_VCENTER | DT_END_ELLIPSIS | DT_RIGHT | DT_CALCRECT | DT_NOPREFIX);
 
 	showTitleTooltip = (g_pinfo.main_txt_width >  main_txt_space);
 
@@ -916,6 +912,19 @@ function on_key_down(vkey) {
 		};
 	}
 };
+function repaintHeaderButtons(a, b) {
+	var rects = [];
+	var list = [a, b];
+	for (var i = 0; i < list.length; i++) {
+		var btn = list[i];
+		if (!btn) continue;
+		if (!(btn.w > 0) || !(btn.h > 0) || btn.x < 0 || btn.y < 0) { window.Repaint(); return; }
+		rects.push([btn.x, btn.y, btn.w, btn.h]);
+	}
+	for (var j = 0; j < rects.length; j++) {
+		window.RepaintRect(rects[j][0], rects[j][1], rects[j][2], rects[j][3]);
+	}
+}
 function on_mouse_move(x, y, m) {
 	if(g_cursor.x==x && g_cursor.y==y) return;
 	g_cursor.onMouse("move", x, y, m);
@@ -936,19 +945,16 @@ function on_mouse_move(x, y, m) {
         cur_btn.changeState(ButtonStates.down);
         return;
     } else if(plman.PlaylistItemCount(plman.ActivePlaylist)>0) {
-		var repaint = false;
         if(old){
 			old.changeState(ButtonStates.normal);
 			old.onMouse("move", x, y);
-			repaint = true;
 		}
         if(cur_btn){
 			cur_btn.changeState(ButtonStates.hover);
 			cur_btn.onMouse("move", x, y);
-			repaint = true;
 		}
 		else g_tooltip.Deactivate();
-        if(repaint) window.Repaint();
+        repaintHeaderButtons(old, cur_btn);
     }
 }
 function is_hover_title(x,y){
@@ -961,7 +967,7 @@ function on_mouse_leave() {
     if (cur_btn) {
         cur_btn.changeState(ButtonStates.normal);
 		cur_btn.onMouse("leave", -1, -1);
-        window.Repaint();
+        repaintHeaderButtons(cur_btn, null);
         cur_btn=null;
     }
 }
@@ -970,7 +976,7 @@ function on_mouse_lbtn_down(x, y) {
     if (cur_btn_down && plman.PlaylistItemCount(plman.ActivePlaylist)>0) {
 		g_down = true;
         cur_btn_down.changeState(ButtonStates.down);
-        window.Repaint();
+        repaintHeaderButtons(cur_btn_down, null);
     }
 }
 function on_mouse_lbtn_up(x, y) {
@@ -991,12 +997,10 @@ function on_mouse_lbtn_dblclk(x,y){
     plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist,0);
 }
 function on_playback_new_track(metadb) {
-	g_wallpaperImg = null;
 	window.Repaint();
 }
 
 function on_playback_stop(reason) {
-	g_wallpaperImg = null;
 	window.Repaint();
 }
 
@@ -1020,10 +1024,10 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "set_font":
 			globalProperties.fontAdjustement = info;

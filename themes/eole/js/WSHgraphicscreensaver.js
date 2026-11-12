@@ -53,8 +53,6 @@ var g_flash_idx = -1;
 var gTime_covers = null;
 var g_image_cache = false;
 
-var g_wallpaperImg = null;
-var update_wallpaper = false;
 var g_hiddenLoadTimer = false;
 var LibraryItems_counter = 0;
 var WshShell = new ActiveXObject("WScript.Shell")
@@ -125,7 +123,6 @@ var properties = {
 	darklayout: window.GetProperty("显示·深色布局", true),
 	showwallpaper: window.GetProperty("显示·显示壁纸", true),
     wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
     wallpapermode: window.GetProperty("系统·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
 	show_covers_progress: window.GetProperty("封面·显示加载进度", true),
@@ -323,7 +320,7 @@ oFilterBox = function() {
 	}
 
 	this.on_init = function() {
-		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "筛选以下分组...", colors.normal_txt, 0, 0, colors.selected_bg, g_sendResponse, "brw", undefined, "g_font.italicplus2");
+		this.inputbox = new oInputbox(cFilterBox.w, cFilterBox.h, "", "筛选以下分组...", colors.normal_txt, 0, 0, colors.selected_bg, g_sendResponse, "brw", undefined, "g_font.plus2");
         this.inputbox.autovalidation = true;
 		this.inputbox.visible = true;
 		this.getImages();
@@ -484,7 +481,7 @@ oPlaylistManager = function (parentObjName) {
 		if(this.ishoverHeader)
 			gr.GdiDrawText("创建新播放列表", g_font.normal, colors.normal_txt, this.x+20, this.y+17, this.w-20, this.headerHeight, DT_VCENTER | DT_NOPREFIX);
 		else
-			gr.GdiDrawText("拖放到播放列表：", g_font.italicplus1, colors.normal_txt, this.x+20, this.y+17, this.w-20, this.headerHeight, DT_VCENTER | DT_NOPREFIX);
+			gr.GdiDrawText("拖放到播放列表：", g_font.plus1, colors.normal_txt, this.x+20, this.y+17, this.w-20, this.headerHeight, DT_VCENTER | DT_NOPREFIX);
 
         // if drag over playlist header => add items to a new playlist
          if((g_dragA || g_dragR) && this.ishoverHeader) {
@@ -674,7 +671,6 @@ oRow = function(metadb,itemIndex) {
 	this.textTop = 2;
 	this.showToolTip = false;
     this.h = this.textHeight + this.textBot;
-    this.g_wallpaperImg = null;
 	this.isSelected = false;
 	this.select_on_mouse_up = false;
 	this.hover_rating = -1;
@@ -832,10 +828,6 @@ oRow = function(metadb,itemIndex) {
 				var playingText = gdi.CreateImage(this.w+10, this.h);
 				pt = playingText.GetGraphics();
 					pt.SetTextRenderingHint(5);
-					if(typeof(this.g_wallpaperImg) == "undefined" || !this.g_wallpaperImg) {
-						this.g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, g_showlist.pl[0], true, ww, this.h*16,properties.wallpaperblurvalue,false);
-					};
-					pt.DrawImage(this.g_wallpaperImg, 10, 0, this.w,  this.h, 0, 0, this.g_wallpaperImg.Width, this.h);
 					pt.FillSolidRect(10, 0, this.w,  this.h,colors.albumartprogressbar_overlay)
 					if(elapsed_seconds%2==0)
 						pt.DrawImage(now_playing_progress0, 12, Math.round(this.h/2-now_playing_progress0.Height/2), now_playing_progress0.Width, now_playing_progress0.Height, 0, 0, now_playing_progress0.Width, now_playing_progress0.Height,0,255);
@@ -1484,21 +1476,9 @@ oShowList = function(parentPanelName) {
 				this.getColorSchemeFromImage(brw.groups_draw[this.idx].cover_img);
 			else
 				this.getColorSchemeFromImage(brw.groups_draw[this.idx].cover_img_thumb);
-			if(typeof(this.g_wallpaperImg) == "undefined" || !this.g_wallpaperImg) {
-				this.g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, this.pl[0], true, this.w + g_scrollbar.w, this.h+100, 0.8, false, 2);
-			}
 		} else if(properties.showListColoredBlurred) {
 			this.light_bg = false;
-			if(typeof(this.g_wallpaperImg) == "undefined" || !this.g_wallpaperImg) {
-				this.g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, this.pl[0], true, this.w + g_scrollbar.w, this.h+100, 0.8, false, 2);
-				try{
-					g_wallpaperImg_main_color = this.g_wallpaperImg.GetColourScheme(1);
-					this.colorSchemeBack = blendColors(g_wallpaperImg_main_color[0],RGB(0,0,0),0.4);
-					this.colorSchemeOverlay = setAlpha(blendColors(this.colorSchemeBack,RGB(0,0,0),0.4),140);
-				} catch(e){
-					this.colorSchemeBack = GetGrey(0);
-				}
-			}
+			this.colorSchemeBack = GetGrey(0);
 			this.setColors();
 		} else {
 			if(properties.darklayout) this.light_bg = false;
@@ -1606,10 +1586,6 @@ oShowList = function(parentPanelName) {
 		this.CoverSize = properties.showlistCoverMaxSize;
 
 		var playlist = brw.groups_draw[idx].pl;
-
-		try{
-			if(this.pl[0].RawPath!=playlist[0].RawPath) this.g_wallpaperImg = null;
-		}catch(e){this.g_wallpaperImg = null}
 
         this.pl = playlist;
 
@@ -1744,24 +1720,7 @@ oShowList = function(parentPanelName) {
 
                 var slh = Math.floor(this.delta_ < (this.marginTop+this.marginBot) ? 0 : this.delta_ - (this.marginTop+this.marginBot));
 
-				if(properties.showListColoredBlurred) {
-					try {
-						gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
-					} catch(e) {
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					}
-				}
-				else if(properties.showListColoredMixedColor) {
-					try {
-						if((this.h-this.delta_)<40) {
-							gr.DrawImage(this.g_wallpaperImg, this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, 0, 0, this.g_wallpaperImg.Width, this.g_wallpaperImg.Height);
-							gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
-						} else gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					} catch(e) {
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					}
-				} else gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
+				gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
 
                 if(slh > 0) {
                     // draw Album Selected Arrow
@@ -1843,12 +1802,12 @@ oShowList = function(parentPanelName) {
 					if(this.genreTextLenght==0) this.genreTextLenght = gr.CalcTextWidth(genreText,g_font.normal);
 					if(this.timeTextLenght==0) this.timeTextLenght = gr.CalcTextWidth(this.length+',  '+this.total_tracks,g_font.normal);
 
-                    gr.GdiDrawText(this.firstRowInfo, g_font.italicplus5, this.colorSchemeText, tx+4, ty, this.w - this.MarginRight - 40 - this.timeTextLenght, 5+g_fsize, DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                    gr.GdiDrawText(this.firstRowInfo, g_font.plus5, this.colorSchemeText, tx+4, ty, this.w - this.MarginRight - 40 - this.timeTextLenght, 5+g_fsize, DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                     gr.GdiDrawText(this.secondRowInfo, g_font.plus2, this.colorSchemeTextFaded, tx+4, ty + 8+g_fsize, this.w - this.MarginRight - 25 - this.genreTextLenght, 5+g_fsize, DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                     gr.GdiDrawText(this.length+',  '+this.total_tracks, g_font.normal, this.colorSchemeTextFaded, (brw.groups_draw.length>1) ? tx-32 : tx-13, ty-2, this.text_w, 5+g_fsize, DT_RIGHT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                     gr.GdiDrawText(genreText, g_font.normal,this.colorSchemeTextFaded, tx-13, ty + 5+g_fsize, this.text_w, 5+g_fsize, DT_RIGHT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-					if(typeof this.firstRowInfoLength == 'undefined') this.firstRowInfoLength = gr.CalcTextWidth(this.firstRowInfo,g_font.italicplus5);
+					if(typeof this.firstRowInfoLength == 'undefined') this.firstRowInfoLength = gr.CalcTextWidth(this.firstRowInfo,g_font.plus5);
 					if(typeof this.secondRowInfoLength == 'undefined') this.secondRowInfoLength = gr.CalcTextWidth(this.secondRowInfo,g_font.plus2);
 
 					this.TopInfoY = ty;
@@ -1953,17 +1912,17 @@ oHeaderbar = function(name) {
 		brw.drawResizeButton(gr,ww-this.rightpadding-5-this.MarginRight,Math.round((this.h-brw.resize_bt.img[0].Height)/2));
 
 		if(this.RightTextLength<0) {
-			this.RightTextLength = gr.CalcTextWidth(this.itemsTxt+this.timeTxt,g_font.italicmin2);
+			this.RightTextLength = gr.CalcTextWidth(this.itemsTxt+this.timeTxt,g_font.min2);
 			if(properties.showFilterBox) g_filterbox.setSize(ww-120-this.rightpadding-this.RightTextLength-this.MarginRight, cFilterBox.h, g_fsize+1);
 		}
 
 		if(!properties.showFilterBox)
-			gr.GdiDrawText(this.mainTxt, g_font.italicplus2, colors.normal_txt, this.MarginLeft+this.btn_right_margin, 1, ww-120-this.rightpadding-this.RightTextLength-this.MarginRight, this.h-2, DT_VCENTER | DT_END_ELLIPSIS | DT_CALCRECT | DT_NOPREFIX);
+			gr.GdiDrawText(this.mainTxt, g_font.plus2, colors.normal_txt, this.MarginLeft+this.btn_right_margin, 1, ww-120-this.rightpadding-this.RightTextLength-this.MarginRight, this.h-2, DT_VCENTER | DT_END_ELLIPSIS | DT_CALCRECT | DT_NOPREFIX);
 
 		if(covers_loading_progress<101 && properties.show_covers_progress)
-			gr.GdiDrawText("封面加载进度："+covers_loading_progress+"%", g_font.italic, colors.faded_txt, 24, 0, ww-50-this.rightpadding-this.MarginRight, this.h-2, DT_VCENTER | DT_RIGHT | DT_WORDBREAK | DT_CALCRECT | DT_NOPREFIX);
+			gr.GdiDrawText("封面加载进度："+covers_loading_progress+"%", g_font.normal, colors.faded_txt, 24, 0, ww-50-this.rightpadding-this.MarginRight, this.h-2, DT_VCENTER | DT_RIGHT | DT_WORDBREAK | DT_CALCRECT | DT_NOPREFIX);
 		else
-			gr.GdiDrawText(this.timeTxt+this.itemsTxt, g_font.italic, colors.faded_txt, 24, 0, ww-50-this.rightpadding-this.MarginRight, this.h-2, DT_VCENTER | DT_RIGHT | DT_WORDBREAK | DT_CALCRECT | DT_NOPREFIX);
+			gr.GdiDrawText(this.timeTxt+this.itemsTxt, g_font.normal, colors.faded_txt, 24, 0, ww-50-this.rightpadding-this.MarginRight, this.h-2, DT_VCENTER | DT_RIGHT | DT_WORDBREAK | DT_CALCRECT | DT_NOPREFIX);
 	}
 	this.isHover_Settings = function(x,y){
 		if(x>this.MarginLeft-7 && x<this.MarginLeft+23 && y>this.padding_top && y<this.padding_top+23) return true;
@@ -2121,7 +2080,7 @@ oHeaderbar = function(name) {
                 draw_settings_menu(x,y);
                 break;
             case (idx == 5):
-                window.Reload();
+                reloadPanelSafe();
                 break;
             case (idx == 6):
                 window.ShowConfigure();
@@ -2233,7 +2192,7 @@ oHeaderbar = function(name) {
 				window.ShowConfigure();
 				break;
 			case (idx == 3102):
-				window.Reload();
+				reloadPanelSafe();
 				break;
 		}
 		basemenu = undefined;
@@ -2341,7 +2300,7 @@ function draw_settings_menu(x,y){
 
 	switch (true) {
 		case (idx == 5):
-			window.Reload();
+			reloadPanelSafe();
 			break;
 		case (idx == 6):
 			window.ShowConfigure();
@@ -2399,7 +2358,6 @@ function draw_settings_menu(x,y){
 			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
 			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
 			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
-			g_showlist.g_wallpaperImg = null;
 			g_showlist.reset();
 			brw.repaint();
 			break;
@@ -2411,7 +2369,6 @@ function draw_settings_menu(x,y){
 			window.SetProperty("曲目列表·按封面取色(主色)", properties.showListColoredOneColor);
 			window.SetProperty("曲目列表·按封面取色(模糊)", properties.showListColoredBlurred);
 			window.SetProperty("曲目列表·按封面取色(混合)", properties.showListColoredMixedColor);
-			g_showlist.g_wallpaperImg = null;
 			g_showlist.reset();
 			brw.repaint();
 			break;
@@ -2538,46 +2495,39 @@ function draw_settings_menu(x,y){
 			properties.wallpapermode = 99;
 			on_colours_changed();
 			window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-			if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 211):
 			properties.wallpapermode = 0;
 			on_colours_changed();
 			window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-			if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 220):
 			properties.wallpaperblurred = !properties.wallpaperblurred;
 			on_colours_changed();
 			window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 221):
 			properties.wallpaperdisplay = 0;
 			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 222):
 			properties.wallpaperdisplay = 1;
 			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 223):
 			properties.wallpaperdisplay = 2;
 			window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 			brw.repaint();
 			break;
 		case (idx == 224):
 			properties.darklayout = false;
 			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
 			window.NotifyOthers('screensaver_dark_theme',properties.darklayout);
 			break;
@@ -2585,7 +2535,6 @@ function draw_settings_menu(x,y){
 			properties.darklayout = true;
 			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
 			window.NotifyOthers('screensaver_dark_theme',properties.darklayout);
 			break;
@@ -2598,342 +2547,7 @@ function draw_settings_menu(x,y){
 	_menuRating = undefined;
 	_menuBackground = undefined;
 }
-oScrollbar = function(parentObjectName) {
-    this.parentObjName = parentObjectName;
-	this.isVisible=false;
-	this.cursorHeight=0
-    this.buttons = Array(null, null, null);
-    this.draw = function(gr, x, y) {
-        // draw background and buttons up & down
 
-        // draw up & down buttons
-
-        // draw cursor
-        this.buttons[cScrollBar.ButtonType.cursor].draw(gr, this.x, this.cursorPos, 255);
-    }
-	this.get_h_tot = function(){
-		if(g_showlist.idx>-1) {
-			if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.50){
-				return brw.rowHeight*brw.rowsCount + g_showlist.h - g_showlist.h%brw.rowHeight + brw.rowHeight;
-			} else {
-				if(g_showlist.h%brw.rowHeight<20)
-					return brw.rowHeight*brw.rowsCount + g_showlist.h - g_showlist.h%brw.rowHeight;
-				else
-					return brw.rowHeight*brw.rowsCount + g_showlist.h
-			}
-		} else {
-			if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.60){
-				return brw.rowHeight*brw.rowsCount + brw.rowHeight;
-			} else {
-				return brw.rowHeight*brw.rowsCount;
-			}
-		}
-	}
-	this.get_h_vis = function(){
-		return brw.totalRowsVis*brw.rowHeight;
-	}
-	this.check_scroll = function(scroll_to_check){
-		h_vis = this.get_h_vis();
-		h_tot = this.get_h_tot();
-
-		if(scroll_to_check!=0 && scroll_to_check > h_tot - h_vis) {
-			scroll_to_check = h_tot - h_vis;
-		}
-		if(scroll_to_check < 0) scroll_to_check =  0;
-		return scroll_to_check;
-	}
-	this.setCursor = function(h_vis, h_tot, offset) {
-		if(!ww || !wh || wh < 100) {
-			return true;
-		}
-
-		h_vis = this.get_h_vis();
-		h_tot = this.get_h_tot();
-
-		if((h_tot > h_vis) && this.w > 2) {
-			this.isVisible=true;
-			this.cursorWidth = this.w;
-			this.cursorWidthNormal = this.wnormal;
-			// calc cursor height
-			prevCursorHeight = this.cursorHeight
-			this.cursorHeight = Math.round((h_vis / h_tot) * this.area_h);
-			if(this.cursorHeight < cScrollBar.minHeight) this.cursorHeight = cScrollBar.minHeight;
-			// cursor pos
-			var ratio = offset / (h_tot - h_vis);
-
-			this.cursorPos = this.area_y + Math.round((this.area_h - this.cursorHeight) * ratio);
-			if (typeof this.buttons[0] === 'undefined' || this.buttons[0] == null || prevCursorHeight!=this.cursorHeight) {
-				this.setCursorButton();
-			}
-		} else if(brw.finishLoading) {
-			this.isVisible=false;
-			scroll = 0;
-		}
-	}
-	this.cursor_total_height = function() {
-		try{
-			if(g_showlist.idx>-1){
-				if((window.Height-brw.headerBarHeight)%brw.rowHeight+g_showlist.h<colors.fading_bottom_height*0.66) {
-					return g_showlist.h + (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight - g_showlist.h%brw.rowHeight + brw.rowHeight;
-				} else {
-					return g_showlist.h + (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight
-				}
-			} else {
-				if((window.Height-brw.headerBarHeight)%brw.rowHeight<colors.fading_bottom_height*0.66){
-					return (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight+brw.rowHeight;
-				} else {
-					return (brw.headerBarHeight)-(brw.headerBarHeight)%brw.rowHeight;
-				}
-			}
-		} catch (e){}
-	}
-
-    this.setCursorButton = function() {
-        // normal cursor Image
-        this.cursorImage_normal = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
-        var gb = this.cursorImage_normal.GetGraphics();
-			gb.FillSolidRect(this.cursorWidth-this.cursorWidthNormal-1, cScrollBar.marginTop-1, this.cursorWidthNormal, this.cursorHeight-cScrollBar.marginTop-cScrollBar.marginBottom+3, colors.scrollbar_cursor_outline);
-			gb.FillSolidRect(this.cursorWidth-this.cursorWidthNormal, cScrollBar.marginTop, this.cursorWidthNormal-2, this.cursorHeight-cScrollBar.marginTop-cScrollBar.marginBottom+1, colors.scrollbar_normal_cursor);
-        this.cursorImage_normal.ReleaseGraphics(gb);
-
-        // hover cursor Image
-        this.cursorImage_hover = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
-        gb = this.cursorImage_hover.GetGraphics();
-			gb.FillSolidRect(this.cursorWidth-cScrollBar.hoverWidth-1,0, cScrollBar.hoverWidth+2,this.cursorHeight+2,colors.scrollbar_cursor_outline);
-			gb.FillSolidRect(this.cursorWidth-cScrollBar.hoverWidth,1, cScrollBar.hoverWidth,this.cursorHeight,colors.scrollbar_hover_cursor);
-        this.cursorImage_hover.ReleaseGraphics(gb);
-
-        // down cursor Image
-        this.cursorImage_down = gdi.CreateImage(this.cursorWidth, this.cursorHeight+2);
-        gb = this.cursorImage_down.GetGraphics();
-			gb.FillSolidRect(this.cursorWidth-cScrollBar.downWidth-1,0, cScrollBar.downWidth+2,this.cursorHeight+2,colors.scrollbar_cursor_outline);
-			gb.FillSolidRect(this.cursorWidth-cScrollBar.downWidth,1, cScrollBar.downWidth,this.cursorHeight,colors.scrollbar_down_cursor);
-        this.cursorImage_down.ReleaseGraphics(gb);
-
-        // create/refresh cursor Button in buttons array
-        this.buttons[cScrollBar.ButtonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down,"scrollbarcursor");
-    }
-
-    this.setButtons = function() {
-        // normal scroll_up Image
-        this.upImage_normal = gdi.CreateImage(this.w, this.w);
-        var gb = this.upImage_normal.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
-
-        this.upImage_normal.ReleaseGraphics(gb);
-
-        // hover scroll_up Image
-        this.upImage_hover = gdi.CreateImage(this.w, this.w);
-        gb = this.upImage_hover.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
-
-        this.upImage_hover.ReleaseGraphics(gb);
-
-        // down scroll_up Image
-        this.upImage_down = gdi.CreateImage(this.w, this.w);
-        gb = this.upImage_down.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, 10, mid_x - 1, 05, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, 06, mid_x + 2, 10, 2.0, colors.scrollbar_normal_cursor);
-
-        this.upImage_down.ReleaseGraphics(gb);
-
-        // normal scroll_down Image
-        this.downImage_normal = gdi.CreateImage(this.w, this.w);
-        gb = this.downImage_normal.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
-
-        this.downImage_normal.ReleaseGraphics(gb);
-
-        // hover scroll_down Image
-        this.downImage_hover = gdi.CreateImage(this.w, this.w);
-        gb = this.downImage_hover.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
-
-        this.downImage_hover.ReleaseGraphics(gb);
-
-        // down scroll_down Image
-        this.downImage_down = gdi.CreateImage(this.w, this.w);
-        gb = this.downImage_down.GetGraphics();
-        // Draw Themed Scrollbar (lg/col)
-		gb.SetSmoothingMode(2);
-		var mid_x = Math.round(this.w / 2);
-		gb.DrawLine(mid_x - 5, this.w - 11, mid_x - 1, this.w - 06, 2.0, colors.scrollbar_normal_cursor);
-		gb.DrawLine(mid_x - 1, this.w - 07, mid_x + 2, this.w - 11, 2.0, colors.scrollbar_normal_cursor);
-
-        this.downImage_down.ReleaseGraphics(gb);
-
-        for(i = 1; i < this.buttons.length; i++) {
-            switch(i) {
-            case cScrollBar.ButtonType.cursor:
-                this.buttons[cScrollBar.ButtonType.cursor] = new button(this.cursorImage_normal, this.cursorImage_hover, this.cursorImage_down,"scrollbarcursor");
-                break;
-            case cScrollBar.ButtonType.up:
-                this.buttons[cScrollBar.ButtonType.up] = new button(this.upImage_normal, this.upImage_hover, this.upImage_down,"scrollbarup");
-                break;
-            case cScrollBar.ButtonType.down:
-                this.buttons[cScrollBar.ButtonType.down] = new button(this.downImage_normal, this.downImage_hover, this.downImage_down,"scrollbardown");
-                break;
-            };
-        };
-    };
-
-    this.setSize = function(x, y, whover, h, wnormal) {
-		this.x = x;
-		this.y = y + (brw.headerBarHeight-g_headerbar.white_space);
-		this.w = cScrollBar.activeWidth;
-		this.wnormal = wnormal;
-		this.h = h - (brw.headerBarHeight-g_headerbar.white_space);
-		// scrollbar area for the cursor (<=> scrollbar height minus up & down buttons height)
-		this.area_y = this.y;
-		this.area_h = this.h;
-
-        this.setButtons();
-    }
-
-	this.setOffsetFromCursorPos = function() {
-        // calc ratio of the scroll cursor to calc the equivalent item for the full playlist (with gh)
-        var ratio = (this.cursorPos - this.area_y) / (this.area_h - this.cursorHeight);
-        // calc idx of the item (of the full playlist with gh) to display at top of the panel list (visible)
-        var newOffset = Math.round(((brw.rowsCount +  Math.round(g_showlist.delta)) - brw.totalRowsVis) * ratio);
-        return newOffset;
-    }
-
-    this.cursorCheck = function(event, x, y) {
-
-        this.ishover = (x >= this.x && x <= this.x + this.w && y >= this.cursorPos && y <= (this.cursorPos + this.cursorHeight));
-
-		if(!this.buttons[0]) return;
-
-        switch(event) {
-        case "down":
-			this.buttons[0].checkstate(event, x, y);
-            if(this.ishover) {
-                this.cursorClickX = x;
-                this.cursorClickY = y;
-                this.cursorDrag = true;
-                this.cursorDragDelta = y - this.cursorPos;
-				this.cursorPrevY = y;
-            }
-            break;
-        case "up":
-			this.buttons[0].checkstate(event, x, y);
-            if(this.cursorDrag) {
-
-				if(g_showlist.y<0 && g_showlist.idx>-1) {
-					if(((scroll-g_showlist.h)%brw.rowHeight)/brw.rowHeight<0.5)
-						scroll = scroll - (scroll-g_showlist.h)%brw.rowHeight;
-					else
-						scroll = scroll + (brw.rowHeight-(scroll-g_showlist.h)%brw.rowHeight);
-				}
-				else  {
-					if((scroll%brw.rowHeight)/brw.rowHeight<0.5)
-						scroll = scroll - scroll%brw.rowHeight;
-					else scroll = scroll + (brw.rowHeight-scroll%brw.rowHeight);
-				}
-            }
-            this.cursorClickX = 0;
-            this.cursorClickY = 0;
-			this.cursorPrevY = 0;
-			this.cursorDragDelta = 0;
-            this.cursorDrag = false;
-			this.repaint();
-            break;
-        case "move":
-
-			this.buttons[0].checkstate(event, x, y);
-
-            if(this.cursorDrag) {
-				scroll += (y - this.cursorPrevY)*((brw.rowsCount/brw.totalRowsVis<1)?1:brw.rowsCount/brw.totalRowsVis);
-				scroll = g_scrollbar.check_scroll(scroll);
-				this.setCursor(brw.totalRowsVis*brw.rowHeight, brw.rowHeight*brw.rowsCount, scroll_);
-				this.cursorPrevY = y
-            }
-            break;
-		case "leave":
-			this.buttons[0].checkstate(event, x, y);
-			break;
-		default:
-        }
-    }
-
-	this.check = function(event, x, y) {
-		this.hover = (x >= this.x && x <= this.x + this.w && y > this.area_y && y < this.area_y + this.area_h);
-
-		// check cursor
-		this.cursorCheck(event, x, y);
-
-		// check other buttons
-		var totalButtonToCheck = 1;
-		for(var i = 1; i < totalButtonToCheck; i++) {
-			switch(event) {
-				case "dblclk":
-					switch(i) {
-						case 1: // up button
-							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
-								brw.buttonclicked = true;
-								this.buttons[i].checkstate("down", x, y);
-                                on_mouse_wheel(1);
-							}
-							break;
-						case 2: // down button
-							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.hover) {
-								brw.buttonclicked = true;
-								this.buttons[i].checkstate("down", x, y);
-                                on_mouse_wheel(-1);
-							}
-							break;
-					}
-					break;
-				case "down":
-					switch(i) {
-						case 1: // up button
-							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
-								brw.buttonclicked = true;
-                                on_mouse_wheel(1);
-
-							}
-							break;
-						case 2: // down button
-							if(this.buttons[i].checkstate(event, x, y) == ButtonStates.down) {
-								brw.buttonclicked = true;
-                                on_mouse_wheel(-1);
-
-							}
-							break;
-					}
-					break;
-				case "up":
-					this.buttons[i].checkstate(event, x, y);
-					break;
-				default:
-					this.buttons[i].checkstate(event, x, y);
-			}
-		}
-	}
-
-    this.repaint = function() {
-		eval(this.parentObjName+".repaint()");
-    }
-}
 
 oBrowser = function(name) {
     this.name = name;
@@ -3386,7 +3000,6 @@ oBrowser = function(name) {
 		this.playlistName = plman.GetPlaylistName(this.SourcePlaylistIdx);
 		this.playlistItemCount = this.list.Count;
         // sort if custom sorting is present in window properties
-		console.log("--> populate GraphicScreensaver sorted:"+this.currently_sorted+" call_id:"+call_id)
 		if((force_sorting || properties.TFsorting_default.length > 0) && !this.dont_sort_on_next_populate)
 			 this.sortAccordingToProperties(force_sorting);
         this.get_albums();
@@ -3453,8 +3066,9 @@ oBrowser = function(name) {
 	}
 	this.GetAlbumCover_fast = function(idx){
 		idx = this.groups_draw[idx].idx;
-		this.groups[idx].cover_img = g_image_cache.hit(this.groups[idx].metadb, idx, false);
-		if (typeof this.groups[idx].cover_img !== "undefined" || this.groups[idx].cover_img!=null) {
+		var hit_img = g_image_cache.hit(this.groups[idx].metadb, idx, false, undefined, undefined, true);
+		if (isImage(hit_img)) {
+			this.groups[idx].cover_img = hit_img;
 			var gb;
 			var img = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
 			var cover_img = gdi.CreateImage(this.coverRealWith, this.coverRealWith);
@@ -3474,8 +3088,9 @@ oBrowser = function(name) {
 	}
 	this.GetAlbumCover_old = function(idx){
 		idx = this.groups_draw[idx].idx;
-		this.groups[idx].cover_img = g_image_cache.hit(this.groups[idx].metadb, idx, false);
-		if (typeof this.groups[idx].cover_img !== "undefined" || this.groups[idx].cover_img!=null) {
+		var hit_img = g_image_cache.hit(this.groups[idx].metadb, idx, false, undefined, undefined, true);
+		if (isImage(hit_img)) {
+			this.groups[idx].cover_img = hit_img;
 			this.groups[idx].cover_img_thumb = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
 		}
 	}
@@ -3486,7 +3101,7 @@ oBrowser = function(name) {
 		if (isImage(this.groups[idx].cover_img)) {
 			img_final = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
 		} else {
-			img_full = g_image_cache.hit(this.groups[idx].metadb, idx, false);
+			img_full = g_image_cache.hit(this.groups[idx].metadb, idx, false, undefined, undefined, true);
 			if (isImage(img_full)) {
 				this.groups[idx].cover_img = img_full;
 				img_final = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
@@ -3501,7 +3116,7 @@ oBrowser = function(name) {
 		if (isImage(this.groups[idx].cover_img)) {
 			img_thumb = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
 		} else {
-			img_full = g_image_cache.hit(this.groups[idx].metadb, idx, false, this.groups[idx].cachekey, false);
+			img_full = g_image_cache.hit(this.groups[idx].metadb, idx, false, this.groups[idx].cachekey, false, true);
 			if (isImage(img_full)) {
 				this.groups[idx].cover_img = img_full;
 				img_thumb = FormatCover(this.groups[idx].cover_img, this.coverRealWith, this.coverRealWith, false);
@@ -3782,7 +3397,7 @@ oBrowser = function(name) {
 							gr.GdiDrawText(this.groups_draw[i].firstRow, g_font.plus2, colors.normal_txt, ax, this.groups_draw[i].text_y, this.coverRealWith, 50+g_fsize, (properties.centerText?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(this.groups_draw[i].text_y+22>this.headerBarHeight)
-								gr.GdiDrawText(this.groups_draw[i].secondRow, g_font.italic, colors.faded_txt, ax, this.groups_draw[i].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, (properties.centerText?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
+								gr.GdiDrawText(this.groups_draw[i].secondRow, g_font.normal, colors.faded_txt, ax, this.groups_draw[i].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, (properties.centerText?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(typeof this.groups_draw[i].firstRowLength == 'undefined') this.groups_draw[i].firstRowLength = gr.CalcTextWidth(this.groups_draw[i].firstRow,g_font.plus2);
 							if(typeof this.groups_draw[i].secondRowLength == 'undefined') this.groups_draw[i].secondRowLength = gr.CalcTextWidth(this.groups_draw[i].secondRow,g_font.normal);
@@ -3881,22 +3496,22 @@ oBrowser = function(name) {
 				if(this.firstInitialisation) {
 					gr.GdiDrawText("加载中...", g_font.plus10, colors.normal_txt, px, py - 80, this.w, 35, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					gr.FillGradRect(this.w/2 -150, py-46, 300, 1, 0, colors.border_0, colors.border, 0.5);
-					gr.GdiDrawText("媒体库浏览器初始化", g_font.italicplus1, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("媒体库浏览器初始化", g_font.plus1, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				}
 				else {
 					var playlistname=plman.GetPlaylistName(this.SourcePlaylistIdx);
 					if(LibraryItems_counter<1){
 						gr.GdiDrawText("未找到音乐。",  g_font.plus10, colors.normal_txt, px, py - 80, this.w, 35, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 						gr.FillSolidRect(this.w/2 -125, py-46, 250, 1, colors.border);
-						gr.GdiDrawText("点击此处配置媒体库。", g_font.italicplus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText("点击此处配置媒体库。", g_font.plus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					} else if(playlistname==globalProperties.selection_playlist || playlistname==globalProperties.playing_playlist) {
 						gr.FillSolidRect(this.w/2 -150, py-46, 300, 1, colors.border);
 						gr.GdiDrawText(playlistname+" :",  g_font.plus10, colors.normal_txt, px, py - 80, this.w, 35, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-						gr.GdiDrawText("没有可显示的内容。", g_font.italicplus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText("没有可显示的内容。", g_font.plus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					} else {
 						gr.GdiDrawText(playlistname+" :", g_font.plus10, colors.normal_txt, px, py - 80, this.w, 35, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 						gr.FillSolidRect(this.w/2 -125, py-46, 250, 1, colors.border);
-						gr.GdiDrawText("此播放列表为空。", g_font.italicplus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText("此播放列表为空。", g_font.plus2, colors.faded_txt, px, py - 38, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					}
 				}
 
@@ -4680,16 +4295,12 @@ function toggleWallpaper(wallpaper_state){
 	properties.showwallpaper = wallpaper_state;
 	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	on_colours_changed();
-	if(properties.showwallpaper || properties.darklayout) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
-	}
 	brw.repaint();
 }
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = wallpaper_blur_state; on_colours_changed();
 	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-	if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	brw.repaint();
 }
 
@@ -4740,22 +4351,8 @@ function on_paint(gr) {
 		eval(Update_Required_function);
 		Update_Required_function = "";
 	}
-    if(properties.showwallpaper && (typeof(g_wallpaperImg) == "undefined" || !g_wallpaperImg || update_wallpaper)) {
-        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-		update_wallpaper = false;		
-    };
 	// draw background under playlist
-	if(fb.IsPlaying && g_wallpaperImg && properties.showwallpaper) {
-		gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-		gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-	} else {
-		if(g_wallpaperImg && properties.showwallpaper) {
-			gr.DrawImage(g_wallpaperImg, 0, 0, ww, wh, 0, 0, g_wallpaperImg.Width, g_wallpaperImg.Height);
-			gr.FillSolidRect(0, 0, ww, wh, (properties.wallpaperblurred)?colors.wallpaper_overlay_blurred:colors.wallpaper_overlay);
-		} else {
-			gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
-		}
-	}
+	gr.FillSolidRect(0, 0, ww, wh, colors.normal_bg);
 
     brw && brw.draw(gr);
 	gr.FillGradRect(0, wh-colors.fading_bottom_height, ww, colors.fading_bottom_height, 90, colors.grad_bottom_2,  colors.grad_bottom_1,1);
@@ -5190,7 +4787,7 @@ function on_mouse_rbtn_down(x, y){
                 draw_settings_menu(x,y);
                 break;
             case (idx == 5):
-                window.Reload();
+                reloadPanelSafe();
                 break;
             case (idx == 6):
                 window.ShowConfigure();
@@ -5580,8 +5177,6 @@ function get_colors() {
 		colors.cover_date_txt = GetGrey(0);
 		colors.cover_date_bg_fast = GetGrey(0,155);
 		colors.cover_date_txt_fast = GetGrey(255,155);
-		colors.dragcover_overlay = GetGrey(0,85);
-		colors.dragcover_rectline = GetGrey(255,40);
 		colors.dragcover_itemsbg = GetGrey(240,255);
 		colors.dragcover_itemstxt = GetGrey(0);
 
@@ -5605,7 +5200,6 @@ function get_colors() {
 		colors.grad_bottom_12 = GetGrey(0,15);
 		colors.grad_bottom_22 = GetGrey(0,0);
 
-		colors.faded_txt = GetGrey(140);
 		colors.not_played_txt = GetGrey(200);
 
 		colors.flash_bg = GetGrey(0,10);
@@ -5661,8 +5255,6 @@ function get_colors() {
 		colors.cover_date_txt = GetGrey(255,155);
 		colors.cover_date_bg_fast = GetGrey(0,155);
 		colors.cover_date_txt_fast = GetGrey(255,155);
-		colors.dragcover_overlay = GetGrey(0,85);
-		colors.dragcover_rectline = GetGrey(0,105);
 		colors.dragcover_itemsbg = GetGrey(20);
 		colors.dragcover_itemstxt = GetGrey(255);
 
@@ -5722,7 +5314,6 @@ function on_playback_stop(reason) {
 		case 1: // eof (e.g. end of playlist)
 			// update wallpaper
 			if(properties.showwallpaper && properties.wallpapermode == 0) {
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, null);
 			};
 			brw.repaint();
 			break;
@@ -5758,12 +5349,7 @@ function on_playback_new_track(metadb) {
 				}
 			}
 		}
-		if(properties.showwallpaper && properties.wallpapermode == 0) {
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
-		}
 		brw.repaint();
-	} else {
-		if(properties.wallpapermode == 0) update_wallpaper = true;
 	}
 }
 
@@ -5948,12 +5534,10 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "MemSolicitation":
-			globalProperties.mem_solicitation = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
-			window.Reload();
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -6038,7 +5622,6 @@ function on_notify_data(name, info) {
 			properties.darklayout = info;
 			window.SetProperty("显示·深色布局", properties.darklayout);
 			on_colours_changed();
-			if(properties.darklayout) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 			brw.repaint();
 		break;
 		case "wallpaperVisibility":
@@ -6070,7 +5653,7 @@ function on_notify_data(name, info) {
 			}
             break;
         case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
             break;
 		case "hereIsGenreList":
 			g_genre_cache=JSON_parse(info);

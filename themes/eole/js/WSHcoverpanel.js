@@ -692,7 +692,7 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 			break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
@@ -707,9 +707,7 @@ function on_notify_data(name, info) {
 			window.Repaint();
 		break;
 		case "MemSolicitation":
-			globalProperties.mem_solicitation = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
-			window.Reload();
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -877,7 +875,7 @@ function on_notify_data(name, info) {
 			window.Repaint();
 		break;
 		case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "hereIsGenreList":
 			g_genre_cache=JSON_parse(info);
@@ -976,7 +974,7 @@ function on_mouse_rbtn_up(x, y) {
         window.ShowConfigure();
         break;
       case 102:
-        window.Reload();
+        reloadPanelSafe();
         break;
       case 1:
         openCoverFullscreen(fb.GetNowPlaying(), g_cover.isFiller() ? null : g_cover.artwork);

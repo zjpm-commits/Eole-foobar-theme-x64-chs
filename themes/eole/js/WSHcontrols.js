@@ -9,7 +9,6 @@ var properties = {
 	showwallpaper: window.GetProperty("显示·显示壁纸", false),
     wallpapermode: window.GetProperty("系统·壁纸模式", 0),
     wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
     wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
     library_dark_theme: window.GetProperty("媒体库·深色主题", false),
     playlists_dark_theme: window.GetProperty("播放列表·深色主题", false),
@@ -89,8 +88,6 @@ function clamp(x, l, h) { return (x < l) ? l : ((x > h) ? h : x); }
 
 var playAndRandom_triggered = false;
 var drag_timer = false;
-var update_wallpaper = false;
-var nowplaying_cachekey = '';
 var ww = 0, wh = 0, ellipse_radius = 0;
 var m_pos_progress = 0;
 var global_top_m=15;
@@ -422,11 +419,11 @@ function adapt_display_to_layout(new_track){
 		hideProgressWhenVolumeChange = false;
 		if(mini_controlbar.isActive()) {
 			font_adjusted = g_font.plus1;
-			font_adjusted_italic = g_font.italicplus1;
+			font_adjusted_italic = g_font.plus1;
 			time_font = g_font.plus1;
 		} else {
 			font_adjusted = g_font.plus1;
-			font_adjusted_italic = g_font.italicplus1;
+			font_adjusted_italic = g_font.plus1;
 			time_font = g_font.plus2;
 		}
 
@@ -500,7 +497,6 @@ function adapt_display_to_layout(new_track){
 			} else {
 				volume_vars.width = 80;
 				if(!new_track) buttons_right.Volume.x = buttons_right.Volume.x - volume_vars.width	- button_padding - 10;
-				console.log(buttons_right.Volume.x)				
 				volume_vars.margin_left = window.Width+buttons_right.Volume.x+button_width+button_padding;	
 				progress_margin_right = progress_margin_right + volume_vars.width + button_padding+5;
 			}			
@@ -897,7 +893,7 @@ function on_paint(gr) {
                 gr.GdiDrawText(g_text_title_prefix, font_adjusted , colors.normal_txt, progress_margin_left, margin_top_adapted + title_margin_top, ww_progress - timeInfo_length, 10,  DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 			gr.GdiDrawText(scheduler_string+g_text_title, font_adjusted , colors.normal_txt, progress_margin_left+title_prefix_length, margin_top_adapted + title_margin_top, ww_progress - timeInfo_length, 10,  DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
             if (!mini_controlbar.isActive() && properties.twoLinesDetails)
-                gr.GdiDrawText(g_text_second_line, g_font.italic, colors.normal_txt_secondary, progress_margin_left, margin_top_adapted + title_margin_top + (mini_controlbar.isActive()||layout_state.isEqual(1)?14:16), ww_progress - timeInfo_length, 10,  DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                gr.GdiDrawText(g_text_second_line, g_font.normal, colors.normal_txt_secondary, progress_margin_left, margin_top_adapted + title_margin_top + (mini_controlbar.isActive()||layout_state.isEqual(1)?14:16), ww_progress - timeInfo_length, 10,  DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
             var title_length = g_panel.get_title_length(gr)+title_prefix_length;
 			gr.GdiDrawText(g_text_artist, font_adjusted_italic , colors.normal_txt, progress_margin_left+title_length +((layout_state.isEqual(0))?4:2), margin_top_adapted + artist_margin_top, ww_progress - title_length - timeInfo_length, 10, DT_LEFT | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
@@ -1079,18 +1075,26 @@ function on_mouse_rbtn_up(x, y){
 	return true;
 }
 
+function addButtonRepaintRect(list, btn) {
+	if (!btn) return;
+	var x = btn.x;
+	if (x < 0) x = window.Width + x;
+	if (!(btn.w > 0) || !(btn.h > 0) || x < 0 || btn.y < 0) { list.bad = true; return; }
+	list.push([x, btn.y, btn.w, btn.h]);
+}
 function on_mouse_move(x,y,m){
 	if(g_cursor.x==x && g_cursor.y==y) return;
 	g_cursor.onMouse("move", x, y, m);
 
-	repaint = false;
+	var full_repaint = false;
+	var button_rects = [];
 
 	g_resizing.on_mouse("move", x, y, m);
 
 	//Volume
 	if(!is_over_panel){
 		is_over_panel = true;
-		if(layout_state.isEqual(1)) repaint = true;
+		if(layout_state.isEqual(1)) full_repaint = true;
 	}
 	if(!progress_vars.drag){
 		if((is_hover_volume(x,y))){
@@ -1102,7 +1106,7 @@ function on_mouse_move(x,y,m){
 					repaint_volume = true;
 					calculate_volume_ellipse_vars(true);
 					volume_vars.height=volume_vars.height_hover;
-					repaint = true;
+					full_repaint = true;
 				}
 				var volume = fbVolumeFromX(x);			
 				new_tooltip_text=volume.toFixed(2) + ' dB';
@@ -1118,7 +1122,7 @@ function on_mouse_move(x,y,m){
 		}
 
 		if(is_hover_volume_btn(x,y) && layout_state.isEqual(0) && !VolumeSliderActive) {
-			showVolumeSlider(true);repaint = true;		
+			showVolumeSlider(true); full_repaint = true;		
 		}
 
 		if(volume_vars.drag){
@@ -1151,7 +1155,7 @@ function on_mouse_move(x,y,m){
 		hooverprogress=true;
 		if(!repaint_progress) {
 			repaint_progress = true;
-			progress_vars.height=progress_vars.height_hover;calculate_progress_ellipse_vars(true);repaint = true;
+			progress_vars.height=progress_vars.height_hover;calculate_progress_ellipse_vars(true);full_repaint = true;
 		}
 		if(g_tooltip.getActiveZone()=="track_title") g_tooltip.Deactivate();
 		if ((x != g_tooltip.x || y != g_tooltip.y) && !progress_vars.drag ){//&& g_tooltip.getActiveZone()!="progress") {
@@ -1170,7 +1174,7 @@ function on_mouse_move(x,y,m){
 
 	if (progress_vars.drag) {
 		g_pos_progress = m_pos_progress;
-		repaint = true;
+		full_repaint = true;
 		if(!drag_timer){
 			drag_timer = setTimeout(function() {
 				seek_time= g_length_progress * g_pos_progress / ww_progress;
@@ -1186,7 +1190,7 @@ function on_mouse_move(x,y,m){
 					g_tooltip.Activate(new_text, Math.min(Math.max(x-17,progress_margin_left),progress_margin_left+ww_progress), progress_margin_top-35, 0, false, 'progress');
 				}
 
-				repaint = true;
+				full_repaint = true;
 				drag_timer && clearTimeout(drag_timer);
 				drag_timer = false;
 			},50)
@@ -1205,8 +1209,8 @@ function on_mouse_move(x,y,m){
 		} else if (btn_down && cur_btn && cur_btn.state != ButtonStates.down) {
 			cur_btn.changeState(ButtonStates.down);
 			cur_btn.onMouse('move',x,y);
-			repaint = true;
-			return;
+			addButtonRepaintRect(button_rects, old);
+			addButtonRepaintRect(button_rects, cur_btn);
 		} else {
 			if(old){
 				old.changeState(ButtonStates.normal);
@@ -1216,10 +1220,17 @@ function on_mouse_move(x,y,m){
 				cur_btn.changeState(ButtonStates.hover);
 				cur_btn.onMouse('move',x,y);
 			}
-			repaint = true;
+			addButtonRepaintRect(button_rects, old);
+			addButtonRepaintRect(button_rects, cur_btn);
 		}
 	}
-	if(repaint) window.Repaint();
+	if (full_repaint || button_rects.bad) {
+		window.Repaint();
+	} else {
+		for (var br = 0; br < button_rects.length; br++) {
+			window.RepaintRect(button_rects[br][0], button_rects[br][1], button_rects[br][2], button_rects[br][3]);
+		}
+	}
 }
 
 function on_mouse_leave() {
@@ -1233,7 +1244,6 @@ function on_mouse_leave() {
     if (cur_btn) {
         cur_btn.changeState(ButtonStates.normal);
 		cur_btn.onMouse('leave', -1, -1);
-		repaint=true;
         cur_btn=null;
     }
 	window.Repaint();
@@ -1358,14 +1368,8 @@ function on_playback_new_track(metadb) {
 	progress_vars.drag = false;
 	current_played_track = metadb;
 	get_text();
-	if(properties.showwallpaper && properties.wallpapermode == 0) {
-		old_cachekey = nowplaying_cachekey;
-		nowplaying_cachekey = process_cachekey(metadb);
-		console.log(nowplaying_cachekey)
-		if(old_cachekey!=nowplaying_cachekey || !fb.IsMetadbInMediaLibrary(metadb) || nowplaying_cachekey=="undefined") {
-			if(!globalProperties.loaded_covers2memory) g_image_cache.resetAll();
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
-		}
+	if(properties.showwallpaper) {
+		if(!globalProperties.loaded_covers2memory) g_image_cache.resetAll();
 	};
 	window.Repaint();
 }
@@ -1413,8 +1417,6 @@ function on_playback_stop(reason) {
 			if(!playAndRandom_triggered) play_random("same_genre", true, current_played_track);
 			playAndRandom_triggered = true;
 		} else {
-			g_wallpaperImg = null;
-			nowplaying_cachekey = null;
 			evalTimeDisplayed();
 			get_text();
 		}
@@ -1666,7 +1668,7 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 			break;
 		case "colors":
 			globalProperties.colorsMainPanel = info;
@@ -1718,9 +1720,7 @@ function on_notify_data(name, info) {
 			}
 		break;
 		case "MemSolicitation":
-			globalProperties.mem_solicitation = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
-			window.Reload();
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -1739,7 +1739,6 @@ function on_notify_data(name, info) {
 			var metadb = new FbMetadbHandleList(info);
 			if(properties.showwallpaper && properties.wallpapermode == 0) {
 				g_image_cache.resetMetadb(metadb[0]);
-				g_wallpaperImg = null;
 				window.Repaint();
 			};
 		break;
@@ -1857,7 +1856,7 @@ function on_notify_data(name, info) {
 			showVolumeSliderTemp();
 		break;
 	   case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
 		break;
 	   case "hereIsGenreList":
 			g_genre_cache=JSON_parse(info);
@@ -2726,7 +2725,7 @@ function moreMenu(x, y){
                 window.ShowConfigure();
                 break;
             case (idx == 102):
-                window.Reload();
+                reloadPanelSafe();
                 break;
 			case (idx == 10000):
 				g_genre_cache.build_from_library();
@@ -2988,7 +2987,7 @@ function draw_controls_menu(x,y){
                 window.ShowConfigure();
                 break;
             case (idx == 102):
-                window.Reload();
+                reloadPanelSafe();
                 break;
             default:
 				return true;
@@ -3029,19 +3028,6 @@ function draw_settings_menu(x,y){
 		_menu.CheckMenuItem(3016, (layout_state.isEqual(0)?coverpanel_state_big.isActive():coverpanel_state_mini.isActive()));
 
 		_menu.AppendMenuSeparator();
-		_menu3.AppendMenuItem(MF_STRING, 200, "启用");
-		_menu3.CheckMenuItem(200, properties.showwallpaper);
-		_menu3.AppendMenuItem(MF_STRING, 220, "模糊");
-		_menu3.CheckMenuItem(220, properties.wallpaperblurred);
-
-		_menu3A.AppendMenuItem(MF_STRING, 221, "填充");
-		_menu3A.CheckMenuItem(221, properties.wallpaperdisplay==0);
-		_menu3A.AppendMenuItem(MF_STRING, 222, "适应");
-		_menu3A.CheckMenuItem(222, properties.wallpaperdisplay==1);
-		_menu3A.AppendMenuItem(MF_STRING, 223, "拉伸");
-		_menu3A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-
-
 		_menu_slider.AppendMenuItem(MF_STRING, 3024, "圆形");
 		_menu_slider.CheckMenuItem(3024, properties.cursor_style==0);
 		_menu_slider.AppendMenuItem(MF_STRING, 3025, "实心圆盘");
@@ -3078,45 +3064,6 @@ function draw_settings_menu(x,y){
 				properties.showwallpaper = !properties.showwallpaper;
 				window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				get_colors();
-				if(properties.showwallpaper) {
-					g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
-				};
-				window.Repaint();
-				break;
-			case (idx == 210):
-				properties.wallpapermode = 99;
-				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 211):
-				properties.wallpapermode = 0;
-				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 220):
-				properties.wallpaperblurred = !properties.wallpaperblurred;
-				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 221):
-				properties.wallpaperdisplay = 0;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 222):
-				properties.wallpaperdisplay = 1;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 223):
-				properties.wallpaperdisplay = 2;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
             case (idx == 3015):

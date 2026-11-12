@@ -60,7 +60,6 @@ var properties = {
 	showwallpaper: window.GetProperty("显示·显示壁纸", false),
 	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
 	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-	wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
 	wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
 	darklayout: window.GetProperty("显示·深色布局", false),
 	darklayout_follow_cui: window.GetProperty("显示·深色布局跟随CUI", false),
@@ -193,7 +192,6 @@ var btn = {
 	margin:15,
 };
 
-var update_wallpaper = false;
 
 var ww = 0, wh = 0;
 var caption_title_default = "无音频输出（未播放音乐）";
@@ -981,9 +979,6 @@ function on_size(w, h) {
 	}
 	setMaxButton();
 	g_panel.on_size_changed();
-    // set wallpaper
-    if(fb.IsPlaying && properties.showwallpaper) {
-    }
 }
 var PSEUDO_CAPTION_TOP = 4;
 var PSEUDO_CAPTION_ROW1_H = 27;
@@ -1104,7 +1099,6 @@ function on_paint(gr) {
 function on_playback_new_track(metadb){
 	eval_caption_title(metadb);
 	if(properties.showwallpaper && properties.wallpapermode == 0) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
 	};
 	window.Repaint();
 }
@@ -1121,7 +1115,6 @@ function on_playback_stop(reason) {
 	case 0: // user stop
 	case 1: // eof (e.g. end of playlist)
 		caption_title = caption_title_default;
-		g_wallpaperImg = null;
 		break;
 	case 2: // starting_another (only called on user action, i.e. click on next button)
 		break;
@@ -1254,7 +1247,7 @@ function on_mouse_rbtn_up(x, y){
                 window.ShowConfigure();
                 break;
             case (idx == 102):
-                window.Reload();
+                reloadPanelSafe();
                 break;
 			case (idx == 103):
 				draw_settings_menu(x,y);
@@ -1494,7 +1487,7 @@ function draw_settings_menu(x,y){
 				g_hires_mode = idx - 1814;
 				window.SetProperty("全局·高分屏适配模式", g_hires_mode);
 				window.NotifyOthers("WSH_panels_reload", true);
-				window.Reload();
+				reloadPanelSafe();
 				break;
 			case (idx == 1820):
 				var _cs0 = chromeRead();
@@ -1537,46 +1530,6 @@ function draw_settings_menu(x,y){
 				properties.showwallpaper = !properties.showwallpaper;
 				window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 				get_colors();
-				if(properties.showwallpaper) {
-					g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
-				};
-				window.Repaint();
-				break;
-			case (idx == 2100):
-				properties.wallpapermode = 99;
-				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 2110):
-				properties.wallpapermode = 0;
-				window.SetProperty("系统·壁纸模式", properties.wallpapermode);
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-
-			case (idx == 2200):
-				properties.wallpaperblurred = !properties.wallpaperblurred;
-				window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 2210):
-				properties.wallpaperdisplay = 0;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 2220):
-				properties.wallpaperdisplay = 1;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-				window.Repaint();
-				break;
-			case (idx == 2230):
-				properties.wallpaperdisplay = 2;
-				window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-				g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 				break;
             default:
@@ -2543,7 +2496,7 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "toggleLayoutMode":
 			toggleLayoutMode();get_colors();g_searchbox.adapt_look_to_layout();
@@ -2553,8 +2506,7 @@ function on_notify_data(name, info) {
 			window.SetProperty("全局·启用可调整边框", globalProperties.enableResizableBorders);
 		break;
 		case "MemSolicitation":
-			globalProperties.enableDiskCache = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -2615,7 +2567,7 @@ function on_notify_data(name, info) {
 			window.Repaint();
 		break;
 		case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "mini_controlbar":
 			mini_controlbar.value = info;
@@ -3067,7 +3019,6 @@ searchHistory = function () {
 	}
     this.trace = function (genre) {
 		for (var i = 0; i < this.historyList.length; i++) {
-			console.log(this.historyList[i][0])
 		}
     };
     this.readSearchHistoryIni = function () {
@@ -3144,7 +3095,6 @@ function toggleWallpaper(wallpaper_state){
 	properties.showwallpaper = wallpaper_state;
 	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	if(properties.showwallpaper) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 	};
 	get_colors();
 	window.Repaint();
@@ -3153,7 +3103,6 @@ function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	properties.wallpaperblurred = !properties.wallpaperblurred;
 	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-	g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	window.Repaint();
 }
 

@@ -3,7 +3,6 @@
     darklayout: window.GetProperty("显示·深色布局", false),
     showwallpaper: window.GetProperty("显示·显示壁纸", false),
     wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
     wallpapermode: window.GetProperty("系统·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
     genre_customGroup_label: window.GetProperty("显示·流派自定义分组名称", ""),
@@ -25,8 +24,6 @@ function setShowInLibrary(){
 }
 setShowInLibrary();
 
-var g_wallpaperImg = null;
-var update_wallpaper = false;
 var g_on_mouse_lbtn_dblclk = false;
 var g_rightClickedIndex = -1;
 var playing_track_playcount = 0;
@@ -1926,7 +1923,6 @@ function library_manager() {
         if (!p.base || p.s_txt) pop.buildTree(this.root, 0);
         if (p.base) pop.branch(this.root[0],p.base,true);
 
-        console.log("--> populate Library Tree in: " + this.time.Time / 1000 + " seconds call_id:"+callID);
         var gp = p.grp_split.length,
             tot = this.list.Count;
         if (gp > 1 && !p.s_txt && p.view_by != p.folder_view) {
@@ -2544,7 +2540,7 @@ function populate() {
 				var text2 = "匹配";
 				gr.GdiDrawText(text1, g_font.plus5, colors.normal_txt, px, py - 40, ui.w, 36, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				gr.FillSolidRect(px+Math.round(ui.w/2-line_width/2),py, line_width, 1, colors.border);
-				gr.GdiDrawText(text2, g_font.italicplus1, colors.faded_txt, px, py + 6, ui.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+				gr.GdiDrawText(text2, g_font.plus1, colors.faded_txt, px, py + 6, ui.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				return;
 			} else {
 				var px = 0;
@@ -2552,7 +2548,7 @@ function populate() {
 				var py = p.s_h + Math.round((ui.h-p.s_h)  / 2)-1;
 				gr.GdiDrawText("加载中...", g_font.plus3, colors.normal_txt, px, py - 40, ui.w, 36, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				gr.FillSolidRect(px+Math.round(ui.w/2-line_width/2),py, line_width, 1, colors.border);
-				gr.GdiDrawText("媒体库树", g_font.italicplus1, colors.faded_txt, px, py + 6, ui.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+				gr.GdiDrawText("媒体库树", g_font.plus1, colors.faded_txt, px, py + 6, ui.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 				return;
 			}
 		}
@@ -3022,10 +3018,6 @@ function on_size(w, h) {
 
 		g_tagswitcherbar.setSize(ui.w, g_tagswitcherbar.default_height, g_fsize-1);
 
-		// set wallpaper
-		if(properties.showwallpaper){
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-		} else update_wallpaper = true;
 		update_size = false;
 		first_on_size = false;
 	} else update_size = true;
@@ -4028,7 +4020,7 @@ function menu_object() {
 		} else if(idx==7002){
 			window.ShowConfigure();
 		} else if(idx==7003){
-			window.Reload();
+			reloadPanelSafe();
 		} else if(idx==7004){
 			showOptionsMenu(x,y,false);
 		} else if(idx==7005){
@@ -4303,22 +4295,18 @@ function showSettingsMenu(x,y){
 		properties.wallpaperblurred = !properties.wallpaperblurred;
 		on_colours_changed();
 		window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9021){
 		properties.wallpaperdisplay = 0;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9022){
 		properties.wallpaperdisplay = 1;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9023){
 		properties.wallpaperdisplay = 2;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	}
 	menu = undefined;
@@ -4378,7 +4366,7 @@ function showOptionsMenu(x,y,reduced){
 	} else if(idx==7002){
 		window.ShowConfigure();
 	} else if(idx==7003){
-		window.Reload();
+		reloadPanelSafe();
 	} else if(idx==7005){
 		p.s_show = 0;
 		window.SetProperty("搜索栏(0=隐藏 1=仅搜索 2=搜索+筛选)", p.s_show);
@@ -4480,22 +4468,18 @@ function showOptionsMenu(x,y,reduced){
 		properties.wallpaperblurred = !properties.wallpaperblurred;
 		on_colours_changed();
 		window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9021){
 		properties.wallpaperdisplay = 0;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9022){
 		properties.wallpaperdisplay = 1;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if(idx==9023){
 		properties.wallpaperdisplay = 2;
 		window.SetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", properties.wallpaperdisplay);
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 		window.Repaint();
 	} else if (idx >= 1 && idx <= Index) {
 		i = men.MenuMap[idx].value;
@@ -4616,11 +4600,8 @@ function on_playback_new_track(metadb){
 		playing_track_playcount = TF.play_count.Eval();
 	} catch(e){}
 	if(window.IsVisible) {
-		if(properties.showwallpaper && properties.wallpapermode == 0) {
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
-		};
 		window.Repaint();
-	} else if(properties.wallpapermode == 0) update_wallpaper = true;
+	}
 }
 function on_playback_stop(reason) {
     switch(reason) {
@@ -4628,7 +4609,6 @@ function on_playback_stop(reason) {
     case 1: // eof (e.g. end of playlist)
         // update wallpaper
         if(properties.showwallpaper && properties.wallpapermode == 0) {
-            g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, null);
 			window.Repaint();
         };
         break;
@@ -4860,7 +4840,6 @@ function get_colors() {
 
 		colors.settings_hover_bg = GetGrey(255,40);
     } else {
-		colors.normal_txt = GetGrey(0);		
 		colors.btn_inactive_opacity = 110;
 		colors.inactive_txt = colors.faded_txt;
 
@@ -4958,7 +4937,7 @@ function on_notify_data(name, info) {
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
             window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-            window.Reload();
+            reloadPanelSafe();
 		break;
 		case "showInLibrary_RightPlaylistOn":
 			properties.showInLibrary_RightPlaylistOn = info;
@@ -5021,7 +5000,7 @@ function on_notify_data(name, info) {
 			window.Repaint();
 		break;
         case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
             break;
         case "refresh_filters":
 			if(window.IsVisible){
@@ -5090,7 +5069,6 @@ function toggleWallpaper(wallpaper_state){
 	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	on_colours_changed();
 	if(properties.showwallpaper || properties.darklayout) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 	};
 	window.Repaint();
 }
@@ -5099,7 +5077,6 @@ function toggleBlurWallpaper(wallpaper_blur_state){
 	properties.wallpaperblurred = wallpaper_blur_state;
 	on_colours_changed();
 	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
-	if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	window.Repaint();
 }
 function on_init() {

@@ -29,7 +29,7 @@
      鼠标中键       展开 / 收起左栏（设置、浮层等无左栏界面不适用）
      Shift + 点击   在曲目多选框中连续选择
    ========================================================================== */
-var APP_VERSION = '2.1.8';
+var APP_VERSION = '2.1.9';
 window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
 
 function getP(k, d) {
@@ -1893,6 +1893,7 @@ function openNowPlayDir() {
 var NOW_INFO_VER = 1;
 var NOW_INFO_KEY = '';
 var LX_REQ_LAST = 0;
+var LX_CACHE_REQ_LAST = 0;
 var NOW_ITEMS_MAX = 80;
 
 function broadcastOn() {
@@ -3587,6 +3588,13 @@ function cacheSubDir(name) {
   var p = dir + '\\' + name;
   try { utils.CreateFolder(p); } catch (e) {}
   return p;
+}
+
+/* 把艺术家缓存目录告诉 Eole 等其它面板（支持自定义 lx.cacheDir）。 */
+function publishCacheDir() {
+  var dir = '';
+  try { dir = cacheSubDir('artist'); } catch (e) { dir = ''; }
+  try { window.NotifyOthers('lx_cache_dir', dir || ''); } catch (e2) {}
 }
 
 function cleanName(s, max) {
@@ -6629,6 +6637,98 @@ function sourceCount() {
 
 var COMMENT_TTL = 7 * 24 * 3600 * 1000;
 var BIO_TTL = 30 * 24 * 3600 * 1000;
+var BIO_PREFETCH_TIMER = 0;
+var BIO_PREFETCH_LAST_AT = 0;
+var BIO_PREFETCH_INFLIGHT = {};
+var BIO_PREFETCH_DONE_AT = {};
+var BIO_PREFETCH_FAIL_AT = {};
+
+function bioAutoOn() {
+  return String(getP('lx.bioAuto', '1')) !== '0';
+}
+
+function artistPicFresh(picFile) {
+  if (!fileReady(picFile)) return false;
+  var meta = picFile + '.meta';
+  var txt = '';
+  try { txt = String(utils.ReadTextFile(meta, 65001) || ''); } catch (e) { }
+  if (!txt) {
+    /* 旧图没有时间戳：从现在开始计时，避免一次性全部重下 */
+    try { utils.WriteTextFile(meta, String(Date.now())); } catch (e2) { }
+    return true;
+  }
+  var t = parseInt(txt, 10);
+  if (!t || isNaN(t)) return true;
+  return (Date.now() - t) < BIO_TTL;
+}
+
+/* 后台给当前播放的歌手补简介文本和头像；不打开 F4 浮层也会写缓存。 */
+function prefetchArtistBioNow(handle) {
+  if (!bioAutoOn()) return;
+  var name = '';
+  try { name = String(fb.TitleFormat('%artist%').EvalWithMetadb(handle) || '').trim(); } catch (e) { }
+  if (!name) {
+    try { if (lastTrack && lastTrack.artist) name = String(lastTrack.artist).trim(); } catch (e2) { }
+  }
+  if (!name) return;
+  var safe = cleanName(name, 40);
+  if (!safe) return;
+  var bioDir = cacheSubDir('bio');
+  var artDir = cacheSubDir('artist');
+  if (!bioDir || !artDir) return;
+  var bioFile = bioDir + '\\' + safe + '.txt';
+  var picFile = artDir + '\\' + safe + '.jpg';
+  var needBio = !readCacheText(bioFile, BIO_TTL);
+  var picFresh = artistPicFresh(picFile);
+  var needPic = !picFresh;
+  if (!needBio && !needPic) return;
+  var now = Date.now();
+  if (BIO_PREFETCH_INFLIGHT[name]) return;
+  if (BIO_PREFETCH_DONE_AT[name] && now - BIO_PREFETCH_DONE_AT[name] < 6 * 3600 * 1000) return;
+  if (BIO_PREFETCH_FAIL_AT[name] && now - BIO_PREFETCH_FAIL_AT[name] < 10 * 60 * 1000) return;
+  if (now - BIO_PREFETCH_LAST_AT < 30 * 1000) return;
+  if (!NM || !NM.providers || typeof NM.providers.artistInfo !== 'function') return;
+  BIO_PREFETCH_LAST_AT = now;
+  BIO_PREFETCH_INFLIGHT[name] = true;
+  withTimeout(NM.providers.artistInfo(name), 25000, '预取艺人资料').then(function (info) {
+    delete BIO_PREFETCH_INFLIGHT[name];
+    if (!info) {
+      BIO_PREFETCH_FAIL_AT[name] = Date.now();
+      return;
+    }
+    if (!info.name) info.name = name;
+    if (needBio) {
+      try { var text = formatBio(info); if (text) writeCacheText(bioFile, text); } catch (eB) { }
+    }
+    if (needPic) {
+      var picScheduled = false;
+      try {
+        var url = artistPicUrl(info && info.pic);
+        if (url) { downloadBioPic(url, picFile, name, !picFresh); picScheduled = true; }
+      } catch (eP) { }
+      if (!picScheduled) {
+        BIO_PREFETCH_FAIL_AT[name] = Date.now();
+        return;
+      }
+    }
+    BIO_PREFETCH_DONE_AT[name] = Date.now();
+  }, function () {
+    delete BIO_PREFETCH_INFLIGHT[name];
+    BIO_PREFETCH_FAIL_AT[name] = Date.now();
+  });
+}
+
+function scheduleBioPrefetch() {
+  if (!bioAutoOn()) return;
+  if (BIO_PREFETCH_TIMER) clearTimeout(BIO_PREFETCH_TIMER);
+  BIO_PREFETCH_TIMER = setTimeout(function () {
+    BIO_PREFETCH_TIMER = 0;
+    try {
+      var h = fb.GetNowPlaying();
+      if (h) prefetchArtistBioNow(h);
+    } catch (e) { }
+  }, 2500);
+}
 
 var commentLoadId = 0;
 
@@ -7660,19 +7760,30 @@ function loadBioSongs(name, id, fromInfo, songsFile, total) {
   return false;
 }
 
-function downloadBioPic(pic, picFile, name) {
-  if (!pic || !picFile || fileReady(picFile) || bioPicLoading) return;
+function downloadBioPic(pic, picFile, name, force) {
+  if (!pic || !picFile || (!force && fileReady(picFile)) || bioPicLoading) return;
   var part = picFile + '.part';
   bioPicLoading = true;
   repaint();
   NM.lx.download(safeUrl(pic), part).then(function () {
     bioPicLoading = false;
     var ok = false;
+    var backup = picFile + '.old';
+    if (force) {
+      try { utils.RemovePath(backup); } catch (eB0) { }
+      try { utils.RenamePath(picFile, backup); } catch (eB1) { }
+    }
     try { ok = utils.RenamePath(part, picFile); } catch (e) {}
-    if (!ok) { try { utils.RemovePath(part); } catch (e2) {} }
-    if (ok && overlay === 'bio') {
-      loadBioPic(picFile, name);
-      repaint();
+    if (!ok) {
+      try { utils.RemovePath(part); } catch (e2) {}
+      if (force) { try { utils.RenamePath(backup, picFile); } catch (eB2) { } }
+    } else {
+      if (force) { try { utils.RemovePath(backup); } catch (eB3) { } }
+      try { utils.WriteTextFile(picFile + '.meta', String(Date.now())); } catch (eMeta) { }
+      if (overlay === 'bio') {
+        loadBioPic(picFile, name);
+        repaint();
+      }
     }
   }, function () {
     bioPicLoading = false;
@@ -9510,9 +9621,15 @@ function ensureProgressTimer() {
     var playing = false;
     try { playing = !!fb.IsPlaying && !fb.IsPaused; } catch (e0) { playing = false; }
     if (!playing) return;
-    if (!L.right || rightCollapsed || !rightTotal) return;
-    if (rightPlayingRow() < 0) return;
-    repaint();
+    var rc = rightPlayingRowRect();
+    if (!rc) return;
+    var s = UI_S;
+    try {
+      window.RepaintRect(Math.round(rc.x * s), Math.round(rc.y * s),
+                         Math.max(1, Math.round(rc.w * s)), Math.max(1, Math.round(rc.h * s)));
+    } catch (eR) {
+      repaint();
+    }
   }, 800);
 }
 
@@ -9836,6 +9953,18 @@ function rightCols() {
 
 function rightVisRows() {
   return Math.max(1, Math.floor(L.rightListH / RIGHT_ROW_H));
+}
+
+function rightPlayingRowRect() {
+  if (!L.right || L.right.w <= 0 || rightCollapsed || !rightTotal) return null;
+  var row = rightPlayingRow();
+  if (row < 0) return null;
+  var vis = rightVisRows();
+  if (row < rightScroll || row >= rightScroll + vis) return null;
+  var y = L.rightListY + (row - rightScroll) * RIGHT_ROW_H;
+  var h = Math.min(RIGHT_ROW_H, L.rightListY + L.rightListH - y);
+  if (h <= 0) return null;
+  return { x: L.right.x, y: y, w: L.right.w, h: h };
 }
 
 function rightRowAtY(y, x) {
@@ -11218,12 +11347,20 @@ function maintSections() {
 function srcSections() {
   var secs = [
     { cat: 'src', title: '音源', rows: [
-      { kind: 'text', id: 'cacheDir', label: '缓存目录',
+      { kind: 'seg', id: 'bioAuto', label: '后台预存取简介', value: bioAutoOn() ? '1' : '0',
+        options: [['1', '开'], ['0', '关']],
+        onPick: function (v) {
+          setProp('lx.bioAuto', v);
+          setStatus(v === '1' ? '已开启：切歌后后台补歌手简介/头像' : '已关闭后台预取');
+          if (v === '1') scheduleBioPrefetch();
+        } },
+      { kind: 'text', id: 'cacheDir', label: '缓存目录[其他]',
         value: propStr('lx.cacheDir', ''),
         disp: function () { return cacheDir() || '（未确定）'; },
         onCommit: function (t) {
           setProp('lx.cacheDir', t);
           resetCachePaths();
+          publishCacheDir();
           setStatus(t ? '缓存目录：' + t : '缓存目录已恢复默认');
           repaint();
         },
@@ -12346,6 +12483,13 @@ function on_notify_data(name, info) {
     return;
   }
   /* 别的面板刚加载完，问一句「现在在放什么」——重发一遍就行 */
+  if (name === 'lx_cache_dir_request') {
+    var cacheNow = Date.now();
+    if (cacheNow - LX_CACHE_REQ_LAST < 2000) return;
+    LX_CACHE_REQ_LAST = cacheNow;
+    publishCacheDir();
+    return;
+  }
   if (name === 'lx_now_request') {
     /* 皮肤里有六七个面板都会在启动时问一次，回一次就够 */
     var lxNow = Date.now();
@@ -13392,6 +13536,8 @@ function init() {
     try { lxTrimPlaylist(plman.FindPlaylist(PLAYLIST_NAME)); } catch (eTp2) { }
   }, 1200);
 
+  publishCacheDir();
+  setTimeout(function () { try { scheduleBioPrefetch(); } catch (eBio) { } }, 3000);
   repaint();
 }
 
@@ -13447,6 +13593,8 @@ function on_playback_new_track(handle) {
   setTimeout(function () { try { eslAutoRequest(0); } catch (e3) {} }, 800);
   /* 同一时刻把曲目信息广播给皮肤里的其他面板（列表 / 标题栏都用得上） */
   setTimeout(function () { try { lxPublishNow(0); } catch (e4) {} }, 900);
+  try { scheduleBioPrefetch(); } catch (eBP) {}
+  publishCacheDir();
   repaint();
 }
 
@@ -13460,6 +13608,15 @@ function on_playback_stop(reason) {
 function on_script_unload() {
   stopThemeWatch();
   stopEditBlink();
+  if (BIO_PREFETCH_TIMER) { clearTimeout(BIO_PREFETCH_TIMER); BIO_PREFETCH_TIMER = 0; }
+  if (PROG_TIMER) { clearInterval(PROG_TIMER); PROG_TIMER = 0; }
+  if (bgFxTimer) { clearTimeout(bgFxTimer); bgFxTimer = 0; }
+  if (themeTimer) { clearTimeout(themeTimer); themeTimer = 0; }
+  if (coverMemSaveTimer) {
+    clearTimeout(coverMemSaveTimer);
+    coverMemSaveTimer = 0;
+    try { coverCacheSave(); } catch (eSave) { }
+  }
   disposeObj(brandLogo);
   brandLogo = null;
   brandLogoChecked = false;

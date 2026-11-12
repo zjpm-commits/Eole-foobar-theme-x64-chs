@@ -207,6 +207,22 @@
 		}
     }  
 }
+function repaintJSButton(a, b) {
+    var rects = [];
+    var list = [a, b];
+    for (var i = 0; i < list.length; i++) {
+        var btn = list[i];
+        if (!btn) continue;
+        if (!(btn.w > 0) || !(btn.h > 0) || btn.x < 0 || btn.y < 0 || btn.hover_bar_bottom) {
+            window.Repaint();
+            return;
+        }
+        rects.push([btn.x, btn.y, btn.w, btn.h]);
+    }
+    for (var j = 0; j < rects.length; j++) {
+        window.RepaintRect(rects[j][0], rects[j][1], rects[j][2], rects[j][3]);
+    }
+}
 function JSButtonGroup(alignment, x, y, name, adaptCursor){
 	this.alignment = alignment;		
 	this.x = x;
@@ -341,7 +357,7 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
 				} else if (this.g_down && this.cur_btn && this.cur_btn.state != ButtonStates.down) {
 					old && old.changeState(ButtonStates.normal);
 					this.cur_btn.changeState(ButtonStates.down);
-					window.Repaint();
+					repaintJSButton(old, this.cur_btn);
 				} else {
 					if(old){
 						old.changeState(ButtonStates.normal);
@@ -351,7 +367,7 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
 						this.cur_btn.changeState(ButtonStates.hover);		
 						if(this.cur_btn && this.cur_btn.state!=ButtonStates.active && this.adaptCursor) g_cursor.setCursor(IDC_HAND, this.name);
 					}						
-					window.Repaint();
+					repaintJSButton(old, this.cur_btn);
 				}
 				if(this.cur_btn && this.cur_btn.tooltip_text && g_tooltip.activeZone != this.cur_btn.name){
 					if(g_tooltip.activated) g_tooltip.Deactivate();
@@ -365,11 +381,12 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
             case "leave":
 				this.g_down = false;  
 				if (this.cur_btn) {
-					this.cur_btn.changeState(ButtonStates.normal);  
-					this.cur_btn.onMouse("leave",x,y);		
+					var leaving = this.cur_btn;
+					leaving.changeState(ButtonStates.normal);  
+					leaving.onMouse("leave",x,y);		
 					this.cur_btn=null; 					
 					g_cursor.setCursor(IDC_ARROW,2);
-					window.Repaint();					
+					repaintJSButton(leaving, null);					
 				}			
 				g_tooltip.Deactivate();
 			break;
@@ -391,7 +408,7 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
 					this.g_down = true;	
 					this.cur_btn.onMouse('lbtn_down');
 					g_tooltip.Deactivate();
-					window.Repaint();
+					repaintJSButton(this.cur_btn, null);
 				}	
 				return (this.cur_btn != null && typeof this.cur_btn === 'object');
 			break;
@@ -401,7 +418,7 @@ function JSButtonGroup(alignment, x, y, name, adaptCursor){
 				this.cur_btn = this.chooseButton(x, y);		
 				if (this.cur_btn) {
 					this.cur_btn.onMouse('dble_click');
-					window.Repaint();
+					repaintJSButton(this.cur_btn, null);
 				}	
 				return (this.cur_btn != null && typeof this.cur_btn === 'object');
 			break;				

@@ -338,7 +338,7 @@ function on_mouse_rbtn_up(x, y){
 			window.ShowConfigure();
 			break;
 		case (idx == 102):
-			window.Reload();
+			reloadPanelSafe();
 			break;
 		case (idx == 103):
 			esl_font_applied = false;
@@ -478,10 +478,10 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
             break;
 		case "DiskCacheState":
 			globalProperties.enableDiskCache = info;

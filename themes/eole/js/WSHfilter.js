@@ -120,7 +120,6 @@ var properties = {
 	darklayout: window.GetProperty("显示·深色布局", false),
     showwallpaper: window.GetProperty("显示·显示壁纸", false),
     wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("显示·壁纸模糊强度", 1.05),
     wallpapermode: window.GetProperty("系统·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("显示·壁纸(0=填充 1=适应 2=拉伸)", 0),
     DropInplaylist: window.GetProperty("系统·允许拖入播放列表", true),
@@ -161,8 +160,6 @@ if(properties.deleteSpecificImageCache!="") {
 	window.SetProperty("封面·待删除缓存的键(下次启动)", "");
 }
 
-var g_wallpaperImg = null;
-var update_wallpaper = false;
 cTouch = {
     down: false,
     y_start: 0,
@@ -563,7 +560,7 @@ oPlaylistManager = function(name) {
 						gr.DrawRect(cx + bg_margin_left, this.y +(cPlaylistManager.topbarHeight-31), cw - bg_margin_left*2 - this.scr_w - 1, ch, 1.0, colors.pm_blink_rectline);
                     };
                 } else {
-                    gr.GdiDrawText("发送到..." , g_font.italicplus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 30, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                    gr.GdiDrawText("发送到..." , g_font.plus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 30, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
                 };
             } else {
                 if(this.activeRow == 0) {
@@ -573,7 +570,7 @@ oPlaylistManager = function(name) {
 					gr.DrawRect(cx + bg_margin_left, this.y +(cPlaylistManager.topbarHeight-31), cw - bg_margin_left*2 - this.scr_w - 1, ch, 1.0, colors.pm_blink_rectline);
 
                 } else {
-                    gr.GdiDrawText("发送到..." , g_font.italicplus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 30, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                    gr.GdiDrawText("发送到..." , g_font.plus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 30, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
                 };
             };
 
@@ -2275,7 +2272,6 @@ oBrowser = function(name) {
 		if(force_sourceMode) this.populate_sourceMode = force_sourceMode;
 		else this.populate_sourceMode = this.current_sourceMode;
 
-        console.log("--> populate Filter order:"+properties.filterOrder+" parent panel:"+properties.ParentName+" call_id:"+call_id);
 		this.sourcePlaylistIdx = -1;
         if(this.list) this.list = undefined;
         if(this.list_unsorted) this.list_unsorted = undefined;
@@ -2635,7 +2631,7 @@ oBrowser = function(name) {
 				this.firstRowHeight = gr.CalcTextHeight("WcLrego9", g_font.normal);
 			}
 			if(!this.secondRowHeight) {
-				this.secondRowHeight = gr.CalcTextHeight("WcLrego9", g_font.italicmin1);
+				this.secondRowHeight = gr.CalcTextHeight("WcLrego9", g_font.min1);
 			}
 			this.get_metrics();
 		}
@@ -2676,18 +2672,16 @@ oBrowser = function(name) {
 						} else {
 							if(this.groups[i].cover_type == null) {
 								if(this.groups[i].load_requested == 0) {
-									debugger_hint("hit1 "+i)
-									img = g_image_cache.hit(this.groups[i].metadb, i, false, undefined, properties.albumArtId==4?this.groups[i].groupkey:'');				
+									img = g_image_cache.hit(this.groups[i].metadb, i, false, undefined, properties.albumArtId==4?this.groups[i].groupkey:'', true);				
 									if(img!="loading") this.groups[i].cover_img = img;
 									if (isImage(this.groups[i].cover_img)) {
 										this.groups[i].cover_type = 1;
 										this.groups[i].cover_img = g_image_cache.getit(this.groups[i].metadb, i, this.groups[i].cover_img, im_w);
-										debugger_hint("getit "+i)
 									} else if(properties.AlbumArtFallback && img!='loading'){
 										this.groups[i].save_requested = true;
-										debugger_hint("hit2 "+i)
-										this.groups[i].cover_img = g_image_cache.hit(this.groups[i].metadb, i, false, this.groups[i].cachekey_album);
-										if (typeof this.groups[i].cover_img !== "undefined" && this.groups[i].cover_img!==null) {
+										var fallback_img = g_image_cache.hit(this.groups[i].metadb, i, false, this.groups[i].cachekey_album, undefined, true);
+										if (isImage(fallback_img)) {
+											this.groups[i].cover_img = fallback_img;
 											this.groups[i].cover_type = 1;
 											this.groups[i].cover_img = g_image_cache.getit(this.groups[i].metadb, i, this.groups[i].cover_img, cover.max_w);
 										}
@@ -2713,7 +2707,6 @@ oBrowser = function(name) {
 							if(!this.groups[i].cover_formated && isImage(this.groups[i].cover_img)){
 								this.groups[i].cover_img = FormatCover(this.groups[i].cover_img, im_w, im_h, false);
 								this.groups[i].cover_formated = true;
-								debugger_hint("this.groups["+i+"].cover_img.Width"+this.groups[i].cover_img.Width)
 							}
 						};
 					};
@@ -2879,7 +2872,6 @@ oBrowser = function(name) {
 
 											gr.DrawImage(image_to_draw, ax + Math.round((aw - im_w) / 2), coverTop + coverWidth - im_h, im_w, im_h, 0, 0, image_to_draw.Width, image_to_draw.Height);
 										} catch (e) {
-											console.log("DrawImage: invalid image ");
 										}
 										if(!properties.circleMode || properties.displayMode != 1) gr.DrawRect(ax + Math.round((aw - im_w) / 2), coverTop + coverWidth - im_h, im_w - 1, im_h - 1, 1.0, colors.normal_txt & 0x25ffffff);
 									};
@@ -2912,7 +2904,7 @@ oBrowser = function(name) {
 									if(properties.showAllItem && i == 0 && total > 1) { // aggregate item ( [ALL] )
 										try{
 											gr.GdiDrawText("所有项目", g_font.normal, txt_color1, ax + Math.round((aw - coverWidth) / 2), (coverTop + 5 + coverWidth), coverWidth, this.firstRowHeight, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-											gr.GdiDrawText(""+(total-1)+" items", g_font.italicmin1, txt_color2, ax + Math.round((aw - coverWidth) / 2), (coverTop + 5 + coverWidth + this.firstRowHeight), coverWidth, this.secondRowHeight, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+											gr.GdiDrawText(""+(total-1)+" items", g_font.min1, txt_color2, ax + Math.round((aw - coverWidth) / 2), (coverTop + 5 + coverWidth + this.firstRowHeight), coverWidth, this.secondRowHeight, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 										} catch(e) {console.log(e)}
 									} else {
 										if(!this.customGroups){
@@ -2937,7 +2929,7 @@ oBrowser = function(name) {
 											if(properties.tagMode == 1) {
 												this.groups[i].tooltipText = this.groups[i].firstRow+'\n'+this.groups[i].secondRow;
 												font1 = g_font.normal;
-												font2 = g_font.italicmin1;
+												font2 = g_font.min1;
 												if(typeof this.groups[i].text1Length == 'undefined') this.groups[i].text1Length = gr.CalcTextWidth(this.groups[i].firstRow, font1);
 												if(typeof this.groups[i].text2Length == 'undefined') this.groups[i].text2Length = gr.CalcTextWidth(this.groups[i].secondRow, font2);
 												this.groups[i].showToolTip = (this.groups[i].text1Length > coverWidth || this.groups[i].text2Length > coverWidth);
@@ -2946,7 +2938,7 @@ oBrowser = function(name) {
 											} else {
 											  this.groups[i].tooltipText = this.groups[i].groupkey;
 											  font1 = g_font.normal;
-											  font2 = g_font.italicmin1;
+											  font2 = g_font.min1;
 											  font = g_font.normal;
 											  if(typeof this.groups[i].textLength == 'undefined') this.groups[i].textLength = gr.CalcTextWidth(this.groups[i].tooltipText, font);
 											  this.groups[i].showToolTip = (this.groups[i].textLength > coverWidth);
@@ -3224,7 +3216,6 @@ oBrowser = function(name) {
 											try{
 												gb.DrawImage(this.groups[ii].cover_img, ii_x1, ii_y1, ii_w, ii_h, 0, 0, this.groups[ii].cover_img.Width, this.groups[ii].cover_img.Height);
 											} catch (e) {
-												console.log("DrawImage: invalid image ");
 											}
 											nb_of_drawn_cover++;
 											break;
@@ -3232,7 +3223,6 @@ oBrowser = function(name) {
 											try{
 												gb.DrawImage(this.groups[ii].cover_img, ii_x2, ii_y1, ii_w, ii_h, 0, 0, this.groups[ii].cover_img.Width, this.groups[ii].cover_img.Height);
 											} catch (e) {
-												console.log("DrawImage: invalid image ");
 											}
 											nb_of_drawn_cover++;
 											break;
@@ -3240,7 +3230,6 @@ oBrowser = function(name) {
 											try{
 												gb.DrawImage(this.groups[ii].cover_img, ii_x1, ii_y2, ii_w, ii_h, 0, 0, this.groups[ii].cover_img.Width, this.groups[ii].cover_img.Height);
 											} catch (e) {
-												console.log("DrawImage: invalid image ");
 											}
 											nb_of_drawn_cover++;
 											break;
@@ -3248,7 +3237,6 @@ oBrowser = function(name) {
 											try{
 												gb.DrawImage(this.groups[ii].cover_img, ii_x2, ii_y2, ii_w, ii_h, 0, 0, this.groups[ii].cover_img.Width, this.groups[ii].cover_img.Height);
 											} catch (e) {
-												console.log("DrawImage: invalid image ");
 											}
 											nb_of_drawn_cover++;
 											break;
@@ -3293,9 +3281,9 @@ oBrowser = function(name) {
 					if(text1!='') {
 						gr.GdiDrawText(text1, g_font.plus5, colors.normal_txt, this.x, py - 40, this.w, 36, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 						gr.FillSolidRect(this.x+Math.round(this.w/2-line_width/2),py, line_width, 1, colors.border);
-						gr.GdiDrawText(text2, g_font.italicplus1, colors.faded_txt, this.x, py + 5, this.w, 100, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText(text2, g_font.plus1, colors.faded_txt, this.x, py + 5, this.w, 100, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					} else {
-						gr.GdiDrawText(text2, g_font.italicplus1, colors.faded_txt, this.x, py - 50, this.w, 100, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+						gr.GdiDrawText(text2, g_font.plus1, colors.faded_txt, this.x, py - 50, this.w, 100, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					}
 			} else { // no track, playlist is empty
 					var px = 0;
@@ -3303,7 +3291,7 @@ oBrowser = function(name) {
 					var py = this.y + Math.round(this.h  / 2)-1;
 					gr.GdiDrawText("加载中...", g_font.plus4, colors.normal_txt, this.x, py - 40, this.w, 36, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					gr.FillSolidRect(this.x+Math.round(this.w/2-line_width/2),py, line_width, 1, colors.border);
-					gr.GdiDrawText("筛选", g_font.italicplus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("筛选", g_font.plus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 			};
 
 			this.draw_right_line = (properties.DrawRightLine && (!(properties.filterOrder==2) && !(!filter3_state.isActive() && properties.filterOrder==1) && !(!filter3_state.isActive() && !filter2_state.isActive() && properties.filterOrder==0) || main_panel_state.isEqual(0)));
@@ -3374,7 +3362,7 @@ oBrowser = function(name) {
                     if(previous != properties.thumbnailWidth) {
                         timers.mouseWheel = setTimeout(function() {
                             window.SetProperty("封面·宽度", properties.thumbnailWidth);
-							eval("properties.thumbnailWidth"+properties.tagMode+" = "+properties.thumbnailWidth);
+							properties["thumbnailWidth" + properties.tagMode] = properties.thumbnailWidth;
 							window.SetProperty("封面·宽度(标签模式" + properties.tagMode + ")", properties.thumbnailWidth);
                             get_metrics();
                             brw.setList();
@@ -3403,7 +3391,7 @@ oBrowser = function(name) {
                     if(previous != properties.default_lineHeightMin) {
                         timers.mouseWheel = setTimeout(function() {
                             window.SetProperty("系统·最小行高", properties.default_lineHeightMin);
-							eval("properties.default_lineHeightMin"+properties.tagMode+" = "+properties.default_lineHeightMin);
+							properties["default_lineHeightMin" + properties.tagMode] = properties.default_lineHeightMin;
 							window.SetProperty("系统·最小行高(标签模式" + properties.tagMode + ")", properties.default_lineHeightMin);
                             get_metrics();
                             brw.setList();
@@ -3789,7 +3777,7 @@ oBrowser = function(name) {
 				 window.ShowConfigure();
 				break;
 			case 1003:
-				window.Reload();
+				reloadPanelSafe();
 				break;
 			default:
 				var insert_index = plman.PlaylistItemCount(ret-2001);
@@ -3825,7 +3813,6 @@ oBrowser = function(name) {
 			}
 
             _menu13.AppendMenuItem(MF_STRING, 113, "默认（%genre%）");
-			console.log(properties.tf_sort_genre == properties.tf_sort_genre_default)
             _menu13.CheckMenuItem(113, properties.tf_groupkey_genre == properties.tf_groupkey_genre_default && properties.genre_customGroup_label == "" && (properties.tf_sort_genre == properties.tf_sort_genre_default||properties.tf_sort_genre==''));
             _menu13.AppendMenuItem(MF_STRING, 116, "自定义标题格式...");
             _menu13.CheckMenuItem(116, !(properties.tf_groupkey_genre == properties.tf_groupkey_genre_default && properties.genre_customGroup_label == "" && (properties.tf_sort_genre == properties.tf_sort_genre_default||properties.tf_sort_genre=='')));
@@ -3956,13 +3943,13 @@ oBrowser = function(name) {
                     properties.adapt_to_playlist = false;
                     window.SetProperty("属性·从活动播放列表填充", properties.adapt_to_playlist);
 					window.NotifyOthers("adapt_to_playlist",properties.adapt_to_playlist);
-                    window.Reload();
+                    reloadPanelSafe();
                     break;
                 case (idx == 51):
                     properties.adapt_to_playlist = true;
                     window.SetProperty("属性·从活动播放列表填充", properties.adapt_to_playlist);
 					window.NotifyOthers("adapt_to_playlist",properties.adapt_to_playlist);
-                    window.Reload();
+                    reloadPanelSafe();
                     break;					
                 case (idx == 60):
                     properties.followFocusChange = !properties.followFocusChange;
@@ -4083,7 +4070,7 @@ oBrowser = function(name) {
                     window.SetProperty("属性·显示模式(网格无文字)", properties.displayModeGridNoText);
                     properties.displayMode = idx - 900;
                     window.SetProperty("属性·显示模式", properties.displayMode);
-					eval("properties.tagModedisplay"+properties.tagMode+" = "+idx+" - 900;");
+					properties["tagModedisplay" + properties.tagMode] = idx - 900;
 					window.SetProperty("属性·显示模式(标签" + properties.tagMode + ")", properties.displayMode);
                     get_metrics();
 					brw.refresh_all_covers();
@@ -4095,7 +4082,7 @@ oBrowser = function(name) {
                     window.SetProperty("属性·显示模式(网格无文字)", properties.displayModeGridNoText);
                     properties.displayMode = 3;
                     window.SetProperty("属性·显示模式", properties.displayMode);
-					eval("properties.tagModedisplay"+properties.tagMode+" = "+903+" - 900;");
+					properties["tagModedisplay" + properties.tagMode] = 903 - 900;
 					window.SetProperty("属性·显示模式(标签" + properties.tagMode + ")", properties.displayMode);
                     get_metrics();
 					brw.refresh_all_covers();
@@ -4105,7 +4092,7 @@ oBrowser = function(name) {
                 case (idx == 904):
                     properties.circleMode = !properties.circleMode;
                     window.SetProperty("属性·圆形模式", properties.circleMode);
-					eval("properties.circleDisplay"+properties.tagMode+" = "+properties.circleMode);
+					properties["circleDisplay" + properties.tagMode] = properties.circleMode;
 					window.SetProperty("属性·圆形模式(标签" + properties.tagMode + ")", properties.circleMode);
                     get_metrics();
 					brw.refresh_all_covers();
@@ -4115,21 +4102,21 @@ oBrowser = function(name) {
                 case (idx == 910):
                     properties.showHeaderBar = !properties.showHeaderBar;
                     window.SetProperty("显示·显示顶栏", properties.showHeaderBar);
-					eval("properties.showHeaderBar"+properties.tagMode+" = "+properties.showHeaderBar);
+					properties["showHeaderBar" + properties.tagMode] = properties.showHeaderBar;
 					window.SetProperty("属性·显示顶栏(标签" + properties.tagMode + ")", properties.showHeaderBar);
                     get_metrics();
                     break;
                 case (idx == 911):
                     properties.showAllItem = !properties.showAllItem;
                     window.SetProperty("属性·显示全部项", properties.showAllItem);
-					eval("properties.showAllItem"+properties.tagMode+" = "+properties.showAllItem);
+					properties["showAllItem" + properties.tagMode] = properties.showAllItem;
 					window.SetProperty("属性·显示全部项(标签" + properties.tagMode + ")", properties.showAllItem);
                     brw.populate(false,2);
                     break;
                 case (idx == 912):
                     properties.drawItemsCounter = !properties.drawItemsCounter;
                     window.SetProperty("属性·分组内显示条目数量", properties.drawItemsCounter);
-					eval("properties.drawItemsCounter"+properties.tagMode+" = "+properties.drawItemsCounter);
+					properties["drawItemsCounter" + properties.tagMode] = properties.drawItemsCounter;
 					window.SetProperty("属性·显示条目数量(标签" + properties.tagMode + ")", properties.drawItemsCounter);
                     break;
                 case (idx == 913):
@@ -4153,7 +4140,7 @@ oBrowser = function(name) {
                 case (idx == 918):
                     properties.AlbumArtFallback = !properties.AlbumArtFallback;
                     window.SetProperty("封面·回退到专辑封面", properties.AlbumArtFallback);
-					eval("properties.AlbumArtFallback"+properties.tagMode+" = "+properties.AlbumArtFallback);
+					properties["AlbumArtFallback" + properties.tagMode] = properties.AlbumArtFallback;
 					window.SetProperty("封面·回退到专辑封面(标签模式" + properties.tagMode + ")", properties.AlbumArtFallback);
                     get_metrics();
 					var total = this.groups.length;
@@ -4178,7 +4165,7 @@ oBrowser = function(name) {
                     window.ShowConfigure();
                     break;
                 case (idx == 993):
-                    window.Reload();
+                    reloadPanelSafe();
                     break;
                 case (idx == 994):
                     properties.darklayout = !properties.darklayout;
@@ -4240,7 +4227,7 @@ oBrowser = function(name) {
 				case (idx == 2998):
 					properties.removePrefix = !properties.removePrefix;
 					window.SetProperty("属性·忽略前缀", properties.removePrefix);
-					eval("properties.removePrefix"+properties.tagMode+" = "+properties.removePrefix);
+					properties["removePrefix" + properties.tagMode] = properties.removePrefix;
 					window.SetProperty("属性·忽略前缀(标签" + properties.tagMode + ")", properties.removePrefix);
 					brw.populate(true,"NoPrefix");				
 					break;					
@@ -4410,11 +4397,6 @@ function on_size(w, h) {
 		window.MinWidth = 1;
 		window.MinHeight = 1;
 
-		// set wallpaper
-		if(properties.showwallpaper){
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-		} else update_wallpaper = true;
-
 		// set Size of browser
 		height_top_fix = (properties.showHeaderBar ? properties.headerBarHeight : 0) + (properties.showTagSwitcherBar ? g_tagswitcherbar.default_height : 0);
 		brw.setSize(0, height_top_fix, ww, wh - height_top_fix);
@@ -4439,10 +4421,6 @@ function on_paint(gr) {
 	} catch (ePT) {}
     if(!ww || !wh || ww < 10 || wh < 10) return;
 	if(update_size) on_size(window.Width, window.Height);
-	if(update_wallpaper && properties.showwallpaper && properties.wallpapermode == 0){
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
-		update_wallpaper = false;		
-	}
 
     if(!g_1x1) {
         // draw background under playlist
@@ -4802,15 +4780,15 @@ function on_drag_over(action, x, y, mask) {
 }
 //=================================================// Metrics & Fonts & Colors & Images
 function get_metrics() {
-    properties.displayMode = eval("properties.tagModedisplay"+properties.tagMode);
-    properties.circleMode = eval("properties.circleDisplay"+properties.tagMode);
-    properties.showAllItem = eval("properties.showAllItem"+properties.tagMode);
-    properties.drawItemsCounter = eval("properties.drawItemsCounter"+properties.tagMode);
-    properties.showHeaderBar = eval("properties.showHeaderBar"+properties.tagMode);
-    properties.removePrefix = eval("properties.removePrefix"+properties.tagMode);	
-	properties.thumbnailWidth = eval("properties.thumbnailWidth"+properties.tagMode);
-	properties.default_lineHeightMin = eval("properties.default_lineHeightMin"+properties.tagMode);
-	properties.AlbumArtFallback = eval("properties.AlbumArtFallback"+properties.tagMode);
+    properties.displayMode = properties["tagModedisplay" + properties.tagMode];
+    properties.circleMode = properties["circleDisplay" + properties.tagMode];
+    properties.showAllItem = properties["showAllItem" + properties.tagMode];
+    properties.drawItemsCounter = properties["drawItemsCounter" + properties.tagMode];
+    properties.showHeaderBar = properties["showHeaderBar" + properties.tagMode];
+    properties.removePrefix = properties["removePrefix" + properties.tagMode];	
+	properties.thumbnailWidth = properties["thumbnailWidth" + properties.tagMode];
+	properties.default_lineHeightMin = properties["default_lineHeightMin" + properties.tagMode];
+	properties.AlbumArtFallback = properties["AlbumArtFallback" + properties.tagMode];
     // scroll step
     switch(properties.displayMode) {
         case 0:
@@ -4929,7 +4907,6 @@ function get_colors() {
 		colors.grad_bottom_color2 = GetGrey(0,0);
 		colors.fading_bottom_height = 30;
 
-		colors.headerbar_bg = RGBA(0, 0, 0, 0);
 		if(properties.showwallpaper) {
 			colors.headerbar_line = GetGrey(0,40);
 		}
@@ -4959,7 +4936,6 @@ function on_colours_changed() {
 	g_filterbox.reset_layout();
 
 	if(properties.showwallpaper || properties.darklayout) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 	};
     if(brw) brw.repaint();
 };
@@ -5237,11 +5213,8 @@ function on_char(code) {
 function on_playback_new_track(metadb){
     g_metadb = metadb;
 	if(window.IsVisible) {
-		if(properties.showwallpaper && properties.wallpapermode == 0) {
-			g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
-		};
 		brw.repaint();
-	} else if(properties.wallpapermode == 0) update_wallpaper = true;
+	}
 	try{
 		playing_track_playcount = TF.play_count.Eval();
 	} catch(e){}
@@ -5253,7 +5226,6 @@ function on_playback_stop(reason) {
     case 1: // eof (e.g. end of playlist)
         // update wallpaper
         if(properties.showwallpaper && properties.wallpapermode == 0) {
-            g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, null);
 			brw.repaint();
         };
         break;
@@ -5476,7 +5448,7 @@ function on_notify_data(name, info) {
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-			window.Reload();
+			reloadPanelSafe();
 		break;
 		case "resetCache":
 			g_image_cache.resetCache();
@@ -5485,7 +5457,7 @@ function on_notify_data(name, info) {
 			if(properties.ParentName!="媒体库"){
 				properties.adapt_to_playlist = info;
 				window.SetProperty("属性·从活动播放列表填充", properties.adapt_to_playlist);
-				window.Reload();
+				reloadPanelSafe();
 			}
 		break;		
 		case "colors":
@@ -5511,9 +5483,7 @@ function on_notify_data(name, info) {
 			}
 		break;
 		case "MemSolicitation":
-			globalProperties.mem_solicitation = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
-			window.Reload();
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -5652,7 +5622,7 @@ function on_notify_data(name, info) {
 			if(window.IsVisible || name=="wallpaperBlurGlobal") toggleBlurWallpaper(info);
 		break;
         case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
             break;
 		case "avoid_on_playlists_changed":
 			g_avoid_on_playlists_changed=info;

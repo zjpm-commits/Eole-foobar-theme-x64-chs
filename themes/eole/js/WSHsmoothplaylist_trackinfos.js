@@ -23,7 +23,6 @@
     visualization_dark_theme: window.GetProperty("大面板·可视化深色主题", false),
     showwallpaper: window.GetProperty("大面板·显示壁纸", false),
     wallpaperblurred: window.GetProperty("大面板·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("大面板·壁纸模糊强度", 1.05),
     wallpapermode: window.GetProperty("大面板·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("大面板·壁纸显示方式", 0),
     defaultPlaylistItemAction: window.GetProperty("大面板·播放列表默认点击动作", "Play"), //"Add to playback queue"
@@ -79,7 +78,6 @@ var properties_mini = {
     visualization_dark_theme: window.GetProperty("迷你·可视化深色主题", false),
     showwallpaper: window.GetProperty("迷你·显示壁纸", false),
     wallpaperblurred: window.GetProperty("迷你·壁纸模糊", true),
-    wallpaperblurvalue: window.GetProperty("迷你·壁纸模糊强度", 1.05),
     wallpapermode: window.GetProperty("迷你·壁纸模式", 0),
     wallpaperdisplay: window.GetProperty("迷你·壁纸显示方式", 0),
     defaultPlaylistItemAction: window.GetProperty("迷你·播放列表默认点击动作", "Play"), //"Add to playback queue"
@@ -261,7 +259,6 @@ var Update_Required_function = "";
 var playing_track_playcount = 0;
 var update_size = true;
 var first_on_size = true;
-var nowplaying_cachekey = '';
 var toPlaylistIdx = -1;
 var g_avoid_playlist_displayed_switch = false;
 var g_avoid_on_metadb_changed = false;
@@ -699,7 +696,7 @@ oPlaylistManager = function(name) {
 						gr.DrawRect(cx + bg_margin_left, cy_ + bg_margin_top-3, cw - bg_margin_left*2 - this.scr_w - 1, ch, 1.0, colors.pm_blink_rectline);
                     };
                 } else {
-                    gr.GdiDrawText("发送到..." , g_font.italicplus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 34, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                    gr.GdiDrawText("发送到..." , g_font.plus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 34, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
                 };
             } else {
                 if(this.activeRow == 0) {
@@ -710,7 +707,7 @@ oPlaylistManager = function(name) {
 					gr.DrawRect(cx + bg_margin_left, cy_ + bg_margin_top-3, cw - bg_margin_left*2 - this.scr_w - 1, ch, 1.0, colors.pm_blink_rectline);
 
                 } else {
-                    gr.GdiDrawText("发送到..." , g_font.italicplus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 34, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                    gr.GdiDrawText("发送到..." , g_font.plus1, txt_color, cx + bg_margin_left + txt_margin, this.y + cPlaylistManager.topbarHeight - 34, cw - bg_margin_left*2 - txt_margin*2 - tw - this.scr_w, ch, DT_LEFT | DT_CALCRECT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
                 };
             };
 
@@ -2504,7 +2501,7 @@ oBrowser = function(name) {
 								cover.padding = (properties.doubleRowText)?16:10;
                                 if(this.groups[g].cover_type == null) {
                                     if(this.groups[g].load_requested == 0) {
-										img = g_image_cache.hit(this.rows[i].metadb, g, false);
+										img = g_image_cache.hit(this.rows[i].metadb, g, false, undefined, undefined, true);
 										if(img!="loading") this.groups[g].cover_img = img;
 										if (typeof this.groups[g].cover_img !== "undefined" && this.groups[g].cover_img!==null) {
 											this.groups[g].cover_img = g_image_cache.getit(this.rows[i].metadb, g, this.groups[g].cover_img);
@@ -2554,7 +2551,6 @@ oBrowser = function(name) {
 									try{
 										gr.DrawImage(this.groups[g].cover_img, cv_x+8, cv_y, cv_w, cv_h, 0, 0, this.groups[g].cover_img.Width, this.groups[g].cover_img.Height,0,255);
 									} catch (e) {
-										console.log("DrawImage: invalid image ");
 									}
 								}
 								if(!properties.circleMode)
@@ -2573,7 +2569,7 @@ oBrowser = function(name) {
                             // =====
                             
                             arr_e[2]=arr_e[2].replace(/\s+/g, " ");
-							if(!isDefined(this.groups[g].row1_Width)) this.groups[g].row1_Width = gr.CalcTextWidth(this.groups[g].group_header_row_1, g_font.italicplus3);
+							if(!isDefined(this.groups[g].row1_Width)) this.groups[g].row1_Width = gr.CalcTextWidth(this.groups[g].group_header_row_1, g_font.plus3);
 							if(!isDefined(this.groups[g].row2_Width)) this.groups[g].row2_Width = gr.CalcTextWidth(this.groups[g].group_header_row_2, g_font.normal);
                             if(!isDefined(this.groups[g].timeWidth)) this.groups[g].timeWidth = gr.CalcTextWidth(this.groups[g].TimeString, ((properties.doubleRowText)?g_font.normal:g_font.min1)) + 10;
 							if(!isDefined(this.groups[g].dateWidth)) this.groups[g].dateWidth = gr.CalcTextWidth(this.groups[g].date, g_font.min1);
@@ -2583,7 +2579,7 @@ oBrowser = function(name) {
                             gr.GdiDrawText(this.groups[g].TimeString, ((properties.doubleRowText)?g_font.normal:g_font.min1),  colors.faded_txt, header_text_x + header_text_w - this.groups[g].timeWidth - 5, ay - ((ghrh - 1) * ah) + Math.round(ah*1/3)*(ghrh - 1) - 2+this.groups[g].group_height_fix, this.groups[g].timeWidth, Math.round(ah*2/3), DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                             gr.GdiDrawText(this.groups[g].date, g_font.min1,  colors.faded_txt, header_text_x, ay - ((ghrh - 2) * ah)+this.groups[g].group_height_fix-((properties.doubleRowText)?10:0), header_text_x + header_text_w -6-this.paddingLeft, Math.round(ah*2/3)*(ghrh - 1), DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                             // left area
-                            gr.GdiDrawText(this.groups[g].group_header_row_1, g_font.italicplus3, colors.normal_txt, header_text_x + text_left_margin, ay - ((ghrh - 1) * ah) + Math.round(ah*1/3)*(ghrh - 1) - 2+this.groups[g].group_height_fix, header_text_w - text_left_margin - this.groups[g].timeWidth - 10, Math.round(ah*2/3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                            gr.GdiDrawText(this.groups[g].group_header_row_1, g_font.plus3, colors.normal_txt, header_text_x + text_left_margin, ay - ((ghrh - 1) * ah) + Math.round(ah*1/3)*(ghrh - 1) - 2+this.groups[g].group_height_fix, header_text_w - text_left_margin - this.groups[g].timeWidth - 10, Math.round(ah*2/3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                             gr.GdiDrawText(this.groups[g].group_header_row_2, g_font.normal, colors.faded_txt, header_text_x + text_left_margin, ay - ((ghrh - 2) * ah)+this.groups[g].group_height_fix-((properties.doubleRowText)?10:0), header_text_w - text_left_margin - this.groups[g].dateWidth-10, Math.round(ah*2/3)*(ghrh - 1), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(properties.showToolTip) {
@@ -2726,7 +2722,7 @@ oBrowser = function(name) {
 
 										if(!g_var_cache.isdefined("track_num_part")) g_var_cache.set("track_num_part",gr.CalcTextWidth("000", g_font.normal));
                                         cColumns.track_num_part = g_var_cache.get("track_num_part") + 14;
-                                        if(!isDefined(this.rows[i].artist_part_w)) this.rows[i].artist_part_w = track_artist_part.length > 0 ? gr.CalcTextWidth(track_artist_part, g_font.italicmin1) + 0 : 0;
+                                        if(!isDefined(this.rows[i].artist_part_w)) this.rows[i].artist_part_w = track_artist_part.length > 0 ? gr.CalcTextWidth(track_artist_part, g_font.min1) + 0 : 0;
                                         if(!isDefined(this.rows[i].title_part_w)) this.rows[i].title_part_w = gr.CalcTextWidth(track_title_part, g_font.normal) + 10;
 										if(!g_var_cache.isdefined("track_time_part")) g_var_cache.set("track_time_part",gr.CalcTextWidth("00:00:00", g_font.normal));
                                         cColumns.track_time_part = track_time_part.length*g_var_cache.get("track_time_part")/8+20;
@@ -2750,7 +2746,7 @@ oBrowser = function(name) {
                                             gr.GdiDrawText(g_radio_artist,g_font.min1, colors.fadedsmall_txt, tx+10, ay_2, tw-cColumns.track_time_part-15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                                         } else {
                                             gr.GdiDrawText(track_title_part, g_font.normal, colors.normal_txt, tx+10, ay_1, tw-cColumns.track_time_part-15-(this.rows[i].rating_length+10), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-                                            gr.GdiDrawText(track_artist_part, g_font.italicmin1, colors.fadedsmall_txt, tx+10, ay_2, tw-cColumns.track_time_part-15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                                            gr.GdiDrawText(track_artist_part, g_font.min1, colors.fadedsmall_txt, tx+10, ay_2, tw-cColumns.track_time_part-15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                                         };
                                         gr.GdiDrawText(track_time_part, g_font.normal, colors.normal_txt, tx+tw-cColumns.track_time_part-8, ay_1, cColumns.track_time_part, ah_1, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
@@ -2773,7 +2769,7 @@ oBrowser = function(name) {
 												pt = playingText.GetGraphics();
 													pt.FillSolidRect(0, 0, total_size+15, ah,colors.normal_bg)
 													pt.SetTextRenderingHint(5);
-													var _pbWall = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
+													var _pbWall = null;
 													if(isImage(_pbWall) && _pbWall.Width > 0) {
 														pt.DrawImage(_pbWall, 0, 0, total_size+15, ah, 0, 0, _pbWall.Width, ah);
 													}
@@ -2789,11 +2785,11 @@ oBrowser = function(name) {
 												gr.DrawRect(ax+22-properties.track_gradient_size, ay, ax+current_size+6, ah-1,1,colors.albumartprogressbar_rectline)
 												if(track_time_part == "ON AIR") {
 													gr.GdiDrawText(g_radio_title, g_font.normal, colors.albumartprogressbar_txt, tx+11, ay_1, Math.min(text_limit,tw-cColumns.track_time_part-15-this.rows[i].rating_length), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
-													gr.GdiDrawText((g_radio_artist!=""?g_radio_artist:track_artist_part), g_font.italicmin1, colors.albumartprogressbar_txt, tx+11, ay_2, Math.min(text_limit,tw-cColumns.track_time_part-15), ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+													gr.GdiDrawText((g_radio_artist!=""?g_radio_artist:track_artist_part), g_font.min1, colors.albumartprogressbar_txt, tx+11, ay_2, Math.min(text_limit,tw-cColumns.track_time_part-15), ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 												} else {
 													var margin_left = tx+10 - progress_x;
 													gr.GdiDrawText(track_title_part, g_font.normal, colors.albumartprogressbar_txt, progress_x + margin_left, ay_1, Math.min(progress_w-margin_left,tw-cColumns.track_time_part-15-this.rows[i].rating_length), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
-													gr.GdiDrawText(track_artist_part, g_font.italicmin1, colors.albumartprogressbar_txt, progress_x + margin_left, ay_2, Math.min(progress_w-margin_left,tw-cColumns.track_time_part-15), ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+													gr.GdiDrawText(track_artist_part, g_font.min1, colors.albumartprogressbar_txt, progress_x + margin_left, ay_2, Math.min(progress_w-margin_left,tw-cColumns.track_time_part-15), ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 												};
 
 											} else {
@@ -2830,7 +2826,7 @@ oBrowser = function(name) {
 											g = this.rows[i].albumId;
 											if(this.groups[g].cover_type == null) {
 												if(this.groups[g].load_requested == 0 && this.groups[g].start==this.rows[i].playlistTrackId) {
-													img = g_image_cache.hit(this.rows[i].metadb, g, false);
+													img = g_image_cache.hit(this.rows[i].metadb, g, false, undefined, undefined, true);
 													if(img!="loading") this.groups[g].cover_img = img;
 													if (typeof this.groups[g].cover_img !== "undefined" && this.groups[g].cover_img!==null) {
 														this.groups[g].cover_img = g_image_cache.getit(this.rows[i].metadb, g, this.groups[g].cover_img);
@@ -2900,7 +2896,7 @@ oBrowser = function(name) {
 											g = this.rows[i].albumId;
 											if(this.groups[g].cover_type == null) {
 												if(this.groups[g].load_requested == 0) {
-													img = g_image_cache.hit(this.rows[i].metadb, g, false);
+													img = g_image_cache.hit(this.rows[i].metadb, g, false, undefined, undefined, true);
 													if(img!="loading") this.groups[g].cover_img = img;
 													if (typeof this.groups[g].cover_img !== "undefined" && this.groups[g].cover_img!==null) {
 														this.groups[g].cover_img = g_image_cache.getit(this.rows[i].metadb, g, this.groups[g].cover_img);
@@ -2976,7 +2972,7 @@ oBrowser = function(name) {
 										}
 
                                         if(!properties.doubleRowShowCover) gr.GdiDrawText(track_num_part, g_font_light, colors.tracknumber_txt, ax+8, ay_1, cColumns.track_num_part, ah_1, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-                                        gr.GdiDrawText(track_artist_part, g_font.italicmin1, colors.fadedsmall_txt, tx+10, ay_2, tw-cColumns.track_time_part-15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                                        gr.GdiDrawText(track_artist_part, g_font.min1, colors.fadedsmall_txt, tx+10, ay_2, tw-cColumns.track_time_part-15, ah_2, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                                         gr.GdiDrawText(track_title_part, g_font.normal, colors.normal_txt, tx+10, ay_1, tw-cColumns.track_time_part-15-(this.rows[i].rating_length+5), ah_1, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                                         gr.GdiDrawText(track_time_part, g_font.normal, colors.normal_txt, tx+tw-cColumns.track_time_part-8, ay_1, cColumns.track_time_part, ah_1, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                                         // rating Stars
@@ -3113,7 +3109,7 @@ oBrowser = function(name) {
 												pt = playingText.GetGraphics();
 													pt.SetTextRenderingHint(globalProperties.TextRendering);
 
-													var _pbWall2 = setWallpaperImgV2(undefined, this.groups[this.rows[i].albumId].metadb, true, ww, ah*16);
+													var _pbWall2 = null;
 													if(isImage(_pbWall2) && _pbWall2.Width > 0) {
 														pt.DrawImage(_pbWall2, 0, 0, total_size+15, ah, 0, 0, _pbWall2.Width, ah);
 													}
@@ -3282,13 +3278,13 @@ oBrowser = function(name) {
 					}
 					gr.GdiDrawText(text1, g_font.plus5, colors.normal_txt, this.x, py - 40, this.w, 36, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					gr.FillSolidRect(this.x+this.w/2-75,py, 150, 1, colors.border);
-					gr.GdiDrawText(text2, g_font.italicplus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText(text2, g_font.plus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
             } else { // no track, playlist is empty
 					var px = 0;
 					var py = this.y + Math.round(this.h  / 2)-1;
 					gr.GdiDrawText("加载中...", g_font.plus5, colors.normal_txt, this.x, py - 40, this.w, 35, DT_CENTER | DT_BOTTOM | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 					gr.FillSolidRect(this.x+this.w/2-75,py, 150, 1, colors.border);
-					gr.GdiDrawText("播放列表查看器", g_font.italicplus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+					gr.GdiDrawText("播放列表查看器", g_font.plus1, colors.faded_txt, this.x, py + 6, this.w, 20, DT_CENTER | DT_TOP | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
             };
 
 			this.drawLeftLine = layout_state.isEqual(0) && !(main_panel_state.isEqual(1) && window.Name=='BottomPlaylist');
@@ -4466,34 +4462,28 @@ oBrowser = function(name) {
                     case 210:
                         setOneProperty("wallpapermode",99);
                         on_colours_changed();
-                        if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 211:
                         setOneProperty("wallpapermode",0);
                         on_colours_changed();
-                        if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 220:
                         setOneProperty("wallpaperblurred",!properties.wallpaperblurred);
                         on_colours_changed();
-                        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 221:
                         setOneProperty("wallpaperdisplay",0);
-                        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 222:
                         setOneProperty("wallpaperdisplay",1);
-                        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 223:
                         setOneProperty("wallpaperdisplay",2);
-                        g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
                         brw.repaint();
                         break;
                     case 300:
@@ -4878,7 +4868,6 @@ clipboard = {
     selection: null
 };
 
-var update_wallpaper = false;
 var repopulate = false;
 var g_focus_id = -1;
 var g_focus_id_prev = -1;
@@ -4908,7 +4897,6 @@ var scroll_ = 0, scroll = 0, scroll_prev = 0;
 var time222;
 var g_start_ = 0, g_end_ = 0;
 var g_last = 0;
-var g_wallpaperImg = null;
 
 var g_rating_updated = false;
 var g_image_cache = false;
@@ -4930,9 +4918,6 @@ function on_size() {
 	if (window.IsVisible || first_on_size || !g_first_populate_done || update_size){
 		window.MinWidth = 1;
 		window.MinHeight = 1;
-
-		// set wallpaper
-		update_wallpaper = !(properties.showwallpaper && window.IsVisible);
 
 		/* on_size 有可能比 on_init 里的 brw 构造更早跑到，判空免得每次尺寸变化都抛异常 */
 		if (brw) brw.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
@@ -4981,11 +4966,6 @@ function on_paint(gr) {
 		} catch (ePending) {
 			if (typeof console !== 'undefined') console.log('ERROR:deferred update: ' + (ePending && ePending.message));
 		}
-	}
-
-	if((typeof(g_wallpaperImg) == "undefined" || !g_wallpaperImg || update_wallpaper) && properties.showwallpaper){
-		updateWallpaper(fb.GetNowPlaying());
-		update_wallpaper = false;		
 	}
 
     if (!ww) {
@@ -6188,12 +6168,6 @@ function on_playback_stop(reason) {
 	switch(reason) {
 	case 0: // user stop
 	case 1: // eof (e.g. end of playlist)
-		// update wallpaper
-		nowplaying_cachekey = '';
-		if(properties.showwallpaper && properties.wallpapermode == 0) {
-			if(window.IsVisible) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, null);
-			else update_wallpaper = true;
-		};
 		brw.repaint();
 		break;
 	case 2: // starting_another (only called on user action, i.e. click on next button)
@@ -6211,13 +6185,6 @@ function on_playback_dynamic_info_track() {
 		g_radio_artist = "";
 	}
 }
-function updateWallpaper(metadb){
-	old_cachekey = nowplaying_cachekey;
-	nowplaying_cachekey = process_cachekey(metadb);
-	if(old_cachekey!=nowplaying_cachekey || nowplaying_cachekey=="undefined") {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, metadb);
-	}	
-}
 function on_playback_new_track(metadb) {
 	if(brw.isPlayingIdx>=0) try{brw.groups[brw.isPlayingIdx].isPlaying = false;} catch(e){}
 	try{
@@ -6234,9 +6201,6 @@ function on_playback_new_track(metadb) {
 			brw.populate(is_first_populate = true,6);
 			repopulate = false;
 		}
-		if(properties.showwallpaper && properties.wallpapermode == 0) {
-			updateWallpaper(metadb);
-		} else update_wallpaper = true;
 		
 		if((((fb.CursorFollowPlayback || properties.FollowNowPlaying) && (!(window.Name=="BottomPlaylist" && g_active_playlist!=plman.PlayingPlaylist) || properties.lockOnNowPlaying)) && !(g_filterbox.inputbox.edit || g_filterbox.inputbox.length > 0)) || (brw.expanded_group<0 && properties.autocollapse && plman.PlayingPlaylist == g_active_playlist)) {		
 			brw.dontFlashNowPlaying=true;
@@ -6256,7 +6220,6 @@ function on_playback_new_track(metadb) {
 		g_total_seconds = null;
 		g_time_remaining = null;
 		g_elapsed_seconds = 0;
-		if(properties.wallpapermode == 0) update_wallpaper = true;		 
 	}
 };
 
@@ -6617,7 +6580,7 @@ function on_notify_data(name, info) {
         case "use_ratings_file_tags":
             globalProperties.use_ratings_file_tags = info;
             window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
-            window.Reload();
+            reloadPanelSafe();
 		break;
 		case "resetCache":
 			g_image_cache.resetCache();
@@ -6638,9 +6601,7 @@ function on_notify_data(name, info) {
 			window.SetProperty("全局·启用可调整边框", globalProperties.enableResizableBorders);
 		break;
 		case "MemSolicitation":
-			globalProperties.mem_solicitation = info;
-			window.SetProperty("全局·内存占用策略", globalProperties.mem_solicitation);
-			window.Reload();
+			applyMemoryParametersLocally(info);
 		break;
 		case "thumbnailWidthMax":
 			globalProperties.thumbnailWidthMax = Number(info);
@@ -6792,7 +6753,6 @@ function on_notify_data(name, info) {
 				setOneProperty("showwallpaper",info);
 				on_colours_changed();
 				if(properties.showwallpaper) {
-					g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
 					if(properties.darklayout) window.NotifyOthers("minimode_dark_theme", true);
 				} else window.NotifyOthers("minimode_dark_theme", false);
 				window.Repaint();
@@ -6802,7 +6762,6 @@ function on_notify_data(name, info) {
 			if(window.IsVisible) {
 				setOneProperty("wallpaperblurred",info);
 				on_colours_changed();
-				if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 				window.Repaint();
 			}
 		break;
@@ -6934,7 +6893,7 @@ function on_notify_data(name, info) {
 			window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 		break;
 		case "WSH_panels_reload":
-			window.Reload();
+			reloadPanelSafe();
 		break;
     };
 };
@@ -7198,16 +7157,12 @@ function toggleWallpaper(wallpaper_state, layout_state_2_update){
 
 	setOneProperty("showwallpaper",wallpaper_state, false, layout_state_2_update);
 	on_colours_changed();
-	if(properties.showwallpaper) {
-		g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.IsPlaying ? fb.GetNowPlaying() : null);
-	}
 	window.Repaint();
 }
 function toggleBlurWallpaper(wallpaper_blur_state){
 	wallpaper_blur_state = typeof wallpaper_blur_state !== 'undefined' ? wallpaper_blur_state : !properties.wallpaperblurred;
 	setOneProperty("wallpaperblurred",wallpaper_blur_state);
 	on_colours_changed();
-	if(fb.IsPlaying) g_wallpaperImg = setWallpaperImg(globalProperties.default_wallpaper, fb.GetNowPlaying());
 	window.Repaint();
 }
 function on_init() {
