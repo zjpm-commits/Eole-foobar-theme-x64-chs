@@ -572,7 +572,7 @@ function build_buttons(){
 				moreMenu(window.Width, 15);
 				g_tooltip.Deactivate();
 		},false,false,more_img,more_img_hover),
-		Scheduler: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "定时器", "停止/关机定时器...", function () {
+		Scheduler: new SimpleButton(-button_right_m-(button_width+button_padding)*(displayed_button++), buttons_right_top_m, button_width, 32, "电源计划", "停止/关机电源计划...", function () {
 				schedulerMenu(window.Width-button_right_m-(button_width+button_padding)*(nb_of_buttons_right-schedulerPosition)-152, 15);
 				g_tooltip.Deactivate();
 		},false,false,shutdown_img,shutdown_img_hover),
@@ -2076,7 +2076,7 @@ function draw_menu() {
 			break;
 	}
 	_schedulerMenu.CheckMenuRadioItem(3018, 3023, checked_item);
-	_schedulerMenu.AppendTo(basemenu, MF_STRING, "定时器");
+	_schedulerMenu.AppendTo(basemenu, MF_STRING, "电源计划");
 
 	library_menu = window.CreatePopupMenu();
 	playlists_menu = window.CreatePopupMenu();
@@ -2460,7 +2460,7 @@ function moreMenu(x, y){
 					break;
 			}
 			_schedulerMenu.CheckMenuRadioItem(3018, 3023, checked_item);
-			_schedulerMenu.AppendTo(_moreMenu, MF_STRING, "定时器");
+			_schedulerMenu.AppendTo(_moreMenu, MF_STRING, "电源计划");
 		}
 
 		if(!properties.displayEqualizer)
@@ -2484,10 +2484,10 @@ function moreMenu(x, y){
 		_menu_button.CheckMenuItem(4024, properties.displayDevice);		
 		_menu_button.AppendMenuItem(MF_STRING, 4018, "评级");
 		_menu_button.CheckMenuItem(4018, properties.displayRating);
-		_menu_button.AppendMenuItem(MF_STRING, 4019, "定时器");
+		_menu_button.AppendMenuItem(MF_STRING, 4019, "电源计划");
 		_menu_button.CheckMenuItem(4019, properties.displayScheduler);
 
-		_menu_button.AppendTo(_moreMenu,MF_STRING, "可见按钮");
+		_menu_button.AppendTo(_moreMenu,MF_STRING, "显示按钮");
 
         idx = _moreMenu.TrackPopupMenu(x,y,0x0008 | 0x0020);
 
@@ -2750,7 +2750,7 @@ function schedulerMenu(x, y){
         var idx;
 
 		var _schedulerMenu = window.CreatePopupMenu();
-		_schedulerMenu.AppendMenuItem(MF_DISABLED, 0, "定时器：");
+		_schedulerMenu.AppendMenuItem(MF_DISABLED, 0, "电源计划：");
 		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3018, "无操作");
 		_schedulerMenu.AppendMenuSeparator();
@@ -2881,7 +2881,7 @@ function draw_controls_menu(x,y){
 				break;
 		}
 		_schedulerMenu.CheckMenuRadioItem(3018, 3023, checked_item);
-		_schedulerMenu.AppendTo(_menu, MF_STRING, "定时器");
+		_schedulerMenu.AppendTo(_menu, MF_STRING, "电源计划");
 
 		if(fb.IsPlaying){
 			_menu.AppendMenuSeparator();
@@ -3053,10 +3053,10 @@ function draw_settings_menu(x,y){
 		_menu_button.CheckMenuItem(3017, properties.displayEqualizer);	
 		_menu_button.AppendMenuItem(MF_STRING, 3018, "评级");
 		_menu_button.CheckMenuItem(3018, properties.displayRating);
-		_menu_button.AppendMenuItem(MF_STRING, 3019, "定时器");
+		_menu_button.AppendMenuItem(MF_STRING, 3019, "电源计划");
 		_menu_button.CheckMenuItem(3019, properties.displayScheduler);
 
-		_menu_button.AppendTo(_menu,MF_STRING, "可见按钮");
+		_menu_button.AppendTo(_menu,MF_STRING, "显示按钮");
 
 		idx = _menu.TrackPopupMenu(x,y,0x0020);
         switch(true) {
