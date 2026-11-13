@@ -20,8 +20,10 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 运行此主题需要以下组件：
 - foobar2000 x64 v2.25.10（Asion 汉化版）
 - foo_uie_jsplitter v4.3.4版（智享阁汉化版）
+
+  运行此主题可选组件
 - foo_openhacks v0.1.5_汉化修复Snap版
-  说明：jsplitter的无边框模式暂时会导致模块加载露出底色的问题未修复，暂时亦不支持“贴靠窗口”自动分屏功能，推荐暂用openhacks体验更好；标题栏右键菜单可选择用jsplitter隐藏边框或是openhacks隐藏边框。
+- 说明：jsplitter的无边框模式暂时会导致模块加载露出底色的问题未修复，暂时亦不支持“贴靠窗口”自动分屏功能，推荐暂用openhacks体验更好；标题栏右键菜单可选择用jsplitter隐藏边框或是openhacks隐藏边框。
 - 无需再安装：foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
 
 其他运行所需脚本或程序：
