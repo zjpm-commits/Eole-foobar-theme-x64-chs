@@ -1286,29 +1286,84 @@ oUIHacks = function () {
     this.DisableSizing = function () {};
     
     this.SetPseudoCaption = function (x, y, w, h) {
+        var oh = openhacksGet();
+        /* 「禁用」模式＝foo_openhacks 系组件（mod / cn 修补版）全权接管：
+           边框和伪标题栏都必须走它自己的
+           COM 配置，不能同时注册 jsplitter 的伪标题栏请求——两套系统各管一半时
+           （边框 openhacks、拖动 jsplitter），它的窗口吸附模块不会介入，吸附会失效。 */
+        if (oh && chromeCfgIsDisabled()) {
+            /* 面板还没排好版时 window.Width 不可信，跳过这次，
+               等首次 on_size / 鼠标移动跟随再设置，避免错误区域盖住按钮。 */
+            if (!(window.Width > 0)) return;
+            try {
+                oh.PseudoCaptionLeftEnabled = true;
+                oh.PseudoCaptionRightEnabled = true;
+                oh.PseudoCaptionTopEnabled = true;
+                oh.PseudoCaptionBottomEnabled = false;
+                oh.PseudoCaptionLeft = Math.round(x);
+                oh.PseudoCaptionRight = Math.max(0, Math.round(window.Width - x - w));
+                oh.PseudoCaptionTop = Math.round(y);
+                oh.PseudoCaptionHeight = Math.max(0, Math.round(h));
+            } catch (e) { console.log("OpenHacksMod PseudoCaption Err: " + e); }
+            return;
+        }
+        /* 正常模式优先走 fb.Window.SetPseudoCaption（jsplitter 原生路径）：
+           拖动是货真价实的系统移动循环，Win11 贴靠/分屏自然生效（Foorab 实测同款）；
+           openhacks_mod 此时只做旁观者提供窗口吸附。
+           fb.Window 不存在时才回退到 COM 锚点方式。 */
         if (this.useNative) {
             try {
                 /* 边框/标题栏样式不在这里写死：改由标题栏的「边框控制项」统一管理
                    （WSHtitle_bar.js 的 chromeApply），否则一开边框就会被这里按回无边框。 */
-                fb.Window.SetPseudoCaption(x, y - 2, w, h, true); 
-            } catch(e) { console.log("Native PseudoCaption Err: " + e); }
+                fb.Window.SetPseudoCaption(x, y - 2, w, h, true);
+                return;
+            } catch (e) { console.log("Native PseudoCaption Err: " + e); }
+        }
+        if (oh) {
+            /* 面板还没排好版时 window.Width 不可信，跳过这次，
+               等首次 on_size / 鼠标移动跟随再设置，避免错误区域盖住按钮。 */
+            if (!(window.Width > 0)) return;
+            try {
+                oh.PseudoCaptionLeftEnabled = true;
+                oh.PseudoCaptionRightEnabled = true;
+                oh.PseudoCaptionTopEnabled = true;
+                oh.PseudoCaptionBottomEnabled = false;
+                oh.PseudoCaptionLeft = Math.round(x);
+                oh.PseudoCaptionRight = Math.max(0, Math.round(window.Width - x - w));
+                oh.PseudoCaptionTop = Math.round(y);
+                oh.PseudoCaptionHeight = Math.max(0, Math.round(h));
+            } catch (e) { console.log("OpenHacksMod PseudoCaption Err: " + e); }
         }
     };
     
     this.getFullscreenState = function () { 
+        var oh = openhacksGet();
+        if (oh) { try { return !!oh.Fullscreen; } catch (e) {} }
         if (this.useNative) return fb.Window.Fullscreen;
         return false; 
     };
     
     this.setFullscreenState = function (v) { 
+        var oh = openhacksGet();
+        if (oh) { try { oh.Fullscreen = !!v; return; } catch (e) {} }
         if (this.useNative) fb.Window.Fullscreen = v;
     };
     
     this.toggleFullscreen = function () { 
+        var oh = openhacksGet();
+        if (oh) { try { oh.Fullscreen = !oh.Fullscreen; return; } catch (e) {} }
         if (this.useNative) fb.Window.Fullscreen = !fb.Window.Fullscreen;
     };
     
     this.getMainWindowState = function () { 
+        var oh = openhacksGet();
+        if (oh) {
+            try {
+                /* COM 的 3 = 全屏；主题原语义里全屏不算最大化，按 0（正常）返回 */
+                if (oh.WindowState == 3) return 0;
+                return oh.WindowState;
+            } catch (e) {}
+        }
         if (this.useNative) {
             if (fb.Window.IsMaximized) return 2; // Maximized
             if (fb.Window.IsMinimized) return 1; // Minimized
@@ -1318,6 +1373,8 @@ oUIHacks = function () {
     };
     
     this.setMainWindowState = function (v) { 
+        var oh = openhacksGet();
+        if (oh) { try { oh.WindowState = v; return; } catch (e) {} }
         if (this.useNative) {
             if (v === 2) fb.Window.Maximize();
             else if (v === 1) fb.Window.Minimize();
@@ -1336,6 +1393,26 @@ oUIHacks = function () {
     };
 };
 
+/* foo_openhacks 系组件检测：foo_openhacks_mod（COM: OpenHacksMod）与
+   foo_openhacks-cn 修补版（COM: OpenHacks，拖动已改为真实标题栏语义、
+   Win11 原生贴靠/Win+方向键可用）。装了任一就优先走它的 COM API；
+   fb.Window（foo_ui_hacks 系接口）只作后备。 */
+var g_ohObj = undefined;
+function openhacksGet() {
+    if (g_ohObj === undefined) {
+        g_ohObj = null;
+        try {
+            if (typeof utils.CheckComponent === 'function') {
+                if (utils.CheckComponent("foo_openhacks_mod"))
+                    g_ohObj = new ActiveXObject("OpenHacksMod");
+                else if (utils.CheckComponent("foo_openhacks"))
+                    g_ohObj = new ActiveXObject("OpenHacks");
+            }
+        } catch (e) { g_ohObj = null; }
+    }
+    return g_ohObj;
+}
+
 var g_uihacks = new oUIHacks();
 
 /* 菜单栏 / 状态栏的显隐由标题栏的「边框控制项」决定，状态存在 profile 下的共享配置文件里，
@@ -1344,7 +1421,7 @@ function chromeCfgPath() {
     return fb.ProfilePath + 'wsh-data\\eole-settings\\WINDOWCHROME.cfg';
 }
 function chromeCfgRead() {
-    var st = { frame: false, menu: false, status: false };
+    var st = { frame: false, menu: false, status: false, disabled: false };
     try {
         var t = utils.ReadTextFile(chromeCfgPath());
         if (t) {
@@ -1353,14 +1430,29 @@ function chromeCfgRead() {
                 if (typeof c.frame === 'boolean') st.frame = c.frame;
                 if (typeof c.menu === 'boolean') st.menu = c.menu;
                 if (typeof c.status === 'boolean') st.status = c.status;
+                if (typeof c.disabled === 'boolean') st.disabled = c.disabled;
             }
         }
     } catch (e) {}
     return st;
 }
+/* 「边框控制项」禁用状态的带缓存读取（1 秒 TTL）：
+   SetPseudoCaption 在鼠标移动时会高频调用，不能每次都读配置文件。 */
+var g_chromeDisabledCache = null, g_chromeDisabledAt = 0;
+function chromeCfgIsDisabled() {
+    var now = (new Date()).getTime();
+    if (g_chromeDisabledCache === null || (now - g_chromeDisabledAt) > 1000) {
+        g_chromeDisabledCache = !!chromeCfgRead().disabled;
+        g_chromeDisabledAt = now;
+    }
+    return g_chromeDisabledCache;
+}
 function hideDuiBars() {
     if (window.InstanceType !== 1) return;
     var st = chromeCfgRead();   /* 配置文件还不存在时，就是主题默认的「都隐藏」 */
+    /* foo_openhacks_mod 已卸载时，禁用状态自动作废，恢复 Eole 自己控制 */
+    if (st.disabled && typeof openhacksGet === 'function' && !openhacksGet()) st.disabled = false;
+    if (st.disabled) return;    /* 禁用＝边框/菜单栏/状态栏交给外部插件（如 foo_openhacks_mod）控制 */
     try {
         if (fb.Window) {
             fb.Window.MainMenuHidden = !st.menu;

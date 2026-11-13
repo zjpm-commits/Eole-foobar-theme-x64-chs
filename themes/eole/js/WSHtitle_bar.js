@@ -1267,7 +1267,7 @@ function chromeCfgPath() {
 }
 /* 主题默认：无边框无标题栏、无菜单栏、无状态栏 */
 function chromeDefaults() {
-	return { frame: false, menu: false, status: false };
+	return { frame: false, menu: false, status: false, disabled: false };
 }
 function chromeRead() {
 	var st = chromeDefaults();
@@ -1280,6 +1280,7 @@ function chromeRead() {
 				if (typeof c.frame === 'boolean') st.frame = c.frame;
 				if (typeof c.menu === 'boolean') st.menu = c.menu;
 				if (typeof c.status === 'boolean') st.status = c.status;
+				if (typeof c.disabled === 'boolean') st.disabled = c.disabled;
 			}
 		}
 	} catch (e) {}
@@ -1288,7 +1289,7 @@ function chromeRead() {
 function chromeWrite(st) {
 	try {
 		utils.WriteTextFile(chromeCfgPath(), JSON.stringify({
-			frame: !!st.frame, menu: !!st.menu, status: !!st.status
+			frame: !!st.frame, menu: !!st.menu, status: !!st.status, disabled: !!st.disabled
 		}));
 	} catch (e) {}
 }
@@ -1303,13 +1304,36 @@ function chromeFrameStyleOf(st) {
 function chromeApply(st) {
 	var s = st || chromeRead();
 	chromeWrite(s);
+	/* disabled＝边框/菜单栏/状态栏全部交给外部插件（如 foo_openhacks_mod）控制，
+	   Eole 不再碰窗口外观，避免两边抢同一个 FrameStyle。 */
+	if (s.disabled) {
+		/* 检测到 foo_openhacks_mod 就顺手把无边框样式交给它：
+		   WindowFrameStyle=2（无边框）+ 关掉 Win10 活动窗口阴影（否则四周有边框线）。 */
+		var oh = (typeof openhacksGet === 'function') ? openhacksGet() : null;
+		if (oh) {
+			try { oh.WindowFrameStyle = 2; } catch (eF) {}
+			try { oh.EnableWin10Shadow = false; } catch (eS) {}
+			return s;
+		}
+		/* foo_openhacks_mod 已卸载：没人接手了，自动收回控制权，
+		   否则边框/菜单栏/状态栏会处于"两不管"状态。 */
+		s.disabled = false;
+		chromeWrite(s);
+	}
 	if (!chromeAvailable()) return s;
-	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); } catch (e1) {}
-	try { fb.Window.MainMenuHidden = !s.menu; } catch (e2) {}
-	try { fb.Window.StatusBarHidden = !s.status; } catch (e3) {}
+	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); }
+	catch (e1) { console.log("Eole chrome: FrameStyle=" + chromeFrameStyleOf(s) + " 写入失败: " + e1); }
+	try { fb.Window.MainMenuHidden = !s.menu; }
+	catch (e2) { console.log("Eole chrome: MainMenuHidden 写入失败: " + e2); }
+	try { fb.Window.StatusBarHidden = !s.status; }
+	catch (e3) { console.log("Eole chrome: StatusBarHidden 写入失败: " + e3); }
+	console.log("Eole chrome: 应用 frame=" + s.frame + " menu=" + s.menu +
+		" status=" + s.status + " -> FrameStyle=" + chromeFrameStyleOf(s) +
+		" (InstanceType=" + window.InstanceType + ")");
 	/* 换 FrameStyle 会让整窗重排，稍后再确认一次菜单栏/状态栏并重算伪标题栏拖动区 */
 	setTimeout(function () {
 		var c = chromeRead();
+		if (c.disabled) return;
 		try { fb.Window.MainMenuHidden = !c.menu; } catch (e4) {}
 		try { fb.Window.StatusBarHidden = !c.status; } catch (e5) {}
 		try { SetPseudoCaption(); } catch (e6) {}
@@ -1351,6 +1375,10 @@ function draw_settings_menu(x,y){
 		_chrome.AppendMenuSeparator();
 		/* 动作项：不带勾，点一下把上面三项一起勾上（全隐藏），回到主题默认外观 */
 		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1823, "隐藏以上全部栏");
+		_chrome.AppendMenuSeparator();
+		/* 禁用＝Eole 完全放手，边框/菜单栏/状态栏交给外部插件（如 foo_openhacks_mod）控制 */
+		_chrome.AppendMenuItem(MF_STRING, 1824, "禁用（插件接管）");
+		_chrome.CheckMenuItem(1824, !!_chrome_st.disabled);
 		_chrome.AppendTo(_menu, MF_STRING, "边框控制项开关");
 		
 		_menu.AppendMenuSeparator();
@@ -1510,6 +1538,15 @@ function draw_settings_menu(x,y){
 			case (idx == 1823):
 				/* 以上全隐藏：三项一起关，回到主题默认的无边框无菜单无状态栏 */
 				chromeApply({ frame: false, menu: false, status: false });
+				window.Repaint();
+				break;
+			case (idx == 1824):
+				/* 禁用/恢复 Eole 的窗口外观控制：
+				   勾上后 chromeApply 不再碰 FrameStyle/菜单栏/状态栏（含启动时）；
+				   取消勾选则按已存配置立即恢复主题自己的控制。 */
+				var _cs3 = chromeRead();
+				_cs3.disabled = !_cs3.disabled;
+				chromeApply(_cs3);
 				window.Repaint();
 				break;
 			case (idx == 1809):
