@@ -4834,7 +4834,8 @@ function get_colors() {
 		colors.node_outline_bold = GetGrey(255, 0);
 		colors.node_icon_bold = GetGrey(0);
 
-        colors.grad_bottom_1 = GetGrey(0, 150);
+        /* 底部渐隐带：与 WSHfilter / WSHsmoothplaylistmanager 保持一致（原为 150，深色下明显更深） */
+        colors.grad_bottom_1 = GetGrey(0, 70);
         colors.grad_bottom_2 = GetGrey(0, 0);
         colors.fading_bottom_height = 50;
 
