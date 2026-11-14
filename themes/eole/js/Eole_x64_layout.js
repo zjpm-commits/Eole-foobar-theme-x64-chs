@@ -11,6 +11,10 @@
 // 例如 RIGHTPLAYLISTWIDTH_240 就表示右侧栏宽 240。所以本脚本不去问面板
 // 要设置，而是直接枚举这个目录里的文件名——这也是后面必须用 utils.Glob
 // 的原因。目录里同一个键只会存在一个文件（换值时先删旧的再写新的）。
+//
+// 摆位是事件驱动的：面板改设置后会 NotifyOthers("eole_x64_layout")，
+// on_notify_data 的兜底分支随即 arrange()。低频 SetInterval 只作兜底
+// （兜设置文件改动没发通知的情况 + 壁纸生成失败后的重试），平时不扫盘。
 // ============================================================================
 // 原始面板脚本作者：Ottodix 及贡献者，这里是本地适配版。
 window.DefinePanel('Eole x64 layout', {author: 'Eole contributors / local adaptation'});
@@ -581,4 +585,4 @@ window.SetTimeout(function () {
 window.SetInterval(function () {
     try { arrange(); } catch (e) {}
     try { if (!fwImg && !fwTimer && !fwTimer2 && fw_hostOn()) fwQueue(0); } catch (eF) {}
-}, 600);
+}, 2500); // PATCH(perf): 600→2500ms —— 摆位以通知驱动为主，此间隔仅为兜底扫描

@@ -170,6 +170,9 @@ var hoovervolume=false;
 var g_pos_progress = 0;
 var g_length_progress = fb.PlaybackLength;
 var hooverprogress=false;
+// PATCH(perf): on_paint 每次记录进度条+时间文本所在横条的底边（顶边恒为 0），
+// on_playback_time 的每秒重绘按此脏矩形进行；未建立前回退整幅。
+var g_progress_band_bottom = 0;
 
 var time_font = null;
 
@@ -857,6 +860,10 @@ function on_paint(gr) {
 	} else {
 		var margin_top_adapted = progress_margin_top;
 	}
+	// PATCH(perf): 进度条(±游标9px)、曲目信息两行文本(最多第二行+16+10)、
+	// 右侧时间文本(高40)全部落在 margin_top_adapted 上下 ~46px 内；
+	// 负向文本边距最远到 y≈0，故顶边取 0。
+	g_progress_band_bottom = margin_top_adapted + 46;
     
 	if(ww_progress > 0 && !(hideProgressWhenVolumeChange && VolumeSliderActive)) {
 		if(properties.cursor_style==2 && !(progress_vars.hover_slider || progress_vars.drag)) ellipse_radius = 0;
@@ -1337,7 +1344,10 @@ function on_playback_time(time) {
 	evalTimeDisplayed(time,false);
     if (!progress_vars.drag) {
         if (g_length_progress > 0) g_pos_progress = Math.round(ww_progress * time / g_length_progress);
-        window.Repaint();
+        // PATCH(perf): 每秒变化的只有进度条+时间文本横条，按脏矩形重绘；
+        // band 尚未建立(on_paint 未跑过)时回退整幅。
+        if (g_progress_band_bottom > 0 && ww > 0) window.RepaintRect(0, 0, ww, g_progress_band_bottom);
+        else window.Repaint();
     }
 }
 function on_playback_pause(){
