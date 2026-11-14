@@ -490,6 +490,8 @@ var L = {};
 
 var tab = clampTab(getP('lx.tab', 0));
 var hidePlatformRow = !!Number(getP('lx.hidePlatformRow', 0) || 0);
+/* 底部渐隐带：默认开；与 Eole 其它列表面板用同一组参数（深色 70/50，浅色 10/30） */
+var fadeBottom = !!Number(getP('lx.fadeBottom', 1) || 0);
 var fixedPlatform = String(getP('lx.fixedPlatform', 'wy') || 'wy');
 
 function platformKnown(p) {
@@ -806,6 +808,11 @@ function scaledGraphics(g) {
   var p = {
     FillSolidRect: function (x, y, w, h, c) {
       return g.FillSolidRect(X(x), X(y), X(w), X(h), c);
+    },
+    /* 原生 FillGradRect 不在缩放代理里时会被原样转发（参数不缩放），
+       这里补一个，保证缩放 125% / 150% 下渐变位置和尺寸也跟着走。 */
+    FillGradRect: function (x, y, w, h, ang, c1, c2, gamma) {
+      return g.FillGradRect(X(x), X(y), X(w), X(h), ang, c1, c2, gamma);
     },
     DrawRect: function (x, y, w, h, lw, c) {
       return g.DrawRect(X(x), X(y), X(w), X(h), LW(lw), c);
@@ -11247,6 +11254,16 @@ function lookSections() {
           refreshBgFx(true);
           setStatus('配色：' + themeLabel(v));
         } },
+      { kind: 'seg', id: 'fadebottom', label: '底部渐隐带',
+        value: fadeBottom ? '1' : '0',
+        options: [['1', '显示'], ['0', '隐藏']],
+        onPick: function (v) {
+          setProp('lx.fadeBottom', v === '1' ? 1 : 0);
+          fadeBottom = (v === '1');
+          setStatus(fadeBottom ? '底部渐隐带：开' : '底部渐隐带：关');
+          repaint();
+        } },
+      { kind: 'note', text: '列表最后几行在底部状态条上方渐隐，深浅与 Eole 其它列表面板一致。' },
       { kind: 'seg', id: 'rowlines', label: '曲目清单', value: String(rowLines()),
         options: [['2', '双行'], ['1', '单行']],
         onPick: function (v) {
@@ -12484,6 +12501,23 @@ function runSettingsButton(id, close) {
   repaint();
 }
 
+/* 底部渐隐带：从列表往下面到面板最底，状态栏那 24px 也一起渐隐，
+   免得在状态栏上沿留一条硬边。参数与 Eole 的 WSHfilter /
+   WSHsmoothplaylistmanager / WSHlibrary_tree 一致：
+   深色 黑 70、高 50；浅色 黑 10、高 30。 */
+function drawBottomFade(gr) {
+  if (!fadeBottom) return;
+  var bottom = H;
+  if (bottom <= 0) return;
+  var h = (THEME === 'light') ? 30 : 50;
+  if (h > bottom) h = bottom;
+  if (h < 4) return;
+  var a = (THEME === 'light') ? 10 : 70;
+  try {
+    gr.FillGradRect(0, bottom - h, W, h, 90, A(0x000000, 0), A(0x000000, a), 1);
+  } catch (e) {}
+}
+
 function drawFooter(gr) {
   var y = H - FOOT_H;
   // 和标题栏同色：同一个表达式，拖动「标题栏透明度」时两处一起变
@@ -12548,6 +12582,8 @@ function on_paint(gr) {
 
   drawRightPanel(gr);
   drawFooter(gr);
+  /* 画在状态栏之后，才能把状态栏一起盖进渐变里 */
+  drawBottomFade(gr);
 
   if (overlay) {
     rebuildOverlayLines(false);
