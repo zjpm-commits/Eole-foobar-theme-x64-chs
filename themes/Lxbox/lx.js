@@ -1060,6 +1060,22 @@
 
   /* QQ 音乐加密格式（.mflac / .mgg / .qmc*）只有客户端能解，foobar2000 拿到就是
      一坨乱码。取链层直接拒掉，让调用方换脚本 / 换音质，别浪费一次下载。 */
+  /* 取链撞上 QQ 加密容器（.mflac / .mgg / .qmc*）的记录：诊断页要单独一条，
+     出问题时不用翻日志猜「哪一档、哪个脚本给的」。只留最近 20 条。 */
+  var encHits = [];
+  function encNote(where, ext, info) {
+    info = info || {};
+    encHits.push({
+      t: Date.now(),
+      where: String(where || ''),
+      ext: String(ext || ''),
+      source: String(info.source || ''),
+      quality: String(info.quality || ''),
+      script: String(info.script || '')
+    });
+    if (encHits.length > 20) encHits.shift();
+  }
+
   function encryptedExt(url) {
     var s = String(url || '');
     var cut = s.length;
@@ -1139,7 +1155,10 @@
             throw new Error('脚本返回的不是有效直链');
           }
           var enc = encryptedExt(u);
-          if (enc) throw new Error('音源返回的是 QQ 音乐加密格式（' + enc + '），foobar2000 无法播放');
+          if (enc) {
+            encNote('脚本取链', enc, { source: source, quality: q, script: rt.name });
+            throw new Error('音源返回的是 QQ 音乐加密格式（' + enc + '），foobar2000 无法播放');
+          }
           return u;
         }).then(function (u) {
           tried.push({ script: rt.name, quality: q, ok: true });
@@ -1215,6 +1234,7 @@
           }
           var enc = encryptedExt(u);
           if (enc) {
+            encNote('脚本取链（单档）', enc, { source: source, quality: quality, script: rt.name });
             tried.push(rt.name + '：加密格式 ' + enc + '（foobar2000 播不了）');
             next(i + 1);
             return;
@@ -1324,6 +1344,8 @@
     resolve: resolve,
     probeUrl: probeUrl,
     encryptedExt: encryptedExt,
+    encHits: encHits,
+    encNote: encNote,
     clearResolveCache: clearResolveCache,
     scriptPrefFor: scriptPrefFor,
     requestAction: requestAction,

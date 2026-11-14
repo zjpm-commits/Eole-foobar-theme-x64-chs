@@ -348,6 +348,13 @@
     return m ? m[0].toLowerCase() : '';
   }
 
+  /* 诊断页要单独一条「撞上加密容器」，这里统一往 NM.lx 的计数器里记 */
+  function encNote(where, ext, info) {
+    try {
+      if (NM.lx && typeof NM.lx.encNote === 'function') NM.lx.encNote(where, ext, info);
+    } catch (e) {}
+  }
+
   function txApiBase() {
     var custom = '';
     try { custom = String(getP('lx.txApi', '') || '').trim(); } catch (e) { custom = ''; }
@@ -386,7 +393,10 @@
           ((j && (j.msg || j.message)) || ('code=' + (j && j.code))) + '）');
       }
       var enc = txEncExt(u);
-      if (enc) throw new Error('备用接口返回加密格式 ' + enc + '，foobar2000 播不了');
+      if (enc) {
+        encNote('备用接口', enc, { source: 'tx', quality: want });
+        throw new Error('备用接口返回加密格式 ' + enc + '，foobar2000 播不了');
+      }
       var info = txQualityFromResult(d.quality || d.level, u);
       return {
         url: String(u),
@@ -420,15 +430,21 @@
           var it = r.list[i] || {};
           if (!it.purl) continue;
           var nu = txAbsUrl(r.sip, it.purl);
-          if (txEncExt(nu)) continue;      /* 加密格式：跳过，继续看下一档 */
+          var encN = txEncExt(nu);
+          if (encN) {                      /* 加密格式：记一笔，跳过，继续看下一档 */
+            encNote('内置取链', encN, { source: 'tx', quality: qualities[i] });
+            continue;
+          }
           return { url: nu, quality: qualities[i], trial: false, mediaMid: m, via: '内置' };
         }
         var ti = r.list[r.trialAt] || {};
         if (ti.purl) {
           var tu = txAbsUrl(r.sip, ti.purl);
-          if (!txEncExt(tu)) {
+          var encT = txEncExt(tu);
+          if (!encT) {
             return { url: tu, quality: '128k', trial: true, mediaMid: m, via: '内置' };
           }
+          encNote('内置取链（试听）', encT, { source: 'tx', quality: '128k' });
         }
         var err = new Error('腾讯没有下发可用直链（VIP 专享 / 已下架 / 需要登录）');
         err.txEmpty = true;

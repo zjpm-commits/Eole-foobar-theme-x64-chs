@@ -7984,6 +7984,25 @@ function bioRect() {
   return { x: x, y: 8, w: w, h: hdRow1H() };
 }
 
+/* 顶栏中间那块空白：页签右边、最左那个头部控件以前的一整片（两排都算）。
+   点这里 = 把右侧播放列表滚到正在播放的那首。 */
+function headBlankRect() {
+  var x0 = tabsEnd() + Math.max(6, TAB_GAP);
+  var right = W - PAD;
+  /* 平台按钮在第一排页签正下方（同一套网格），左右边界一致；
+     右侧控件要取两排里最左的那个，质音 / 评论那一列别漏掉 */
+  var cand = [bioRect(), scriptBarRect(), qualityRect(), commentsRect()];
+  for (var i = 0; i < cand.length; i++) {
+    var rr = cand[i];
+    if (rr && rr.x > 0 && rr.x < right) right = rr.x;
+  }
+  var w = right - 8 - x0;
+  if (w < 40) return null;          /* 窄到没地方就别响应，免得点页签旁边误触 */
+  return { x: x0, y: 8, w: w, h: Math.max(0, HEAD_H - 8) };
+}
+
+var headBlankHot = false;      /* 鼠标在顶栏那块空白上 */
+
 var HEAD_BTNS = [
   { key: 'settings', label: '设置', icon: '' },
   { key: 'comments', label: '评论', icon: '' },
@@ -8638,6 +8657,28 @@ function buildDiagnosticLines(out, width) {
     out.push({ t: '  × ' + r.name + '：' + (r.error || r.status || '未初始化'), c: 'err' });
   });
   if (st.error) out.push({ t: '加载错误：' + st.error, c: 'err' });
+
+  /* QQ 加密格式单独一条：撞上几次、最近一次是哪来的。日志里只会写「取链失败」，
+     看不出是哪一档、哪个脚本给的，这条能。 */
+  var hits = (NM.lx && NM.lx.encHits) || [];
+  if (!hits.length) {
+    wrapInto(out, 'QQ 加密格式：没遇到过（.mflac / .mgg / .qmc* 取链层一律不收）',
+             width, FONT_BASE, 'dim');
+  } else {
+    var el = hits[hits.length - 1];
+    var ed = new Date(el.t || Date.now());
+    var eh = ('0' + ed.getHours()).slice(-2) + ':' + ('0' + ed.getMinutes()).slice(-2);
+    var who = [];
+    if (el.source) who.push(platformName(el.source));
+    if (el.quality) who.push(qualityName(el.quality));
+    /* 脚本名放句末括号里：窄面板折行时先断在它前面，不会把版本号切成两半 */
+    wrapInto(out,
+      'QQ 加密格式：已拒收 ' + hits.length + ' 次 ｜ 最近 ' + eh + ' ' +
+      (who.length ? who.join(' ') + ' ' : '') + (el.where || '取链') +
+      ' 返回 ' + el.ext + '（已跳过换档' + (el.script ? ' · ' + el.script : '') + '）',
+      width, FONT_BASE, 'text');
+  }
+
   out.push({ t: '', c: 'text' });
 
   if (lastProblem) {
@@ -8846,6 +8887,18 @@ function drawHeader(gr) {
   drawScriptBar(gr);
 
   drawHeaderButtons(gr);
+
+  /* 空白区平时什么都没有，指上去才铺一层淡底并写一句「定位正在播放」 */
+  if (headBlankHot && !overlay) {
+    var hb = headBlankRect();
+    if (hb) {
+      gr.FillSolidRect(hb.x, hb.y, hb.w, hb.h, tint(C.hover, 40));
+      if (hb.w >= 110) {
+        gr.GdiDrawText('定位正在播放', F.tiny, A(C.dim, 215),
+                       hb.x, hb.y, hb.w, hb.h, FLAG_CENTER);
+      }
+    }
+  }
 }
 
 var sbGeom = {};        /* id -> { x, y, h, total, visible, offset } */
@@ -9967,6 +10020,68 @@ function rightPlayingRowRect() {
   return { x: L.right.x, y: y, w: L.right.w, h: h };
 }
 
+/* 定位到正在播放那一行的闪烁：滚过去以后亮一下，不然「滚到了」和
+   「本来就在这儿」看起来一模一样 */
+var rightFlashRow = -1;
+var rightFlashAt = 0;
+var rightFlashTimer = 0;
+
+function flashRightRow(row) {
+  rightFlashRow = row;
+  rightFlashAt = Date.now();
+  if (rightFlashTimer) { clearTimeout(rightFlashTimer); rightFlashTimer = 0; }
+  rightFlashTimer = setTimeout(function () {
+    rightFlashTimer = 0;
+    rightFlashRow = -1;
+    rightFlashAt = 0;
+    repaint();
+  }, 1200);
+  repaint();
+}
+
+/* 点顶栏中间空白：右栏滚到正在播放的曲目，竖向居中。
+   各种「没法定位」的情况都在状态栏写明，别点了没反应。 */
+function locatePlayingInRight() {
+  if (!L.right || L.right.w <= 0) {
+    setStatus('右侧播放列表没显示（面板宽于 ' + RIGHT_MIN_W + ' 才展开），拉宽面板再点', true);
+    return;
+  }
+  if (rightCollapsed) {
+    rightCollapsed = false;
+    try { setP('lx.rightCollapsed', 0); } catch (e0) {}
+    computeLayout();
+    clampScroll();
+  }
+  if (rightMode !== 'pl') {
+    /* 缓存视图是平铺的缓存文件，没有「播放列表第几首」这回事，先切回来 */
+    setRightMode('pl');
+  }
+  rightEnsure();
+
+  var vis = rightVisRows();
+  var row = rightPlayingRow();
+  if (row < 0 || row >= rightTotal) {
+    var why = '没有正在播放的曲目';
+    try {
+      var loc = plman.GetPlayingItemLocation();
+      var act = Number(plman.ActivePlaylist);
+      if (loc && loc.IsValid && Number(loc.PlaylistIndex) !== act) {
+        why = '正在播放的曲目在另一个播放列表里（第 ' + (Number(loc.PlaylistIndex) + 1) + ' 个）';
+      }
+    } catch (e1) {}
+    setStatus(why, true);
+    repaint();
+    return;
+  }
+
+  /* 竖向居中；靠近两头时夹住，别把列表滚过头 */
+  rightScroll = clamp(row - Math.floor((vis - 1) / 2), 0, Math.max(0, rightTotal - vis));
+  flashRightRow(row);
+  var title = '';
+  try { title = String(fb.GetNowPlaying().Title || ''); } catch (e2) { title = ''; }
+  setStatus('已定位到正在播放：' + (title || ('第 ' + (row + 1) + ' 首')));
+}
+
 function rightRowAtY(y, x) {
   if (!L.right || !L.rightListH) return -1;
   /* 必须同时落在右栏横向范围内。只看 y 的话，左栏的折叠按钮和榜单行会被
@@ -10068,6 +10183,12 @@ function drawRightPanel(gr) {
 
     if (on) drawSelFrame(gr, r.x + 2, ry, r.w - 4, RIGHT_ROW_H, C.accent);
     else if (hot) gr.FillSolidRect(r.x, ry, r.w, RIGHT_ROW_H, tint(C.hover, BG_A.rowHot));
+
+    /* 刚定位过来的那一行闪一下：底色 + 左端一道竖条 */
+    if (i === rightFlashRow) {
+      gr.FillSolidRect(r.x, ry, r.w, RIGHT_ROW_H, A(C.accent, 40));
+      gr.FillSolidRect(r.x, ry, 3, RIGHT_ROW_H, A(C.accent, 215));
+    }
 
     if (i === playRow) drawRowProgress(gr, r.x, ry, r.w, RIGHT_ROW_H);
 
@@ -12714,6 +12835,7 @@ function on_mouse_move(x, y, mask) {
   var newBtn = newKind === 'track' ? buttonAt(x, y) : '';
 
   var hand = false;
+  var hbz = null;          /* 顶栏空白矩形；只有指针落在空白那块才算 */
   if (scrollbarHit(x, y)) hand = true;
   else if (y >= H - FOOT_H) hand = true;
   else if (newBtn) hand = true;
@@ -12733,8 +12855,18 @@ function on_mouse_move(x, y, mask) {
       if (headerButtonVisible(HEAD_BTNS[b].key) && inRect(headerButtonRect(HEAD_BTNS[b].key), x, y)) hand = true;
     }
     if (newKind === 'board' || newKind === 'coll') hand = true;
+    hbz = headBlankRect();
+    if (hbz && inRect(hbz, x, y)) hand = true;
   }
   setCursorHand(hand);
+
+  /* hbz 只在上面那个 else 分支里算过；走了别的分支就是 undefined，
+     表示指针在别的控件上，空白区不亮 */
+  var hbHotNow = !!(hbz && inRect(hbz, x, y));
+  if (hbHotNow !== headBlankHot) {
+    headBlankHot = hbHotNow;
+    repaint();
+  }
 
   var togR = sideToggleRect();
   var togHot = !!(togR && inRect(togR, x, y));
@@ -12785,6 +12917,7 @@ function on_mouse_leave() {
   if (rightTogHot) { rightTogHot = false; repaint(); }
   if (rightHoverRow >= 0) { rightHoverRow = -1; repaint(); }
   if (scriptHot) { scriptHot = false; repaint(); }
+  if (headBlankHot) { headBlankHot = false; repaint(); }
   if (qBarHot) { qBarHot = false; repaint(); }
   if (probeHot) { probeHot = false; repaint(); }
   if (bioMoreHot) {
@@ -12990,6 +13123,13 @@ function on_mouse_lbtn_up(x, y) {
       selectTab(i);
       return;
     }
+  }
+
+  /* 顶栏中间的空白：定位右侧播放列表正在播放的那首 */
+  var hb = headBlankRect();
+  if (hb && inRect(hb, x, y)) {
+    locatePlayingInRight();
+    return;
   }
 
   var togRect = sideToggleRect();
