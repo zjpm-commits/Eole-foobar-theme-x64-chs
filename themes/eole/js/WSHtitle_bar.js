@@ -283,20 +283,6 @@ function setDarkLayout(){
 	}
 }
 
-var eoleBorderTimer = null;
-function updateEoleBorderColor() {
-    if (eoleBorderTimer !== null) window.ClearTimeout(eoleBorderTimer);
-    eoleBorderTimer = window.SetTimeout(function () {
-        eoleBorderTimer = null;
-        try {
-            var rgb = (colors.normal_bg & 0xffffff).toString(16);
-            var helper = skin_global_path + "\\tools\\EoleBorder.exe";
-            if (utils.FileTest(helper, "e"))
-                new ActiveXObject("WScript.Shell").Run('"' + helper + '" ' + rgb, 0, false);
-        } catch (e) { console.log("Eole border color: " + e); }
-    }, 300);
-}
-
 function get_colors(){
 	setDarkLayout();
 	get_colors_global();
@@ -358,7 +344,6 @@ function get_colors(){
 		}
 	}
 	build_images();
-	updateEoleBorderColor();
 }
 
 function Lightswitch(switch_all,new_state){
@@ -1265,9 +1250,9 @@ function on_mouse_rbtn_up(x, y){
 function chromeCfgPath() {
 	return fb.ProfilePath + 'wsh-data\\eole-settings\\WINDOWCHROME.cfg';
 }
-/* 主题默认：无边框无标题栏、无菜单栏、无状态栏 */
+/* 主题默认：无边框无标题栏、无菜单栏、无状态栏、jsplitter 接管 */
 function chromeDefaults() {
-	return { frame: false, menu: false, status: false, disabled: false };
+	return { frame: false, menu: false, status: false, manager: 'jsplitter' };
 }
 function chromeRead() {
 	var st = chromeDefaults();
@@ -1280,7 +1265,10 @@ function chromeRead() {
 				if (typeof c.frame === 'boolean') st.frame = c.frame;
 				if (typeof c.menu === 'boolean') st.menu = c.menu;
 				if (typeof c.status === 'boolean') st.status = c.status;
-				if (typeof c.disabled === 'boolean') st.disabled = c.disabled;
+				/* 接管方：'openhacks' / 'jsplitter'（单选）。
+				   迁移：旧版 disabled=true 等价于 OpenHacks 接管。 */
+				if (c.manager === 'openhacks' || c.manager === 'jsplitter') st.manager = c.manager;
+				else if (c.disabled === true) st.manager = 'openhacks';
 			}
 		}
 	} catch (e) {}
@@ -1289,7 +1277,8 @@ function chromeRead() {
 function chromeWrite(st) {
 	try {
 		utils.WriteTextFile(chromeCfgPath(), JSON.stringify({
-			frame: !!st.frame, menu: !!st.menu, status: !!st.status, disabled: !!st.disabled
+			frame: !!st.frame, menu: !!st.menu, status: !!st.status,
+			manager: (st.manager === 'openhacks') ? 'openhacks' : 'jsplitter'
 		}));
 	} catch (e) {}
 }
@@ -1304,36 +1293,42 @@ function chromeFrameStyleOf(st) {
 function chromeApply(st) {
 	var s = st || chromeRead();
 	chromeWrite(s);
-	/* disabled＝边框/菜单栏/状态栏全部交给外部插件（如 foo_openhacks_mod）控制，
-	   Eole 不再碰窗口外观，避免两边抢同一个 FrameStyle。 */
-	if (s.disabled) {
-		/* 检测到 foo_openhacks_mod 就顺手把无边框样式交给它：
-		   WindowFrameStyle=2（无边框）+ 关掉 Win10 活动窗口阴影（否则四周有边框线）。 */
+	/* OpenHacks 接管＝三个开关全部联动到它的 COM 接口：
+	   边框→WindowFrameStyle，菜单栏→MenuBarVisible，状态栏→StatusBarVisible。 */
+	if (s.manager === 'openhacks') {
 		var oh = (typeof openhacksGet === 'function') ? openhacksGet() : null;
 		if (oh) {
-			try { oh.WindowFrameStyle = 2; } catch (eF) {}
+			try { oh.WindowFrameStyle = chromeFrameStyleOf(s); } catch (eF) {}
 			try { oh.EnableWin10Shadow = false; } catch (eS) {}
+			try { oh.MenuBarVisible = !!s.menu; } catch (eM) {}
+			try { oh.StatusBarVisible = !!s.status; } catch (eT) {}
+			/* 换 FrameStyle 会让整窗重排，稍后再确认一次并重算伪标题栏拖动区 */
+			setTimeout(function () {
+				var c = chromeRead();
+				if (c.manager !== 'openhacks') return;
+				var o2 = (typeof openhacksGet === 'function') ? openhacksGet() : null;
+				if (o2) {
+					try { o2.MenuBarVisible = !!c.menu; } catch (eM2) {}
+					try { o2.StatusBarVisible = !!c.status; } catch (eT2) {}
+				}
+				try { SetPseudoCaption(); } catch (e6) {}
+				try { window.Repaint(); } catch (e7) {}
+			}, 120);
 			return s;
 		}
-		/* foo_openhacks_mod 已卸载：没人接手了，自动收回控制权，
+		/* foo_openhacks 已卸载：没人接手了，落回 jsplitter 并写回，
 		   否则边框/菜单栏/状态栏会处于"两不管"状态。 */
-		s.disabled = false;
+		s.manager = 'jsplitter';
 		chromeWrite(s);
 	}
 	if (!chromeAvailable()) return s;
-	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); }
-	catch (e1) { console.log("Eole chrome: FrameStyle=" + chromeFrameStyleOf(s) + " 写入失败: " + e1); }
-	try { fb.Window.MainMenuHidden = !s.menu; }
-	catch (e2) { console.log("Eole chrome: MainMenuHidden 写入失败: " + e2); }
-	try { fb.Window.StatusBarHidden = !s.status; }
-	catch (e3) { console.log("Eole chrome: StatusBarHidden 写入失败: " + e3); }
-	console.log("Eole chrome: 应用 frame=" + s.frame + " menu=" + s.menu +
-		" status=" + s.status + " -> FrameStyle=" + chromeFrameStyleOf(s) +
-		" (InstanceType=" + window.InstanceType + ")");
+	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); } catch (e1) {}
+	try { fb.Window.MainMenuHidden = !s.menu; } catch (e2) {}
+	try { fb.Window.StatusBarHidden = !s.status; } catch (e3) {}
 	/* 换 FrameStyle 会让整窗重排，稍后再确认一次菜单栏/状态栏并重算伪标题栏拖动区 */
 	setTimeout(function () {
 		var c = chromeRead();
-		if (c.disabled) return;
+		if (c.manager === 'openhacks') return;
 		try { fb.Window.MainMenuHidden = !c.menu; } catch (e4) {}
 		try { fb.Window.StatusBarHidden = !c.status; } catch (e5) {}
 		try { SetPseudoCaption(); } catch (e6) {}
@@ -1361,10 +1356,18 @@ function draw_settings_menu(x,y){
 		_hires.CheckMenuRadioItem(1814, 1816, 1814 + ((g_hires_mode === 1 || g_hires_mode === 2) ? g_hires_mode : 0));
 		_hires.AppendTo(_menu, MF_STRING, "高分屏自动适配");
 
-		/* 边框控制项：窗口级外观开关；勾选状态表示「已隐藏」 */
+		/* 边框控制项：接管方（单选）+ 窗口级外观开关；勾选状态表示「已隐藏」 */
 		var _chrome = window.CreatePopupMenu();
 		var _chrome_st = chromeRead();
-		var _chrome_ok = chromeAvailable();
+		var _oh_present = (typeof openhacksGet === 'function') && !!openhacksGet();
+		/* 接管方单选：OpenHacks＝foo_openhacks 组件 COM 全权接管（边框/菜单/状态/伪标题栏/贴靠）；
+		   jsplitter＝Eole 经 jsplitter 的 fb.Window 写入。组件不在位时 OpenHacks 项置灰。 */
+		_chrome.AppendMenuItem(_oh_present ? MF_STRING : (MF_STRING | MF_GRAYED), 1825, "Openhacks 接管");
+		_chrome.AppendMenuItem(MF_STRING, 1826, "uie_jsplitter 接管");
+		_chrome.CheckMenuRadioItem(1825, 1826, (_chrome_st.manager === 'openhacks' && _oh_present) ? 1825 : 1826);
+		_chrome.AppendMenuSeparator();
+		/* 三开关在两种接管模式下都生效：openhacks 走 COM，jsplitter 走 fb.Window */
+		var _chrome_ok = ((_chrome_st.manager === 'openhacks' && _oh_present) || chromeAvailable());
 		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1820, "隐藏边框标题栏");
 		/* 勾＝隐藏：勾上即关掉该项，与下面「以上全隐藏」语义一致 */
 		_chrome.CheckMenuItem(1820, !_chrome_st.frame);
@@ -1373,12 +1376,8 @@ function draw_settings_menu(x,y){
 		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1822, "隐藏原生状态栏");
 		_chrome.CheckMenuItem(1822, !_chrome_st.status);
 		_chrome.AppendMenuSeparator();
-		/* 动作项：不带勾，点一下把上面三项一起勾上（全隐藏），回到主题默认外观 */
+		/* 动作项：不带勾，点一下把上面三项一起勾上（全隐藏），接管方保持不变 */
 		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1823, "隐藏以上全部栏");
-		_chrome.AppendMenuSeparator();
-		/* 禁用＝Eole 完全放手，边框/菜单栏/状态栏交给外部插件（如 foo_openhacks_mod）控制 */
-		_chrome.AppendMenuItem(MF_STRING, 1824, "禁用（插件接管）");
-		_chrome.CheckMenuItem(1824, !!_chrome_st.disabled);
 		_chrome.AppendTo(_menu, MF_STRING, "边框控制项开关");
 		
 		_menu.AppendMenuSeparator();
@@ -1536,17 +1535,27 @@ function draw_settings_menu(x,y){
 				window.Repaint();
 				break;
 			case (idx == 1823):
-				/* 以上全隐藏：三项一起关，回到主题默认的无边框无菜单无状态栏 */
-				chromeApply({ frame: false, menu: false, status: false });
+				/* 以上全隐藏：三项一起关，回到主题默认的无边框无菜单无状态栏；
+				   接管方保持不变（修复旧版会把 disabled/manager 冲掉的 bug） */
+				var _cs23 = chromeRead();
+				_cs23.frame = false;
+				_cs23.menu = false;
+				_cs23.status = false;
+				chromeApply(_cs23);
 				window.Repaint();
 				break;
-			case (idx == 1824):
-				/* 禁用/恢复 Eole 的窗口外观控制：
-				   勾上后 chromeApply 不再碰 FrameStyle/菜单栏/状态栏（含启动时）；
-				   取消勾选则按已存配置立即恢复主题自己的控制。 */
-				var _cs3 = chromeRead();
-				_cs3.disabled = !_cs3.disabled;
-				chromeApply(_cs3);
+			case (idx == 1825):
+				/* 接管方切到 OpenHacks：三个开关立即经它的 COM 生效 */
+				var _cs25 = chromeRead();
+				_cs25.manager = 'openhacks';
+				chromeApply(_cs25);
+				window.Repaint();
+				break;
+			case (idx == 1826):
+				/* 接管方切到 jsplitter：Eole 经 fb.Window 立即恢复控制 */
+				var _cs26 = chromeRead();
+				_cs26.manager = 'jsplitter';
+				chromeApply(_cs26);
 				window.Repaint();
 				break;
 			case (idx == 1809):

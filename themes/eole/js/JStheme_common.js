@@ -1304,7 +1304,7 @@ oUIHacks = function () {
                 oh.PseudoCaptionRight = Math.max(0, Math.round(window.Width - x - w));
                 oh.PseudoCaptionTop = Math.round(y);
                 oh.PseudoCaptionHeight = Math.max(0, Math.round(h));
-            } catch (e) { console.log("OpenHacksMod PseudoCaption Err: " + e); }
+            } catch (e) { console.log("OpenHacks PseudoCaption Err: " + e); }
             return;
         }
         /* 正常模式优先走 fb.Window.SetPseudoCaption（jsplitter 原生路径）：
@@ -1332,7 +1332,7 @@ oUIHacks = function () {
                 oh.PseudoCaptionRight = Math.max(0, Math.round(window.Width - x - w));
                 oh.PseudoCaptionTop = Math.round(y);
                 oh.PseudoCaptionHeight = Math.max(0, Math.round(h));
-            } catch (e) { console.log("OpenHacksMod PseudoCaption Err: " + e); }
+            } catch (e) { console.log("OpenHacks PseudoCaption Err: " + e); }
         }
     };
     
@@ -1393,21 +1393,16 @@ oUIHacks = function () {
     };
 };
 
-/* foo_openhacks 系组件检测：foo_openhacks_mod（COM: OpenHacksMod）与
-   foo_openhacks-cn 修补版（COM: OpenHacks，拖动已改为真实标题栏语义、
-   Win11 原生贴靠/Win+方向键可用）。装了任一就优先走它的 COM API；
+/* foo_openhacks（COM: OpenHacks）检测：cn 修补版全权接管边框/伪标题栏，
+   拖动为真实标题栏语义，Win11 原生贴靠/Win+方向键可用。
    fb.Window（foo_ui_hacks 系接口）只作后备。 */
 var g_ohObj = undefined;
 function openhacksGet() {
     if (g_ohObj === undefined) {
         g_ohObj = null;
         try {
-            if (typeof utils.CheckComponent === 'function') {
-                if (utils.CheckComponent("foo_openhacks_mod"))
-                    g_ohObj = new ActiveXObject("OpenHacksMod");
-                else if (utils.CheckComponent("foo_openhacks"))
-                    g_ohObj = new ActiveXObject("OpenHacks");
-            }
+            if (typeof utils.CheckComponent === 'function' && utils.CheckComponent("foo_openhacks"))
+                g_ohObj = new ActiveXObject("OpenHacks");
         } catch (e) { g_ohObj = null; }
     }
     return g_ohObj;
@@ -1421,7 +1416,7 @@ function chromeCfgPath() {
     return fb.ProfilePath + 'wsh-data\\eole-settings\\WINDOWCHROME.cfg';
 }
 function chromeCfgRead() {
-    var st = { frame: false, menu: false, status: false, disabled: false };
+    var st = { frame: false, menu: false, status: false, manager: 'jsplitter' };
     try {
         var t = utils.ReadTextFile(chromeCfgPath());
         if (t) {
@@ -1430,19 +1425,22 @@ function chromeCfgRead() {
                 if (typeof c.frame === 'boolean') st.frame = c.frame;
                 if (typeof c.menu === 'boolean') st.menu = c.menu;
                 if (typeof c.status === 'boolean') st.status = c.status;
-                if (typeof c.disabled === 'boolean') st.disabled = c.disabled;
+                /* 接管方：'openhacks' / 'jsplitter'（单选）。
+                   迁移：旧版 disabled=true 等价于 OpenHacks 接管。 */
+                if (c.manager === 'openhacks' || c.manager === 'jsplitter') st.manager = c.manager;
+                else if (c.disabled === true) st.manager = 'openhacks';
             }
         }
     } catch (e) {}
     return st;
 }
-/* 「边框控制项」禁用状态的带缓存读取（1 秒 TTL）：
+/* OpenHacks 接管状态的带缓存读取（1 秒 TTL）：
    SetPseudoCaption 在鼠标移动时会高频调用，不能每次都读配置文件。 */
 var g_chromeDisabledCache = null, g_chromeDisabledAt = 0;
 function chromeCfgIsDisabled() {
     var now = (new Date()).getTime();
     if (g_chromeDisabledCache === null || (now - g_chromeDisabledAt) > 1000) {
-        g_chromeDisabledCache = !!chromeCfgRead().disabled;
+        g_chromeDisabledCache = chromeCfgRead().manager === 'openhacks';
         g_chromeDisabledAt = now;
     }
     return g_chromeDisabledCache;
@@ -1450,9 +1448,9 @@ function chromeCfgIsDisabled() {
 function hideDuiBars() {
     if (window.InstanceType !== 1) return;
     var st = chromeCfgRead();   /* 配置文件还不存在时，就是主题默认的「都隐藏」 */
-    /* foo_openhacks_mod 已卸载时，禁用状态自动作废，恢复 Eole 自己控制 */
-    if (st.disabled && typeof openhacksGet === 'function' && !openhacksGet()) st.disabled = false;
-    if (st.disabled) return;    /* 禁用＝边框/菜单栏/状态栏交给外部插件（如 foo_openhacks_mod）控制 */
+    /* foo_openhacks 已卸载时，接管状态自动作废，恢复 jsplitter 控制 */
+    if (st.manager === 'openhacks' && typeof openhacksGet === 'function' && !openhacksGet()) st.manager = 'jsplitter';
+    if (st.manager === 'openhacks') return; /* OpenHacks 接管＝菜单栏/状态栏由它的 COM 接口控制 */
     try {
         if (fb.Window) {
             fb.Window.MainMenuHidden = !st.menu;
