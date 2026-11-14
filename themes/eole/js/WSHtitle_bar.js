@@ -126,7 +126,7 @@ function fwWriteWallDark(dark) {
 }
 
 var cSearchBoxMainLight = {
-	width:270,
+	width:240,
 	marginRight:128,
 	marginLeft:5,
 	marginTop:35,
@@ -137,7 +137,7 @@ var cSearchBoxMainLight = {
 	paddingBottom:6
 };
 var cSearchBoxCompact = {
-	width:270,
+	width:240,
 	marginRight:190,
 	marginRightSmall:185,	
 	marginRightBig:198,	
@@ -150,7 +150,7 @@ var cSearchBoxCompact = {
 	paddingBottom:6
 };
 var cSearchBoxMainDark = {
-	width:270,
+	width:240,
 	marginRight:128,
 	marginLeft:5,
 	marginTop:35,
