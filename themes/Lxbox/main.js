@@ -490,8 +490,6 @@ var L = {};
 
 var tab = clampTab(getP('lx.tab', 0));
 var hidePlatformRow = !!Number(getP('lx.hidePlatformRow', 0) || 0);
-/* 底部渐隐带：默认开；与 Eole 其它列表面板用同一组参数（深色 70/50，浅色 10/30） */
-var fadeBottom = !!Number(getP('lx.fadeBottom', 1) || 0);
 var fixedPlatform = String(getP('lx.fixedPlatform', 'wy') || 'wy');
 
 function platformKnown(p) {
@@ -808,11 +806,6 @@ function scaledGraphics(g) {
   var p = {
     FillSolidRect: function (x, y, w, h, c) {
       return g.FillSolidRect(X(x), X(y), X(w), X(h), c);
-    },
-    /* 原生 FillGradRect 不在缩放代理里时会被原样转发（参数不缩放），
-       这里补一个，保证缩放 125% / 150% 下渐变位置和尺寸也跟着走。 */
-    FillGradRect: function (x, y, w, h, ang, c1, c2, gamma) {
-      return g.FillGradRect(X(x), X(y), X(w), X(h), ang, c1, c2, gamma);
     },
     DrawRect: function (x, y, w, h, lw, c) {
       return g.DrawRect(X(x), X(y), X(w), X(h), LW(lw), c);
@@ -7941,6 +7934,33 @@ function applyPlatformMode() {
   repaint();
 }
 
+/* 第二排平台条的显示 / 隐藏，只此一处改状态：
+   设置页的「第二排音源平台」和双击左上角 Logo 都走这里，
+   保证属性、运行时变量、布局、音质条、状态栏提示四者不会各说各的。 */
+function platformRowStatus() {
+  /* 底栏只有一行、还可以被截断：只留「变化了什么 + 怎么切回去」，
+     隐藏后平台名和音质在顶栏上都看不见了，所以各留一句 */
+  return hidePlatformRow
+    ? '已隐藏第二排平台，数据来自 ' + platformName(fixedPlatform) +
+      ' · 点左上角 Logo 可恢复'
+    : '已显示第二排平台，音质 ' + qualityName(quality) +
+      ' · 点左上角 Logo 可隐藏';
+}
+
+function setPlatformRowHidden(on) {
+  on = !!on;
+  setProp('lx.hidePlatformRow', on ? 1 : 0);
+  hidePlatformRow = on;
+  syncQuality();
+  applyPlatformMode();
+  setStatus(platformRowStatus());
+  repaint();
+}
+
+function togglePlatformRow() {
+  setPlatformRowHidden(!hidePlatformRow);
+}
+
 function qualityBarW() {
   /* 要放得下最长的一档（音质 FLAC24）；以前写死 96，多一档就会被省略号吃掉 */
   var k = clamp((FONT_BASE || 12) / 12, 1, 1.6);
@@ -8839,9 +8859,43 @@ function loadBrandLogo() {
   return brandLogo;
 }
 
+/* 双击 Logo 的命中区：只认画出来的那块图（左右各给 4px 容差）；
+   没放图、走文字兜底时整块品牌区都能双击。窄面板缩图时跟着实际矩形走。
+   纵向不超品牌格 —— 第二排就是版本号，多探 4px 会把「Lxbox v2.1.9」上半截算进来。 */
+function brandHitRect() {
+  var r = brandRect();
+  if (!r || !(r.w > 0) || !(r.h > 0)) return null;
+  var lg = loadBrandLogo();
+  if (lg) {
+    var sz = imageSize(lg);
+    if (sz && sz[0] && sz[1]) {
+      var lr = brandLogoRect(r);
+      var pad = 4;
+      var x0 = Math.max(r.x, lr.x - pad);
+      var x1 = Math.min(r.x + r.w, lr.x + lr.w + pad);
+      if (x1 - x0 > 6) return { x: x0, y: r.y, w: x1 - x0, h: r.h };
+    }
+  }
+  return { x: r.x, y: r.y, w: r.w, h: r.h };
+}
+
+var brandHot = false;
+
+/* 单击 Logo = 切换第二排平台条。但回调节点要等 240ms：
+   双击时第二次点击落到 lbtn_up 上会清掉这次单击，只切一次（跟艺人图片同一套判定）。
+   brandClickAt 是「刚切过」的抑制窗口，防止同一次双击被算两遍。 */
+var brandClickTimer = 0;
+var brandClickAt = 0;
+
 function drawBrand(gr) {
   var r = brandRect();
   var lg = loadBrandLogo();
+
+  /* 指上去铺一层淡底：这一下是双击开关，没有别的入口，得让人看得出来能点 */
+  if (brandHot && !setOpen && !overlay) {
+    var hr = brandHitRect();
+    if (hr) gr.FillSolidRect(hr.x, hr.y, hr.w, hr.h, A(C.hover, 56));
+  }
 
   if (lg) {
     var sz = imageSize(lg);
@@ -11254,16 +11308,6 @@ function lookSections() {
           refreshBgFx(true);
           setStatus('配色：' + themeLabel(v));
         } },
-      { kind: 'seg', id: 'fadebottom', label: '底部渐隐带',
-        value: fadeBottom ? '1' : '0',
-        options: [['1', '显示'], ['0', '隐藏']],
-        onPick: function (v) {
-          setProp('lx.fadeBottom', v === '1' ? 1 : 0);
-          fadeBottom = (v === '1');
-          setStatus(fadeBottom ? '底部渐隐带：开' : '底部渐隐带：关');
-          repaint();
-        } },
-      { kind: 'note', text: '列表最后几行在底部状态条上方渐隐，深浅与 Eole 其它列表面板一致。' },
       { kind: 'seg', id: 'rowlines', label: '曲目清单', value: String(rowLines()),
         options: [['2', '双行'], ['1', '单行']],
         onPick: function (v) {
@@ -11274,14 +11318,8 @@ function lookSections() {
         value: hidePlatformRow ? '1' : '0',
         options: [['0', '显示'], ['1', '隐藏']],
         onPick: function (v) {
-          setProp('lx.hidePlatformRow', v === '1' ? 1 : 0);
-          hidePlatformRow = (v === '1');
-          syncQuality();
-          applyPlatformMode();
-          setStatus(hidePlatformRow
-            ? '已隐藏第二排平台按钮，各页数据固定来自 ' + platformName(fixedPlatform) +
-              '，音质 ' + qualityName(quality)
-            : '已显示第二排平台按钮，音质 ' + qualityName(quality));
+          setPlatformRowHidden(v === '1');
+          repaint();
         } },
       { kind: 'note', text: function () {
           return hidePlatformRow
@@ -12501,23 +12539,6 @@ function runSettingsButton(id, close) {
   repaint();
 }
 
-/* 底部渐隐带：从列表往下面到面板最底，状态栏那 24px 也一起渐隐，
-   免得在状态栏上沿留一条硬边。参数与 Eole 的 WSHfilter /
-   WSHsmoothplaylistmanager / WSHlibrary_tree 一致：
-   深色 黑 70、高 50；浅色 黑 10、高 30。 */
-function drawBottomFade(gr) {
-  if (!fadeBottom) return;
-  var bottom = H;
-  if (bottom <= 0) return;
-  var h = (THEME === 'light') ? 30 : 50;
-  if (h > bottom) h = bottom;
-  if (h < 4) return;
-  var a = (THEME === 'light') ? 10 : 70;
-  try {
-    gr.FillGradRect(0, bottom - h, W, h, 90, A(0x000000, 0), A(0x000000, a), 1);
-  } catch (e) {}
-}
-
 function drawFooter(gr) {
   var y = H - FOOT_H;
   // 和标题栏同色：同一个表达式，拖动「标题栏透明度」时两处一起变
@@ -12582,8 +12603,6 @@ function on_paint(gr) {
 
   drawRightPanel(gr);
   drawFooter(gr);
-  /* 画在状态栏之后，才能把状态栏一起盖进渐变里 */
-  drawBottomFade(gr);
 
   if (overlay) {
     rebuildOverlayLines(false);
@@ -12872,6 +12891,7 @@ function on_mouse_move(x, y, mask) {
 
   var hand = false;
   var hbz = null;          /* 顶栏空白矩形；只有指针落在空白那块才算 */
+  var bhr = brandHitRect();   /* 左上角 Logo：双击开关第二排平台条 */
   if (scrollbarHit(x, y)) hand = true;
   else if (y >= H - FOOT_H) hand = true;
   else if (newBtn) hand = true;
@@ -12882,6 +12902,7 @@ function on_mouse_move(x, y, mask) {
   else if (sideToggleRect() && inRect(sideToggleRect(), x, y)) hand = true;
   else if (rightToggleRect() && inRect(rightToggleRect(), x, y)) hand = true;
   else if (cacheBtnRect() && inRect(cacheBtnRect(), x, y)) hand = true;
+  else if (bhr && inRect(bhr, x, y)) hand = true;
   else {
     for (var i = 0; i < TAB_DEFS.length; i++) if (inRect(tabRect(i), x, y)) hand = true;
     for (var j = 0; j < NM.providers.order.length; j++) if (inRect(platformRect(j), x, y)) hand = true;
@@ -12895,6 +12916,10 @@ function on_mouse_move(x, y, mask) {
     if (hbz && inRect(hbz, x, y)) hand = true;
   }
   setCursorHand(hand);
+
+  /* Logo 悬停淡底：画在 drawBrand 里，这里只负责进出时重画一次 */
+  var brHot = !!(bhr && inRect(bhr, x, y));
+  if (brHot !== brandHot) { brandHot = brHot; repaint(); }
 
   /* hbz 只在上面那个 else 分支里算过；走了别的分支就是 undefined，
      表示指针在别的控件上，空白区不亮 */
@@ -12954,6 +12979,7 @@ function on_mouse_leave() {
   if (rightHoverRow >= 0) { rightHoverRow = -1; repaint(); }
   if (scriptHot) { scriptHot = false; repaint(); }
   if (headBlankHot) { headBlankHot = false; repaint(); }
+  if (brandHot) { brandHot = false; repaint(); }
   if (qBarHot) { qBarHot = false; repaint(); }
   if (probeHot) { probeHot = false; repaint(); }
   if (bioMoreHot) {
@@ -13124,6 +13150,19 @@ function on_mouse_lbtn_up(x, y) {
     return;
   }
 
+  /* 左上角 Logo：单击切换第二排平台条（延迟 240ms，好让双击取消这次单击） */
+  var bhrU = brandHitRect();
+  if (bhrU && inRect(bhrU, x, y)) {
+    if (Date.now() - brandClickAt < 500) return true;
+    if (brandClickTimer) clearTimeout(brandClickTimer);
+    brandClickTimer = setTimeout(function () {
+      brandClickTimer = 0;
+      brandClickAt = Date.now();
+      togglePlatformRow();
+    }, 240);
+    return true;
+  }
+
   if (y >= H - FOOT_H) {
     openDiagnostics();
     return;
@@ -13288,6 +13327,17 @@ function on_mouse_lbtn_dblclk(x, y) {
     return;
   }
   if (scrollbarHit(x, y)) return;
+
+  /* 双击左上角 Logo = 显示 / 隐藏第二排音源平台。
+     这一块没有单击行为，所以不会先被 lbtn_up 抢走一次；
+     实现在 setPlatformRowHidden()，与设置页那一项共用。 */
+  var bhrD = brandHitRect();
+  if (bhrD && inRect(bhrD, x, y)) {
+    if (brandClickTimer) { clearTimeout(brandClickTimer); brandClickTimer = 0; }
+    brandClickAt = Date.now();
+    togglePlatformRow();
+    return;
+  }
 
   /* 右侧栏双击 = 播放这一行 */
   if (L.right) {
@@ -13788,6 +13838,7 @@ function on_script_unload() {
   if (PROG_TIMER) { clearInterval(PROG_TIMER); PROG_TIMER = 0; }
   if (bgFxTimer) { clearTimeout(bgFxTimer); bgFxTimer = 0; }
   if (themeTimer) { clearTimeout(themeTimer); themeTimer = 0; }
+  if (brandClickTimer) { clearTimeout(brandClickTimer); brandClickTimer = 0; }
   if (coverMemSaveTimer) {
     clearTimeout(coverMemSaveTimer);
     coverMemSaveTimer = 0;
