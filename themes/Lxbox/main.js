@@ -490,6 +490,8 @@ var L = {};
 
 var tab = clampTab(getP('lx.tab', 0));
 var hidePlatformRow = !!Number(getP('lx.hidePlatformRow', 0) || 0);
+/* 底部渐隐带：默认开；参数与 Eole 其它列表面板一致（深色 70/50，浅色 10/30） */
+var fadeBottom = !!Number(getP('lx.fadeBottom', 1) || 0);
 var fixedPlatform = String(getP('lx.fixedPlatform', 'wy') || 'wy');
 
 function platformKnown(p) {
@@ -807,6 +809,11 @@ function scaledGraphics(g) {
     FillSolidRect: function (x, y, w, h, c) {
       return g.FillSolidRect(X(x), X(y), X(w), X(h), c);
     },
+    /* 代理最后那段 for-in 会把没列出的方法原样转发（参数不缩放），
+       渐变位置就会跟着 UI 缩放跑偏，这里显式补一个。 */
+    FillGradRect: function (x, y, w, h, ang, c1, c2, gamma) {
+      return g.FillGradRect(X(x), X(y), X(w), X(h), ang, c1, c2, gamma);
+    },
     DrawRect: function (x, y, w, h, lw, c) {
       return g.DrawRect(X(x), X(y), X(w), X(h), LW(lw), c);
     },
@@ -856,7 +863,7 @@ function initTheme() {
   var name = fbFontName();
   var px = fpx(FONT_BASE);
 
-  ['head', 'hdrB', 'normal', 'small', 'tiny', 'hdr'].forEach(function (k) {
+  ['head', 'hdrB', 'normal', 'small', 'tiny', 'hdr', 'mdl2'].forEach(function (k) {
     disposeObj(F[k]);
     F[k] = null;
   });
@@ -873,6 +880,10 @@ function initTheme() {
   F.small = mk(name, false);
   F.tiny = mk(name, false);
   F.hdr = mk(name, false);
+
+  /* 顶栏播放控制按钮用的符号字体（Win10/11 自带；字号比正文大一档才够看） */
+  try { F.mdl2 = gdi.Font('Segoe MDL2 Assets', Math.max(10, Math.round((FONT_BASE || 12) * 1.25)), 0); }
+  catch (eM) { F.mdl2 = F.hdr; }
 
   HEAD_H = headHeight();
 }
@@ -7953,6 +7964,7 @@ function setPlatformRowHidden(on) {
   hidePlatformRow = on;
   syncQuality();
   applyPlatformMode();
+  applyHeadFeats();   /* 压缩模式切换会影响第二排功能是否生效 */
   setStatus(platformRowStatus());
   repaint();
 }
@@ -7970,6 +7982,8 @@ function qualityBarW() {
 var HB_GAP = 6;
 var SET_W = 50;
 var HEAD_BTN_W = 50;
+/* 压缩模式（隐藏第二排音源平台）下，右侧三颗按钮文字换成字符，宽度收成方块 */
+var HEAD_BTN_W_COMPACT = 32;
 
 function headCompact() { return hidePlatformRow; }
 function headBtnY() { return headCompact() ? 8 : 36; }
@@ -7986,7 +8000,7 @@ function textBtnW() {
 }
 
 function settingsRect() {
-  var w = Math.min(SET_W, Math.max(0, W - PAD));
+  var w = Math.min(headCompact() ? HEAD_BTN_W_COMPACT : SET_W, Math.max(0, W - PAD));
   return { x: W - PAD - w, y: headBtnY(), w: w, h: headBtnH() };
 }
 
@@ -7998,7 +8012,7 @@ function qualityRect() {
 }
 
 function commentsRect() {
-  var w = textBtnW();
+  var w = headCompact() ? HEAD_BTN_W_COMPACT : textBtnW();
   var x = headCompact() ? (settingsRect().x - HB_GAP - w)
                         : (qualityRect().x - HB_GAP - w);
   return { x: x, y: headBtnY(), w: w, h: headBtnH() };
@@ -8006,35 +8020,1194 @@ function commentsRect() {
 
 function bioRect() {
   var c = commentsRect();
-  var w = textBtnW();
+  var w = headCompact() ? HEAD_BTN_W_COMPACT : textBtnW();
   var x = headCompact() ? (c.x - HB_GAP - w) : c.x;
   return { x: x, y: 8, w: w, h: hdRow1H() };
 }
 
-/* 顶栏中间那块空白：页签右边、最左那个头部控件以前的一整片（两排都算）。
-   点这里 = 把右侧播放列表滚到正在播放的那首。 */
-function headBlankRect() {
+/* ===========================================================================
+   顶栏空白区功能（两排各自独立，设置 → 外观 →「标题栏空白区」）
+     none  留空（什么都不画）
+     spec  播放曲目频谱（移植 WSHlyrics_title 的 FFT 方案，柱色跟随封面）
+     ctrl  播放控制（上一首 / 播放暂停 / 停止 / 下一首 / 音量，MDL2 图标）
+     dmk   评论弹幕（一排一条竖向滚动；两排都开时共享评论列表，同屏不重复）
+     seek  播放进度（整排进度条，按下 / 拖动都可直接跳转）
+   规则：
+   · 「隐藏第二排平台」压缩模式只有一排，第二排的设置自动失效；
+   · 排宽不足该功能的最小宽度时整排不画；
+   · 原来的「单击定位」已移走：双击底部状态栏（左半 → 左列表 / 右半 →
+     右侧播放列表），右栏右键菜单里也有常驻的「定位播放曲目」。
+   =========================================================================== */
+var HEAD_FEATS = ['none', 'spec', 'ctrl', 'dmk', 'seek'];
+
+function headFeatOf(row) {
+  var v = '';
+  try { v = String(getP(row === 1 ? 'lx.headRow1' : 'lx.headRow2', '') || ''); } catch (e0) { v = ''; }
+  if (HEAD_FEATS.indexOf(v) < 0) v = 'none';
+  if (row === 2 && headCompact()) return 'none';   /* 压缩模式没有第二排 */
+  return v;
+}
+
+function headFeatName(v) {
+  if (v === 'spec') return '频谱';
+  if (v === 'ctrl') return '播放控制';
+  if (v === 'dmk') return '评论弹幕';
+  if (v === 'seek') return '播放进度';
+  return '留空';
+}
+
+function headFeatMinW(feat) {
+  if (feat === 'spec') return 80;
+  if (feat === 'ctrl') return 80;
+  if (feat === 'dmk') return 96;
+  if (feat === 'seek') return 64;
+  return 0;
+}
+
+/* 某一排的空白矩形：页签右端 → 本排最左控件之间。
+   功能没开 / 太窄返回 null，调用方一律按「这一排没有」处理。 */
+function headRowRect(row) {
+  var feat = headFeatOf(row);
+  if (feat === 'none') return null;
   var x0 = tabsEnd() + Math.max(6, TAB_GAP);
   var right = W - PAD;
-  /* 平台按钮在第一排页签正下方（同一套网格），左右边界一致；
-     右侧控件要取两排里最左的那个，质音 / 评论那一列别漏掉 */
-  var cand = [bioRect(), scriptBarRect(), qualityRect(), commentsRect()];
+  var cand, i, rr;
+  if (row === 1) {
+    cand = [bioRect(), scriptBarRect()];
+    if (headCompact()) cand = cand.concat([commentsRect(), settingsRect()]);
+  } else {
+    cand = [qualityRect(), commentsRect(), settingsRect()];
+    /* 平台 chip 与页签同网格，但音源脚本增减后个数可能不等于页签数，
+       多出来的会伸进空白区：边界让位给它们，命中区不能盖住 chip */
+    var order = NM.providers.order;
+    for (var p = 0; p < order.length; p++) {
+      var pr = platformRect(p);
+      if (pr && pr.x > x0 && pr.x < right) right = pr.x;
+    }
+  }
+  for (i = 0; i < cand.length; i++) {
+    rr = cand[i];
+    if (rr && rr.x > 0 && rr.x < right) right = rr.x;
+  }
+  var w = right - 6 - x0;
+  /* 两排末端各留出角标按钮的位置（功能条不盖住它们）。
+     压缩模式下没有第二排，轮换按钮挪到第一排末端 */
+  if (row === 1 && (headGearRect() || headCycleRect())) w -= 30;
+  if (row === 2 && headCycleRect()) w -= 30;
+  if (w < Math.max(40, headFeatMinW(feat))) return null;
+  return { x: x0, y: row === 1 ? 8 : 36, w: w,
+           h: row === 1 ? hdRow1H() : hdRow2H(), row: row, feat: feat };
+}
+
+/* 第一排末端的小齿轮：直达 设置 → 外观 → 标题栏空白区（小节在底部）。
+   压缩模式下第一排本来就显设置按钮，不重复出 */
+function headGearRect() {
+  if (headCompact()) return null;
+  var x0 = tabsEnd() + Math.max(6, TAB_GAP);
+  var right = W - PAD;
+  var cand = [bioRect(), scriptBarRect()];
   for (var i = 0; i < cand.length; i++) {
     var rr = cand[i];
     if (rr && rr.x > 0 && rr.x < right) right = rr.x;
   }
-  var w = right - 8 - x0;
-  if (w < 40) return null;          /* 窄到没地方就别响应，免得点页签旁边误触 */
-  return { x: x0, y: 8, w: w, h: Math.max(0, HEAD_H - 8) };
+  if (right - 6 - x0 < 40) return null;
+  return { x: right - 30, y: 8, w: 24, h: hdRow1H() };
 }
 
-var headBlankHot = false;      /* 鼠标在顶栏那块空白上 */
+/* 打开设置并滚到「外观」最底部（标题栏空白区小节） */
+function openHeadSettings() {
+  if (editKind) endEdit();
+  setOpen = true;
+  setCat = 'look';
+  setDrag = '';
+  setHot = '';
+  setScroll = settingsLayout().maxScroll;
+  repaint();
+}
+
+/* 第二排末端的轮换按钮：点一下换一种第二排显示内容（留空→频谱→
+   控制→弹幕→进度→留空）。压缩模式下没有第二排，按钮挪到第一排
+   末端（评论 / 设置按钮左侧），控制它左边的第一排功能，即时显示 */
+function headCycleRect() {
+  var x0 = tabsEnd() + Math.max(6, TAB_GAP);
+  var right = W - PAD;
+  var cand = [bioRect(), qualityRect(), commentsRect(), settingsRect()];
+  var order = NM.providers.order;
+  for (var p = 0; p < order.length; p++) {
+    var pr = platformRect(p);
+    if (pr && pr.x > x0 && pr.x < right) right = pr.x;
+  }
+  for (var i = 0; i < cand.length; i++) {
+    var rr = cand[i];
+    if (rr && rr.x > 0 && rr.x < right) right = rr.x;
+  }
+  if (right - 6 - x0 < 40) return null;
+  return headCompact()
+    ? { x: right - 30, y: headBtnY(), w: 24, h: headBtnH() }
+    : { x: right - 30, y: 36, w: 24, h: hdRow2H() };
+}
+
+function headCycleRow() {
+  /* 压缩模式没有第二排：轮换按钮控制它左边的第一排功能，即时显示；
+     正常模式仍控制第二排。读存的属性而不是 headFeatOf(row)，
+     压缩模式下第二排被强制留空，按存值轮换才切得出「留空」以外档位 */
+  var row = headCompact() ? 1 : 2;
+  var key = row === 1 ? 'lx.headRow1' : 'lx.headRow2';
+  var cur = '';
+  try { cur = String(getP(key, '') || ''); } catch (e0) { cur = ''; }
+  if (HEAD_FEATS.indexOf(cur) < 0) cur = 'none';
+  var next = HEAD_FEATS[(HEAD_FEATS.indexOf(cur) + 1) % HEAD_FEATS.length];
+  setProp(key, next);
+  applyHeadFeats();
+  setStatus('标题栏' + (row === 1 ? '第一排' : '第二排') + '：' + headFeatName(next));
+}
+
+/* 指针落在哪个功能排里（ctrl / seek 需要手型光标） */
+function headRowHit(x, y) {
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && inRect(r, x, y)) return r;
+  }
+  return null;
+}
+
+/* 只刷标题栏这一条（物理坐标 = 逻辑 × UI_S），别整幅重绘 */
+function repaintHead(r) {
+  try {
+    if (r && window.RepaintRect) {
+      window.RepaintRect(Math.round(r.x * UI_S) - 1, Math.round(r.y * UI_S) - 1,
+                         Math.max(2, Math.round(r.w * UI_S) + 2),
+                         Math.max(2, Math.round(r.h * UI_S) + 2));
+      return;
+    }
+  } catch (e0) { }
+  repaint();
+}
+
+/* 设置里改了功能 / 布局变了：对齐定时器和缓存 */
+function applyHeadFeats() {
+  setVer++;
+  setLayoutCache = null;
+  dmk.rows[0] = null;
+  dmk.rows[1] = null;
+  if (dmkEnabled()) {
+    if (dmk.items.length) dmkSetItems(dmk.items);   /* 重新分配两排 */
+    else dmkLoadForNow();
+  }
+  hspecEnsure();
+  repaint();
+}
+
+/* ===== 频谱（移植自 WSHlyrics_title，名字加 h 前缀防撞）===== */
+var HSPEC_N = 2048;
+var HSPEC_FMIN = 30, HSPEC_FMAX = 16000;
+var HSPEC_MAXBARS = 96;
+var hspec = null;
+var hspec_cover = { key: null, scheme: null, retry: 0, poll: 0, lastErr: '' };
+
+function hRGB2HSL(c) {
+  var r = ((c >> 16) & 0xff) / 255, g = ((c >> 8) & 0xff) / 255, b = (c & 0xff) / 255;
+  var mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+  var l = (mx + mn) / 2, h = 0, s = 0, d = mx - mn;
+  if (d > 0.00001) {
+    s = (l > 0.5) ? d / (2 - mx - mn) : d / (mx + mn);
+    if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (mx === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h /= 6;
+  }
+  return [h, s, l];
+}
+function hHSL2RGB(h, s, l) {
+  h = ((h % 1) + 1) % 1;
+  s = clamp(s, 0, 1);
+  var r, g, b;
+  if (s === 0) { r = g = b = l; }
+  else {
+    var q = (l < 0.5) ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    var hue = function (t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t > 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+    r = hue(h + 1 / 3); g = hue(h); b = hue(h - 1 / 3);
+  }
+  return (0xff000000 | (Math.round(r * 255) << 16) | (Math.round(g * 255) << 8) | Math.round(b * 255)) >>> 0;
+}
+function hMixColour(c1, c2, t) {
+  t = clamp(t, 0, 1);
+  var r = Math.round(((c1 >> 16) & 0xff) + (((c2 >> 16) & 0xff) - ((c1 >> 16) & 0xff)) * t);
+  var g = Math.round(((c1 >> 8) & 0xff) + (((c2 >> 8) & 0xff) - ((c1 >> 8) & 0xff)) * t);
+  var b = Math.round((c1 & 0xff) + ((c2 & 0xff) - (c1 & 0xff)) * t);
+  return (0xff000000 | (r << 16) | (g << 8) | (b)) >>> 0;
+}
+function hspecDark() {
+  try { return luminanceOf(C.bg) < 0.5; } catch (e) { return true; }
+}
+/* 原生取色：GetThemeColourSchemeJSON 优先（OKLab K-means），退 GetColourSchemeJSON */
+function hspecCoverScheme(img) {
+  if (!img) return null;
+  var size = 15;
+  var dark = hspecDark();
+  try {
+    if (typeof img.GetThemeColourSchemeJSON === 'function') {
+      var cs = JSON.parse(img.GetThemeColourSchemeJSON(size));
+      if (cs && typeof cs === 'object' && Object.keys(cs).length) {
+        var bg = ((cs.backgroundColor >>> 0) & 0xffffff) | 0xff000000;
+        var hl = ((cs.playingBackgroundColor >>> 0) & 0xffffff) | 0xff000000;
+        if (((hl ^ bg) & 0xffffff) === 0)
+          hl = hMixColour(bg, dark ? 0xffffffff : 0xff000000, 0.35);
+        return { hl: hl >>> 0, bg: bg >>> 0 };
+      }
+      hspec_cover.lastErr = '主题配色方案是空对象';
+    } else hspec_cover.lastErr = '没有 GetThemeColourSchemeJSON';
+  } catch (e1) { hspec_cover.lastErr = '取色异常：' + ((e1 && e1.message) || e1); }
+
+  try {
+    if (typeof img.GetColourSchemeJSON === 'function') {
+      var arr = JSON.parse(img.GetColourSchemeJSON(size));
+      if (arr && arr.length) {
+        var hl2 = (arr[0].col >>> 0) & 0xffffff;
+        for (var ai = 0; ai < arr.length && ai < 8; ai++) {
+          var a0 = hRGB2HSL(arr[ai].col >>> 0);
+          if (a0[2] > 0.12 && a0[2] < 0.92 && a0[1] > 0.12) { hl2 = (arr[ai].col >>> 0) & 0xffffff; break; }
+        }
+        hl2 |= 0xff000000;
+        var bg2 = hMixColour(hl2 >>> 0, dark ? 0xff000000 : 0xffffffff, 0.62);
+        return { hl: hl2 >>> 0, bg: bg2 >>> 0 };
+      }
+      hspec_cover.lastErr = '调色板是空数组';
+    }
+  } catch (e2) { hspec_cover.lastErr = '调色板异常：' + ((e2 && e2.message) || e2); }
+  return null;
+}
+function hspecCoverRequest(force) {
+  var key = null;
+  try {
+    var it = fb.GetNowPlaying();
+    if (it) { var p = String(it.Path || ''); if (p) key = p; }
+  } catch (e0) { key = null; }
+  if (!key) {
+    if (hspec_cover.scheme) { hspec_cover.scheme = null; hspecBuildPalette(); }
+    hspec_cover.key = null;
+    return;
+  }
+  if (!force) {
+    if (key === hspec_cover.key) {
+      if (hspec_cover.scheme || hspec_cover.retry >= 5) return;
+      hspec_cover.retry++;
+    } else { hspec_cover.key = key; hspec_cover.retry = 0; }
+  } else { hspec_cover.key = key; hspec_cover.retry = 0; }
+
+  var img = null;
+  try {
+    if (typeof utils.GetAlbumArtV2 === 'function') {
+      var md = null;
+      try { md = fb.GetNowPlaying(); } catch (e1) { md = null; }
+      if (md) {
+        try { img = utils.GetAlbumArtV2(md, 0, false); } catch (eV1) { img = null; }
+        if (!img) { try { img = utils.GetAlbumArtV2(md, 0); } catch (eV2) { img = null; } }
+      }
+    }
+  } catch (eV0) { img = null; }
+  if (!img) { hspec_cover.lastErr = '取不到封面图'; return; }
+  hspec_cover.lastErr = '';
+  var sc = null;
+  try { sc = hspecCoverScheme(img); } catch (eSch) { sc = null; }
+  if (sc || !hspec_cover.scheme) hspec_cover.scheme = sc;
+  hspecBuildPalette();
+}
+function hspecBuildPalette() {
+  if (!hspec) return;
+  var dark = hspecDark();
+  var sc = hspec_cover.scheme;
+  var hh = 0, topS = 0, topL, botL;
+  if (sc) {
+    var th = hRGB2HSL(sc.hl), bh = hRGB2HSL(sc.bg);
+    hh = th[0];
+    topS = th[1];
+    topL = th[2];
+    botL = bh[2] * 0.55 + th[2] * 0.45;
+  } else {
+    topL = dark ? 0.76 : 0.16;
+    botL = dark ? 0.36 : 0.58;
+  }
+  /* 提亮：深色背景往亮推、浅色往暗压（固定 60 档） */
+  var lift = (dark ? 1 : -1) * 0.6 * 0.16;
+  topL += lift;
+  botL += lift * 0.8;
+  if (topS < 0.10) topS = 0;
+  else topS = Math.min(1, Math.max(0.45, topS));
+  var botS = topS * 0.85;
+  var delta = 0.18;
+  if (dark) {
+    if (topL < 0.58) topL = 0.58;
+    if (topL > 0.95) topL = 0.95;
+    if (botL > topL - delta) botL = topL - delta;
+    if (botL < 0.24) botL = 0.24;
+  } else {
+    if (topL > 0.42) topL = 0.42;
+    if (topL < 0.08) topL = 0.08;
+    if (botL < topL + delta) botL = topL + delta;
+    if (botL > 0.92) botL = 0.92;
+  }
+  hspec.topColour = hHSL2RGB(hh, topS, topL);
+  hspec.botColour = hHSL2RGB(hh, botS, botL);
+  hspec.peakColour = dark
+    ? hMixColour(hspec.topColour, 0xfff7faff, 0.42)
+    : hMixColour(hspec.topColour, 0xff000000, 0.35);
+  hspec.ramp = null;
+}
+/* 纵向渐变带：索引 0 = 底部（暗），末尾 = 顶部（亮） */
+function hspecRamp(n) {
+  if (n < 2) n = 2;
+  if (hspec.ramp && hspec.rampKey === n) return hspec.ramp;
+  var a = [];
+  for (var i = 0; i < n; i++) {
+    var t = i / (n - 1);
+    a.push(hMixColour(hspec.botColour, hspec.topColour, Math.pow(t, 0.72)));
+  }
+  hspec.ramp = a;
+  hspec.rampKey = n;
+  return a;
+}
+function hspecInit() {
+  if (hspec) return;
+  hspec = {
+    pcm: new Float32Array(131072),
+    info: { SampleCount: 0, ChannelCount: 0, SampleRate: 0, ChannelConfig: 0 },
+    re: new Float64Array(HSPEC_N),
+    im: new Float64Array(HSPEC_N),
+    mag: new Float64Array((HSPEC_N >> 1) + 1),
+    win: new Float64Array(HSPEC_N),
+    lo: new Int32Array(HSPEC_MAXBARS),
+    hi: new Int32Array(HSPEC_MAXBARS),
+    p0: new Float64Array(HSPEC_MAXBARS),
+    p1: new Float64Array(HSPEC_MAXBARS),
+    level: new Float64Array(HSPEC_MAXBARS),
+    peak: new Float64Array(HSPEC_MAXBARS),
+    pvel: new Float64Array(HSPEC_MAXBARS),
+    hold: new Float64Array(HSPEC_MAXBARS),
+    bands: 0, sr: 0, timer: null, lastTick: 0, quiet: true, ok: false,
+    topColour: 0, botColour: 0, peakColour: 0, ramp: null, rampKey: 0
+  };
+  for (var i = 0; i < HSPEC_N; i++)
+    hspec.win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (HSPEC_N - 1));
+  hspecBuildPalette();
+  hspec_cover.key = null;
+  hspec_cover.retry = 0;
+  hspecCoverRequest(true);
+}
+/* 迭代基-2 radix-2 FFT，原地改写 re/im */
+function hspecFFT(re, im, n) {
+  var i, j, k, len, half, wr, wi, cr, ci, tr, ti, ur, ui, vr, vi, bit, ang, ncr;
+  for (i = 1, j = 0; i < n; i++) {
+    bit = n >> 1;
+    for (; j & bit; bit >>= 1) j ^= bit;
+    j ^= bit;
+    if (i < j) {
+      tr = re[i]; re[i] = re[j]; re[j] = tr;
+      ti = im[i]; im[i] = im[j]; im[j] = ti;
+    }
+  }
+  for (len = 2; len <= n; len <<= 1) {
+    half = len >> 1;
+    ang = -2 * Math.PI / len;
+    wr = Math.cos(ang); wi = Math.sin(ang);
+    for (i = 0; i < n; i += len) {
+      cr = 1; ci = 0;
+      for (k = 0; k < half; k++) {
+        ur = re[i + k]; ui = im[i + k];
+        vr = re[i + k + half] * cr - im[i + k + half] * ci;
+        vi = re[i + k + half] * ci + im[i + k + half] * cr;
+        re[i + k] = ur + vr; im[i + k] = ui + vi;
+        re[i + k + half] = ur - vr; im[i + k + half] = ui - vi;
+        ncr = cr * wr - ci * wi;
+        ci = cr * wi + ci * wr;
+        cr = ncr;
+      }
+    }
+  }
+}
+/* 对数分带；低频带比一个 bin 还窄时用几何中心插值 */
+function hspecConfigBands(count, sr) {
+  if (count > HSPEC_MAXBARS) count = HSPEC_MAXBARS;
+  if (count !== hspec.bands) {
+    for (var z = 0; z < HSPEC_MAXBARS; z++) {
+      hspec.level[z] = 0; hspec.peak[z] = 0; hspec.pvel[z] = 0; hspec.hold[z] = 0;
+    }
+  }
+  var half = HSPEC_N >> 1;
+  var scale = HSPEC_N / (sr || 44100);
+  var ratio = HSPEC_FMAX / HSPEC_FMIN;
+  for (var i = 0; i < count; i++) {
+    var f0 = HSPEC_FMIN * Math.pow(ratio, i / count);
+    var f1 = HSPEC_FMIN * Math.pow(ratio, (i + 1) / count);
+    var a = f0 * scale, b = f1 * scale;
+    hspec.p0[i] = a; hspec.p1[i] = b;
+    var b0 = Math.max(1, Math.floor(a));
+    var b1 = Math.min(half, Math.max(b0 + 1, Math.ceil(b)));
+    hspec.lo[i] = b0; hspec.hi[i] = b1;
+  }
+  hspec.bands = count;
+  hspec.sr = sr || 44100;
+}
+function hspecGrab() {
+  var info = hspec.info;
+  info.SampleCount = 0;
+  try {
+    if (typeof fb.GetAudioChunkTo === 'function') {
+      if (!fb.GetAudioChunkTo(hspec.pcm, 0.05, -0.02, info)) return false;
+    } else if (typeof fb.GetAudioChunk === 'function') {
+      var c = fb.GetAudioChunk(0.05, -0.02);
+      if (!c) return false;
+      info.SampleCount = c.SampleCount || 0;
+      info.ChannelCount = c.ChannelCount || 0;
+      info.SampleRate = c.SampleRate || 0;
+      if (typeof c.CopyDataTo === 'function') {
+        var need = info.SampleCount * info.ChannelCount;
+        if (need > 0) {
+          if (hspec.pcm.length < need) hspec.pcm = new Float32Array(need);
+          if (!c.CopyDataTo(hspec.pcm)) return false;
+        }
+      } else if (c.Data) hspec.pcm = c.Data;
+      else return false;
+    } else return false;
+  } catch (e) { return false; }
+  return info.SampleCount > 0 && info.ChannelCount > 0 && info.SampleRate > 0;
+}
+function hspecAnalyse(dt) {
+  var info = hspec.info, n = HSPEC_N, half = n >> 1;
+  var ch = info.ChannelCount || 2;
+  var used = 0, i, k;
+  if (hspec.ok) {
+    used = Math.min(info.SampleCount, n);
+    if (used < 64) used = 0;
+  }
+  if (used > 0) {
+    var first = info.SampleCount - used;
+    for (i = 0; i < n; i++) { hspec.re[i] = 0; hspec.im[i] = 0; }
+    for (i = 0; i < used; i++) {
+      var sum = 0, off = (first + i) * ch;
+      for (k = 0; k < ch; k++) sum += hspec.pcm[off + k] || 0;
+      hspec.re[i] = (sum / ch) * hspec.win[i];
+    }
+    hspecFFT(hspec.re, hspec.im, n);
+    var gain = 4 / used;
+    for (i = 0; i <= half; i++)
+      hspec.mag[i] = Math.sqrt(hspec.re[i] * hspec.re[i] + hspec.im[i] * hspec.im[i]) * gain;
+  }
+  var attack = 1 - Math.exp(-dt / 0.018);
+  var release = 1 - Math.exp(-dt / 0.095);
+  var gravity = 3.0;
+  for (i = 0; i < hspec.bands; i++) {
+    var target = 0;
+    if (used > 0) {
+      var a = hspec.p0[i], b = hspec.p1[i], mag;
+      if (b - a < 1) {
+        var cPos = Math.max(1, Math.min(half - 1, Math.sqrt(a * b)));
+        var bIdx = Math.floor(cPos), frac = cPos - bIdx;
+        var m0 = hspec.mag[bIdx], m1 = hspec.mag[Math.min(half, bIdx + 1)];
+        mag = m0 + (m1 - m0) * frac;
+      } else {
+        var energy = 0, cnt = 0;
+        for (k = hspec.lo[i]; k < hspec.hi[i] && k <= half; k++) { energy += hspec.mag[k] * hspec.mag[k]; cnt++; }
+        mag = Math.sqrt(energy / Math.max(1, cnt));
+      }
+      var db = 20 * Math.log(Math.max(1e-12, mag)) / Math.LN10;
+      target = (db + 72) / 72;
+      if (target < 0) target = 0; else if (target > 0.98) target = 0.98;
+    }
+    var lv = hspec.level[i];
+    lv += (target - lv) * (target >= lv ? attack : release);
+    if (lv < 0) lv = 0; else if (lv > 0.98) lv = 0.98;
+    hspec.level[i] = lv;
+    var pk = hspec.peak[i];
+    if (lv >= pk) { pk = lv; hspec.pvel[i] = 0; hspec.hold[i] = 0.10; }
+    else {
+      var hd = hspec.hold[i] - dt;
+      if (hd < 0) hd = 0;
+      hspec.hold[i] = hd;
+      if (hd <= 0) {
+        var vel = hspec.pvel[i] + gravity * dt;
+        pk -= vel * dt;
+        hspec.pvel[i] = vel;
+        if (pk <= lv) { pk = lv; hspec.pvel[i] = 0; }
+      }
+    }
+    if (pk < lv) pk = lv; else if (pk > 0.98) pk = 0.98;
+    hspec.peak[i] = pk;
+  }
+}
+/* 单根柱子的纵向渐变（矮柱不至于全黑、柱顶 1px 高光） */
+function hspecFillBar(gr, px, barW, topY, baseY, bh, plotH, ramp, rampN) {
+  if (bh <= 1) { gr.FillSolidRect(px, topY, barW, 1, ramp[rampN - 1]); return; }
+  var segH = bh >= 30 ? 6 : (bh >= 12 ? 4 : 2);
+  var y = baseY, guard = 0;
+  while (y > topY && guard++ < 64) {
+    var sh = segH;
+    if (sh > y - topY) sh = y - topY;
+    var y2 = y - sh;
+    var tAbs = (baseY - y2) / plotH;
+    var tBar = (baseY - y2) / bh;
+    var t = tAbs * 0.62 + tBar * 0.38;
+    t = clamp(t, 0, 1);
+    var ci = clamp(Math.round(t * (rampN - 1)), 0, rampN - 1);
+    gr.FillSolidRect(px, y2, barW, sh, ramp[ci]);
+    y = y2;
+  }
+  if (barW >= 3) gr.FillSolidRect(px, topY, barW, 1, ramp[rampN - 1]);
+}
+function headSpecDraw(gr, r) {
+  if (!hspec || r.w < 24 || r.h < 10) return;
+  var barW = 3, gap = 2;
+  var count = Math.floor((r.w + gap) / (barW + gap));
+  if (count < 4) return;
+  if (count > HSPEC_MAXBARS) count = HSPEC_MAXBARS;
+  if (count !== hspec.bands || !hspec.sr)
+    hspecConfigBands(count, hspec.info.SampleRate || hspec.sr || 44100);
+  var plotH = r.h - 2;
+  if (plotH < 6) return;
+  var baseY = r.y + r.h - 1;
+  var ramp = hspecRamp(plotH);
+  if (!ramp) return;
+  var rampN = ramp.length;
+  var peakCol = hspec.peakColour || ramp[rampN - 1];
+  for (var i = 0; i < count; i++) {
+    var lv = hspec.level[i];
+    var px = r.x + i * (barW + gap);
+    if (lv > 0.003) {
+      var bh = Math.round(lv * plotH);
+      if (bh < 1) bh = 1;
+      hspecFillBar(gr, px, barW, baseY - bh, baseY, bh, plotH, ramp, rampN);
+    }
+    var pk = hspec.peak[i];
+    if (pk > lv + 0.008 && pk > 0.01)
+      gr.FillSolidRect(px, baseY - Math.round(pk * plotH), barW, 1, peakCol);
+  }
+}
+function hspecTick() {
+  if (!hspec) return;
+  var rows = [];
+  for (var row = 1; row <= 2; row++) {
+    var rr = headRowRect(row);
+    if (rr && rr.feat === 'spec') rows.push(rr);
+  }
+  if (!rows.length) return;
+  var r = rows[0];
+  if (setOpen || overlay) return;
+  var vis = true;
+  try { vis = window.IsVisible !== false; } catch (eVis) { vis = true; }
+  if (!vis) return;
+  var now = Date.now();
+  var dt = hspec.lastTick ? (now - hspec.lastTick) / 1000 : 0.033;
+  hspec.lastTick = now;
+  if (dt < 0.002) dt = 0.002; else if (dt > 0.25) dt = 0.25;
+  hspec.ok = hspecGrab();
+  /* 封面拾色的低频兜底（封面可能晚于切歌就绪） */
+  hspec_cover.poll++;
+  if (hspec_cover.poll >= 30) { hspec_cover.poll = 0; hspecCoverRequest(false); }
+  var cnt = Math.floor((r.w + 2) / 5);
+  if (cnt < 4) cnt = 4;
+  if (cnt > HSPEC_MAXBARS) cnt = HSPEC_MAXBARS;
+  if (cnt !== hspec.bands || !hspec.sr) hspecConfigBands(cnt, hspec.info.SampleRate || 44100);
+  hspecAnalyse(dt);
+  var active = hspec.ok;
+  if (!active) {
+    for (var i = 0; i < hspec.bands; i++) {
+      if (hspec.level[i] > 0.004 || hspec.peak[i] > 0.004) { active = true; break; }
+    }
+  }
+  if (active) {
+    hspec.quiet = false;
+  } else if (!hspec.quiet) {
+    hspec.quiet = true;          /* 柱子落干净后补最后一帧，然后不再刷 */
+  } else return;                 /* 静止期不刷 */
+  for (var ri = 0; ri < rows.length; ri++) repaintHead(rows[ri]);
+}
+function hspecStop() {
+  if (hspec && hspec.timer) { clearInterval(hspec.timer); hspec.timer = null; }
+}
+function hspecStart() {
+  hspecStop();
+  hspecInit();
+  var fps = 60;
+  try { fps = Number(getP('lx.specFps', 60)) || 60; } catch (e0) { fps = 60; }
+  fps = clamp(fps, 5, 60);
+  hspec.lastTick = 0;
+  hspec.quiet = true;
+  hspec.timer = setInterval(hspecTick, Math.round(1000 / fps));
+}
+function hspecEnsure() {
+  var need = false;
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'spec') need = true;
+  }
+  if (need) {
+    if (!hspec) hspecInit();
+    if (!(hspec && hspec.timer)) hspecStart();
+  } else if (hspec && hspec.timer) hspecStop();
+}
+
+/* ===== 播放控制 ===== */
+var HEAD_CTRL_IDS = ['prev', 'play', 'next', 'stop', 'loop', 'vol'];
+var HEAD_CTRL_IDS_NOLOOP = ['prev', 'play', 'next', 'stop', 'vol'];
+/* Segoe MDL2 Assets 码点：上一首(E760) / 播放(E1D2) / 暂停(ECE4) / 停止(F12A) / 下一首(E761) /
+   单曲循环开(E8ED) / 循环关·列表循环样(E8EE) / 音量(F0EE) / 无声(F0EB) / 设置(E15E) / 轮换(E8AB) */
+var HEAD_ICONS = { prev: '\uE760', play: '\uE1D2', pause: '\uECE4',
+                   stop: '\uF12A', next: '\uE761', loop: '\uE8ED',
+                   loopAll: '\uE8EE', vol: '\uF0EE', mute: '\uF0EB',
+                   gear: '\uE15E', cycle: '\uE8AB' };
+var headBtnHot = '';       /* 悬停的按钮（id + 排号），进出时重画一次 */
+var headVolDrag = null;    /* { y0, v0 } 拖动调音量 */
+var volPrev = -10;         /* 静音前的音量，再点恢复 */
+var headLoopPrev = 0;      /* 开单曲循环前的播放模式，关掉时还原 */
+
+function headCtrlRects(r) {
+  var ids = (r.w >= 120) ? HEAD_CTRL_IDS
+          : (r.w >= 110) ? HEAD_CTRL_IDS_NOLOOP
+          : ['prev', 'play', 'next', 'stop'];
+  /* 排够宽（≥190）时音量滑块紧跟在音量图标右边（整组按钮+滑块居中），
+     不做右对齐；窄排维持原来的纯按钮布局（110 以下连音量钮都不出） */
+  var zw = clamp(Math.floor(r.w / ids.length), 20, 32);
+  var slW = 0;
+  if (r.w >= 190) slW = clamp(r.w - zw * ids.length - 20, 56, 96);
+  var total = zw * ids.length + (slW ? slW + 6 : 0);
+  if (total > r.w) {
+    /* 空间不够：收紧按钮档位再试一次 */
+    zw = clamp(Math.floor((r.w - (slW ? slW + 6 : 0)) / ids.length), 20, 32);
+    total = zw * ids.length + (slW ? slW + 6 : 0);
+    if (total > r.w) return null;
+  }
+  var x0 = r.x + Math.floor((r.w - total) / 2);
+  var out = { ids: ids, zw: zw, sl: null };
+  for (var i = 0; i < ids.length; i++)
+    out[ids[i]] = { x: x0 + i * zw, y: r.y, w: zw, h: r.h };
+  if (slW) out.sl = { x: x0 + zw * ids.length + 6, y: r.y, w: slW, h: r.h, row: r.row };
+  return out;
+}
+
+function drawHeadCtrl(gr, r) {
+  var zs = headCtrlRects(r);
+  if (!zs) return;
+  var playing = false, paused = false;
+  try { playing = !!fb.IsPlaying; paused = !!fb.IsPaused; } catch (e0) { }
+  for (var i = 0; i < zs.ids.length; i++) {
+    var id = zs.ids[i], z = zs[id];
+    var hot = (headBtnHot === id + r.row) && !overlay && !setOpen;
+    if (hot) gr.FillSolidRect(z.x + 1, z.y + 2, z.w - 2, z.h - 4, A(C.hover, 70));
+    var muted = false, looping = false;
+    try { muted = Number(fb.Volume) <= -99.5; } catch (eM) { muted = false; }
+    try { looping = Number(plman.PlaybackOrder) === 2; } catch (eO) { }
+    var icon = (id === 'play')
+      ? (playing && !paused ? HEAD_ICONS.pause : HEAD_ICONS.play)
+      : (id === 'vol') ? (muted ? HEAD_ICONS.mute : HEAD_ICONS.vol)
+      : (id === 'loop') ? (looping ? HEAD_ICONS.loop : HEAD_ICONS.loopAll)
+      : HEAD_ICONS[id];
+    var col = hot ? C.accent
+            : (id === 'loop') ? (looping ? C.accent : C.dim)
+            : (id === 'vol') ? C.dim
+            : (playing ? C.text : C.dim);
+    gr.GdiDrawText(icon, F.mdl2, col, z.x, z.y, z.w, z.h, FLAG_CENTER);
+  }
+  if (zs.sl) drawVolSlider(gr, zs.sl);
+}
+
+/* 音量滑块几何：轨道占满整个滑块区，绘制与拖动共用一套坐标 */
+function headVolGeom(z) {
+  var inset = 4;
+  var tx = z.x + inset;
+  var tw = Math.max(8, z.w - inset * 2);
+  return { tx: tx, tw: tw, cy: z.y + Math.round(z.h / 2) - 1 };
+}
+
+/* 音量滑块：细轨（竖直居中）+ accent 填充 + 小把手；
+   悬停 / 拖动时把手放大一档 */
+function drawVolSlider(gr, z) {
+  var v = 0;
+  try { v = Number(fb.Volume) || 0; } catch (e0) { v = 0; }
+  if (v < -100) v = -100; else if (v > 0) v = 0;
+  var ratio = (v + 100) / 100;
+  var g = headVolGeom(z);
+  gr.FillSolidRect(g.tx, g.cy, g.tw, 2, A(C.text, 38));
+  var fw = Math.round(g.tw * ratio);
+  if (fw > 0) gr.FillSolidRect(g.tx, g.cy, fw, 2, C.accent);
+  var hot = headVolDrag || (headBtnHot === 'sl' + z.row);
+  var hs = hot ? 8 : 6;
+  gr.FillSolidRect(g.tx + fw - (hs >> 1), g.cy + 1 - (hs >> 1), hs, hs, C.accent);
+}
+
+/* 滑块上按下 / 拖动：按 x 线性映射 -100..0 dB */
+function headVolTo(z, x) {
+  try {
+    var g = headVolGeom(z);
+    var ratio = clamp((x - g.tx) / Math.max(1, g.tw), 0, 1);
+    var v = Math.round(ratio * 100) - 100;
+    if (v !== Number(fb.Volume)) {
+      fb.Volume = v;
+      setStatus('音量：' + v + ' dB');
+      repaintHead(headRowRect(z.row));
+    }
+  } catch (e0) { }
+}
+
+function headCtrlAction(id) {
+  try {
+    if (id === 'prev') { fb.Prev(); setStatus('上一首'); }
+    else if (id === 'next') { fb.Next(); setStatus('下一首'); }
+    else if (id === 'stop') { fb.Stop(); setStatus('停止'); }
+    else if (id === 'play') {
+      var wasPaused = true;
+      try { wasPaused = !fb.IsPlaying || !!fb.IsPaused; } catch (e0) { }
+      fb.PlayOrPause();
+      setStatus(wasPaused ? '播放' : '暂停');
+    } else if (id === 'loop') {
+      /* PlaybackOrder：2 = 单曲循环（Repeat track），其余模式在关掉时还原 */
+      var o = clamp(Number(plman.PlaybackOrder) || 0, 0, 7);
+      if (o === 2) {
+        plman.PlaybackOrder = headLoopPrev;
+        setStatus('单曲循环：关' +
+                  (headLoopPrev === 1 ? '（恢复列表循环）' : ''));
+        headLoopPrev = 0;
+      } else {
+        headLoopPrev = (o !== 2) ? o : 0;
+        plman.PlaybackOrder = 2;
+        setStatus('单曲循环：开');
+      }
+    } else if (id === 'vol') {
+      var v = Number(fb.Volume);
+      if (v > -99.5) {
+        volPrev = v;
+        fb.Volume = -100;
+        setStatus('音量：静音（再点恢复 ' + Math.round(v) + ' dB）');
+      } else {
+        fb.Volume = (volPrev > -99.5 ? volPrev : -10);
+        setStatus('音量：' + Math.round(Number(fb.Volume)) + ' dB');
+      }
+    }
+  } catch (e1) { }
+}
+
+function headVolZone() {
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (!r || r.feat !== 'ctrl') continue;
+    var zs = headCtrlRects(r);
+    if (!zs) continue;
+    if (zs.sl && inRect(zs.sl, mouseX, mouseY)) return zs.sl;
+    if (zs.vol && inRect(zs.vol, mouseX, mouseY)) return zs.vol;
+  }
+  return null;
+}
+function headVolStep(step) {
+  try {
+    var v = Number(fb.Volume) || 0;
+    v = clamp(v + (step > 0 ? 1 : -1), -100, 0);
+    fb.Volume = v;
+    setStatus('音量：' + Math.round(v) + ' dB');
+  } catch (e0) { }
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'ctrl') repaintHead(r);
+  }
+}
+
+/* ===== 评论弹幕 =====
+   一排一次一条（排高只够一行）；两排都开时共享同一份评论列表、
+   错位取条 —— 同屏正好两条且永不重复。节奏：6s 停留 + 0.6s 淡出淡入。
+   全程用面板 gr 直绘，不走离屏图 —— GDI 在透明离屏图上只能灰阶
+   抗锯齿，比面板直绘的 ClearType 明显偏粗，之前弹幕字体「不像」
+   面板字体就是它。 */
+var DMK_HOLD = 6000;
+var DMK_ROLL = 600;
+var dmk = { items: [], loadId: 0, cursor: 0, timer: 0, key: '',
+            rows: [null, null] };   /* rows[row-1] = { idx, prevIdx, t0 } */
+
+function dmkRowRect(row) {
+  var r = headRowRect(row);
+  return (r && r.feat === 'dmk') ? r : null;
+}
+function dmkEnabled() {
+  return !!(dmkRowRect(1) || dmkRowRect(2));
+}
+function dmkTake() {
+  var n = dmk.items.length;
+  if (!n) return -1;
+  var i = dmk.cursor % n;
+  dmk.cursor++;
+  return i;
+}
+function dmkSetItems(items) {
+  dmk.items = items || [];
+  dmk.cursor = 0;
+  for (var row = 1; row <= 2; row++) {
+    dmk.rows[row - 1] = dmkRowRect(row)
+      ? { idx: dmkTake(), prevIdx: -1, t0: Date.now(), mq: null }
+      : null;
+  }
+  dmkEnsure();
+  for (row = 1; row <= 2; row++) {
+    var r = dmkRowRect(row);
+    if (r) repaintHead(r);
+  }
+}
+/* 换歌 / 首次启用时取评论：与评论浮层共用同一份 review 缓存和同一条取数管线 */
+function dmkLoadForNow() {
+  if (!dmkEnabled()) return;
+  var track = null;
+  try { track = targetTrack(); } catch (e0) { track = null; }
+  if (!track || (!track.title && !track.artist)) return;
+  var key = '';
+  try { key = docBase(track); } catch (e1) { key = ''; }
+  if (!key || key === dmk.key) { dmkEnsure(); return; }
+  dmk.key = key;
+  var id = ++dmk.loadId;
+
+  var file = '';
+  var dir = cacheSubDir('review');
+  if (dir) file = dir + '\\' + key + '.json';
+  var cached = null;
+  try { cached = readCacheJson(file, COMMENT_TTL); } catch (e2) { cached = null; }
+  if (cached && cached.items && cached.items.length) {
+    if (id === dmk.loadId) dmkSetItems(cached.items);
+    return;
+  }
+  try {
+    withTimeout(NM.providers.comments(track), 25000, '弹幕取评论').then(function (items) {
+      if (id !== dmk.loadId) return;
+      items = (items || []).filter(function (c) { return c && String(c.text || '').trim(); });
+      if (!items.length) return;               /* 取不到就静默空着 */
+      try { writeCacheJson(file, { at: Date.now(), items: items }); } catch (e3) { }
+      dmkSetItems(items);
+    }, function () { /* 静默 */ });
+  } catch (e4) { }
+}
+/* 计时器改为按需排程的一次性 setTimeout 链：
+   淡换期间 33ms 逐帧、跑马灯步进 160ms 一步、停留期只在到期时醒一次、
+   无跑马灯的静止排只等换条；被设置面板 / 浮层遮住时降为 500ms 兜底轮询。
+   静止期不再 33ms 空转。每排始终存在「下一个事件」（淡换 / 步进 /
+   停留到期 / 换条），所以链条不会断；排被关掉时 dmkEnsure 顺手停表。 */
+function dmkNextDelay(now) {
+  var delay = -1;
+  for (var row = 1; row <= 2; row++) {
+    var st = dmk.rows[row - 1];
+    if (!st || st.idx < 0) continue;
+    var d;
+    if ((now - st.t0) / DMK_ROLL < 1) {
+      d = 33;   /* 淡换逐帧 */
+    } else {
+      var due = DMK_ROLL + DMK_HOLD - (now - st.t0);   /* 换条到期 */
+      var mq = st.mq;
+      if (mq && (mq.ph === 1 || mq.ph === 3))
+        d = Math.min(DMK_MQ_STEP - (now - mq.t), due);   /* 逐步进 */
+      else if (mq && mq.ph >= 0)
+        d = Math.min(DMK_MQ_HOLD - (now - mq.t), due);   /* 起点 / 尾部停留 */
+      else
+        d = due;   /* 无跑马灯（装得下）→ 只等换条 */
+      if (d < 0) d = 0;   /* 已到期 → 下次唤醒立即处理 */
+    }
+    if (delay < 0 || d < delay) delay = d;
+  }
+  if (delay < 0) return -1;
+  return clamp(delay, 16, 1000);
+}
+function dmkSchedule() {
+  if (dmk.timer) return;
+  if (!dmkEnabled()) return;
+  var delay = (setOpen || overlay) ? 500   /* 遮住时降频兜底，关闭后自然恢复 */
+            : dmkNextDelay(Date.now());
+  if (delay < 0) return;
+  dmk.timer = setTimeout(function () {
+    dmk.timer = 0;
+    try { dmkTick(); } catch (eT) { }
+    dmkSchedule();
+  }, delay);
+}
+function dmkEnsure() {
+  if (!dmkEnabled()) { dmkStop(); return; }
+  dmkSchedule();
+}
+function dmkStop() {
+  if (dmk.timer) { clearTimeout(dmk.timer); dmk.timer = 0; }
+}
+function dmkTick() {
+  if (!dmkEnabled()) return;
+  if (setOpen || overlay) return;
+  var now = Date.now();
+  for (var row = 1; row <= 2; row++) {
+    var r = dmkRowRect(row);
+    var st = dmk.rows[row - 1];
+    if (!r || !st || st.idx < 0) continue;
+    if (now - st.t0 > DMK_ROLL + DMK_HOLD) {
+      /* 这一条到点了：换下一条（共享游标顺序推进，两排不会拿到同一条） */
+      st.prevIdx = st.idx;
+      st.idx = dmkTake();
+      st.t0 = now;
+      st.mq = null;   /* 新评论重置跑马灯 */
+    }
+    var p = (now - st.t0) / DMK_ROLL;
+    if (p < 1) repaintHead(r);   /* 淡换中逐帧刷，停留期不刷 */
+    else if (dmkMarquee(r, st, now)) repaintHead(r);   /* 长评论步进瞬间才刷 */
+  }
+}
+/* ===== 长评论跑马灯 =====
+   文字装不下时横向缓缓流动：起点停留 → 每 160ms 向左逐字 →
+   尾部完整可见后停留 → 逐字退回起点，往返循环。
+   实现是直绘「窗口子串」（GdiDrawText 自带省略号裁切），
+   不用离屏图，也不用手写裁切。 */
+var DMK_MQ_HOLD = 3500;
+var DMK_MQ_STEP = 160;
+var dmkImg = null, dmkG = null;
+/* 量宽专用的小离屏图（只量不画，无抗锯齿问题） */
+function dmkMeasureGr() {
+  if (!dmkG) {
+    try { dmkImg = gdi.CreateImage(8, 8); dmkG = dmkImg.GetGraphics(); }
+    catch (e0) { dmkG = null; }
+  }
+  return dmkG;
+}
+/* 行内布局：user 名（灰，限排宽 35%）+ 正文区；返回正文区左缘与宽度。
+   user 名量宽结果缓存在评论对象上（_duwK/_duw）——淡换期间每帧调用，
+   同一条评论的宽度不会变，只量一次 */
+function dmkLineParts(r, item) {
+  var pad = 8;
+  var userX0 = r.x + pad;
+  var ux = userX0;
+  var user = String(item && item.user || '').trim();
+  if (user) {
+    var uw = Math.round(r.w * 0.35);
+    var cw = (item._duwK === user) ? item._duw : null;
+    if (cw == null) {
+      cw = 0;
+      var g2 = dmkMeasureGr();
+      if (g2) { try { cw = g2.CalcTextWidth(user, F.small) / UI_S; } catch (e0) { cw = 0; } }
+      item._duwK = user; item._duw = cw;
+    }
+    ux += Math.max(10, Math.min(cw || uw, uw)) + 6;
+  }
+  return { userX0: userX0, ux: ux, txW: Math.max(10, r.x + r.w - pad - ux) };
+}
+/* 找最小的 off 使 text.slice(off) 恰好装进区域（二分量宽，次数很少） */
+function dmkMaxOff(text, pxW) {
+  var g2 = dmkMeasureGr();
+  if (!g2 || pxW <= 4) return 0;
+  var lo = 0, hi = text.length, fit = -1;
+  while (lo <= hi) {
+    var mid = (lo + hi) >> 1;
+    var w = 0;
+    try { w = g2.CalcTextWidth(text.slice(mid), F.small); } catch (e1) { w = pxW + 1; }
+    if (w <= pxW) { fit = mid; hi = mid - 1; } else { lo = mid + 1; }
+  }
+  return Math.max(0, fit);
+}
+/* 推进某排的跑马灯相位机；返回是否步进（步进才需要重绘）。
+   相位：0=起点停留 1=向左逐字 2=尾部停留 3=向右逐字 -1=静止（装得下） */
+function dmkMarquee(r, st, now) {
+  var item = dmk.items[st.idx];
+  if (!item) return false;
+  var text = String(item.text || '').replace(/\s+/g, ' ').trim();
+  if (!text) return false;
+  var parts = dmkLineParts(r, item);
+  var key = Math.round(parts.txW) + '|' + text;
+  var mq = st.mq;
+  if (!mq || mq.key !== key) {
+    var g2 = dmkMeasureGr();
+    var tw = 0;
+    if (g2) { try { tw = g2.CalcTextWidth(text, F.small); } catch (e0) { tw = 0; } }
+    mq = st.mq = { key: key, off: 0, ph: (tw > parts.txW * UI_S) ? 0 : -1,
+                   t: now, tw: tw, maxOff: 0 };
+  }
+  if (mq.ph < 0) return false;
+  if (!mq.maxOff) {
+    mq.maxOff = dmkMaxOff(text, Math.round(parts.txW * UI_S));
+    if (mq.maxOff <= 0) { mq.ph = -1; return false; }
+  }
+  var moved = false;
+  if (mq.ph === 0) {
+    if (now - mq.t >= DMK_MQ_HOLD) { mq.ph = 1; mq.t = now; }
+  } else if (mq.ph === 1) {
+    if (now - mq.t >= DMK_MQ_STEP) {
+      mq.off = Math.min(mq.maxOff, mq.off + 1);
+      mq.t = now;
+      moved = true;
+      if (mq.off >= mq.maxOff) mq.ph = 2;
+    }
+  } else if (mq.ph === 2) {
+    if (now - mq.t >= DMK_MQ_HOLD) { mq.ph = 3; mq.t = now; }
+  } else {
+    if (now - mq.t >= DMK_MQ_STEP) {
+      mq.off = Math.max(0, mq.off - 1);
+      mq.t = now;
+      moved = true;
+      if (mq.off <= 0) mq.ph = 0;
+    }
+  }
+  return moved;
+}
+
+/* 一条评论直接画进面板（与其它文字同一条渲染路径，字体观感完全一致）。
+   off > 0 时画正文窗口子串（跑马灯）；user 名始终静止 */
+function dmkDrawTextLine(gr, r, idx, alpha, off) {
+  if (idx < 0 || !(alpha > 0)) return;
+  var item = dmk.items[idx];
+  if (!item) return;
+  var text = String(item.text || '').replace(/\s+/g, ' ').trim();
+  if (!text) return;
+  var parts = dmkLineParts(r, item);
+  var user = String(item.user || '').trim();
+  if (user) {
+    var uw = Math.round(r.w * 0.35);
+    gr.GdiDrawText(user, F.small, A(C.dim, alpha), parts.userX0, r.y, uw, r.h, FLAG_LEFT);
+  }
+  if (off > 0) text = text.slice(off);
+  gr.GdiDrawText(text, F.small, A(C.text, alpha), parts.ux, r.y, parts.txW, r.h, FLAG_LEFT);
+}
+function dmkDrawRow(gr, r, row) {
+  var st = dmk.rows[row - 1];
+  if (!st || st.idx < 0) return;
+  var off = (st.mq && st.mq.off > 0) ? st.mq.off : 0;
+  var p = (Date.now() - st.t0) / DMK_ROLL;
+  if (p < 1 && st.prevIdx >= 0) {
+    /* 淡换：前半段旧评论淡出，后半段新评论淡入。
+       不做同位交叉淡化 —— 两条中文叠一起会糊成一团 */
+    if (p < 0.5) dmkDrawTextLine(gr, r, st.prevIdx, Math.round(235 * (1 - p * 2)), 0);
+    else dmkDrawTextLine(gr, r, st.idx, Math.round(235 * (p - 0.5) * 2), off);
+  } else {
+    dmkDrawTextLine(gr, r, st.idx, 235, off);
+  }
+}
+
+/* ===== 播放进度 ===== */
+var headSeekDrag = null;   /* 拖动中的那排矩形 */
+/* 状态栏：单击 = 诊断日志（延迟 240ms），双击 = 定位正在播放（双击取消单击） */
+var footClickTimer = 0;
+var footDblAt = 0;
+
+function headFmtTime(sec) {
+  sec = Math.max(0, Math.round(Number(sec) || 0));
+  var m = Math.floor(sec / 60), s2 = sec % 60;
+  var h = Math.floor(m / 60);
+  var mm = m % 60;
+  if (h > 0) return h + ':' + (mm < 10 ? '0' : '') + mm + ':' + (s2 < 10 ? '0' : '') + s2;
+  return m + ':' + (s2 < 10 ? '0' : '') + s2;
+}
+/* 进度条几何：2px 单线垂直居中在排内，已播时间在线左、总时长在线右
+   （两端都是短文本，不会再被头部按钮截住）。绘制与拖动 seek 共用
+   这套坐标，落点和线对得上 */
+function headSeekGeom(r) {
+  var inset = 6, wTime = 42, gap = 6;
+  var tw = r.w - inset * 2 - wTime * 2 - gap * 2;
+  var hasTime = tw >= 24;
+  if (!hasTime) tw = r.w - inset * 2;
+  return { x0: r.x + inset + (hasTime ? wTime + gap : 0), tw: tw,
+           hasTime: hasTime, wTime: wTime, gap: gap,
+           y: r.y + Math.round(r.h / 2) - 1 };
+}
+
+function drawSeekRow(gr, r) {
+  var len = 0, cur = 0;
+  try { len = Number(fb.PlaybackLength) || 0; } catch (e0) { }
+  if (!(len > 0)) return;                       /* 没时长（电台流）就不画 */
+  try { cur = Number(fb.PlaybackTime) || 0; } catch (e1) { }
+  var g = headSeekGeom(r);
+  var ratio = clamp(cur / len, 0, 1);
+  gr.FillSolidRect(g.x0, g.y, g.tw, 2, A(C.text, 38));
+  var fw = Math.round(g.tw * ratio);
+  if (fw > 0) gr.FillSolidRect(g.x0, g.y, fw, 2, C.accent);
+  if (headSeekDrag) {                           /* 拖动时画把手，好确认落点 */
+    gr.FillSolidRect(g.x0 + fw - 2, g.y - 2, 4, 6, C.accent);
+  }
+  if (g.hasTime) {
+    gr.GdiDrawText(headFmtTime(cur), F.tiny, A(C.text, 200),
+                   r.x + 6, r.y, g.wTime, r.h, FLAG_RIGHT);
+    gr.GdiDrawText(headFmtTime(len), F.tiny, A(C.text, 200),
+                   g.x0 + g.tw + g.gap, r.y, g.wTime, r.h, FLAG_LEFT);
+  }
+}
+function headSeekTo(r, x) {
+  try {
+    var len = Number(fb.PlaybackLength) || 0;
+    if (!(len > 0)) return;
+    var g = headSeekGeom(r);
+    var ratio = clamp((x - g.x0) / Math.max(1, g.tw), 0, 1);
+    fb.PlaybackTime = Math.round(ratio * len);
+    repaintHead(r);
+  } catch (e0) { }
+}
+
+/* ===== 绘制入口（drawHeader 末尾调用）===== */
+function drawHeadRows(gr) {
+  /* 第一排末端的小齿轮 → 直达「标题栏空白区」设置 */
+  var gear = headGearRect();
+  if (gear) {
+    var gHot = (headBtnHot === 'gear') && !overlay && !setOpen;
+    if (gHot) gr.FillSolidRect(gear.x + 1, gear.y + 2, gear.w - 2, gear.h - 4, A(C.hover, 70));
+    gr.GdiDrawText(HEAD_ICONS.gear, F.mdl2,
+                   gHot ? C.accent : C.dim, gear.x, gear.y, gear.w, gear.h, FLAG_CENTER);
+  }
+  /* 第二排末端的轮换按钮 → 依次切换第二排显示内容 */
+  var cyc = headCycleRect();
+  if (cyc) {
+    var cHot = (headBtnHot === 'cyc') && !overlay && !setOpen;
+    if (cHot) gr.FillSolidRect(cyc.x + 1, cyc.y + 2, cyc.w - 2, cyc.h - 4, A(C.hover, 70));
+    gr.GdiDrawText(HEAD_ICONS.cycle, F.mdl2,
+                   cHot ? C.accent : C.dim, cyc.x, cyc.y, cyc.w, cyc.h, FLAG_CENTER);
+  }
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (!r) continue;
+    if (r.feat === 'spec') headSpecDraw(gr, r);
+    else if (r.feat === 'ctrl') drawHeadCtrl(gr, r);
+    else if (r.feat === 'dmk') dmkDrawRow(gr, r, row);
+    else if (r.feat === 'seek') drawSeekRow(gr, r);
+  }
+  hspecEnsure();
+  dmkEnsure();
+}
+
+/* ===== 定位（原标题栏单击定位迁移至此）===== */
+/* 左列表：正在播放的曲目滚到可见并选中。
+   流播句柄的 tag 是 URL 末段，所以 Lxbox 自己播的用 lastTrack，
+   外部播的才按实际 tag 反查。 */
+function headLocateLeft() {
+  if (!tracks || !tracks.length) { setStatus('当前页面没有曲目列表', true); return; }
+  if (!fb.IsPlaying) { setStatus('当前没有在播放', true); return; }
+  var h = nowPlayingHandle();
+  var t = null;
+  try { t = (h && lastTrack && lxCurrentIsOurs(h)) ? lastTrack : targetTrack(); } catch (e0) { t = null; }
+  if (!t) { setStatus('没有正在播放的曲目', true); return; }
+  for (var i = 0; i < tracks.length; i++) {
+    if (tracks[i] === t || sameTrackAs(tracks[i], t)) {
+      selected = i;
+      ensureVisible();
+      repaint();
+      setStatus('已定位到正在播放：' + String(tracks[i].title || ''));
+      return;
+    }
+  }
+  setStatus('正在播放的曲目不在当前列表里', true);
+}
+/* 按状态栏双击的横向位置分流：右栏区域 → 右侧播放列表，左半 → 左列表 */
+function headLocateAt(x) {
+  if (L.right && L.right.w > 0 && x >= L.right.x) locatePlayingInRight();
+  else headLocateLeft();
+}
 
 var HEAD_BTNS = [
   { key: 'settings', label: '设置', icon: '' },
   { key: 'comments', label: '评论', icon: '' },
   { key: 'bio', label: '简介', icon: '' }
 ];
+
+/* 压缩模式（隐藏第二排音源平台）下这三颗按钮改画字符，未压缩时仍画 label 文字。
+   Segoe MDL2 Assets：设置 E713(Settings) / 评论 E8BD(Message) / 简介 E77B(Contact)。
+   注意：E15E 是标题栏空白区那颗「控制栏空白区设置」齿轮（headGearRect），别混用。 */
+var HEAD_BTN_GLYPH = { settings: '\uE713', comments: '\uE8BD', bio: '\uE77B' };
 
 function headerButtonRect(key) {
   if (key === 'settings') return settingsRect();
@@ -8790,8 +9963,15 @@ function drawHeaderButtons(gr) {
     var hot = hoverOn(b);
     /* 背景透明：常态不铺底，直接用标题栏自己的底；只有悬停时补一层淡色 */
     if (hot) gr.FillSolidRect(b.x, b.y, b.w, b.h, tint(C.hover, BG_A.rowHot));
-    gr.DrawRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 1, A(C.line, hot ? 235 : 190));
-    if (btn.icon) {
+    /* 压缩模式下只剩字符，不描那圈方框；未压缩时的文字按钮保持原样 */
+    if (!headCompact()) {
+      gr.DrawRect(b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 1, A(C.line, hot ? 235 : 190));
+    }
+    if (headCompact()) {
+      /* 压缩模式：三颗按钮只剩一排，画字符（设置 / 评论 / 简介） */
+      gr.GdiDrawText(HEAD_BTN_GLYPH[btn.key], F.mdl2, hot ? C.accent : C.text,
+                     b.x, b.y, b.w, b.h, FLAG_CENTER);
+    } else if (btn.icon) {
       drawButtonIcon(gr, btn.icon, b, hot ? C.accent : C.text);
     } else {
       gr.GdiDrawText(btn.label, F.hdr, hot ? C.accent : C.text,
@@ -8949,17 +10129,8 @@ function drawHeader(gr) {
 
   drawHeaderButtons(gr);
 
-  /* 空白区平时什么都没有，指上去才铺一层淡底并写一句「定位正在播放」 */
-  if (headBlankHot && !overlay) {
-    var hb = headBlankRect();
-    if (hb) {
-      gr.FillSolidRect(hb.x, hb.y, hb.w, hb.h, tint(C.hover, 40));
-      if (hb.w >= 110) {
-        gr.GdiDrawText('定位正在播放', F.tiny, A(C.dim, 215),
-                       hb.x, hb.y, hb.w, hb.h, FLAG_CENTER);
-      }
-    }
-  }
+  /* 两排功能区：频谱 / 播放控制 / 弹幕 / 进度，按设置绘制（末尾顺便对齐定时器） */
+  drawHeadRows(gr);
 }
 
 var sbGeom = {};        /* id -> { x, y, h, total, visible, offset } */
@@ -9535,6 +10706,8 @@ function rightContextMenu(x, y) {
   m.AppendMenuItem(MF_STRING, 805, isCache ? '返回播放列表' : '只看缓存音乐（不写列表）');
   m.AppendMenuItem(MF_STRING, 806, WATCH_ON ? '停止监视缓存' : '监视缓存：把已缓存的加入播放列表');
   m.AppendMenuItem(MF_STRING, 807, '重新扫描缓存');
+  /* 标题栏不再有定位入口后的常驻兜底（双击状态栏也能定位） */
+  m.AppendMenuItem(MF_STRING, 809, '定位播放曲目');
 
   var id = m.TrackPopupMenu(x, y);
   if (!id) return true;
@@ -9555,6 +10728,7 @@ function rightContextMenu(x, y) {
   }
   else if (id === 805) toggleCacheView();
   else if (id === 806) setWatchOn(!WATCH_ON, false);
+  else if (id === 809) locatePlayingInRight();
   else if (id === 808) {
     var cd0 = '';
     try { cd0 = String(cacheDir() || ''); } catch (e8) { cd0 = ''; }
@@ -9729,12 +10903,14 @@ function drawRowProgress(gr, x, y, w, h) {
    只在「在播 + 右栏展开 + 那一行确实在可视区」时才重绘。 */
 var PROG_TIMER = 0;
 
+/* 定时器只在播放中存在：切歌 / 开始播放时挂上，暂停 / 停止即停表。
+   未播放时的空转（每 800ms 白查一次 IsPlaying）不再发生 */
 function ensureProgressTimer() {
   if (PROG_TIMER) return;
   PROG_TIMER = setInterval(function () {
     var playing = false;
     try { playing = !!fb.IsPlaying && !fb.IsPaused; } catch (e0) { playing = false; }
-    if (!playing) return;
+    if (!playing) { stopProgressTimer(); return; }
     var rc = rightPlayingRowRect();
     if (!rc) return;
     var s = UI_S;
@@ -9745,6 +10921,9 @@ function ensureProgressTimer() {
       repaint();
     }
   }, 800);
+}
+function stopProgressTimer() {
+  if (PROG_TIMER) { clearInterval(PROG_TIMER); PROG_TIMER = 0; }
 }
 
 function rightRowAt(i) {
@@ -11308,6 +12487,16 @@ function lookSections() {
           refreshBgFx(true);
           setStatus('配色：' + themeLabel(v));
         } },
+      { kind: 'seg', id: 'fadebottom', label: '底部渐隐带',
+        value: fadeBottom ? '1' : '0',
+        options: [['1', '显示'], ['0', '隐藏']],
+        onPick: function (v) {
+          setProp('lx.fadeBottom', v === '1' ? 1 : 0);
+          fadeBottom = (v === '1');
+          setStatus(fadeBottom ? '底部渐隐带：开' : '底部渐隐带：关');
+          repaint();
+        } },
+      { kind: 'note', text: '列表最后几行在底部状态条上方渐隐，深浅与 Eole 其它列表面板一致。' },
       { kind: 'seg', id: 'rowlines', label: '曲目清单', value: String(rowLines()),
         options: [['2', '双行'], ['1', '单行']],
         onPick: function (v) {
@@ -11371,6 +12560,33 @@ function lookSections() {
       { kind: 'note', text: function () {
           return '右侧播放列表栏显示 foobar2000 当前播放列表（序号 / 歌手 / 歌名 / 时长），' +
                  '单击选中、双击播放。窗口宽度小于 ' + RIGHT_MIN_W + ' 时自动隐藏。';
+        } }
+    ] },
+    { cat: 'look', title: '标题栏空白区', rows: [
+      { kind: 'seg', id: 'headRow1', label: '第一排（页签行）', value: headFeatOf(1),
+        options: [['none', '留空'], ['spec', '频谱'], ['ctrl', '播放控制'],
+                  ['dmk', '评论弹幕'], ['seek', '播放进度']],
+        onPick: function (v) {
+          setProp('lx.headRow1', v);
+          applyHeadFeats();
+          setStatus('标题栏第一排：' + headFeatName(v));
+        } },
+      { kind: 'seg', id: 'headRow2', label: '第二排（音源行）', value: headFeatOf(2),
+        options: [['none', '留空'], ['spec', '频谱'], ['ctrl', '播放控制'],
+                  ['dmk', '评论弹幕'], ['seek', '播放进度']],
+        onPick: function (v) {
+          setProp('lx.headRow2', v);
+          applyHeadFeats();
+          setStatus('标题栏第二排：' + headFeatName(v));
+        } },
+      { kind: 'note', text: function () {
+          var t = '两排各自独立。「隐藏第二排平台」时只剩一排，第二排的设置自动失效；' +
+                  '面板窄于该功能的最小宽度时那一排不画。频谱柱色跟随正在播放的封面，' +
+                  '帧率 60（lx.specFps 可调 5-60）。' +
+                  '原来的「单击定位」在：双击底部状态栏（左半定位左列表、右半定位右侧播放列表），' +
+                  '右栏右键菜单里也有「定位播放曲目」。';
+          if (headCompact()) t += '当前顶栏已收成一行，只有第一排设置生效。';
+          return t;
         } }
     ] }
   ];
@@ -11911,6 +13127,8 @@ function settingsCloseRect() {
 function settingsSig() {
   return W + 'x' + H + '|' + setCat + '|' + setScroll + '|' + setVer +
          '|q' + quality + '|r' + rowLines() +
+         '|hp' + (hidePlatformRow ? 1 : 0) +
+         '|h1' + headFeatOf(1) + '|h2' + headFeatOf(2) +
          '|e' + (EMBED_COVER ? 1 : 0) + '|p' + (PUSH_COVER ? 1 : 0) +
          '|cx' + (checkExtOn() ? 1 : 0) +
          '|pb' + (probeBusy ? 'b' : '') + (probeAt || 0) +
@@ -12421,6 +13639,9 @@ function resetSettingCat() {
     setProp('lx.rowLines', '2');
     setProp('lx.rowGap', 0);
     setQualityHidden('');            // 隐藏第二排时的音质回到「跟随全局」
+    setProp('lx.headRow1', '');
+    setProp('lx.headRow2', '');
+    setProp('lx.specFps', 60);
     if (NM.lx && typeof NM.lx.clearResolveCache === 'function') NM.lx.clearResolveCache();
     ui = true;
   } else if (setCat === 'bg') {
@@ -12475,6 +13696,7 @@ function resetSettingCat() {
   }
   setStatus('已恢复「' + SET_CATS[catIndexOf(setCat)].name + '」的默认值');
   applyTheme(true);
+  applyHeadFeats();          /* 标题栏功能复位后对齐定时器 / 重绘 */
   if (bg) { bgArtKey = ''; refreshBackground(true); }
   if (ui) { applyUiScale(); return; }
   buildBackdrop();
@@ -12539,6 +13761,23 @@ function runSettingsButton(id, close) {
   repaint();
 }
 
+/* 底部渐隐带：从列表往下面到面板最底，状态栏那 24px 也一起渐隐，
+   免得在状态栏上沿留一条硬边。参数与 Eole 的 WSHfilter /
+   WSHsmoothplaylistmanager / WSHlibrary_tree 一致：
+   深色 黑 70、高 50；浅色 黑 10、高 30。 */
+function drawBottomFade(gr) {
+  if (!fadeBottom) return;
+  var bottom = H;
+  if (bottom <= 0) return;
+  var h = (THEME === 'light') ? 30 : 50;
+  if (h > bottom) h = bottom;
+  if (h < 4) return;
+  var a = (THEME === 'light') ? 10 : 70;
+  try {
+    gr.FillGradRect(0, bottom - h, W, h, 90, A(0x000000, 0), A(0x000000, a), 1);
+  } catch (e) {}
+}
+
 function drawFooter(gr) {
   var y = H - FOOT_H;
   // 和标题栏同色：同一个表达式，拖动「标题栏透明度」时两处一起变
@@ -12569,7 +13808,7 @@ function on_paint(gr) {
   /* 面板重载后如果监视还开着，补一次全量扫描（只做一次） */
   if (!WATCH_BOOTED) {
     WATCH_BOOTED = true;
-    ensureProgressTimer();
+    try { if (fb.IsPlaying && !fb.IsPaused) ensureProgressTimer(); } catch (ePT0) { }
     if (WATCH_ON) setTimeout(function () { try { watchScan(true); } catch (eW0) { } }, 2000);
   }
 
@@ -12603,6 +13842,8 @@ function on_paint(gr) {
 
   drawRightPanel(gr);
   drawFooter(gr);
+  /* 画在状态栏之后，才能把状态栏一起盖进渐变里 */
+  drawBottomFade(gr);
 
   if (overlay) {
     rebuildOverlayLines(false);
@@ -12881,6 +14122,10 @@ function on_mouse_move(x, y, mask) {
     return;
   }
 
+  /* 顶栏拖动中：进度条 seek / 音量滑块调音量，拖动期间不看悬停 */
+  if (headSeekDrag) { headSeekTo(headSeekDrag, x); return; }
+  if (headVolDrag) { headVolTo(headVolDrag, x); return; }
+
   var ti = trackAt(x, y);
   var bi = tab === 0 ? boardAt(x, y) : -1;
   var ci = isBrowseTab() ? collAt(x, y) : -1;
@@ -12890,7 +14135,6 @@ function on_mouse_move(x, y, mask) {
   var newBtn = newKind === 'track' ? buttonAt(x, y) : '';
 
   var hand = false;
-  var hbz = null;          /* 顶栏空白矩形；只有指针落在空白那块才算 */
   var bhr = brandHitRect();   /* 左上角 Logo：双击开关第二排平台条 */
   if (scrollbarHit(x, y)) hand = true;
   else if (y >= H - FOOT_H) hand = true;
@@ -12912,8 +14156,13 @@ function on_mouse_move(x, y, mask) {
       if (headerButtonVisible(HEAD_BTNS[b].key) && inRect(headerButtonRect(HEAD_BTNS[b].key), x, y)) hand = true;
     }
     if (newKind === 'board' || newKind === 'coll') hand = true;
-    hbz = headBlankRect();
-    if (hbz && inRect(hbz, x, y)) hand = true;
+    /* 功能排：控制按钮 / 进度条给手型；频谱 / 弹幕 / 留空保持箭头 */
+    var hrz = headRowHit(x, y);
+    if (hrz && (hrz.feat === 'ctrl' || hrz.feat === 'seek')) hand = true;
+    var gzHand = headGearRect();
+    if (gzHand && inRect(gzHand, x, y)) hand = true;
+    var czHand = headCycleRect();
+    if (czHand && inRect(czHand, x, y)) hand = true;
   }
   setCursorHand(hand);
 
@@ -12921,13 +14170,28 @@ function on_mouse_move(x, y, mask) {
   var brHot = !!(bhr && inRect(bhr, x, y));
   if (brHot !== brandHot) { brandHot = brHot; repaint(); }
 
-  /* hbz 只在上面那个 else 分支里算过；走了别的分支就是 undefined，
-     表示指针在别的控件上，空白区不亮 */
-  var hbHotNow = !!(hbz && inRect(hbz, x, y));
-  if (hbHotNow !== headBlankHot) {
-    headBlankHot = hbHotNow;
-    repaint();
+  /* 播放控制按钮悬停态：变了才重画（按钮自己的淡底画在 drawHeadCtrl 里） */
+  var hbHot = '';
+  for (var row = 1; row <= 2; row++) {
+    var hr2 = headRowRect(row);
+    if (hr2 && hr2.feat === 'ctrl') {
+      var zc2 = headCtrlRects(hr2);
+      if (zc2) {
+        for (var zi2 = 0; zi2 < zc2.ids.length; zi2++) {
+          if (inRect(zc2[zc2.ids[zi2]], x, y)) { hbHot = zc2.ids[zi2] + row; break; }
+        }
+        if (!hbHot && zc2.sl && inRect(zc2.sl, x, y)) hbHot = 'sl' + row;
+      }
+    }
+    if (hbHot) break;
   }
+  if (!hbHot) {
+    var gz = headGearRect();
+    if (gz && inRect(gz, x, y)) hbHot = 'gear';
+    var cz = headCycleRect();
+    if (cz && inRect(cz, x, y)) hbHot = 'cyc';
+  }
+  if (hbHot !== headBtnHot) { headBtnHot = hbHot; repaint(); }
 
   var togR = sideToggleRect();
   var togHot = !!(togR && inRect(togR, x, y));
@@ -12978,7 +14242,7 @@ function on_mouse_leave() {
   if (rightTogHot) { rightTogHot = false; repaint(); }
   if (rightHoverRow >= 0) { rightHoverRow = -1; repaint(); }
   if (scriptHot) { scriptHot = false; repaint(); }
-  if (headBlankHot) { headBlankHot = false; repaint(); }
+  if (headBtnHot) { headBtnHot = ''; repaint(); }
   if (brandHot) { brandHot = false; repaint(); }
   if (qBarHot) { qBarHot = false; repaint(); }
   if (probeHot) { probeHot = false; repaint(); }
@@ -13033,6 +14297,24 @@ function on_mouse_lbtn_down(x, y) {
     return true;
   }
 
+  /* 顶栏功能排：进度条按下即跳转并进入拖动；音量滑块按下即调音量并进入拖动 */
+  if (!overlay && y < HEAD_H) {
+    var hd = headRowHit(x, y);
+    if (hd && hd.feat === 'seek') {
+      headSeekDrag = hd;
+      headSeekTo(hd, x);
+      return true;
+    }
+    if (hd && hd.feat === 'ctrl') {
+      var zc = headCtrlRects(hd);
+      if (zc && zc.sl && inRect(zc.sl, x, y)) {
+        headVolDrag = zc.sl;
+        headVolTo(zc.sl, x);
+        return true;
+      }
+    }
+  }
+
   var id = scrollbarHit(x, y);
   if (!id) {
     sbGuard = false;
@@ -13055,6 +14337,8 @@ function on_mouse_lbtn_up(x, y) {
   y = toLogical(y);
   if (setOpen) { settingsMouseUp(x, y); return; }
   if (colDrag) { endColDrag(); return true; }
+  if (headSeekDrag) { var rSD = headSeekDrag; headSeekDrag = null; repaintHead(rSD); return true; }
+  if (headVolDrag) { headVolDrag = null; return true; }
   sbDrag = null;
   if (sbGuard) {
     sbGuard = false;
@@ -13164,7 +14448,16 @@ function on_mouse_lbtn_up(x, y) {
   }
 
   if (y >= H - FOOT_H) {
-    openDiagnostics();
+    /* 单击延迟 240ms 再开诊断；双击会取消它并定位（见 on_mouse_lbtn_dblclk）。
+       双击的第二下 up 靠 footDblAt 抑制，否则延迟的单击还是会弹出来。 */
+    if (Date.now() - footDblAt < 600) {
+      footDblAt = 0;
+    } else if (!footClickTimer) {
+      footClickTimer = setTimeout(function () {
+        footClickTimer = 0;
+        try { openDiagnostics(); } catch (eD) { }
+      }, 240);
+    }
     return;
   }
 
@@ -13200,11 +14493,34 @@ function on_mouse_lbtn_up(x, y) {
     }
   }
 
-  /* 顶栏中间的空白：定位右侧播放列表正在播放的那首 */
-  var hb = headBlankRect();
-  if (hb && inRect(hb, x, y)) {
-    locatePlayingInRight();
-    return;
+  /* 第一排末端的齿轮：直达「标题栏空白区」设置 */
+  var gearHit = headGearRect();
+  if (gearHit && inRect(gearHit, x, y)) {
+    openHeadSettings();
+    return true;
+  }
+
+  /* 第二排末端的轮换按钮：依次切换第二排显示内容 */
+  var cycHit = headCycleRect();
+  if (cycHit && inRect(cycHit, x, y)) {
+    headCycleRow();
+    return true;
+  }
+
+  /* 顶栏功能排：播放控制按钮（频谱 / 弹幕 / 进度排的点击不在这里——
+     进度排按下即 seek，已在 lbtn_down 处理） */
+  for (var row = 1; row <= 2; row++) {
+    var hr = headRowRect(row);
+    if (!hr || hr.feat !== 'ctrl') continue;
+    var zs = headCtrlRects(hr);
+    if (!zs) continue;
+    for (var zi = 0; zi < zs.ids.length; zi++) {
+      var zid = zs.ids[zi];
+      if (inRect(zs[zid], x, y)) {
+        headCtrlAction(zid);
+        return true;
+      }
+    }
   }
 
   var togRect = sideToggleRect();
@@ -13308,6 +14624,16 @@ function on_mouse_lbtn_dblclk(x, y) {
   x = toLogical(x);
   y = toLogical(y);
   if (setOpen) return;
+
+  /* 双击状态栏 = 定位正在播放：右半（右栏区域）→ 右侧播放列表，
+     左半 → 左侧曲目列表。同时取消挂起的「单击开诊断」。 */
+  if (y >= H - FOOT_H) {
+    if (footClickTimer) { clearTimeout(footClickTimer); footClickTimer = 0; }
+    footDblAt = Date.now();
+    headLocateAt(x);
+    return;
+  }
+
   if (overlay) {
     if (overlay === 'bio' && bioSplitOn() && !scrollbarHit(x, y)) {
       var bg = bioLayout();
@@ -13396,6 +14722,12 @@ function nudgeRowGap(delta) {
 function on_mouse_wheel(step) {
   step = Number(step) || 0;
   if (!step) return;
+
+  /* 音量钮上滚动 = 调音量（±1 dB），不走列表 / 字号那套 */
+  if (!overlay && !setOpen) {
+    var vz = headVolZone();
+    if (vz && inRect(vz, mouseX, mouseY)) { headVolStep(step); return; }
+  }
 
   if (keyPressed(0x11)) { nudgeFontSize(step > 0 ? 1 : -1); return; }
   if (keyPressed(0x10)) { nudgeRowGap(step > 0 ? 2 : -2); return; }
@@ -13729,6 +15061,8 @@ function init() {
   else if (isBrowseTab()) setTimeout(function () { loadRecommend(false); }, 60);
 
   refreshBackground(true);
+  /* 标题栏功能：面板载入时若正在播放，弹幕直接取当前曲目的评论（频谱首帧自启） */
+  try { if (fb.IsPlaying) dmkLoadForNow(); } catch (eI) { }
   setTimeout(function () { refreshBackground(false); }, 900);
 
   startThemeWatch();
@@ -13820,15 +15154,59 @@ function on_playback_new_track(handle) {
   /* 同一时刻把曲目信息广播给皮肤里的其他面板（列表 / 标题栏都用得上） */
   setTimeout(function () { try { lxPublishNow(0); } catch (e4) {} }, 900);
   try { scheduleBioPrefetch(); } catch (eBP) {}
+  ensureProgressTimer();   /* 切歌 = 开始播放，挂上进度刷新表 */
   publishCacheDir();
+  /* 标题栏功能：频谱拾色换封面、弹幕换评论（各自内部有 token 防串台） */
+  setTimeout(function () { try { hspecCoverRequest(true); } catch (eSp) {} }, 0);
+  setTimeout(function () { try { dmkLoadForNow(); } catch (eDm) {} }, 0);
   repaint();
 }
 
 function on_playback_starting(cmd, is_paused) {
+  ensureProgressTimer();
   setTimeout(function () { refreshBackground(false); }, 120);
 }
 
 function on_playback_stop(reason) {
+  stopProgressTimer();
+  repaint();   /* 停止后右侧播放行的高亮 / 进度条要清掉 */
+}
+
+/* 进度排：每秒只刷那一条（拖动中的重绘由 mouse_move 负责，不冲突） */
+function on_playback_time(time) {
+  if (setOpen || overlay) return;
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'seek') repaintHead(r);
+  }
+}
+
+/* 播放 / 暂停按钮的图标状态 */
+function on_playback_pause(state) {
+  if (state) stopProgressTimer(); else ensureProgressTimer();
+  if (setOpen || overlay) return;
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'ctrl') repaintHead(r);
+  }
+}
+
+/* 外部改音量（托盘滑块 / 媒体键等）时刷新控制排的滑块 */
+function on_volume(value) {
+  if (setOpen || overlay) return;
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'ctrl') repaintHead(r);
+  }
+}
+
+/* 外部改播放模式（fb2k 菜单等）时刷新循环按钮的高亮态 */
+function on_playback_order_changed(new_order) {
+  if (setOpen || overlay) return;
+  for (var row = 1; row <= 2; row++) {
+    var r = headRowRect(row);
+    if (r && r.feat === 'ctrl') repaintHead(r);
+  }
 }
 
 function on_script_unload() {
@@ -13839,6 +15217,13 @@ function on_script_unload() {
   if (bgFxTimer) { clearTimeout(bgFxTimer); bgFxTimer = 0; }
   if (themeTimer) { clearTimeout(themeTimer); themeTimer = 0; }
   if (brandClickTimer) { clearTimeout(brandClickTimer); brandClickTimer = 0; }
+  if (footClickTimer) { clearTimeout(footClickTimer); footClickTimer = 0; }
+  if (hspec && hspec.timer) { clearInterval(hspec.timer); hspec.timer = 0; }
+  dmkStop();
+  dmk.rows[0] = null;
+  dmk.rows[1] = null;
+  disposeObj(dmkImg);
+  dmkImg = null; dmkG = null;
   if (coverMemSaveTimer) {
     clearTimeout(coverMemSaveTimer);
     coverMemSaveTimer = 0;
