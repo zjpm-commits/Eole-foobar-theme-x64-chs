@@ -10,9 +10,10 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 ## 🖼️ 截图展示
 
-<img width="1055" height="670" alt="image" src="https://github.com/user-attachments/assets/71d3aef1-948e-40f7-86a3-4a598970b435" />
+<img width="3840" height="1080" alt="image" src="https://github.com/user-attachments/assets/2962f0c1-8836-429d-8b20-acc5d34b179f" />
 
-<img width="1055" height="670" alt="image" src="https://github.com/user-attachments/assets/57fd1ae7-6aa0-4a2a-9c7e-d041dc478799" />
+<img width="3840" height="1080" alt="image" src="https://github.com/user-attachments/assets/4ab98091-a1ac-4eed-a42b-4a3ef2e9d135" />
+
 
 
 ## 🛠️ 依赖环境
