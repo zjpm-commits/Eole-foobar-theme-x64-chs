@@ -5517,7 +5517,8 @@ function setDarkLayout(){
 	else if(main_panel_state.isEqual(1)) new_darklayout_state = properties.playlists_dark_theme;
 	else if(main_panel_state.isEqual(2)) {
 		new_darklayout_state = properties.bio_dark_theme;
-	} else if(main_panel_state.isEqual(3)) {
+	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) {
+		/* 模式 4 主区是 MilkDrop 黑画面，右栏列表跟模式 3 一样走可视化深色主题 */
 		new_darklayout_state = properties.visualization_dark_theme;
 	}
 	return new_darklayout_state;
@@ -6814,8 +6815,8 @@ function on_notify_data(name, info) {
 		case "nowplayingbio_state":
 			nowplayingbio_state.value=info;
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 		break;
 		case "trackinfoslib_state":
 			trackinfoslib_state.value=info;
@@ -6832,8 +6833,8 @@ function on_notify_data(name, info) {
 			setShowHeaderBar();
 			get_metrics();
 		break;
-		case "trackinfosvisu_state":
-			trackinfosvisu_state.value=info;
+		case "trackinfoslxbox_state":
+			trackinfoslxbox_state.value=info;
 			setShowHeaderBar();
 			get_metrics();
 		break;

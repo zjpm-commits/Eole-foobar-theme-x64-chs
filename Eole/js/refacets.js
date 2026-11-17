@@ -5646,8 +5646,8 @@ function on_notify_data(name, info) {
 		case "nowplayingbio_state":
 			nowplayingbio_state.value=info;
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 		break;
 		case "trackinfoslib_state":
 			trackinfoslib_state.value=info;
@@ -5658,8 +5658,8 @@ function on_notify_data(name, info) {
 		case "trackinfosbio_state":
 			trackinfosbio_state.value=info;
 		break;
-		case "trackinfosvisu_state":
-			trackinfosvisu_state.value=info;
+		case "trackinfoslxbox_state":
+			trackinfoslxbox_state.value=info;
 		break;
 		case "main_panel_state":
 			main_panel_state.value = info;

@@ -929,6 +929,10 @@ function setDarkLayout(){
 			case 3:
 				properties.darklayout = properties.visualization_dark_theme;
 			break;
+			case 4:
+				/* 模式 4 主区是 MilkDrop 黑画面，右栏曲目信息跟模式 3 一样走可视化深色主题 */
+				properties.darklayout = properties.visualization_dark_theme;
+			break;
 		}
 	} else properties.darklayout = properties.minimode_dark_theme;
 }
@@ -1143,8 +1147,8 @@ function on_notify_data(name, info) {
 		case "nowplayingbio_state":
 			nowplayingbio_state.value=info;
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 		break;
 		case "trackinfoslib_state":
 			trackinfoslib_state.value=info;
@@ -1155,8 +1159,8 @@ function on_notify_data(name, info) {
 		case "trackinfosbio_state":
 			trackinfosbio_state.value=info;
 		break;
-		case "trackinfosvisu_state":
-			trackinfosvisu_state.value=info;
+		case "trackinfoslxbox_state":
+			trackinfoslxbox_state.value=info;
 		break;		
 		case "minimode_dark_theme":
 			properties.minimode_dark_theme=info;

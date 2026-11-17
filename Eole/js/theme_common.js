@@ -1,16 +1,10 @@
 ﻿var theme_name = "eole";
-/* JSplitter 4.4.0 exposes no window.Reload at runtime (despite the docs).
-   Keep every panel's reload request safe: use the API when present, otherwise
-   do nothing instead of throwing from on_notify_data. */
 function reloadPanelSafe() {
 	try {
 		if (typeof window.Reload === 'function') { window.Reload(); return true; }
 	} catch (e) {}
 	return false;
 }
-/* Some JSplitter builds (including 4.4.0) do not expose window.Reload at all.
-   Provide an inert fallback so third-party biography scripts cannot throw either;
-   a real Reload is still used above when the host provides it. */
 try {
 	if (typeof window.Reload !== 'function') {
 		window.Reload = function () { return false; };
@@ -80,10 +74,7 @@ var globalProperties = {
     nocover_img: gdi.Image(theme_img_path+"\\no_cover.png"),
     stream_img: gdi.Image(theme_img_path+"\\stream_icon.png"),
 	ResizeQLY: 0,
-	use_ratings_file_tags: window.GetProperty("全局·评级存入文件标签", false),
-	enable_screensaver: window.GetProperty("全局·启用屏保", false),
-	escape_on_mouse_move: window.GetProperty("全局·移动鼠标退出屏保", false),
-	mseconds_before_screensaver: window.GetProperty("全局·屏保激活等待毫秒", 60000),
+	use_ratings_file_tags: window.GetProperty("全局·评级存入文件标签", false)
 }
 var PlaylistExclude = Array(globalProperties.whole_library,globalProperties.filter_playlist);
 globalProperties.tf_crc = fb.TitleFormat(globalProperties.crc);
@@ -206,7 +197,7 @@ var cScrollBar = {
 	timerCounter: -1
 };
 
-/* Shared vertical scrollbar used by the cover browser and the screensaver. */
+/* Shared vertical scrollbar used by the cover browser. */
 oScrollbar = function(parentObjectName, noText) {
     this.parentObjName = parentObjectName;
     this.noTextFn = (typeof noText === 'function') ? noText : null;
@@ -707,6 +698,8 @@ function chooseMemorySettings(title, top_msg, bottom_msg, dialog_name, inter_tex
 			}
 			if(panels_reload){
 				window.NotifyOthers("WSH_panels_reload",true);
+				/* 面板重载后不会自己回到布局位置，必须显式请求一次重排 */
+				window.NotifyOthers("eole_layout", true);
 			}
 		}
 	}
@@ -1696,6 +1689,8 @@ function setMemoryUsageGlobally(mem_solicitation){
 	} catch (e) {}
 	window.NotifyOthers("MemSolicitation",globalProperties.mem_solicitation);
 	window.NotifyOthers("WSH_panels_reload",true);
+	/* 面板重载后不会自己回到布局位置，必须显式请求一次重排 */
+	window.NotifyOthers("eole_layout", true);
 }
 function setCoverCacheMaxWidthGlobally(covercache_max_mwith){
 	globalProperties.coverCacheWidthMax = Number(covercache_max_mwith);
@@ -2418,7 +2413,7 @@ function process_string(str){
     return str_;
 }
 function quickSearch(start,search_function){
-	if(layout_state.isEqual(0) && (main_panel_state.isEqual(2) || main_panel_state.isEqual(3))){
+	if(layout_state.isEqual(0) && (main_panel_state.isEqual(2) || main_panel_state.isEqual(3) || main_panel_state.isEqual(4))){
 		main_panel_state.setValue(0);
 		on_notify_data("main_panel_state_force",main_panel_state.value);
 	}

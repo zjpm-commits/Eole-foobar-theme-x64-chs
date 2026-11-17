@@ -12,12 +12,14 @@
 // 要设置，而是直接枚举这个目录里的文件名——这也是后面必须用 utils.Glob
 // 的原因。目录里同一个键只会存在一个文件（换值时先删旧的再写新的）。
 //
-// 摆位是事件驱动的：面板改设置后会 NotifyOthers("eole_x64_layout")，
-// on_notify_data 的兜底分支随即 arrange()。低频 SetInterval 只作兜底
-// （兜设置文件改动没发通知的情况 + 壁纸生成失败后的重试），平时不扫盘。
+// 摆位是事件驱动的：面板改设置后会 NotifyOthers("eole_layout")，
+// on_notify_data 只认这一个名字并随即 arrange()，不设兜底分支——与本面板
+// 无关的通知（颜色、评分、随机播放、焦点、字体缩放……）不再顺带触发重排。
+// 因此凡是"面板尺寸/可见性变了"的地方都必须发 "eole_layout"。
+// 低频 SetInterval 只作兜底（兜设置文件改动没发通知的情况 + 壁纸生成失败后的重试）。
 // ============================================================================
-// 原始面板脚本作者：Ottodix 及贡献者，这里是本地适配版。
-window.DefinePanel('Eole x64 layout', {author: 'Eole contributors / local adaptation'});
+// 原始面板脚本作者：Ottodix 及 melkosofter，这是根据我个人喜好做的本地适配版。
+window.DefinePanel('Eole layout', {author: 'Eole contributors / local adaptation'});
 
 try {
     include(fb.ProfilePath + 'Eole\\js\\theme_common.js');
@@ -85,13 +87,42 @@ function fwApplyCfg() {
 
 var settingRoot = fb.ProfilePath + 'Eole\\eole-settings\\';
 
+/* PATCH(perf): 一次 arrange() 原本要跑 1 次 snapshot() + 十余次 setting()，
+   每次 setting() 都自跑一次 utils.Glob 枚举目录（同一个目录被反复枚举十余遍）。
+   改为：一次枚举建索引，之后全部在内存里查。索引由 arrange() 开头的
+   snapshot() 刷新，所以 setting() 只应在 arrange() 内部被调用——那样每个
+   重排周期恰好扫盘 1 次，同时保留「别的面板改了设置能被发现」的能力。
+   若 Glob 失败，索引置为空表，setting() 一律返回默认值，且不再重复扫盘。 */
+var g_settingIndex = null;
+
+function refreshSettingIndex() {
+    var files = null;
+    try { files = utils.Glob(settingRoot + "*"); } catch (e) { files = null; }
+    if (!files) { g_settingIndex = {}; return null; }
+    var map = {};
+    for (var i = 0; i < files.length; ++i) {
+        var path = String(files[i]);
+        //   ...\Eole\eole-settings\RIGHTPLAYLISTWIDTH_240
+        var us = path.lastIndexOf('_'), sl = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
+        if (us <= sl || us <= 0) continue;
+        var key = path.substring(sl + 1, us), val = path.substring(us + 1);
+        // 同一个键正常只有一份文件（换值时先删旧的再写新的）。万一有残留，
+        // 取数值最大的那个，避免依赖 utils.Glob 不保证稳定的返回顺序。
+        var old = map[key];
+        if (old === undefined || Number(val) > Number(old)) map[key] = val;
+    }
+    g_settingIndex = map;
+    return map;
+}
+
 function setting(prefix, fallback) {
-    try {
-        var files = utils.Glob(settingRoot + prefix + '_*');
-        if (!files.length) return fallback;
-        var value = Number(files[0].substring(files[0].lastIndexOf('_') + 1));
-        return isFinite(value) ? value : fallback;
-    } catch (e) { return fallback; }
+    var map = g_settingIndex;
+    if (map === null) map = refreshSettingIndex();
+    if (!map) return fallback;
+    var raw = map[prefix];
+    if (raw === undefined) return fallback;
+    var value = Number(raw);
+    return isFinite(value) ? value : fallback;
 }
 
 
@@ -108,29 +139,30 @@ function getPanel(names) {
 
 var previousLayout = "";
 
+/* MilkDrop 全屏态：milkdrop_panel.js 右键菜单开关。只在 'milkdrop_fullscreen'
+   通知里置位并以 arrange('force') 生效；任何普通重排（'eole_layout'）自动退出，
+   状态不持久化。 */
+var mdFullscreen = false;
+
 var INFO_EXTRA_HEIGHT = 41;
 
 var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'LIBRARYFILTER', 'LIBRARYFILTERWIDTH',
     'LIBRARYTREE', 'PLAYLISTPANELWIDTH', 'FILTERSPANEL', 'FILTER1', 'FILTER2', 'FILTER3', 'LYRICS',
-    'NOWPLAYINGLIB', 'NOWPLAYINGPLAYLIST', 'NOWPLAYINGBIO', 'NOWPLAYINGVISU', 'RIGHTPLAYLISTWIDTH',
+    'NOWPLAYINGLIB', 'NOWPLAYINGPLAYLIST', 'NOWPLAYINGBIO', 'NOWPLAYINGLXBOX', 'RIGHTPLAYLISTWIDTH',
     'COVERPANELBIG', 'COVERPANELMINI', 'MINICONTROLBAR', 'SHOWTRACKINFOBIG', 'SHOWTRACKINFOSMALL',
-    'TRACKINFOSLIB', 'TRACKINFOSPLAYLIST', 'TRACKINFOSBIO', 'TRACKINFOSVISU', 'TRACKINFOSTEXT'];
+    'TRACKINFOSLIB', 'TRACKINFOSPLAYLIST', 'TRACKINFOSBIO', 'TRACKINFOSLXBOX', 'TRACKINFOSMDROP',
+    'NOWPLAYINGMDROP', 'TRACKINFOSTEXT'];
 
 
 function snapshot() {
-    var files = null;
-    try { files = utils.Glob(settingRoot + "*"); } catch (e) { files = null; }
-    if (!files) return null;
-    var map = {};
-    for (var i = 0; i < files.length; ++i) {
-        var path = String(files[i]);
-        //   ...\Eole\eole-settings\RIGHTPLAYLISTWIDTH_240
-        var us = path.lastIndexOf('_'), sl = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
-        if (us > sl && us > 0) map[path.substring(sl + 1, us)] = path.substring(us + 1);
-    }
+    // 同时完成两件事：刷新设置索引（供本轮 setting() 使用）、算出指纹字符串。
+    var map = refreshSettingIndex();
+    if (!map) return null;
     var out = [];
-    for (var k = 0; k < FINGERPRINT_KEYS.length; ++k) out.push(map[FINGERPRINT_KEYS[k]] || '');
-
+    for (var k = 0; k < FINGERPRINT_KEYS.length; ++k) {
+        var v = map[FINGERPRINT_KEYS[k]];
+        out.push(v === undefined ? '' : v);
+    }
     return out.join(',');
 }
 
@@ -154,13 +186,24 @@ function arrange(arg) {
         !setting('MINICONTROLBAR', 1) ? 72 : setting('SHOWTRACKINFOBIG', 1) ? 54 : 47;
     var bodyHeight = Math.max(1, h - top - bottom);
 
-    var suffix = ['LIB', 'PLAYLIST', 'BIO', 'VISU'][mode] || 'LIB';
+    var suffix = ['LIB', 'PLAYLIST', 'BIO', 'LXBOX', 'MDROP'][mode] || 'LIB';
     var right = mini ? w : setting('NOWPLAYING' + suffix, 1) ?
         Math.min(setting('RIGHTPLAYLISTWIDTH', 210), Math.floor(w * 0.4)) : 0;
     var mainWidth = w - right;
 
     var panelCount = 0;
     try { panelCount = window.GetPanelCount(); } catch (e) { panelCount = 0; }
+
+    /* MilkDrop 全屏：只留它一块，铺满整窗（含标题栏区）。
+       摆不上（面板没建）就清标志、继续走普通布局，别留一块空白。 */
+    if (mdFullscreen) {
+        for (var fi = 0; fi < panelCount; ++fi) {
+            try { window.GetPanelByIndex(fi).Show(false); } catch (eF) {}
+        }
+        if (!panel('MilkDrop', 0, 0, w, h, true)) mdFullscreen = false;
+        else return;
+    }
+
     if (!live) {
         for (var i = 0; i < panelCount; ++i) {
             try { window.GetPanelByIndex(i).Show(false); } catch (e) {}
@@ -201,8 +244,8 @@ function arrange(arg) {
         try { on = fw_hostOn(); } catch (e) { on = false; }
         if (on) {
             var circle = true, txt = false;
-            try { circle = !!window.GetProperty("显示·圆形模式", true); } catch (e2) {}
-            try { txt = !!window.GetProperty("显示曲目信息", false); } catch (e3) {}
+            try { circle = !!p.GetProperty("显示·圆形模式", true); } catch (e2) {}
+            try { txt = !!p.GetProperty("显示曲目信息", false); } catch (e3) {}
             on = (circle || txt);
         }
         if (!force && p.__fwGlass === on) return;
@@ -239,7 +282,7 @@ function arrange(arg) {
                 bodyHeight - filterHeight - headerHeight);
 
         } else if (mode === 2) {
-            var lyrics = setting('LYRICS', 1);
+            var lyrics = setting('LYRICS', 5);   // 缺省 5 = 主区宽的 50%（11 = 铺满）
             var lyricsWidth = lyrics === 11 ? mainWidth : mainWidth * lyrics / 10;
             if (!getPanel('Lyrics')) lyricsWidth = 0;
             panel('Biography', 0, top, mainWidth - lyricsWidth, bodyHeight);
@@ -257,6 +300,12 @@ function arrange(arg) {
                     bodyHeight - lyricsTitleHeight);
             }
 
+        } else if (mode === 4) {
+            /* MilkDrop 是独立面板，自己用 Direct2D 画满这一块。
+               摆不上（没在面板清单里建这个面板）就沿用模式 3 的兜底，别留一块空白。 */
+            panel('MilkDrop', 0, top, mainWidth, bodyHeight, true) ||
+                panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+
         } else {
             panel('Lxbox', 0, top, mainWidth, bodyHeight) ||
                 panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
@@ -272,10 +321,10 @@ function arrange(arg) {
         if (info && infoHeight < right * 0.5) infoHeight = Math.min(right * 0.5, bodyHeight / 2);
 
         var rx = mini ? 0 : mainWidth;
-        if (info) panel('TrackInfo', rx, info === 2 ? top + bodyHeight - infoHeight : top, right, infoHeight);
-        var npp = panel(['NowPlayingPlaylist', 'BottomPlaylist'], rx, info === 1 ? top + infoHeight : top, right,
+        var tp = info ? panel('TrackInfo', rx, info === 2 ? top + bodyHeight - infoHeight : top, right, infoHeight) : null;
+        panel(['NowPlayingPlaylist', 'BottomPlaylist'], rx, info === 1 ? top + infoHeight : top, right,
             bodyHeight - infoHeight);
-        if (npp && getPanel('NowPlaying') === npp) glassNowPlaying(npp, true);
+        if (tp) glassNowPlaying(tp, true);
     }
 
     panel('TitleBar', 0, 0, w, top);
@@ -344,7 +393,29 @@ function on_colours_changed() {
     try { window.NotifyOthers('fw_theme_dark', !!fw_isDark()); } catch (eB) {}
 }
 
+/* 所有「需要重新摆位」的请求都从这里进：刷新伪透明状态 + 重排。
+   抽成一个函数，让显式通知和内部调用共用同一套动作。 */
+function relayoutSoon() {
+    window.SetTimeout(function () {
+        try { fwGlassAll(false); } catch (eGA) {}
+        try { arrange(); } catch (eA2) {}
+    }, 0);
+}
+
 function on_notify_data(name, info) {
+    /* 布局重排只认这两个名字，不做兜底。'eole_layout' 的发送方主要是
+       pss_switch.js 的 RefreshPSS()（每次 setValue 后调用），以及面板重载前
+       补发的地方——普通重排同时退出 MilkDrop 全屏；'milkdrop_fullscreen'
+       是 milkdrop_panel.js 右键菜单的全屏开关，force 绕过指纹去重。 */
+    if (name === 'eole_layout') { mdFullscreen = false; relayoutSoon(); return; }
+    if (name === 'milkdrop_fullscreen') {
+        mdFullscreen = (info === true || Number(info) === 1);
+        window.SetTimeout(function () {
+            try { fwGlassAll(false); } catch (eGA) {}
+            try { arrange('force'); } catch (eA) {}
+        }, 0);
+        return;
+    }
     if (name === 'fw_theme_request') {
         var dreq = false;
         try { dreq = !!fw_isDark(); } catch (eReq) { dreq = false; }
@@ -404,10 +475,7 @@ function on_notify_data(name, info) {
         try { fwRefreshGlass(); } catch (eRG) { }
         return;
     }
-    window.SetTimeout(function () {
-        try { fwGlassAll(false); } catch (eGA) {}
-        try { arrange(); } catch (eA2) {}
-    }, 0);
+    /* 有意不设兜底：未识别的通知一律忽略，不再顺带 arrange()。 */
 }
 
 var fwImg = null;
@@ -557,8 +625,8 @@ function fwGlassAll(force) {
         if (p.__fwOpaque) on = false;
         if (p.__fwNpp && on) {
             var circle = true, txt = false;
-            try { circle = !!window.GetProperty("显示·圆形模式", true); } catch (e3) {}
-            try { txt = !!window.GetProperty("显示曲目信息", false); } catch (e4) {}
+            try { circle = !!p.GetProperty("显示·圆形模式", true); } catch (e3) {}
+            try { txt = !!p.GetProperty("显示曲目信息", false); } catch (e4) {}
             on = (circle || txt);
         }
         if (!force && p.__fwGlass === on) continue;

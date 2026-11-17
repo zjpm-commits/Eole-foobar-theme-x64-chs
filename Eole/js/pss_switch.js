@@ -120,16 +120,18 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 	}		
 	this.getFileValue();
 }
-function RefreshPSS() { window.NotifyOthers("eole_x64_layout", true); }
+/* 布局重排的唯一通知名。Eole_layout.js 只认 "eole_layout"，不设兜底，
+   所以任何"面板尺寸/可见性变了"的地方都必须发这个名字。 */
+function RefreshPSS() { window.NotifyOthers("eole_layout", true); }
 
-var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 3);
+var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 4);
 var layout_state = new oPanelSetting("layout_state", "LAYOUT_", 0, 0, 1);
 
 var darklib_state = new oPanelSetting("darklib_state", "DARKLIB_", 0, 0, 1);
 var darkplaylist_state = new oPanelSetting("darkplaylist_state", "DARKPLAYLIST_", 0, 0, 1);
 var darkbio_state = new oPanelSetting("darkbio_state", "DARKBIO_", 0, 0, 1);
 var darkbiostick_state = new oPanelSetting("darkbiostick_state", "DARKBIOSTICK_", 0, 0, 1);
-var darkvisu_state = new oPanelSetting("darkvisu_state", "DARKVISU_", 0, 0, 1);
+var darklxbox_state = new oPanelSetting("darklxbox_state", "DARKLXBOX_", 0, 0, 1);
 var darkmini_state = new oPanelSetting("darkmini_state", "DARKMINI_", 0, 0, 1);
 
 var showtrackinfo_big = new oPanelSetting("showtrackinfo_big", "SHOWTRACKINFOBIG_", 1, 0, 1);
@@ -139,7 +141,7 @@ var coverpanel_state_mini = new oPanelSetting("coverpanel_state_mini", "COVERPAN
 var coverpanel_state_big = new oPanelSetting("coverpanel_state_big", "COVERPANELBIG_", 1, 0, 1);
 var filters_panel_state = new oPanelSetting("filters_panel_state", "FILTERSPANEL_", 1, 0, 5);
 var libraryfilter_state = new oPanelSetting("libraryfilter_state", "LIBRARYFILTER_", 1, 0, 1);
-var lyrics_state = new oPanelSetting("lyrics_state", "LYRICS_", 1, 0, 11);
+var lyrics_state = new oPanelSetting("lyrics_state", "LYRICS_", 5, 0, 11);
 var librarytree = new oPanelSetting("librarytree", "LIBRARYTREE_", 0, 0, 1);
 var mini_controlbar = new oPanelSetting("mini_controlbar", "MINICONTROLBAR_", 1, 0, 1);
 var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 2);
@@ -155,14 +157,23 @@ var filter3_state = new oPanelSetting("filter3_state", "FILTER3_", 1, 0, 1);
 var nowplayinglib_state = new oPanelSetting("nowplayinglib_state", "NOWPLAYINGLIB_", 1, 0, 1);
 var nowplayingplaylist_state = new oPanelSetting("nowplayingplaylist_state", "NOWPLAYINGPLAYLIST_", 1, 0, 1);
 var nowplayingbio_state = new oPanelSetting("nowplayingbio_state", "NOWPLAYINGBIO_", 1, 0, 1);
-var nowplayingvisu_state = new oPanelSetting("nowplayingvisu_state", "NOWPLAYINGVISU_", 1, 0, 1);
+var nowplayinglxbox_state = new oPanelSetting("nowplayinglxbox_state", "NOWPLAYINGLXBOX_", 1, 0, 1);
+var nowplayingmdrop_state = new oPanelSetting("nowplayingmdrop_state", "NOWPLAYINGMDROP_", 1, 0, 1);
 
 //Track infos switch for each main panels
 var trackinfoslib_state = new oPanelSetting("trackinfoslib_state", "TRACKINFOSLIB_", 0, 0, 2);
 var trackinfosplaylist_state = new oPanelSetting("trackinfosplaylist_state", "TRACKINFOSPLAYLIST_", 0, 0, 2);
 var trackinfosbio_state = new oPanelSetting("trackinfosbio_state", "TRACKINFOSBIO_", 1, 0, 2);
-var trackinfosvisu_state = new oPanelSetting("trackinfosvisu_state", "TRACKINFOSVISU_", 1, 0, 2);
+var trackinfoslxbox_state = new oPanelSetting("trackinfoslxbox_state", "TRACKINFOSLXBOX_", 1, 0, 2);
+var trackinfosmdrop_state = new oPanelSetting("trackinfosmdrop_state", "TRACKINFOSMDROP_", 1, 0, 2);
 var trackinfostext_state = new oPanelSetting("trackinfostext_state", "TRACKINFOSTEXT_", 1, 0, 1);
+
+//MilkDrop 主面板（模式 4）：选中预设的编号与帧率档位。
+//编号存四位数字本身（14），不存列表下标 —— 往 MilkDrop 目录增删预设时，
+//已选的样式不会串位。0 表示"还没选过"，加载时按默认 0014 处理。
+var milkdropvis_state = new oPanelSetting("milkdropvis_state", "MILKDROPVIS_", 14, 0, 9999);
+//帧率档位：0=30 帧 / 1=60 帧 / 2=120 帧
+var milkdropfps_state = new oPanelSetting("milkdropfps_state", "MILKDROPFPS_", 1, 0, 2);
 
 //Panels width
 var libraryfilter_width = new oPanelSetting("libraryfilter_width", "LIBRARYFILTERWIDTH_", 210, 100, 900);
@@ -185,7 +196,10 @@ function getNowPlayingState(){
 			return nowplayingbio_state.value;
 		break;
 		case 3:
-			return nowplayingvisu_state.value;
+			return nowplayinglxbox_state.value;
+		break;
+		case 4:
+			return nowplayingmdrop_state.value;
 		break;		
 	}	
 }
@@ -202,7 +216,10 @@ function getTrackInfosState(){
 			return trackinfosbio_state.value;
 		break;
 		case 3:
-			return trackinfosvisu_state.value;
+			return trackinfoslxbox_state.value;
+		break;
+		case 4:
+			return trackinfosmdrop_state.value;
 		break;		
 	}	
 }
@@ -212,13 +229,16 @@ function getTrackInfosVisibility(){
 			return (trackinfoslib_state.value>=1 && nowplayinglib_state.value==1);
 		break;
 		case 1:
-			return (trackinfosplaylist_state.value>=1 && nowplayingbio_state.value==1);
+			return (trackinfosplaylist_state.value>=1 && nowplayingplaylist_state.value==1);
 		break;
 		case 2:
-			return (trackinfosbio_state.value>=1 && nowplayinglib_state.value==1);
+			return (trackinfosbio_state.value>=1 && nowplayingbio_state.value==1);
 		break;
 		case 3:
-			return (trackinfosvisu_state.value>=1 && nowplayingvisu_state.value==1);
+			return (trackinfoslxbox_state.value>=1 && nowplayinglxbox_state.value==1);
+		break;
+		case 4:
+			return (trackinfosmdrop_state.value>=1 && nowplayingmdrop_state.value==1);
 		break;		
 	}	
 }

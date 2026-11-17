@@ -273,7 +273,8 @@ function setDarkLayout(){
 		case (main_panel_state.isEqual(0) && properties.library_dark_theme && layout_state.isEqual(0)):
 		case (main_panel_state.isEqual(1) && properties.playlists_dark_theme && layout_state.isEqual(0)):
 		case (main_panel_state.isEqual(2) && properties.bio_dark_theme && layout_state.isEqual(0)):
-		case (main_panel_state.isEqual(3) && properties.visualization_dark_theme && layout_state.isEqual(0)):
+		case ((main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) && properties.visualization_dark_theme && layout_state.isEqual(0)):
+		/* 模式 4（MilkDrop）标题栏与模式 3 共用「可视化·深色主题」，按钮可切换 */
 		case (properties.minimode_dark_theme && layout_state.isEqual(1)):
 			properties.darklayout = true;
 		break;
@@ -383,7 +384,8 @@ function Lightswitch(switch_all,new_state){
 		on_notify_data("bio_dark_theme",properties.bio_dark_theme);
         if(!switch_all) window.Repaint();
 	}
-	if((main_panel_state.isEqual(3) && layout_state.isEqual(0)) || switch_all){
+	if(((main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) && layout_state.isEqual(0)) || switch_all){
+		/* 模式 4（MilkDrop）与模式 3 共用「可视化·深色主题」一个开关 */
 		if(switch_all) properties.visualization_dark_theme=new_state;
 		else properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
@@ -410,12 +412,14 @@ function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 			nowplayinglib_state.toggleValue(refresh_panel);
 			nowplayingplaylist_state.toggleValue(refresh_panel);
 			nowplayingbio_state.toggleValue(refresh_panel);
-			nowplayingvisu_state.toggleValue(refresh_panel);
+			nowplayinglxbox_state.toggleValue(refresh_panel);
+			nowplayingmdrop_state.toggleValue(refresh_panel);
 		} else {
 			nowplayinglib_state.setValue(new_state,refresh_panel);
 			nowplayingplaylist_state.setValue(new_state,refresh_panel);
 			nowplayingbio_state.setValue(new_state,refresh_panel);
-			nowplayingvisu_state.setValue(new_state,refresh_panel);
+			nowplayinglxbox_state.setValue(new_state,refresh_panel);
+			nowplayingmdrop_state.setValue(new_state,refresh_panel);
 		}
 	} else {
 		switch(main_panel_state.value){
@@ -432,8 +436,13 @@ function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 				else nowplayingbio_state.toggleValue(refresh_panel);
 			break;
 			case 3:
-				if(new_state!==false) nowplayingvisu_state.setValue(new_state,refresh_panel);
-				else nowplayingvisu_state.toggleValue(refresh_panel);
+				if(new_state!==false) nowplayinglxbox_state.setValue(new_state,refresh_panel);
+				else nowplayinglxbox_state.toggleValue(refresh_panel);
+			break;
+			case 4:
+				/* 模式 4（MilkDrop）：右栏开关走 MDROP 键，与其它模式同款行为 */
+				if(new_state!==false) nowplayingmdrop_state.setValue(new_state,refresh_panel);
+				else nowplayingmdrop_state.toggleValue(refresh_panel);
 			break;
 		}
 	}
@@ -450,12 +459,14 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 			trackinfoslib_state.cycleIncrement(1,refresh_panel);
 			trackinfosplaylist_state.cycleIncrement(1,refresh_panel);
 			trackinfosbio_state.cycleIncrement(1,refresh_panel);
-			trackinfosvisu_state.cycleIncrement(1,refresh_panel);
+			trackinfoslxbox_state.cycleIncrement(1,refresh_panel);
+			trackinfosmdrop_state.cycleIncrement(1,refresh_panel);
 		} else {
 			trackinfoslib_state.setValue(new_state,refresh_panel);
 			trackinfosplaylist_state.setValue(new_state,refresh_panel);
 			trackinfosbio_state.setValue(new_state,refresh_panel);
-			trackinfosvisu_state.setValue(new_state,refresh_panel);
+			trackinfoslxbox_state.setValue(new_state,refresh_panel);
+			trackinfosmdrop_state.setValue(new_state,refresh_panel);
 		}
 	} else {
 		switch(main_panel_state.value){
@@ -472,8 +483,13 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 				else trackinfosbio_state.cycleIncrement(1,refresh_panel);
 			break;
 			case 3:
-				if(new_state!==false) trackinfosvisu_state.setValue(new_state,refresh_panel);
-				else trackinfosvisu_state.cycleIncrement(1,refresh_panel);
+				if(new_state!==false) trackinfoslxbox_state.setValue(new_state,refresh_panel);
+				else trackinfoslxbox_state.cycleIncrement(1,refresh_panel);
+			break;
+			case 4:
+				/* 模式 4（MilkDrop）：曲目信息三态（顶部/底部/关）走 MDROP 键 */
+				if(new_state!==false) trackinfosmdrop_state.setValue(new_state,refresh_panel);
+				else trackinfosmdrop_state.cycleIncrement(1,refresh_panel);
 			break;
 		}
 	}
@@ -569,7 +585,7 @@ function build_buttons(){
 			btn.height = btn.height_small;			
 		}
 		buttons = {
-			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "本地音乐", "Library", "", function () {
+			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "媒体库", "Library", "", function () {
 				main_panel_state.setValue(0);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.library_img,images.library_img,0, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
@@ -1176,11 +1192,17 @@ function on_mouse_rbtn_up(x, y){
 		_menu.AppendMenuSeparator();
 
 		if(layout_state.isEqual(0)) {
-			_menu.AppendMenuItem(MF_STRING, 1, "本地音乐");
+			_menu.AppendMenuItem(MF_STRING, 1, "媒体库");
 			_menu.AppendMenuItem(MF_STRING, 2, "播放列表");
 			_menu.AppendMenuItem(MF_STRING, 3, "简介歌词");
 			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "洛雪音源");
-			_menu.CheckMenuRadioItem(1, 4, (parseInt(main_panel_state.value)+1));
+			/* MilkDrop 主面板（模式 4）。单选标记分开处理：1~4 是连续的主区模式，
+			   8 在主菜单 id 里被 5/6/7（全屏、迷你、切回标准）隔开，塞不进同一个 radio 区间 */
+			_menu.AppendMenuItem(MF_STRING, 8, "MilkDrop");
+			var _mpIdx = parseInt(main_panel_state.value);
+			if(!isFinite(_mpIdx)) _mpIdx = 0;
+			if(_mpIdx <= 3) _menu.CheckMenuRadioItem(1, 4, _mpIdx+1);
+			else _menu.CheckMenuItem(8, true);
 			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
@@ -1214,6 +1236,10 @@ function on_mouse_rbtn_up(x, y){
                 break;
             case (idx == 4):
 				main_panel_state.setValue(3);
+				get_colors();g_searchbox.adapt_look_to_layout();
+                break;
+            case (idx == 8):
+				main_panel_state.setValue(4);
 				get_colors();g_searchbox.adapt_look_to_layout();
                 break;
             case (idx == 5):
@@ -1524,6 +1550,8 @@ function draw_settings_menu(x,y){
 				g_hires_mode = idx - 1814;
 				window.SetProperty("全局·高分屏适配模式", g_hires_mode);
 				window.NotifyOthers("WSH_panels_reload", true);
+				/* 高分屏适配模式会改变所有面板的尺寸，重载前先请求一次重排 */
+				window.NotifyOthers("eole_layout", true);
 				reloadPanelSafe();
 				break;
 			case (idx == 1820):
@@ -1653,7 +1681,7 @@ function draw_layout_menu(x,y){
 		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 		playlistpanel_menu = window.CreatePopupMenu();
-		playlistpanel_menu.AppendTo(basemenu,MF_STRING, "播放列表面板");
+		playlistpanel_menu.AppendTo(basemenu,MF_STRING, "左侧列表管理");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4038, "增加宽度");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4039, "减小宽度");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4041, "自定义宽度...");
@@ -1695,7 +1723,13 @@ function draw_layout_menu(x,y){
 		}
 	} else if(main_panel_state.isEqual(3)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "洛雪音源布局");
-		basemenu.AppendMenuSeparator();				
+		basemenu.AppendMenuSeparator();
+		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
+		basemenu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(4)){
+		/* 模式 4（MilkDrop）：右栏开关、宽度调整与其它模式同款 */
+		basemenu.AppendMenuItem(MF_GRAYED, 0, "MilkDrop 布局");
+		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 		basemenu.AppendMenuSeparator();
 	}
@@ -1972,7 +2006,7 @@ function draw_main_menu(x,y){
 		playlists_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(playlists_menu,MF_STRING, "右侧播放列表");
 		playlistpanel_menu = window.CreatePopupMenu();
-		playlistpanel_menu.AppendTo(playlists_menu,MF_STRING, "播放列表面板");
+		playlistpanel_menu.AppendTo(playlists_menu,MF_STRING, "左侧列表管理");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4038, "增加宽度");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4039, "减小宽度");
 		playlistpanel_menu.AppendMenuItem(MF_STRING, 4041, "自定义宽度...");
@@ -2011,6 +2045,11 @@ function draw_main_menu(x,y){
 		}
 
 	} else if(main_panel_state.isEqual(3)){
+		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
+		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
+		visu_menu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(4)){
+		/* 模式 4（MilkDrop）：复用可视化面板布局，右栏开关与深色开关同模式 3 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 		visu_menu.AppendMenuSeparator();
@@ -2488,8 +2527,8 @@ function on_notify_data(name, info) {
 			build_buttons();
 			window.Repaint();
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 			build_buttons();
 			window.Repaint();
 		break;
@@ -2558,7 +2597,7 @@ function on_notify_data(name, info) {
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme=info;
 			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
-			darkvisu_state.setValue((properties.visualization_dark_theme)?1:0);
+			darklxbox_state.setValue((properties.visualization_dark_theme)?1:0);
 			get_colors();
 			g_searchbox.adapt_look_to_layout();
 			window.Repaint();
@@ -2751,6 +2790,8 @@ oSearch = function() {
 				case (main_panel_state.isEqual(1) && properties.playlists_dark_theme):
 				case (main_panel_state.isEqual(2) && properties.bio_dark_theme):
 				case (main_panel_state.isEqual(3) && properties.visualization_dark_theme):
+				/* 模式 4（MilkDrop）搜索框与模式 3 同开关，不再强制深色 */
+				case (main_panel_state.isEqual(4) && properties.visualization_dark_theme):
 					for (var c in cSearchBoxMainDark)
 						if(cSearchBoxMainDark.hasOwnProperty(c))
 							cSearchBox[c] = cSearchBoxMainDark[c]
@@ -3244,7 +3285,7 @@ function fw_handle_menu(idx) {
 	return true;
 }
 function on_init(){
-	if(properties.Remember_previous_state && main_panel_state.isEqual(3)) {
+	if(properties.Remember_previous_state && (main_panel_state.isEqual(3) || main_panel_state.isEqual(4))) {
 		main_panel_state.setValue(0);
 	} else if(!properties.Remember_previous_state){
 		main_panel_state.setValue(0);

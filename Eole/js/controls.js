@@ -328,6 +328,8 @@ function get_colors(){
 				properties.darklayout = properties.bio_dark_theme || (globalProperties.colorsMainPanel!=0 && globalProperties.colorsMainPanel!=1 && globalProperties.colorsMainPanel!=2);
 			break;
 			case 3:
+			case 4:
+				/* 模式 4（MilkDrop）控制栏与模式 3 共用「可视化·深色主题」 */
 				properties.darklayout = properties.visualization_dark_theme || (globalProperties.colorsMainPanel!=0 && globalProperties.colorsMainPanel!=1 && globalProperties.colorsMainPanel!=2);
 			break;
 		}
@@ -1809,8 +1811,8 @@ function on_notify_data(name, info) {
 		case "nowplayingbio_state":
 			nowplayingbio_state.value=info;
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 		break;
 	   case "coverpanel_state_big":
 			coverpanel_state_big.value = info;
@@ -2115,7 +2117,7 @@ function draw_menu() {
 		bio_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		bio_menu.AppendMenuItem(MF_STRING, 4002, "启用深色主题");
 		bio_menu.CheckMenuItem(4002, properties.bio_dark_theme);
-	} else if(main_panel_state.isEqual(3)){
+	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4)){
 		basemenu.AppendMenuSeparator();
 		visu_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		visu_menu.AppendMenuItem(MF_STRING, 4003, "启用深色主题");

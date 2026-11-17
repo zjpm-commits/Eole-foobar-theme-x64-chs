@@ -783,8 +783,8 @@ function on_notify_data(name, info) {
 			nowplayingbio_state.value=info;
 			if(properties.showVisualization==1) window.Repaint();
 		break;
-		case "nowplayingvisu_state":
-			nowplayingvisu_state.value=info;
+		case "nowplayinglxbox_state":
+			nowplayinglxbox_state.value=info;
 			if(properties.showVisualization==1) window.Repaint();
 		break;
 		case "trackinfoslib_state":
@@ -799,8 +799,8 @@ function on_notify_data(name, info) {
 			trackinfosbio_state.value=info;
 			if(properties.showVisualization==1) window.Repaint();
 		break;
-		case "trackinfosvisu_state":
-			trackinfosvisu_state.value=info;
+		case "trackinfoslxbox_state":
+			trackinfoslxbox_state.value=info;
 			if(properties.showVisualization==1) window.Repaint();
 		break;
 		case "minimode_dark_theme":
