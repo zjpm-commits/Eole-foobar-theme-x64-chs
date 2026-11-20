@@ -28,7 +28,6 @@ var nowPlaying_cachekey = "";
 var height_bar_1,height_bar_2,height_bar_3;
 var coef_bar_1, coef_bar_2, coef_bar_3;
 var direction_bar_1,direction_bar_2,direction_bar_3;
-var prev_height_bar_1,prev_height_bar_2,prev_height_bar_3;
 var bar_margin = 4;
 var bar_width=2;
 var height_bar_max=20;
@@ -41,10 +40,7 @@ var buttons = {};
 var animationTimer = false;
 var randomBtnTimer = false;
 var Randomsetfocus=false;
-var border_top=1;
 var border_right=1;
-var border_bottom=0;
-var border_left=0;
 var tooltipDoubleClicText = "";
 var ww = 0,
     wh = 0;
@@ -660,6 +656,9 @@ function on_layout_change() {
 				properties.darklayout = properties.bio_dark_theme || (globalProperties.colorsMainPanel!=0);
 			break;
 			case 3:
+			case 4:
+			case 5:
+			case 6:
 				properties.darklayout = properties.visualization_dark_theme || (globalProperties.colorsMainPanel!=0);
 			break;
 		}

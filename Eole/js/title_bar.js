@@ -273,8 +273,8 @@ function setDarkLayout(){
 		case (main_panel_state.isEqual(0) && properties.library_dark_theme && layout_state.isEqual(0)):
 		case (main_panel_state.isEqual(1) && properties.playlists_dark_theme && layout_state.isEqual(0)):
 		case (main_panel_state.isEqual(2) && properties.bio_dark_theme && layout_state.isEqual(0)):
-		case ((main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) && properties.visualization_dark_theme && layout_state.isEqual(0)):
-		/* 模式 4（MilkDrop）标题栏与模式 3 共用「可视化·深色主题」，按钮可切换 */
+		case ((main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)) && properties.visualization_dark_theme && layout_state.isEqual(0)):
+		/* 模式 4（MilkDrop）/ 模式 5（MPV 视频）/ 模式 6（主题设置）标题栏与模式 3 共用「可视化·深色主题」，按钮可切换 */
 		case (properties.minimode_dark_theme && layout_state.isEqual(1)):
 			properties.darklayout = true;
 		break;
@@ -384,8 +384,8 @@ function Lightswitch(switch_all,new_state){
 		on_notify_data("bio_dark_theme",properties.bio_dark_theme);
         if(!switch_all) window.Repaint();
 	}
-	if(((main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) && layout_state.isEqual(0)) || switch_all){
-		/* 模式 4（MilkDrop）与模式 3 共用「可视化·深色主题」一个开关 */
+	if(((main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)) && layout_state.isEqual(0)) || switch_all){
+		/* 模式 4/5/6 与模式 3 共用「可视化·深色主题」一个开关 */
 		if(switch_all) properties.visualization_dark_theme=new_state;
 		else properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
@@ -414,12 +414,16 @@ function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 			nowplayingbio_state.toggleValue(refresh_panel);
 			nowplayinglxbox_state.toggleValue(refresh_panel);
 			nowplayingmdrop_state.toggleValue(refresh_panel);
+			nowplayingmpv_state.toggleValue(refresh_panel);
+			nowplayingtheme_state.toggleValue(refresh_panel);
 		} else {
 			nowplayinglib_state.setValue(new_state,refresh_panel);
 			nowplayingplaylist_state.setValue(new_state,refresh_panel);
 			nowplayingbio_state.setValue(new_state,refresh_panel);
 			nowplayinglxbox_state.setValue(new_state,refresh_panel);
 			nowplayingmdrop_state.setValue(new_state,refresh_panel);
+			nowplayingmpv_state.setValue(new_state,refresh_panel);
+			nowplayingtheme_state.setValue(new_state,refresh_panel);
 		}
 	} else {
 		switch(main_panel_state.value){
@@ -444,6 +448,16 @@ function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 				if(new_state!==false) nowplayingmdrop_state.setValue(new_state,refresh_panel);
 				else nowplayingmdrop_state.toggleValue(refresh_panel);
 			break;
+			case 5:
+				/* 模式 5（MPV 视频 / ESL 歌词）：右栏开关走 MPV 键 */
+				if(new_state!==false) nowplayingmpv_state.setValue(new_state,refresh_panel);
+				else nowplayingmpv_state.toggleValue(refresh_panel);
+			break;
+			case 6:
+				/* 模式 6（主题设置）：右栏照常保留，独立一份开关 */
+				if(new_state!==false) nowplayingtheme_state.setValue(new_state,refresh_panel);
+				else nowplayingtheme_state.toggleValue(refresh_panel);
+			break;
 		}
 	}
 	build_buttons();
@@ -461,12 +475,16 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 			trackinfosbio_state.cycleIncrement(1,refresh_panel);
 			trackinfoslxbox_state.cycleIncrement(1,refresh_panel);
 			trackinfosmdrop_state.cycleIncrement(1,refresh_panel);
+			trackinfosmpv_state.cycleIncrement(1,refresh_panel);
+			trackinfostheme_state.cycleIncrement(1,refresh_panel);
 		} else {
 			trackinfoslib_state.setValue(new_state,refresh_panel);
 			trackinfosplaylist_state.setValue(new_state,refresh_panel);
 			trackinfosbio_state.setValue(new_state,refresh_panel);
 			trackinfoslxbox_state.setValue(new_state,refresh_panel);
 			trackinfosmdrop_state.setValue(new_state,refresh_panel);
+			trackinfosmpv_state.setValue(new_state,refresh_panel);
+			trackinfostheme_state.setValue(new_state,refresh_panel);
 		}
 	} else {
 		switch(main_panel_state.value){
@@ -490,6 +508,16 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 				/* 模式 4（MilkDrop）：曲目信息三态（顶部/底部/关）走 MDROP 键 */
 				if(new_state!==false) trackinfosmdrop_state.setValue(new_state,refresh_panel);
 				else trackinfosmdrop_state.cycleIncrement(1,refresh_panel);
+			break;
+			case 5:
+				/* 模式 5（MPV 视频 / ESL 歌词）：曲目信息三态走 MPV 键 */
+				if(new_state!==false) trackinfosmpv_state.setValue(new_state,refresh_panel);
+				else trackinfosmpv_state.cycleIncrement(1,refresh_panel);
+			break;
+			case 6:
+				/* 模式 6（主题设置）：曲目信息三态走 THEME 键 */
+				if(new_state!==false) trackinfostheme_state.setValue(new_state,refresh_panel);
+				else trackinfostheme_state.cycleIncrement(1,refresh_panel);
 			break;
 		}
 	}
@@ -588,25 +616,25 @@ function build_buttons(){
 			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "媒体库", "Library", "", function () {
 				main_panel_state.setValue(0);
 				get_colors();g_searchbox.adapt_look_to_layout();
-			}, false,false,images.library_img,images.library_img,0, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
+			}, false,false,images.library_img,images.library_img,0, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			Playlists: new JSButton(btn.left_m+btn.width+btn.margin*1, btn.top_m, btn.width, btn.height, "播放列表", "Playlists", "", function () {
 				main_panel_state.setValue(1);
 				get_colors();g_searchbox.adapt_look_to_layout();
-			}, false,false,images.playlist_img,images.playlist_img,1, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
+			}, false,false,images.playlist_img,images.playlist_img,1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			Artist_Bio: new JSButton(btn.left_m+btn.width+btn.width+btn.margin*2, btn.top_m, btn.width, btn.height, "简介歌词", "Now playing", "", function () {
 				main_panel_state.setValue(2);
 				get_colors();g_searchbox.adapt_look_to_layout();
-			}, false,false,images.artist_bio_img,images.artist_bio_img,2, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
+			}, false,false,images.artist_bio_img,images.artist_bio_img,2, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			Visualization: new JSButton(btn.left_m+btn.width+btn.width+btn.width+btn.margin*3, btn.top_m, btn.width, btn.height, "洛雪音源", "Visualization", "", function () {
 				main_panel_state.setValue(3);
 				get_colors();g_searchbox.adapt_look_to_layout();
-			}, false,false,images.visualization_img,images.visualization_img,3, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
+			}, false,false,images.visualization_img,images.visualization_img,3, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			NowPlaying: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "nowplaying", "隐藏/显示右侧栏", function () {
 				toggleNowPlayingState();
-			}, false, false,images.nowplaying_off_icon,images.nowplaying_off_icon,-1, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),
+			}, false, false,images.nowplaying_off_icon,images.nowplaying_off_icon,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			ConfigLayout: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "Configlayout", "布局配置", function () {
 				draw_layout_menu(this.x+this.w,this.y+this.h-1);
-			}, false, false,images.config_layout_img,images.config_layout_img,-1, false, false, true,(compact_titlebar.isEqual(2)?g_font.plus1:g_font.normal)),			
+			}, false, false,images.config_layout_img,images.config_layout_img,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),			
 			RightSidebar: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "rightsidebar", "隐藏/显示曲目信息", function () {
 				if(getNowPlayingState()==1) {
 					toggleTrackInfosState();
@@ -637,7 +665,7 @@ function build_buttons(){
 			Settings: new JSButton(2, -1, Settings_width, btn.height-3, "Foobar Eole", "Foobar", "主菜单", function () {
 				g_tooltip.Deactivate();
 				draw_main_menu(0, 28);
-			}, false,false,((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),-1, false, false, false),
+			}, false,false,((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),((compact_titlebar.isEqual(2) && layout_state.isEqual(0))?images.global_settings_big_img:images.global_settings_img),-1, false, false, false,'normal'),
 			Close: new JSButton(-45, 0, 45, 29, "", "close", "", false, function () {
 				fb.Exit();
 			},false,images.nowplaying_on_hover_icon,images.nowplaying_on_hover_icon_hover,-1,false,RGB(232,17,35),true),
@@ -1097,10 +1125,120 @@ function on_paint(gr) {
 	}
 
 }
+/* ===== 模式 5：MPV 视频自动切换 =====
+   装了 foo_mpv、布局里有 mpv 元素、且当前曲目是视频文件 → 自动进模式 5；
+   换到音频曲目或停止 → 回到进之前的模式。
+   用户手动把模式从 5 切走以后，本曲不再被拉回（见 onPanelSettingChanged）。
+   迷你布局、MilkDrop 全屏时不动作。没装插件时模式 5 是 ESL 歌词页，只手动进入。 */
+var MPV_VIDEO_EXT = ['mp4','mkv','webm','avi','mov','m4v','ts','m2ts','mpg','mpeg','wmv','flv','3gp','ogv','vob'];
+var mpvAutoPrev = -1;           /* 自动进入前的模式号；-1 = 当前不是自动进入的 */
+var mpvAutoTimer = 0;
+var mdFullscreenHere = false;   /* 跟随 Eole_layout 的 MilkDrop 全屏广播 */
+
+function mpvPluginOn() {
+	try { return !!utils.CheckComponent('foo_mpv', true); } catch(e) { return false; }
+}
+/* 布局里真的有一个 mpv 元素（GetPanel 按 caption 找）。没有就不自动切，
+   否则会把用户从正在看的界面上拉到一张歌词页去。 */
+function mpvPanelPresent() {
+	try {
+		return !!(window.GetPanel('MPV') || window.GetPanel('mpv') ||
+			window.GetPanel('mpv Video') || window.GetPanel('Video player'));
+	} catch(e) { return false; }
+}
+/* 布局里是否已有主题设置面板。
+   先按 caption 问一次；找不到就遍历子面板，用 PanelObject.Name / Text 兜底——
+   新建的面板 DUI 标题常常还停在插件默认名（"JS 分离器"），caption 对不上，
+   但 Name 会是 DefinePanel 里那个 ThemeSettings。
+   最后还有一条硬兜底：ThemeSettings 面板启动时会广播 ts_panel_ready。 */
+var g_themeSettingsReady = false;
+function themeSettingsPanelFind() {
+	try { var p = window.GetPanel('ThemeSettings'); if (p) return p; } catch(e) {}
+	var n = 0;
+	try { n = window.GetPanelCount(); } catch(e2) { n = 0; }
+	for(var i = 0; i < n; ++i) {
+		var q = null;
+		try { q = window.GetPanelByIndex(i); } catch(e3) { q = null; }
+		if(!q) continue;
+		var t = '', nm = '';
+		try { t = String(q.Text === undefined ? '' : q.Text).replace(/^\s+|\s+$/g, ''); } catch(e4) {}
+		try { nm = String(q.Name === undefined ? '' : q.Name).replace(/^\s+|\s+$/g, ''); } catch(e5) {}
+		if(t.toLowerCase() === 'themesettings' || nm.toLowerCase() === 'themesettings') return q;
+	}
+	return null;
+}
+/* 同步握手：NotifyOthers 会同步调用其它面板的 on_notify_data。
+   先发 ts_panel_query，若 theme_settings.js 已加载，其处理器会立刻
+   回 ts_panel_ready 把 g_themeSettingsReady 置真——返回时状态已新。
+   专治"面板后加载错过自报信 / GetPanel 枚举看不见面板"两种情况。 */
+function themeSettingsHandshake() {
+	try { window.NotifyOthers('ts_panel_query', 1); } catch (eHandshake) {}
+}
+function themeSettingsPanelOn() {
+	if (!g_themeSettingsReady) themeSettingsHandshake();
+	return !!themeSettingsPanelFind() || g_themeSettingsReady;
+}
+function mpvTrackIsVideo() {
+	var np = null;
+	try { np = fb.GetNowPlaying(); } catch(e0) { np = null; }
+	if(!np) return false;
+	var path = '';
+	try { path = String(np.Path || ''); } catch(e1) { path = ''; }
+	if(!path) return false;
+	var dot = path.lastIndexOf('.');
+	if(dot < 0) return false;
+	var ext = path.slice(dot + 1).toLowerCase();
+	var q = ext.search(/[?#]/);
+	if(q >= 0) ext = ext.slice(0, q);
+	for(var i=0;i<MPV_VIDEO_EXT.length;++i) if(MPV_VIDEO_EXT[i]===ext) return true;
+	return false;
+}
+function mpvAutoApply() {
+	if(layout_state.isEqual(1)) return;          /* 迷你布局：没有主区 */
+	if(mdFullscreenHere) return;                 /* MilkDrop 全屏：先别动 */
+	/* 没装插件（模式 5 是 ESL 歌词页）、布局里没有 mpv 元素、或当前曲目不是视频
+	   → 退出自动进入的模式 5 */
+	if(!mpvPluginOn() || !mpvPanelPresent() || !mpvTrackIsVideo()) { mpvAutoLeave(); return; }
+	var mode = parseInt(main_panel_state.value);
+	if(!isFinite(mode)) mode = 0;
+	/* 正在主题设置页时不抢：用户主动停在这里，视频让它自己播 */
+	if(mode === 6) { mpvAutoLeave(); return; }
+	if(mode === 5 || mpvAutoPrev >= 0) return;
+	mpvAutoPrev = mode;
+	main_panel_state.setValue(5);
+	try { get_colors(); g_searchbox.adapt_look_to_layout(); } catch(e2) {}
+}
+/* 只在「本次模式 5 是自动进入的」情况下回退，用户手动选的模式 5 不受影响 */
+function mpvAutoLeave() {
+	if(mpvAutoPrev < 0) return;
+	var back = mpvAutoPrev;
+	mpvAutoPrev = -1;
+	main_panel_state.setValue(back);
+	try { get_colors(); g_searchbox.adapt_look_to_layout(); } catch(e2) {}
+}
+function mpvAutoSoon() {
+	if(mpvAutoTimer) { clearTimeout(mpvAutoTimer); mpvAutoTimer = 0; }
+	mpvAutoTimer = setTimeout(function(){
+		mpvAutoTimer = 0;
+		try { mpvAutoApply(); } catch(e) {}
+	}, 250);
+}
+function mpvAutoCancel() {
+	mpvAutoPrev = -1;
+	if(mpvAutoTimer) { clearTimeout(mpvAutoTimer); mpvAutoTimer = 0; }
+}
+/* pss_switch.js 的 setValue 钩子：用户把模式从 5 手动改走 → 本曲不再自动拉回 */
+function onPanelSettingChanged(name, value) {
+	if(name !== "main_panel_state") return;
+	if(Number(value) === 5) return;
+	if(mpvAutoPrev >= 0) mpvAutoCancel();
+}
+
 function on_playback_new_track(metadb){
 	eval_caption_title(metadb);
 	if(properties.showwallpaper && properties.wallpapermode == 0) {
 	};
+	try { mpvAutoSoon(); } catch(eMpv) {}
 	window.Repaint();
 }
 function eval_caption_title(metadb){
@@ -1120,6 +1258,8 @@ function on_playback_stop(reason) {
 	case 2: // starting_another (only called on user action, i.e. click on next button)
 		break;
 	};
+	/* 停止/播完时直接回退（reason 2 是「马上开始下一首」，交给 on_playback_new_track 判断） */
+	if(reason !== 2) { try { mpvAutoLeave(); } catch(eMpv) {} }
 	window.Repaint();
 }
 
@@ -1199,10 +1339,17 @@ function on_mouse_rbtn_up(x, y){
 			/* MilkDrop 主面板（模式 4）。单选标记分开处理：1~4 是连续的主区模式，
 			   8 在主菜单 id 里被 5/6/7（全屏、迷你、切回标准）隔开，塞不进同一个 radio 区间 */
 			_menu.AppendMenuItem(MF_STRING, 8, "MilkDrop");
+			/* 模式 5：装了 foo_mpv 显示「MPV 视频」，没装显示「ESL 歌词」；模式号同为 5 */
+			_menu.AppendMenuItem(MF_STRING, 9, mpvPluginOn() ? "MPV 视频" : "ESL 歌词");
+			/* 模式 6：主题设置页。布局里还没加 ThemeSettings 元素时置灰，避免点进去只看到媒体库 */
+			_menu.AppendMenuItem(themeSettingsPanelOn() ? MF_STRING : MF_GRAYED, 10, "主题设置");
+			if(!themeSettingsPanelOn()) _menu.AppendMenuItem(MF_GRAYED, 0, "   （布局里还没有 ThemeSettings 面板）");
 			var _mpIdx = parseInt(main_panel_state.value);
 			if(!isFinite(_mpIdx)) _mpIdx = 0;
 			if(_mpIdx <= 3) _menu.CheckMenuRadioItem(1, 4, _mpIdx+1);
-			else _menu.CheckMenuItem(8, true);
+			else if(_mpIdx === 4) _menu.CheckMenuItem(8, true);
+			else if(_mpIdx === 5) _menu.CheckMenuItem(9, true);
+			else _menu.CheckMenuItem(10, true);
 			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
@@ -1242,6 +1389,26 @@ function on_mouse_rbtn_up(x, y){
 				main_panel_state.setValue(4);
 				get_colors();g_searchbox.adapt_look_to_layout();
                 break;
+            case (idx == 9):
+				main_panel_state.setValue(5);
+				get_colors();g_searchbox.adapt_look_to_layout();
+                break;
+            case (idx == 10):
+				/* 主题设置页在主区里，迷你布局没有主区：先切回完整布局，
+				   等窗口恢复宽度（toggleLayoutMode 会改窗口尺寸）后再切模式 6 */
+				if(layout_state.isEqual(1)) {
+					toggleLayoutMode(0);
+					window.SetTimeout(function(){
+						try {
+							main_panel_state.setValue(6);
+							get_colors();g_searchbox.adapt_look_to_layout();
+						} catch(eTh) {}
+					}, 200);
+				} else {
+					main_panel_state.setValue(6);
+					get_colors();g_searchbox.adapt_look_to_layout();
+				}
+                break;
             case (idx == 5):
 				g_uihacks.toggleFullscreen();
                 break;
@@ -1266,107 +1433,14 @@ function on_mouse_rbtn_up(x, y){
             default:
 				return true;
         }
+        /* 设置…菜单里的开关改过了：让主题设置页重查一次缓存 */
+        try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch (eTR1) {}
         _menu = undefined;
         return true;
 }
 /* ===== 窗口外观控制项：原生边框与标题栏 / 原生菜单栏 / 原生状态栏 =====
-   这三项是窗口级设置（fb.Window），面板属性存不住、也同步不到别的面板，
-   所以状态落在 profile 下的共享配置文件里，Eole 的每个面板读同一份
-   （见 JStheme_common.js 的 hideDuiBars）。 */
-function chromeCfgPath() {
-	return fb.ProfilePath + 'Eole\\eole-settings\\WINDOWCHROME.cfg';
-}
-/* 主题默认：无边框无标题栏、无菜单栏、无状态栏。
-   接管方默认：装了 foo_openhacks 就选它全权接管——它的伪标题栏接管是整窗级别的，
-   不会像 jsplitter 无边框模式那样在窗口顶部残留一条原生拖拽条（紧凑标题栏下会吃掉
-   自绘按钮的上半截）；组件不在位时回退 jsplitter。 */
-function chromeDefaults() {
-	var m = 'jsplitter';
-	try { if (typeof openhacksGet === 'function' && openhacksGet()) m = 'openhacks'; } catch (eD) {}
-	return { frame: false, menu: false, status: false, manager: m };
-}
-function chromeRead() {
-	var st = chromeDefaults();
-	try {
-		var t = utils.ReadTextFile(chromeCfgPath());
-		if (t) {
-			var c = JSON.parse(String(t).replace(/^\uFEFF/, ""));
-			if (c && typeof c === 'object') {
-				/* 旧版配置里 frame / caption 是分开的两项，现在只认 frame，caption 忽略 */
-				if (typeof c.frame === 'boolean') st.frame = c.frame;
-				if (typeof c.menu === 'boolean') st.menu = c.menu;
-				if (typeof c.status === 'boolean') st.status = c.status;
-				/* 接管方：'openhacks' / 'jsplitter'（单选）。
-				   迁移：旧版 disabled=true 等价于 OpenHacks 接管。 */
-				if (c.manager === 'openhacks' || c.manager === 'jsplitter') st.manager = c.manager;
-				else if (c.disabled === true) st.manager = 'openhacks';
-			}
-		}
-	} catch (e) {}
-	return st;
-}
-function chromeWrite(st) {
-	try {
-		utils.WriteTextFile(chromeCfgPath(), JSON.stringify({
-			frame: !!st.frame, menu: !!st.menu, status: !!st.status,
-			manager: (st.manager === 'openhacks') ? 'openhacks' : 'jsplitter'
-		}));
-	} catch (e) {}
-}
-function chromeAvailable() {
-	try { return !!(fb && fb.Window); } catch (e) { return false; }
-}
-/* 只做两档：有边框有标题栏(0) / 无边框无标题栏(2)。
-   FrameStyle 的 1（有边框无标题栏）不开放，否则原生标题栏会和自绘标题栏抢位置。 */
-function chromeFrameStyleOf(st) {
-	return st.frame ? 0 : 2;
-}
-function chromeApply(st) {
-	var s = st || chromeRead();
-	chromeWrite(s);
-	/* OpenHacks 接管＝三个开关全部联动到它的 COM 接口：
-	   边框→WindowFrameStyle，菜单栏→MenuBarVisible，状态栏→StatusBarVisible。 */
-	if (s.manager === 'openhacks') {
-		var oh = (typeof openhacksGet === 'function') ? openhacksGet() : null;
-		if (oh) {
-			try { oh.WindowFrameStyle = chromeFrameStyleOf(s); } catch (eF) {}
-			try { oh.EnableWin10Shadow = false; } catch (eS) {}
-			try { oh.MenuBarVisible = !!s.menu; } catch (eM) {}
-			try { oh.StatusBarVisible = !!s.status; } catch (eT) {}
-			/* 换 FrameStyle 会让整窗重排，稍后再确认一次并重算伪标题栏拖动区 */
-			setTimeout(function () {
-				var c = chromeRead();
-				if (c.manager !== 'openhacks') return;
-				var o2 = (typeof openhacksGet === 'function') ? openhacksGet() : null;
-				if (o2) {
-					try { o2.MenuBarVisible = !!c.menu; } catch (eM2) {}
-					try { o2.StatusBarVisible = !!c.status; } catch (eT2) {}
-				}
-				try { SetPseudoCaption(); } catch (e6) {}
-				try { window.Repaint(); } catch (e7) {}
-			}, 120);
-			return s;
-		}
-		/* foo_openhacks 已卸载：没人接手了，落回 jsplitter 并写回，
-		   否则边框/菜单栏/状态栏会处于"两不管"状态。 */
-		s.manager = 'jsplitter';
-		chromeWrite(s);
-	}
-	if (!chromeAvailable()) return s;
-	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); } catch (e1) {}
-	try { fb.Window.MainMenuHidden = !s.menu; } catch (e2) {}
-	try { fb.Window.StatusBarHidden = !s.status; } catch (e3) {}
-	/* 换 FrameStyle 会让整窗重排，稍后再确认一次菜单栏/状态栏并重算伪标题栏拖动区 */
-	setTimeout(function () {
-		var c = chromeRead();
-		if (c.manager === 'openhacks') return;
-		try { fb.Window.MainMenuHidden = !c.menu; } catch (e4) {}
-		try { fb.Window.StatusBarHidden = !c.status; } catch (e5) {}
-		try { SetPseudoCaption(); } catch (e6) {}
-		try { window.Repaint(); } catch (e7) {}
-	}, 120);
-	return s;
-}
+   实现已下沉到 theme_common.js（chromeRead / chromeWrite / chromeApply），
+   主题设置页与标题栏共用同一份逻辑和同一个配置文件。 */
 function draw_settings_menu(x,y){
         var _menu = window.CreatePopupMenu();
 		var _menu3 = window.CreatePopupMenu();
@@ -1378,40 +1452,6 @@ function draw_settings_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 1812, "常规紧凑标题栏");
 		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");		
 		_menu.CheckMenuRadioItem(1811, 1813, (parseInt(compact_titlebar.getValue())+1811));
-		_menu.AppendMenuSeparator();
-		/* 高分屏自动适配：改成三选一子菜单，勾选态一眼可见 */
-		var _hires = window.CreatePopupMenu();
-		_hires.AppendMenuItem(MF_STRING, 1814, "自动（当前" + (g_hires_display ? "已启用" : "未启用") + "）");
-		_hires.AppendMenuItem(MF_STRING, 1815, "强制开启");
-		_hires.AppendMenuItem(MF_STRING, 1816, "强制关闭");
-		_hires.CheckMenuRadioItem(1814, 1816, 1814 + ((g_hires_mode === 1 || g_hires_mode === 2) ? g_hires_mode : 0));
-		_hires.AppendTo(_menu, MF_STRING, "高分屏自动适配");
-
-		/* 边框控制项：接管方（单选）+ 窗口级外观开关；勾选状态表示「已隐藏」 */
-		var _chrome = window.CreatePopupMenu();
-		var _chrome_st = chromeRead();
-		var _oh_present = (typeof openhacksGet === 'function') && !!openhacksGet();
-		/* 接管方单选：OpenHacks＝foo_openhacks 组件 COM 全权接管（边框/菜单/状态/伪标题栏/贴靠）；
-		   jsplitter＝Eole 经 jsplitter 的 fb.Window 写入。组件不在位时 OpenHacks 项置灰。 */
-		_chrome.AppendMenuItem(_oh_present ? MF_STRING : (MF_STRING | MF_GRAYED), 1825, "Openhacks 接管");
-		_chrome.AppendMenuItem(MF_STRING, 1826, "uie_jsplitter 接管");
-		_chrome.CheckMenuRadioItem(1825, 1826, (_chrome_st.manager === 'openhacks' && _oh_present) ? 1825 : 1826);
-		_chrome.AppendMenuSeparator();
-		/* 三开关在两种接管模式下都生效：openhacks 走 COM，jsplitter 走 fb.Window */
-		var _chrome_ok = ((_chrome_st.manager === 'openhacks' && _oh_present) || chromeAvailable());
-		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1820, "隐藏边框标题栏");
-		/* 勾＝隐藏：勾上即关掉该项，与下面「以上全隐藏」语义一致 */
-		_chrome.CheckMenuItem(1820, !_chrome_st.frame);
-		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1821, "隐藏原生菜单栏");
-		_chrome.CheckMenuItem(1821, !_chrome_st.menu);
-		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1822, "隐藏原生状态栏");
-		_chrome.CheckMenuItem(1822, !_chrome_st.status);
-		_chrome.AppendMenuSeparator();
-		/* 动作项：不带勾，点一下把上面三项一起勾上（全隐藏），接管方保持不变 */
-		_chrome.AppendMenuItem(_chrome_ok ? MF_STRING : (MF_STRING | MF_GRAYED), 1823, "隐藏以上全部栏");
-		_chrome.AppendTo(_menu, MF_STRING, "边框控制项开关");
-		
-		_menu.AppendMenuSeparator();
 		
 		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1800, "标题栏显示曲目信息");
 		_menu.CheckMenuItem(1800, properties.tracktitle_ontop)
@@ -1544,16 +1584,6 @@ function draw_settings_menu(x,y){
 				window.Repaint();
 				window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePC) {} }, 200);
 				break;
-			case (idx == 1814):
-			case (idx == 1815):
-			case (idx == 1816):
-				g_hires_mode = idx - 1814;
-				window.SetProperty("全局·高分屏适配模式", g_hires_mode);
-				window.NotifyOthers("WSH_panels_reload", true);
-				/* 高分屏适配模式会改变所有面板的尺寸，重载前先请求一次重排 */
-				window.NotifyOthers("eole_layout", true);
-				reloadPanelSafe();
-				break;
 			case (idx == 1820):
 				var _cs0 = chromeRead();
 				_cs0.frame = !_cs0.frame;
@@ -1620,6 +1650,8 @@ function draw_settings_menu(x,y){
 				return true;
         }
 
+        /* 设置…菜单里的开关改过了：让主题设置页重查一次缓存 */
+        try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch (eTR1) {}
         _menu = undefined;
 		_menu3 = undefined;
 		_menu3A = undefined;
@@ -1729,6 +1761,18 @@ function draw_layout_menu(x,y){
 	} else if(main_panel_state.isEqual(4)){
 		/* 模式 4（MilkDrop）：右栏开关、宽度调整与其它模式同款 */
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "MilkDrop 布局");
+		basemenu.AppendMenuSeparator();
+		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
+		basemenu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(5)){
+		/* 模式 5（MPV 视频 / ESL 歌词）：同上，标题随插件安装状态走 */
+		basemenu.AppendMenuItem(MF_GRAYED, 0, mpvPluginOn() ? "MPV 视频布局" : "ESL 歌词布局");
+		basemenu.AppendMenuSeparator();
+		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
+		basemenu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(6)){
+		/* 模式 6（主题设置）：右栏照常保留 */
+		basemenu.AppendMenuItem(MF_GRAYED, 0, "主题设置布局");
 		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 		basemenu.AppendMenuSeparator();
@@ -1912,6 +1956,7 @@ function draw_layout_menu(x,y){
         break;
     }
 
+    try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch (eTR2) {}
     basemenu = undefined;
     contextman = undefined;
     menuman1 = undefined;
@@ -2053,10 +2098,40 @@ function draw_main_menu(x,y){
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 		visu_menu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(5)){
+		/* 模式 5（MPV 视频 / ESL 歌词）：复用可视化面板布局与深色开关 */
+		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
+		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
+		visu_menu.AppendMenuSeparator();
+	} else if(main_panel_state.isEqual(6)){
+		/* 模式 6（主题设置）：复用可视化面板布局与深色开关 */
+		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
+		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
+		visu_menu.AppendMenuSeparator();
 	}
 
 	font_size = window.CreatePopupMenu();
 	font_size.AppendTo(skin_settings_menu,MF_STRING, "字体大小");
+
+	/* 边框开关：原「设置...」菜单里的「边框控制项开关」整体挪到这里，
+	   放在「字体大小」下面；接管方（单选）+ 三个隐藏开关 + 一键全隐藏。 */
+	var chrome_menu = window.CreatePopupMenu();
+	var _cst = chromeRead();
+	var _cohm = (typeof openhacksGet === 'function') && !!openhacksGet();
+	chrome_menu.AppendMenuItem(_cohm ? MF_STRING : (MF_STRING | MF_GRAYED), 4060, "Openhacks 接管");
+	chrome_menu.AppendMenuItem(MF_STRING, 4061, "uie_jsplitter 接管");
+	chrome_menu.CheckMenuRadioItem(4060, 4061, (_cst.manager === 'openhacks' && _cohm) ? 4060 : 4061);
+	chrome_menu.AppendMenuSeparator();
+	var _cok = ((_cst.manager === 'openhacks' && _cohm) || chromeAvailable());
+	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4062, "隐藏边框标题栏");
+	chrome_menu.CheckMenuItem(4062, !_cst.frame);
+	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4063, "隐藏原生菜单栏");
+	chrome_menu.CheckMenuItem(4063, !_cst.menu);
+	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4064, "隐藏原生状态栏");
+	chrome_menu.CheckMenuItem(4064, !_cst.status);
+	chrome_menu.AppendMenuSeparator();
+	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4065, "隐藏以上全部栏");
+	chrome_menu.AppendTo(skin_settings_menu, MF_STRING, "边框开关");
 	font_size.AppendMenuItem(MF_STRING, 4012, "增大");
 	font_size.AppendMenuItem(MF_STRING, 4013, "减小");
 	font_size.AppendMenuItem(MF_STRING, 4014, "重置");
@@ -2277,6 +2352,47 @@ function draw_main_menu(x,y){
 	case (idx == 4026):
 		delete_full_cache();
 		break;
+	case (idx == 4060):
+		/* 接管方切到 OpenHacks：三个开关立即经它的 COM 生效 */
+		var _cm0 = chromeRead();
+		_cm0.manager = 'openhacks';
+		chromeApply(_cm0);
+		window.Repaint();
+		break;
+	case (idx == 4061):
+		/* 接管方切回 jsplitter：Eole 经 fb.Window 立即恢复控制 */
+		var _cm1 = chromeRead();
+		_cm1.manager = 'jsplitter';
+		chromeApply(_cm1);
+		window.Repaint();
+		break;
+	case (idx == 4062):
+		var _cm2 = chromeRead();
+		_cm2.frame = !_cm2.frame;
+		chromeApply(_cm2);
+		window.Repaint();
+		break;
+	case (idx == 4063):
+		var _cm3 = chromeRead();
+		_cm3.menu = !_cm3.menu;
+		chromeApply(_cm3);
+		window.Repaint();
+		break;
+	case (idx == 4064):
+		var _cm4 = chromeRead();
+		_cm4.status = !_cm4.status;
+		chromeApply(_cm4);
+		window.Repaint();
+		break;
+	case (idx == 4065):
+		/* 以上全隐藏：三项一起关，接管方保持不变 */
+		var _cm5 = chromeRead();
+		_cm5.frame = false;
+		_cm5.menu = false;
+		_cm5.status = false;
+		chromeApply(_cm5);
+		window.Repaint();
+		break;
 	case (idx == 4029):
 		chooseMemorySettings(" ", "<div class='titleBig'>封面与内存占用</div><div class='separator'></div><br/>为了根据您计算机的速度和音乐库的大小来调整内存占用，请在下方选择一个封面与内存设置。\n\n如果之后遇到性能问题或内存不足错误，可以降低设置。相反，如果一切运行正常，则可以调高设置。",'<br/>注意：Eole 使用封面缓存。封面缓存是一点一点建立的：当显示封面时，如果尚未存入缓存，就会加入缓存，因此首次显示任意封面时会稍慢，但第二次显示会快得多。<br/><br/>此缓存基于 %album artist% 与 %album% 标签。<br/><br/>更新已有封面后，必须在 foobar 中手动刷新：右键单击需要刷新的封面，会出现相应菜单项。<br/><br/>','MemoryDialog','您还可以在下方减小内存中封存的封面宽度。此数值越低，此皮肤的内存占用就越低。注意：如果降得太低，封面可能会显得模糊。<u>警告：更改此值将重置封面缓存。</u>');
 		break;
@@ -2403,6 +2519,7 @@ function draw_main_menu(x,y){
 		break;
     }
 
+    try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch (eTR2) {}
     basemenu = undefined;
     contextman = undefined;
     menuman1 = undefined;
@@ -2484,6 +2601,144 @@ function on_notify_data(name, info) {
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
 			reloadPanelSafe();
+		break;
+		case "ts_panel_ready":
+			/* 主题设置面板加载完成的自报信：caption 对不上时的硬兜底 */
+			g_themeSettingsReady = true;
+		break;
+		case "ts_lightswitch":
+			/* 主题设置页的「全局深色主题」开关：走和标题栏明暗按钮完全相同的
+			   Lightswitch(true, v) 分支——一次改四份深浅状态 + 壁纸深浅 + 广播。 */
+			Lightswitch(true, !!info);
+		break;
+		case "ts_info_get":
+			/* 主题设置页读取「封面、属性」三态：直接用本面板的 getTrackInfosState()，
+			   与「布局配置 → 右侧播放列表 → 封面、属性」菜单同源，不受各面板
+			   本地状态副本是否过期影响。 */
+			try { window.NotifyOthers("ts_info_state", getTrackInfosState()); } catch(eTIG) {}
+		break;
+		case "ts_info_set":
+			/* 写入同样走菜单用的 toggleTrackInfosState(false, v)：
+			   右栏隐藏时会先打开右栏（和菜单 202/203 分支一致），再设三态。 */
+			try {
+				var iv = parseInt(info, 10);
+				if (!isNaN(iv)) {
+					if (iv !== 0 && getNowPlayingState() != 1) toggleNowPlayingState();
+					toggleTrackInfosState(false, iv, true);
+					window.NotifyOthers("ts_info_state", iv);
+				}
+			} catch(eTIS) {}
+		break;
+		case "ts_titlebar_get":			/* 主题设置页读取标题栏「设置...」菜单里的全部开关（同步应答） */
+			try {
+				window.NotifyOthers("ts_titlebar_state", {
+					titleinfo: properties.tracktitle_ontop ? 1 : 0,
+					uppercase: properties.toUpperCase ? 1 : 0,
+					minimenu: properties.mini_mainmenu_button ? 1 : 0,
+					search: properties.alwaysShowSearch ? 1 : 0,
+					remember: properties.Remember_previous_state ? 1 : 0,
+					hide_lxbox: properties.show_visualization ? 0 : 1,
+					btn_nowplaying: properties.showNowPlayingBtn ? 1 : 0,
+					btn_configlayout: properties.showConfigLayoutBtn ? 1 : 0,
+					btn_rightsidebar: properties.showRightSidebarBtn ? 1 : 0,
+					btn_lightswitch: properties.showLightswitchBtn ? 1 : 0,
+					btn_fullscreen: properties.showFullscreenBtn ? 1 : 0,
+					duifollow: properties.darklayout_follow_cui ? 1 : 0
+				});
+			} catch(eTBG) {}
+		break;
+		case "ts_titlebar":
+			/* 主题设置页写入：逐项等价于「设置...」菜单里的对应命令 */
+			try {
+				var tbKey = (info && info.key) ? String(info.key) : "";
+				var tbVal = info ? info.value : 0;
+				var tbFlush = function () {
+					adapt_buttons_to_layout();
+					window.Repaint();
+				};
+				if (tbKey === "titleinfo") {
+					properties.tracktitle_ontop = !!tbVal;
+					window.SetProperty("显示·曲目标题", properties.tracktitle_ontop);
+					tbFlush();
+				} else if (tbKey === "uppercase") {
+					properties.toUpperCase = !!tbVal;
+					window.SetProperty("显示·面板按钮文字大写", properties.toUpperCase);
+					on_font_changed();
+					main_panel_btns.toUpperCase(properties.toUpperCase);
+					tbFlush();
+				} else if (tbKey === "minimenu") {
+					properties.mini_mainmenu_button = !!tbVal;
+					window.SetProperty("显示·迷你主菜单按钮", properties.mini_mainmenu_button);
+					adapt_buttons_to_layout();
+					g_searchbox.on_size();
+					window.Repaint();
+				} else if (tbKey === "search") {
+					properties.alwaysShowSearch = !!tbVal;
+					window.SetProperty("显示·始终显示搜索框", properties.alwaysShowSearch);
+					g_searchbox.toggleVisibility(true);
+					tbFlush();
+				} else if (tbKey === "remember") {
+					properties.Remember_previous_state = !!tbVal;
+					window.SetProperty("启动时恢复面板状态(可视化页除外)", properties.Remember_previous_state);
+					window.Repaint();
+				} else if (tbKey === "hide_lxbox") {
+					properties.show_visualization = !tbVal;
+					window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
+					window.Repaint();
+				} else if (tbKey === "btn_nowplaying") {
+					properties.showNowPlayingBtn = !!tbVal;
+					window.SetProperty("显示·显示正在播放按钮", properties.showNowPlayingBtn);
+					tbFlush();
+				} else if (tbKey === "btn_configlayout") {
+					properties.showConfigLayoutBtn = !!tbVal;
+					window.SetProperty("显示·显示布局配置按钮", properties.showConfigLayoutBtn);
+					tbFlush();
+				} else if (tbKey === "btn_rightsidebar") {
+					properties.showRightSidebarBtn = !!tbVal;
+					window.SetProperty("显示·显示右侧栏按钮", properties.showRightSidebarBtn);
+					tbFlush();
+				} else if (tbKey === "btn_lightswitch") {
+					properties.showLightswitchBtn = !!tbVal;
+					window.SetProperty("显示·显示明暗切换按钮", properties.showLightswitchBtn);
+					tbFlush();
+				} else if (tbKey === "btn_fullscreen") {
+					properties.showFullscreenBtn = !!tbVal;
+					window.SetProperty("显示·显示全屏按钮", properties.showFullscreenBtn);
+					tbFlush();
+				} else if (tbKey === "duifollow") {
+					/* 等价于全屏壁纸菜单 5301「监视DUI深浅色」 */
+					properties.darklayout_follow_cui = !!tbVal;
+					window.SetProperty("显示·深色布局跟随CUI", properties.darklayout_follow_cui);
+					on_colours_changed();
+				} else if (tbKey === "mainmode") {
+					/* 主题设置页切主区模式：等价于主菜单里的模式 1/2/3/4/8/9/10 */
+					var mm = parseInt(tbVal, 10);
+					if (mm >= 0 && mm <= 6) {
+						if (mm === 6 && layout_state.isEqual(1)) {
+							toggleLayoutMode(0);
+							window.SetTimeout(function () {
+								try { main_panel_state.setValue(6); get_colors(); g_searchbox.adapt_look_to_layout(); } catch (eMM) {}
+							}, 200);
+						} else {
+							main_panel_state.setValue(mm);
+							get_colors(); g_searchbox.adapt_look_to_layout();
+						}
+					}
+				} else if (tbKey === "titleformat") {
+					/* 同菜单 1809：弹输入框改「正在播放曲目标题格式」 */
+					try {
+						var newfmt = utils.InputBox(window.ID,
+							"请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f",
+							"自定义窗口标题", properties.tracktitle_format, true);
+						if (!(newfmt === "" || typeof newfmt === 'undefined' || newfmt === null)) {
+							properties.tracktitle_format = newfmt;
+							window.SetProperty("显示·曲目标题格式", properties.tracktitle_format);
+							eval_caption_title(fb.GetNowPlaying());
+						}
+					} catch (eTF) {}
+					window.Repaint();
+				}
+			} catch(eTBS) {}
 		break;
 		case "toggleLayoutMode":
 			toggleLayoutMode();get_colors();g_searchbox.adapt_look_to_layout();
@@ -2608,6 +2863,16 @@ function on_notify_data(name, info) {
 			get_colors()
 			window.Repaint();
 		break;
+		case "eole_set_layout":
+			/* 主题设置页请求切布局：迷你/完整要改窗口尺寸，只有标题栏能做。
+			   切迷你前先回媒体库，否则设置页会停在"主区不存在"的迷你布局里。 */
+			if(Number(info) === 1) {
+				try { main_panel_state.setValue(0); } catch(eSL0) {}
+				if(!layout_state.isEqual(1)) toggleLayoutMode(1);
+			} else {
+				if(layout_state.isEqual(1)) toggleLayoutMode(0);
+			}
+		break;
 		case "filters_panel_state":
 			filters_panel_state.value=info;
 			window.Repaint();
@@ -2664,9 +2929,15 @@ function on_notify_data(name, info) {
 		case "main_panel_state":
 			if(main_panel_state!=info) {
 				main_panel_state.value = info;
+				if(mpvAutoPrev >= 0 && Number(info) !== 5) mpvAutoCancel();
 				get_colors()
 				window.Repaint();
 			}
+		break;
+		case "milkdrop_fullscreen":
+			/* MilkDrop 全屏期间不抢主区；退出全屏后补一次判断 */
+			mdFullscreenHere = (info === true || Number(info) === 1);
+			if(mdFullscreenHere) mpvAutoCancel(); else mpvAutoSoon();
 		break;
 		case "giveMeGenreList":
 			if(!g_genre_cache.isEmpty()){
@@ -2792,6 +3063,10 @@ oSearch = function() {
 				case (main_panel_state.isEqual(3) && properties.visualization_dark_theme):
 				/* 模式 4（MilkDrop）搜索框与模式 3 同开关，不再强制深色 */
 				case (main_panel_state.isEqual(4) && properties.visualization_dark_theme):
+				/* 模式 5（MPV 视频 / ESL 歌词）同上 */
+				case (main_panel_state.isEqual(5) && properties.visualization_dark_theme):
+				/* 模式 6（主题设置）同上 */
+				case (main_panel_state.isEqual(6) && properties.visualization_dark_theme):
 					for (var c in cSearchBoxMainDark)
 						if(cSearchBoxMainDark.hasOwnProperty(c))
 							cSearchBox[c] = cSearchBoxMainDark[c]
@@ -3073,6 +3348,7 @@ function draw_searchHistory_menu(x, y) {
 			g_searchHistory.reset();
 		break;
     }
+    try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch (eTR2) {}
     basemenu = undefined;
 }
 function toggleWallpaper(wallpaper_state){
@@ -3285,7 +3561,7 @@ function fw_handle_menu(idx) {
 	return true;
 }
 function on_init(){
-	if(properties.Remember_previous_state && (main_panel_state.isEqual(3) || main_panel_state.isEqual(4))) {
+	if(properties.Remember_previous_state && (main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6))) {
 		main_panel_state.setValue(0);
 	} else if(!properties.Remember_previous_state){
 		main_panel_state.setValue(0);
@@ -3334,7 +3610,20 @@ function on_init(){
 	setTimeout(function () {
 		window.NotifyOthers("library_dark_theme", properties.library_dark_theme);
 		window.NotifyOthers("playlists_dark_theme", properties.playlists_dark_theme);
+		window.NotifyOthers("bio_dark_theme", properties.bio_dark_theme);
+		window.NotifyOthers("visualization_dark_theme", properties.visualization_dark_theme);
+		/* 这四项的共享状态文件只在“切换”时落盘，首次启动可能是旧值。
+		   主题设置页（模式 6）读状态文件显示开关，这里按标题栏的真实属性对齐一次。 */
+		try { darklib_state.setValue(properties.library_dark_theme ? 1 : 0, false); } catch (eDL) {}
+		try { darkplaylist_state.setValue(properties.playlists_dark_theme ? 1 : 0, false); } catch (eDP) {}
+		try { darkbio_state.setValue(properties.bio_dark_theme ? 1 : 0, false); } catch (eDB) {}
+		try { darklxbox_state.setValue(properties.visualization_dark_theme ? 1 : 0, false); } catch (eDV) {}
 	}, 800);
+	/* 启动时若已在播视频（程序关闭前在播、或命令行直接打开文件），自动进模式 5。
+	   开头会把 3/4/5 复位成 0，所以等布局摆完再判断。 */
+	setTimeout(function () {
+		try { mpvAutoApply(); } catch(eMpv) {}
+	}, 1200);
 }
 on_init();
 

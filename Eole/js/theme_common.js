@@ -1164,9 +1164,6 @@ g_files.CreateFolder(SettingsPath);
 
 // Foobar commands -------------------------------------------------------
 let playing_item_location = false;
-let playing_item_location_old_index = false;
-let ignore_playback_queue = false;
-let timer_ignore_queue = false;
 function fb_play_from_playing(offset){
 	if(offset<0){
 		fb.Prev();
@@ -1456,6 +1453,100 @@ hideDuiBars();
 window.SetTimeout(hideDuiBars, 300);
 window.SetTimeout(hideDuiBars, 1500);
 
+/* ===== 窗口外观控制项：原生边框与标题栏 / 原生菜单栏 / 原生状态栏 =====
+   这三项是窗口级设置（fb.Window），面板属性存不住、也同步不到别的面板，
+   所以状态落在 profile 下的共享配置文件里（chromeCfgPath / chromeCfgRead）。
+   标题栏与主题设置页都调用这里的 chromeRead / chromeWrite / chromeApply。
+   主题默认：无边框无标题栏、无菜单栏、无状态栏；装了 foo_openhacks
+   就默认由它全权接管（它的伪标题栏是整窗级别的）。 */
+function chromeDefaults() {
+	var m = 'jsplitter';
+	try { if (typeof openhacksGet === 'function' && openhacksGet()) m = 'openhacks'; } catch (eD) {}
+	return { frame: false, menu: false, status: false, manager: m };
+}
+function chromeRead() {
+	var st = chromeDefaults();
+	try {
+		var t = utils.ReadTextFile(chromeCfgPath());
+		if (t) {
+			var c = JSON.parse(String(t).replace(/^\uFEFF/, ""));
+			if (c && typeof c === 'object') {
+				/* 旧版配置里 frame / caption 是分开的两项，现在只认 frame，caption 忽略 */
+				if (typeof c.frame === 'boolean') st.frame = c.frame;
+				if (typeof c.menu === 'boolean') st.menu = c.menu;
+				if (typeof c.status === 'boolean') st.status = c.status;
+				/* 接管方：'openhacks' / 'jsplitter'（单选）。
+				   迁移：旧版 disabled=true 等价于 OpenHacks 接管。 */
+				if (c.manager === 'openhacks' || c.manager === 'jsplitter') st.manager = c.manager;
+				else if (c.disabled === true) st.manager = 'openhacks';
+			}
+		}
+	} catch (e) {}
+	return st;
+}
+function chromeWrite(st) {
+	try {
+		utils.WriteTextFile(chromeCfgPath(), JSON.stringify({
+			frame: !!st.frame, menu: !!st.menu, status: !!st.status,
+			manager: (st.manager === 'openhacks') ? 'openhacks' : 'jsplitter'
+		}));
+	} catch (e) {}
+}
+function chromeAvailable() {
+	try { return !!(fb && fb.Window); } catch (e) { return false; }
+}
+/* 只做两档：有边框有标题栏(0) / 无边框无标题栏(2)。
+   FrameStyle 的 1（有边框无标题栏）不开放，否则原生标题栏会和自绘标题栏抢位置。 */
+function chromeFrameStyleOf(st) {
+	return st.frame ? 0 : 2;
+}
+function chromeApply(st) {
+	var s = st || chromeRead();
+	chromeWrite(s);
+	/* OpenHacks 接管＝三个开关全部联动到它的 COM 接口：
+	   边框→WindowFrameStyle，菜单栏→MenuBarVisible，状态栏→StatusBarVisible。 */
+	if (s.manager === 'openhacks') {
+		var oh = (typeof openhacksGet === 'function') ? openhacksGet() : null;
+		if (oh) {
+			try { oh.WindowFrameStyle = chromeFrameStyleOf(s); } catch (eF) {}
+			try { oh.EnableWin10Shadow = false; } catch (eS) {}
+			try { oh.MenuBarVisible = !!s.menu; } catch (eM) {}
+			try { oh.StatusBarVisible = !!s.status; } catch (eT) {}
+			/* 换 FrameStyle 会让整窗重排，稍后再确认一次并重算伪标题栏拖动区 */
+			setTimeout(function () {
+				var c = chromeRead();
+				if (c.manager !== 'openhacks') return;
+				var o2 = (typeof openhacksGet === 'function') ? openhacksGet() : null;
+				if (o2) {
+					try { o2.MenuBarVisible = !!c.menu; } catch (eM2) {}
+					try { o2.StatusBarVisible = !!c.status; } catch (eT2) {}
+				}
+				try { if (typeof SetPseudoCaption === 'function') SetPseudoCaption(); } catch (e6) {}
+				try { window.Repaint(); } catch (e7) {}
+			}, 120);
+			return s;
+		}
+		/* foo_openhacks 已卸载：没人接手了，落回 jsplitter 并写回，
+		   否则边框/菜单栏/状态栏会处于"两不管"状态。 */
+		s.manager = 'jsplitter';
+		chromeWrite(s);
+	}
+	if (!chromeAvailable()) return s;
+	try { fb.Window.FrameStyle = chromeFrameStyleOf(s); } catch (e1) {}
+	try { fb.Window.MainMenuHidden = !s.menu; } catch (e2) {}
+	try { fb.Window.StatusBarHidden = !s.status; } catch (e3) {}
+	/* 换 FrameStyle 会让整窗重排，稍后再确认一次菜单栏/状态栏并重算伪标题栏拖动区 */
+	setTimeout(function () {
+		var c = chromeRead();
+		if (c.manager === 'openhacks') return;
+		try { fb.Window.MainMenuHidden = !c.menu; } catch (e4) {}
+		try { fb.Window.StatusBarHidden = !c.status; } catch (e5) {}
+		try { if (typeof SetPseudoCaption === 'function') SetPseudoCaption(); } catch (e6) {}
+		try { window.Repaint(); } catch (e7) {}
+	}, 120);
+	return s;
+}
+
 function Resizing(panelName, resizing_left,resizing_right, y_min, y_max) {
 	this.resizing_left = typeof resizing_left !== 'undefined' ? resizing_left : false;
 	this.resizing_right = typeof resizing_right !== 'undefined' ? resizing_right : false;
@@ -1729,8 +1820,6 @@ var MF_GRAYED = 0x00000001;
 var MF_STRING = 0x00000000;
 var MF_DISABLED = 0x00000002;
 var MF_CHECKED = 0x00000008;
-var MFT_RADIOCHECK = 0x00000200;
-var MFS_CHECKED = 0x00000008;
 var MF_POPUP = 0x00000010;
 var DT_TOP = 0x00000000;
 var DT_LEFT = 0x00000000;
@@ -1738,13 +1827,10 @@ var DT_CENTER = 0x00000001;
 var DT_RIGHT = 0x00000002;
 var DT_VCENTER = 0x00000004;
 var DT_BOTTOM = 0x00000008;
-var DT_WORDBREAK = 0x00000010;
 var DT_SINGLELINE = 0x00000020;
-var DT_NOCLIP = 0x00000100;
 var DT_CALCRECT = 0x00000400;  // [1.2.1] Handles well
 var DT_NOPREFIX = 0x00000800;  // NOTE: Please use this flag, or a '&' character will become an underline '_'
 var DT_END_ELLIPSIS = 0x00008000;
-var DT_WORD_ELLIPSIS = 0x00040000;
 var VK_F2 = 0x71;
 var VK_F3 = 0x72;
 var VK_F5 = 0x74;
@@ -1770,7 +1856,6 @@ var VK_DELETE = 0x2E;
 var IDC_ARROW = 32512;
 var IDC_IBEAM = 32513;
 var IDC_SIZEWE = 32644;
-var IDC_SIZEALL = 32646;
 var IDC_HAND = 32649;
 var IDC_HELP = 32651;
 
@@ -2413,7 +2498,7 @@ function process_string(str){
     return str_;
 }
 function quickSearch(start,search_function){
-	if(layout_state.isEqual(0) && (main_panel_state.isEqual(2) || main_panel_state.isEqual(3) || main_panel_state.isEqual(4))){
+	if(layout_state.isEqual(0) && (main_panel_state.isEqual(2) || main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6))){
 		main_panel_state.setValue(0);
 		on_notify_data("main_panel_state_force",main_panel_state.value);
 	}
@@ -3651,7 +3736,6 @@ var FW_PROP_BLUR_LT = "显示·全屏壁纸模糊强度·浅色(0-90)";
 var FW_PROP_MASK    = "显示·全屏壁纸蒙版浓度(0-255)";
 var FW_PROP_MASK_LT = "显示·全屏壁纸蒙版浓度·浅色(0-255)";
 var FW_PROP_QUALITY = "显示·全屏壁纸质量(1=已缩放 2=1.5x 3=2x)";
-var FW_PROP_LXB     = "Lxbox·全屏透明";
 
 /* 全屏壁纸的深 / 浅：第一个是显式覆盖（-1 跟随 / 0 浅 / 1 深），
    第二项是写入覆盖那一刻 fb2k 背景的深浅，用来判断"之后用户在 fb2k 里是不是
@@ -4273,10 +4357,6 @@ function fw_setOn(v) {
     g_fw_on = !!v;
     /* 各面板收到 fullscreenWallpaper / …Repaint 时都会走这里 */
     g_fw_live = !!v;
-}
-
-function fw_glass() {
-    return fw_on();
 }
 
 function fw_cfgPath() {

@@ -1,0 +1,2 @@
+﻿GetPanelCount = 0
+GetPanel("ThemeSettings") -> false

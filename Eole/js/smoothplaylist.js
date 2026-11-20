@@ -4835,7 +4835,6 @@ var g_radio_title = "正在加载实时标签...";
 var g_radio_artist = "";
 
 
-var stub_image,cell_null;
 
 var brw = null;
 var g_1x1 = false;
@@ -4847,7 +4846,6 @@ var g_filterbox = null;
 var filter_text = "";
 
 var g_instancetype = window.InstanceType;
-var g_counter_repaint = 0;
 
 // drag'n drop from windows system
 var g_dragndrop_status = false;
@@ -4873,7 +4871,6 @@ var g_focus_id = -1;
 var g_focus_id_prev = -1;
 var g_focus_row = 0;
 var g_focus_album_id = -1;
-var g_populate_opt = 1;
 // boolean to avoid callbacks
 var g_avoid_on_playlists_changed = false;
 var g_avoid_on_playlist_switch = false;
@@ -4884,17 +4881,14 @@ var g_avoid_on_playlist_items_reordered = false;
 // mouse actions
 var g_lbtn_click = false;
 var g_rbtn_click = false;
-var g_total_duration_text = "";
 var g_first_populate_done = false;
 var g_first_populate_launched = false;
 var repaintforced = false;
 var launch_time = fb.CreateProfiler("launch_time");
-var form_text = "";
-var repaint_cover = true, repaint_cover1 = true, repaint_cover2 = true;
+var repaint_cover1 = true, repaint_cover2 = true;
 var repaint_main = true, repaint_main1 = true, repaint_main2 = true;
 var window_visible = false;
 var scroll_ = 0, scroll = 0, scroll_prev = 0;
-var time222;
 var g_start_ = 0, g_end_ = 0;
 var g_last = 0;
 
@@ -5517,8 +5511,8 @@ function setDarkLayout(){
 	else if(main_panel_state.isEqual(1)) new_darklayout_state = properties.playlists_dark_theme;
 	else if(main_panel_state.isEqual(2)) {
 		new_darklayout_state = properties.bio_dark_theme;
-	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4)) {
-		/* 模式 4 主区是 MilkDrop 黑画面，右栏列表跟模式 3 一样走可视化深色主题 */
+	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)) {
+		/* 模式 4/5/6 右栏列表都与模式 3 一样走可视化深色主题 */
 		new_darklayout_state = properties.visualization_dark_theme;
 	}
 	return new_darklayout_state;

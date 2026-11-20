@@ -1973,7 +1973,6 @@ var g_focus_id = -1;
 var g_focus_id_prev = -1;
 var g_focus_row = 0;
 var g_focus_album_id = -1;
-var g_populate_opt = 1;
 // boolean to avoid callbacks
 var g_avoid_on_playlists_changed = false;
 var g_avoid_on_item_focus_change = false;
@@ -1989,11 +1988,9 @@ var g_first_populate_launched = false;
 
 var repaintforced = false;
 var launch_time = fb.CreateProfiler("launch_time");
-var form_text = "";
 var repaint_main = true, repaint_main1 = true, repaint_main2 = true;
 var window_visible = false;
 var scroll_ = 0, scroll = 0, scroll_prev = 0;
-var time222;
 var g_start_ = 0, g_end_ = 0;
 var g_last = 0;
 var g_seconds = 0;

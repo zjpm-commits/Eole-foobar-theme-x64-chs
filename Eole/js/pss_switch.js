@@ -1,6 +1,18 @@
 ﻿var settings_file_not_found = false;
 var g_settings_file_index = null;
 
+/* 状态注册表：本面板声明的每个 oPanelSetting 都登记在这里。
+   NotifyOthers 不回送自身，所以别的面板改了状态时，本面板只能靠
+   on_notify_data 把新值写回这些对象的 .value；按名字查表比逐个 if 稳妥。
+   （见 theme_settings.js 的 tsStateByName / tsSyncState） */
+var g_panelSettings = [];
+function panelSetting(name) {
+	for (var i = 0; i < g_panelSettings.length; ++i) {
+		if (g_panelSettings[i].name === name) return g_panelSettings[i];
+	}
+	return null;
+}
+
 /* All 34 settings of a panel used to run utils.Glob(prefix + "*") once each,
    i.e. one directory scan per setting. Build one snapshot of SettingsPath and
    filter it in memory instead; every setting still behaves the same. */
@@ -70,6 +82,11 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 		g_settings_file_index = null;
 		g_avoid_on_metadb_changed = true;
 		this.value = new_value;
+		/* 值变更钩子：给上层一个"用户手动改了某个状态"的观察点。
+		   NotifyOthers 不回送自身，同面板内改值只能靠这个钩子。 */
+		if (typeof onPanelSettingChanged === 'function') {
+			try { onPanelSettingChanged(this.name, this.value); } catch(eHook) {}
+		}
 		window.NotifyOthers("g_avoid_on_metadb_changed",true);			
 		window.NotifyOthers(this.name,this.value);	
 		if(refresh_panel!==false) RefreshPSS();
@@ -119,12 +136,14 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
 		}				
 	}		
 	this.getFileValue();
+	g_panelSettings.push(this);
 }
 /* 布局重排的唯一通知名。Eole_layout.js 只认 "eole_layout"，不设兜底，
    所以任何"面板尺寸/可见性变了"的地方都必须发这个名字。 */
 function RefreshPSS() { window.NotifyOthers("eole_layout", true); }
 
-var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 4);
+/* 0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源 / 4 MilkDrop / 5 MPV 视频（无插件时为 ESL 歌词） / 6 主题设置 */
+var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 6);
 var layout_state = new oPanelSetting("layout_state", "LAYOUT_", 0, 0, 1);
 
 var darklib_state = new oPanelSetting("darklib_state", "DARKLIB_", 0, 0, 1);
@@ -159,6 +178,10 @@ var nowplayingplaylist_state = new oPanelSetting("nowplayingplaylist_state", "NO
 var nowplayingbio_state = new oPanelSetting("nowplayingbio_state", "NOWPLAYINGBIO_", 1, 0, 1);
 var nowplayinglxbox_state = new oPanelSetting("nowplayinglxbox_state", "NOWPLAYINGLXBOX_", 1, 0, 1);
 var nowplayingmdrop_state = new oPanelSetting("nowplayingmdrop_state", "NOWPLAYINGMDROP_", 1, 0, 1);
+/* 模式 5（MPV 视频）：右栏开关与曲目信息开关独立一份，和模式 3/4 同款 */
+var nowplayingmpv_state = new oPanelSetting("nowplayingmpv_state", "NOWPLAYINGMPV_", 1, 0, 1);
+/* 模式 6（主题设置）：主区是设置页，右栏照常保留 */
+var nowplayingtheme_state = new oPanelSetting("nowplayingtheme_state", "NOWPLAYINGTHEME_", 1, 0, 1);
 
 //Track infos switch for each main panels
 var trackinfoslib_state = new oPanelSetting("trackinfoslib_state", "TRACKINFOSLIB_", 0, 0, 2);
@@ -166,6 +189,8 @@ var trackinfosplaylist_state = new oPanelSetting("trackinfosplaylist_state", "TR
 var trackinfosbio_state = new oPanelSetting("trackinfosbio_state", "TRACKINFOSBIO_", 1, 0, 2);
 var trackinfoslxbox_state = new oPanelSetting("trackinfoslxbox_state", "TRACKINFOSLXBOX_", 1, 0, 2);
 var trackinfosmdrop_state = new oPanelSetting("trackinfosmdrop_state", "TRACKINFOSMDROP_", 1, 0, 2);
+var trackinfosmpv_state = new oPanelSetting("trackinfosmpv_state", "TRACKINFOSMPV_", 1, 0, 2);
+var trackinfostheme_state = new oPanelSetting("trackinfostheme_state", "TRACKINFOSTHEME_", 1, 0, 2);
 var trackinfostext_state = new oPanelSetting("trackinfostext_state", "TRACKINFOSTEXT_", 1, 0, 1);
 
 //MilkDrop 主面板（模式 4）：选中预设的编号与帧率档位。
@@ -201,6 +226,12 @@ function getNowPlayingState(){
 		case 4:
 			return nowplayingmdrop_state.value;
 		break;		
+		case 5:
+			return nowplayingmpv_state.value;
+		break;
+		case 6:
+			return nowplayingtheme_state.value;
+		break;
 	}	
 }
 //Get Track Infos state according to main panel
@@ -221,6 +252,12 @@ function getTrackInfosState(){
 		case 4:
 			return trackinfosmdrop_state.value;
 		break;		
+		case 5:
+			return trackinfosmpv_state.value;
+		break;
+		case 6:
+			return trackinfostheme_state.value;
+		break;
 	}	
 }
 function getTrackInfosVisibility(){
@@ -240,6 +277,12 @@ function getTrackInfosVisibility(){
 		case 4:
 			return (trackinfosmdrop_state.value>=1 && nowplayingmdrop_state.value==1);
 		break;		
+		case 5:
+			return (trackinfosmpv_state.value>=1 && nowplayingmpv_state.value==1);
+		break;
+		case 6:
+			return (trackinfostheme_state.value>=1 && nowplayingtheme_state.value==1);
+		break;
 	}	
 }
 function getRightPlaylistState(){

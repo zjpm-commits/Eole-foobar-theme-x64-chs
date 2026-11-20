@@ -329,7 +329,9 @@ function get_colors(){
 			break;
 			case 3:
 			case 4:
-				/* 模式 4（MilkDrop）控制栏与模式 3 共用「可视化·深色主题」 */
+			case 5:
+			case 6:
+				/* 模式 4（MilkDrop）/ 模式 5（MPV 视频）/ 模式 6（主题设置）控制栏与模式 3 共用「可视化·深色主题」 */
 				properties.darklayout = properties.visualization_dark_theme || (globalProperties.colorsMainPanel!=0 && globalProperties.colorsMainPanel!=1 && globalProperties.colorsMainPanel!=2);
 			break;
 		}
@@ -1677,6 +1679,112 @@ function on_notify_data(name, info) {
 		case "fullscreenWallpaperRepaint":
 			window.Repaint();
 		break;
+		case "showtrackinfo_big":
+		case "showtrackinfo_small":
+			/* 曲目详情显示开关（进度条上方那行歌名）：别的面板改了状态文件后
+			   本面板要跟着更新。注意 NotifyOthers 不回送自身，本地这个
+			   oPanelSetting 的 .value 还是旧值，必须用通知带过来的 info，
+			   顺手把本地 .value 同步（不能走 setValue，否则会再广播一轮）。 */
+			try {
+				if (name === "showtrackinfo_big") showtrackinfo_big.value = info ? 1 : 0;
+				else showtrackinfo_small.value = info ? 1 : 0;
+				properties.showTrackInfo = !!info;
+			} catch(eST) {}
+			build_buttons();
+			get_colors();
+			on_size(window.Width, window.Height);
+			window.Repaint();
+			break;
+		case "mini_controlbar":
+			/* 控制栏高度（迷你 / 加宽）：同步本地 .value 再整套重算，
+			   否则按钮的 y 坐标还用旧布局，图标会偏上/不居中。 */
+			try { mini_controlbar.value = info ? 1 : 0; } catch(eMC) {}
+			build_buttons();
+			get_colors();
+			adapt_display_to_layout();
+			on_size(window.Width, window.Height);
+			window.Repaint();
+			break;
+		case "ts_control_get":			/* 主题设置页读取本面板的曲目详情 / 音量条 / 滑块样式（同步应答） */
+			try {
+				window.NotifyOthers("ts_control_state", {
+					rows: properties.twoLinesDetails ? 1 : 0,
+					trackinfo: properties.showTrackInfo ? 1 : 0,
+					prefix: properties.showTrackPrefix ? 1 : 0,
+					volume: properties.volumeA1waysVisible ? 1 : 0,
+					cursor: properties.cursor_style,
+					btn_stop: properties.displayStop ? 1 : 0,
+					btn_repeat: properties.displayRepeat ? 1 : 0,
+					btn_shuffle: properties.displayShuffle ? 1 : 0,
+					btn_random: properties.displayPlayRandom ? 1 : 0,
+					btn_open: properties.displayOpen ? 1 : 0,
+					btn_device: properties.displayDevice ? 1 : 0,
+					btn_equalizer: properties.displayEqualizer ? 1 : 0,
+					btn_rating: properties.displayRating ? 1 : 0,
+					btn_scheduler: properties.displayScheduler ? 1 : 0
+				});
+			} catch(eTG) {}
+		break;
+		case "ts_control":
+			/* 主题设置页写入：等价于右键菜单里对应的命令 */
+			try {
+				var tcKey = (info && info.key) ? String(info.key) : "";
+				var tcVal = info ? info.value : 0;
+				if (tcKey === "trackinfo") {
+					/* 与右键「曲目详情」3015 同源：按布局选 big / small 那份状态 */
+					var tiOn = !!tcVal;
+					if (layout_state.isEqual(0)) showtrackinfo_big.setValue(tiOn ? 1 : 0);
+					else showtrackinfo_small.setValue(tiOn ? 1 : 0);
+					properties.showTrackInfo = tiOn;
+				} else if (tcKey === "rows") {
+					properties.twoLinesDetails = !!tcVal;
+					window.SetProperty("显示·信息显示两行", properties.twoLinesDetails);
+				} else if (tcKey === "prefix") {
+					properties.showTrackPrefix = !!tcVal;
+					window.SetProperty("显示·曲目标题前缀", properties.showTrackPrefix);
+				} else if (tcKey === "volume") {
+					properties.volumeA1waysVisible = !!tcVal;
+					VolumeSliderActive = properties.volumeA1waysVisible;
+					window.SetProperty("显示·始终显示音量条", properties.volumeA1waysVisible);
+				} else if (tcKey === "cursor") {
+					properties.cursor_style = parseInt(tcVal, 10) || 0;
+					window.SetProperty("显示·滑块样式", properties.cursor_style);
+					build_images();
+				} else if (tcKey === "btn_stop") {
+					properties.displayStop = !!tcVal;
+					window.SetProperty("显示·停止按钮", properties.displayStop);
+				} else if (tcKey === "btn_repeat") {
+					properties.displayRepeat = !!tcVal;
+					window.SetProperty("显示·循环按钮", properties.displayRepeat);
+				} else if (tcKey === "btn_shuffle") {
+					properties.displayShuffle = !!tcVal;
+					window.SetProperty("显示·乱序按钮", properties.displayShuffle);
+				} else if (tcKey === "btn_random") {
+					properties.displayPlayRandom = !!tcVal;
+					window.SetProperty("显示·随机按钮", properties.displayPlayRandom);
+				} else if (tcKey === "btn_open") {
+					properties.displayOpen = !!tcVal;
+					window.SetProperty("显示·打开按钮", properties.displayOpen);
+				} else if (tcKey === "btn_device") {
+					properties.displayDevice = !!tcVal;
+					window.SetProperty("显示·输出设备按钮", properties.displayDevice);
+				} else if (tcKey === "btn_equalizer") {
+					properties.displayEqualizer = !!tcVal;
+					window.SetProperty("显示·均衡器按钮", properties.displayEqualizer);
+				} else if (tcKey === "btn_rating") {
+					properties.displayRating = !!tcVal;
+					window.SetProperty("显示·评级按钮", properties.displayRating);
+				} else if (tcKey === "btn_scheduler") {
+					properties.displayScheduler = !!tcVal;
+					window.SetProperty("显示·电源计划按钮", properties.displayScheduler);
+				} else return;
+				build_buttons();
+				get_text();
+				adapt_display_to_layout();
+				on_size(window.Width, window.Height);
+				window.Repaint();
+			} catch(eTS) {}
+		break;
 		case "use_ratings_file_tags":
 			globalProperties.use_ratings_file_tags = info;
 			window.SetProperty("全局·评级存入文件标签", globalProperties.use_ratings_file_tags);
@@ -2117,7 +2225,7 @@ function draw_menu() {
 		bio_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		bio_menu.AppendMenuItem(MF_STRING, 4002, "启用深色主题");
 		bio_menu.CheckMenuItem(4002, properties.bio_dark_theme);
-	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4)){
+	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)){
 		basemenu.AppendMenuSeparator();
 		visu_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		visu_menu.AppendMenuItem(MF_STRING, 4003, "启用深色主题");
@@ -3256,6 +3364,8 @@ function draw_settings_menu(x,y){
 				return true;
         }
 
+        /* 右键菜单里的设置项改过了：通知主题设置页重查一次缓存 */
+        try { window.NotifyOthers("ts_control_refresh", 1); } catch (eTRC) {}
         _menu = undefined;
 		_menu3 = undefined;
 		_menu3A = undefined;

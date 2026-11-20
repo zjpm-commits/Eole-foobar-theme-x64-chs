@@ -1,6 +1,21 @@
 ﻿function JSButton(x, y, w, h, label, name, tooltip_text, fonDown, fonUp, fonDbleClick, N_img, H_img, btn_index, state, hover_color, hover_bar_bottom, btn_font) {
     this.state = state ? state : ButtonStates.normal;
-    this.font = btn_font ? btn_font : g_font.normal;
+    /* btn_font 可以传 Font 对象，也可以传 g_font 里的名字（'normal' / 'plus1'…）。
+       传名字时按需实时解析，这样 Ctrl+滚轮 / 界面缩放重建 g_font 后
+       按钮不会还抓着旧的 Font 对象画字。 */
+    this.font_spec = (typeof btn_font === 'string' && btn_font) ? btn_font : null;
+    this.font = (!this.font_spec && btn_font) ? btn_font : g_font.normal;
+    this.getFont = function () {
+        if (this.font_spec) {
+            var f = g_font[this.font_spec];
+            if (f) return f;
+        }
+        return this.font;
+    };
+    this.setFontSpec = function (name) {
+        this.font_spec = name || null;
+        this.calculate_size = true;
+    };
     this.x = x;
     this.y = y;
     this.w = w; 
@@ -75,7 +90,7 @@
 		
 		if(this.name == "Foobar"){
 			if(this.display_label) {
-				this.w = Math.round(gr.CalcTextWidth(this.label, g_font.normal)+this.N_img.Width+this.padding[1]+this.padding[3])+4;			
+				this.w = Math.round(gr.CalcTextWidth(this.label, this.getFont())+this.N_img.Width+this.padding[1]+this.padding[3])+4;			
 			}				
 		} else {
 			if(!this.display_label){
@@ -88,7 +103,7 @@
 				var text2_draw = this.label;			
 				var width_adjustement = 3;				
 			}
-			var text_size = this.display_label ? gr.CalcTextWidth(text2_draw, g_font.normal) : 0; 
+			var text_size = this.display_label ? gr.CalcTextWidth(text2_draw, this.getFont()) : 0; 
 			this.w = Math.round(text_size+this.padding[1]+this.padding[3]) + width_adjustement + this.N_img.Width;
 		}
 	}
@@ -172,7 +187,7 @@
 
 		if(this.display_label && this.label!="") {
 			var text2_draw = (this.upperCase) ? this.label_uppercase : this.label;
-			gr.GdiDrawText(text2_draw, this.font, text_color, padding_x+b_img.Width+this.txt_x_adjustement, this.y+this.txt_y_adjustement, this.w, this.h, DT_LEFT| DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);	
+			gr.GdiDrawText(text2_draw, this.getFont(), text_color, padding_x+b_img.Width+this.txt_x_adjustement, this.y+this.txt_y_adjustement, this.w, this.h, DT_LEFT| DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);	
 		}
     }
     this.onMouse = function (state,x,y) {    

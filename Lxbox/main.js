@@ -29,8 +29,8 @@
      鼠标中键       展开 / 收起左栏（设置、浮层等无左栏界面不适用）
      Shift + 点击   在曲目多选框中连续选择
    ========================================================================== */
-var APP_VERSION = '2.1.9';
-window.DefineScript('洛雪音源', { author: 'OpenCode', version: APP_VERSION });
+var APP_VERSION = '2.2.0';
+window.DefineScript('Lxbox', { author: 'OpenCode', version: APP_VERSION });
 
 function getP(k, d) {
   try { return window.GetProperty(k, d); } catch (e) { return d; }
@@ -352,21 +352,23 @@ function multiToggle(i, range) {
 var BATCH_PARALLEL = 2;
 var BATCH_ITEM_TIMEOUT = 45000;
 
-function addManyToPlaylist(list) {
+function addManyToPlaylist(list, opts) {
   list = (list || []).slice();
   if (!list.length) { setStatus('没有勾选曲目'); return; }
+  opts = opts || {};
+  var pname = opts.playlistName || PLAYLIST_NAME;
 
   var total = list.length;
   var batch = ++batchSeq;
   var next = 0, running = 0, okCount = 0, fails = [];
   var finished = false;
 
-  setStatus('正在加入「' + PLAYLIST_NAME + '」：0/' + total + ' …');
+  setStatus('正在加入「' + pname + '」：0/' + total + ' …');
   pump();
 
   function progress() {
     var done = okCount + fails.length;
-    setStatus('正在加入「' + PLAYLIST_NAME + '」：' + done + '/' + total +
+    setStatus('正在加入「' + pname + '」：' + done + '/' + total +
       (fails.length ? '（失败 ' + fails.length + '）' : '') + ' …');
     repaint();
   }
@@ -397,7 +399,12 @@ function addManyToPlaylist(list) {
     }
 
     try {
-      playTrack(track, true, { silent: true, batch: batch, onDone: settle });
+      /* 「播放全部」：第 1 首按普通播放走（链一取到就开播），其余并发入列 */
+      if (opts.autoplay && pos === 0) {
+        playTrack(track, false, { silent: true, batch: batch, playlistName: pname, onDone: settle });
+      } else {
+        playTrack(track, true, { silent: true, batch: batch, playlistName: pname, onDone: settle });
+      }
     } catch (e) {
       settle(false, (e && e.message) || '异常');
     }
@@ -409,7 +416,7 @@ function addManyToPlaylist(list) {
     if (batch !== batchSeq) return;
     multiClear(true);
     if (!fails.length) {
-      setStatus('已加入「' + PLAYLIST_NAME + '」：' + okCount + ' 首');
+      setStatus('已加入「' + pname + '」：' + okCount + ' 首');
     } else {
       setLastProblem('批量加入完成：成功 ' + okCount + ' 首，失败 ' + fails.length + ' 首\n' +
         fails.map(function (s, i) { return (i + 1) + '. ' + s; }).join('\n'));
@@ -547,6 +554,7 @@ var mouseX = 0;
 
 var sideCollapsed = !!Number(getP('lx.sideCollapsed', 0));
 var sideTogHot = false;
+var hbtnHot = false;
 var rightCollapsed = !!Number(getP('lx.rightCollapsed', 1));
 /* 两栏宽度都可以拖，值分别存 lx.sideW / lx.rightW */
 var sideWUser = Math.max(100, Number(getP('lx.sideW', BOARD_W)) || BOARD_W);
@@ -1699,7 +1707,7 @@ function coverFileForTrack(track) {
 var NOWPLAY_KEY = '';
 
 function streamCoverOn() {
-  return propStr('lx.streamCover', '1') !== '0';
+  return false;   /* 备用 cover.jpg 留档已随设置项移除，不再写文件 */
 }
 
 function nowPlayDir() {
@@ -1771,7 +1779,7 @@ var ATTACH_KEY = '';
 var LAST_PLAY_URL = '';
 
 function attachOn() {
-  return propStr('lx.streamAttach', '1') !== '0';
+  return true;    /* 自动执行，设置项已移除 */
 }
 
 function pathIsStream(p) {
@@ -1905,10 +1913,10 @@ var NOW_INFO_VER = 1;
 var NOW_INFO_KEY = '';
 var LX_REQ_LAST = 0;
 var LX_CACHE_REQ_LAST = 0;
-var NOW_ITEMS_MAX = 80;
+var NOW_ITEMS_MAX = 400;
 
 function broadcastOn() {
-  return propStr('lx.broadcast', '1') !== '0';
+  return true;    /* 自动执行，设置项已移除 */
 }
 
 function nowInfoFile() {
@@ -2075,7 +2083,7 @@ var ESL_KEY = '';
 var ESL_AT = 0;
 
 function eslRequestOn() {
-  return propStr('lx.eslRequest', '1') !== '0';
+  return true;    /* 自动执行，设置项已移除 */
 }
 
 function eslControl() {
@@ -2713,6 +2721,18 @@ function computeLayout() {
   var cx0 = (L.board ? L.board.x + L.board.w : 0);
   var cy0 = (tab === 0) ? L.bodyTop : L.bodyTop + L.search.h;
   L.content = { x: cx0, y: cy0, w: Math.max(0, W - cx0 - rw), h: Math.max(0, L.bodyBottom - cy0) };
+
+  /* 内容区标题行右端的「播放全部」按钮（缓存音乐同款配色）：榜单、歌单、播客、
+     歌手页有，搜索页（含热门试听）没有。放在右栏让位之后算，位置才贴得住标题行右端 */
+  L.hbtnPlay = null;
+  L.hbtnQueue = null;
+  if (tab !== 1 && L.trackHeaderY != null && L.track) {
+    var hpad = sideCollapsed ? PAD : 0;
+    var hby = L.trackHeaderY + 1;
+    var hright = L.track.x + L.track.w - hpad - 2;
+    L.hbtnPlay = { x: hright - 86, y: hby, w: 86, h: 24 };
+  }
+
 
   L.overlay = { x: 0, y: L.bodyTop, w: Math.max(80, W), h: Math.max(0, L.bodyBottom - L.bodyTop) };
 }
@@ -5456,9 +5476,6 @@ function lxItemIsOurs(path, um, paths) {
 
 function lxTrimPlaylist(idx) {
   if (idx == null || idx < 0 || lxTrimBusy) return 0;
-  /* 监视缓存开着就不裁剪：裁掉的老项文件还在缓存目录里，下一轮监视会把它当成
-     「不在列表」又补回尾部，形成删头补尾的循环，列表看上去一直在重排。 */
-  if (WATCH_ON) return 0;
 
   var allPaths = lxPlaylistPaths(idx);
   var n = allPaths.length;
@@ -5649,9 +5666,10 @@ function lxDedupeTrack(idx, track, keepPath) {
 
 function addToFoobar(url, enqueue, track, q, local, opts) {
   opts = opts || {};
+  var pname = opts.playlistName || PLAYLIST_NAME;
   var idx;
   try {
-    idx = plman.FindOrCreatePlaylist(PLAYLIST_NAME, true);
+    idx = plman.FindOrCreatePlaylist(pname, true);
   } catch (e) {
     setStatus('创建播放列表失败：' + ((e && e.message) || e), true);
     finishOnce(opts, false, '创建播放列表失败');
@@ -5692,7 +5710,7 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
         setStatus('播放（缓存）：' + track.title + ' · ' + (QUALITY_LABEL[q] || q || ''));
         setTimeout(function () { refreshBackground(false); }, 80);
       } else if (!opts.silentStatus) {
-        setStatus('已在「' + PLAYLIST_NAME + '」里：' + track.title);
+        setStatus('已在「' + pname + '」里：' + track.title);
       }
       finishOnce(opts, true);
       return;
@@ -5718,7 +5736,7 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
   }
 
   if (enqueue) {
-    if (!opts.silentStatus) setStatus('已加入「' + PLAYLIST_NAME + '」：' + track.title);
+    if (!opts.silentStatus) setStatus('已加入「' + pname + '」：' + track.title);
     /* 记下来，轮到它播时才能认出是哪首歌（见 lxQueueRemember 注释） */
     try {
       lxQueueRemember(url, track);
@@ -5850,7 +5868,8 @@ function addToFoobar(url, enqueue, track, q, local, opts) {
   }
 }
 
-function playCachedFile(track, dest, quality, enqueue, token, onDone) {
+function playCachedFile(track, dest, quality, enqueue, token, onDone, extra) {
+  extra = extra || {};
   if (!enqueue) pushStreamCover(null);   /* 真的在播本地文件才撤掉流播那张封面 */
   var key = cacheKeyOf(track, quality);
   var hit = indexGet(key);
@@ -5862,13 +5881,15 @@ function playCachedFile(track, dest, quality, enqueue, token, onDone) {
 
   if (ready) {
     pushCoverTo(track, dest, null);
-    addToFoobar(dest, enqueue, track, quality, true, { token: token, onDone: onDone });
+    addToFoobar(dest, enqueue, track, quality, true,
+                { token: token, onDone: onDone, playlistName: extra.playlistName });
     return;
   }
 
   if (enqueue) {
     indexPut(key, rel, 0, 0);
-    addToFoobar(dest, true, track, quality, true, { token: token, onDone: onDone });
+    addToFoobar(dest, true, track, quality, true,
+                { token: token, onDone: onDone, playlistName: extra.playlistName });
     return;
   }
 
@@ -5876,6 +5897,7 @@ function playCachedFile(track, dest, quality, enqueue, token, onDone) {
   addToFoobar(dest, false, track, quality, true, {
     token: token,
     onDone: onDone,
+    playlistName: extra.playlistName,
     key: key,
     name: name,
     rel: rel,
@@ -5957,14 +5979,15 @@ function playTrack(track, enqueue, opts) {
     return true;
   }
 
-  var pre0 = cachedByName(track);
+  /* 在线流播不查缓存（直链最快）；边下边播 / 下完再播优先播本地同名文件 */
+  var pre0 = (playMode() === 'stream') ? null : cachedByName(track);
   if (pre0) {
     var q0 = quality;
     reuseCacheFile(track, q0, pre0.path);
     if (!enqueue) rememberCover(track, pre0.path);
     NM.lx.pushLog('info', '本地已有同名同扩展名缓存，直接播放：' + baseName(pre0.path));
     setStatus('播放缓存：' + track.title + ' · ' + baseName(pre0.path));
-    playCachedFile(track, pre0.path, q0, enqueue, token, opts.onDone);
+    playCachedFile(track, pre0.path, q0, enqueue, token, opts.onDone, { playlistName: opts.playlistName });
     return;
   }
 
@@ -5997,7 +6020,7 @@ function playTrack(track, enqueue, opts) {
         var sn0 = sniffAudio(dest);
         if (sn0.ok) {
           var fixed0 = ensureAudioExt(track, dest, sn0.kind, res.quality);
-          playCachedFile(track, fixed0, res.quality, enqueue, token, opts.onDone);
+          playCachedFile(track, fixed0, res.quality, enqueue, token, opts.onDone, { playlistName: opts.playlistName });
           return;
         }
         NM.lx.pushLog('warn', '缓存不是音频（' + sn0.why + '），删掉重下：' + baseName(dest));
@@ -6019,7 +6042,7 @@ function playTrack(track, enqueue, opts) {
         NM.lx.pushLog('warn', 'VIP 歌曲，只播 30 秒试听：' + (track.title || ''));
         setStatus('VIP 歌曲：只播放 30 秒试听（换平台可听完整版）', true);
       }
-      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone, playlistName: opts.playlistName });
       if (!enqueue) pushStreamCover(track);
       return;
     }
@@ -6029,7 +6052,7 @@ function playTrack(track, enqueue, opts) {
          后台再落一份缓存 + 补标签，下次播这首就走本地文件。
          本次播放不受后台下载失败影响。 */
       NM.lx.pushLog('info', '边下边播，后台缓存：' + (track.title || ''));
-      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone, playlistName: opts.playlistName });
       if (!enqueue) pushStreamCover(track);
       bgCacheTrack(track, res.url, dest, res.quality);
       return;
@@ -6044,7 +6067,7 @@ function playTrack(track, enqueue, opts) {
       if (!ok) {
         NM.lx.pushLog('warn', '缓存文件改名失败，改为直接播放');
         try { utils.RemovePath(part); } catch (e2) {}
-        addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+        addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone, playlistName: opts.playlistName });
         return;
       }
 
@@ -6059,7 +6082,7 @@ function playTrack(track, enqueue, opts) {
         return;
       }
       playCachedFile(track, ensureAudioExt(track, dest, sn.kind, res.quality),
-                     res.quality, enqueue, token, opts.onDone);
+                     res.quality, enqueue, token, opts.onDone, { playlistName: opts.playlistName });
     }, function (e) {
       if (dead()) return;
       var emsg = (e && e.message) || String(e);
@@ -6072,7 +6095,7 @@ function playTrack(track, enqueue, opts) {
         finishOnce(opts, false, emsg);
         return;
       }
-      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone });
+      addToFoobar(res.url, enqueue, track, res.quality, false, { token: token, onDone: opts.onDone, playlistName: opts.playlistName });
     });
   }, function (e) {
     if (dead()) return;
@@ -6081,7 +6104,7 @@ function playTrack(track, enqueue, opts) {
     if (pre) {
       NM.lx.pushLog('warn', '取链失败，改播本地缓存：' + baseName(pre.path));
       setStatus('平台取链失败，播放本地缓存：' + track.title);
-      playCachedFile(track, pre.path, pre.quality, enqueue, token, opts.onDone);
+      playCachedFile(track, pre.path, pre.quality, enqueue, token, opts.onDone, { playlistName: opts.playlistName });
       return;
     }
 
@@ -6268,8 +6291,6 @@ function downloadTracks(list, wantQ) {
               (skipped ? '，已在缓存 ' + skipped + ' 首' : '');
     NM.lx.pushLog(failN ? 'warn' : 'ok', msg + '（' + (cacheDir() || '?') + '）');
     setStatus(msg, failN > 0);
-    /* 监视开着的话，刚下完的这些立刻补进播放列表 */
-    try { if (okN > 0) watchScan(true); } catch (eW) { }
   }
 
   var i = 0;
@@ -10056,7 +10077,7 @@ function loadBrandLogo() {
 
 /* 双击 Logo 的命中区：只认画出来的那块图（左右各给 4px 容差）；
    没放图、走文字兜底时整块品牌区都能双击。窄面板缩图时跟着实际矩形走。
-   纵向不超品牌格 —— 第二排就是版本号，多探 4px 会把「Lxbox v2.1.9」上半截算进来。 */
+   纵向不超品牌格 —— 第二排就是版本号，多探 4px 会把「Lxbox v2.2.0」上半截算进来。 */
 function brandHitRect() {
   var r = brandRect();
   if (!r || !(r.w > 0) || !(r.h > 0)) return null;
@@ -10314,20 +10335,13 @@ function rebuildPlLen() {
   }
 }
 
-/* ===== 监视缓存 =====
-   右栏标题右侧的按钮：单击 = 开始监视，先把缓存里已有的音乐去重后追加进当前
-   播放列表，之后新下载完成的曲目也会跟着进；再单击停。双击 = 只显示缓存里的
-   音乐（不写播放列表）。右键有打开所在文件夹和 foobar2000 原生菜单。 */
+/* ===== 缓存音乐 =====
+   右栏标题右侧的按钮：单击切换「播放列表 / 只显示缓存里的音乐」。
+   右键有打开所在文件夹和 foobar2000 原生菜单。 */
 
-var WATCH_ON = propOn('lx.watchCache', '0');
 var rightMode = 'pl';              /* 'pl' = 活动播放列表，'cache' = 只显示缓存 */
 var CACHE_VER = 0;                 /* 每次重扫加一，rightEnsure 靠它判断要不要重建 */
-var WATCH_BUSY = false;
-var WATCH_BOOTED = false;
-var WATCH_SEEN = null;             /* 上一轮扫到的文件集合；第一次为 null 表示全量补 */
-var WATCH_AT = 0;
 var rightCacheHot = false;
-var cacheBtnAt = 0, cacheBtnTimer = 0;
 var CACHE_SCAN_MAX = 4000;
 var CACHE_RETRY = 0;
 
@@ -10437,7 +10451,6 @@ function setRightMode(m) {
   if (rightMode === 'cache') {
     CACHE_RETRY = 0;
     CACHE_VER++;
-    if (WATCH_ON) setWatchOn(false, true);   /* 两个状态互斥：看缓存时不再往列表里写 */
     cacheEnsure();
   }
   clampScroll();
@@ -10448,97 +10461,10 @@ function toggleCacheView() {
   var to = (rightMode === 'cache') ? 'pl' : 'cache';
   setRightMode(to);
   if (to === 'cache') {
-    setStatus('只显示缓存音乐：' + rightTotal + ' 首（再双击按钮回到播放列表；监视已暂停）');
+    setStatus('只显示缓存音乐：' + rightTotal + ' 首（再单击按钮回到播放列表）');
   } else {
     setStatus('回到播放列表');
   }
-}
-
-function setWatchOn(on, silent) {
-  WATCH_ON = !!on;
-  try { setProp('lx.watchCache', WATCH_ON ? '1' : '0'); } catch (e) {}
-  if (WATCH_ON) {
-    WATCH_SEEN = null;                 /* 每次开启都先按全量补一遍 */
-    if (!silent) setStatus('监视缓存：已开启，正在把已缓存的音乐加进播放列表…');
-    watchScan(true);
-  } else if (!silent) {
-    setStatus('监视缓存：已停止');
-  }
-  repaint();
-}
-
-function watchScan(force) {
-  if (!WATCH_ON || WATCH_BUSY || rightMode === 'cache') return;
-  var now = Date.now();
-  if (!force && now - WATCH_AT < 3000) return;   /* 切歌会反复调，节流三秒 */
-  WATCH_AT = now;
-
-  var pl = -1;
-  try { pl = Number(plman.ActivePlaylist); } catch (e0) { pl = -1; }
-  if (!(pl >= 0)) return;
-
-  var files = scanCacheFiles();
-  if (!files.length) {
-    if (force) setStatus('监视缓存：缓存目录里还没有音乐', true);
-    return;
-  }
-
-  var have = {};
-  var cur = [];
-  try { cur = lxPlaylistPaths(pl); } catch (e1) { cur = []; }
-  for (var i = 0; i < cur.length; i++) have[String(cur[i]).toLowerCase()] = 1;
-
-  /* 第一轮（刚开监视）把缓存里已有的全加进去；之后只加「这一轮才出现」的文件。
-     被用户或裁剪移出列表的老文件不再补回 —— 否则每次都会重排一遍。 */
-  var firstRun = (WATCH_SEEN === null);
-  var add = [];
-  for (var k = 0; k < files.length; k++) {
-    var kf = files[k].toLowerCase();
-    if (have[kf]) continue;
-    if (!firstRun && WATCH_SEEN[kf]) continue;
-    add.push(files[k]);
-  }
-
-  /* 快照先更新，加不进去的下轮也不会被当成新文件反复尝试 */
-  var snap = {};
-  for (var s = 0; s < files.length; s++) snap[files[s].toLowerCase()] = 1;
-  WATCH_SEEN = snap;
-
-  if (!add.length) {
-    if (force && firstRun) setStatus('监视缓存：缓存里的 ' + files.length + ' 首都已经在播放列表里了');
-    else if (force) setStatus('监视缓存：没有新缓存的曲目');
-    return;
-  }
-
-  WATCH_BUSY = true;
-  addPathsBatched(pl, add, 0, add.length, firstRun);
-}
-
-function addPathsBatched(pl, arr, from, total, firstRun) {
-  var end = Math.min(arr.length, from + 120);
-  var chunk = arr.slice(from, end);
-  var ok = true;
-  try { plman.AddLocations(pl, chunk, false); } catch (e) { ok = false; }
-
-  if (!ok) {
-    WATCH_BUSY = false;
-    setStatus('监视缓存：加入播放列表失败（列表可能已不存在）', true);
-    return;
-  }
-  if (end < arr.length) {
-    setTimeout(function () { addPathsBatched(pl, arr, end, total, firstRun); }, 40);
-    return;
-  }
-
-  WATCH_BUSY = false;
-  rightInvalidate();
-  if (total) {
-    var pn = '';
-    try { pn = String(plman.GetPlaylistName(pl) || ''); } catch (e1) { pn = ''; }
-    setStatus('监视缓存：' + (firstRun ? '已加入 ' : '新增 ') + total + ' 首' +
-              (pn ? '到「' + pn + '」' : ''));
-  }
-  repaint();
 }
 
 function cacheBtnRect() {
@@ -10551,25 +10477,12 @@ function cacheBtnRect() {
 }
 
 function cacheBtnLabel(r) {
-  return (r && r.w >= 72) ? '监视缓存' : '缓存';
+  return (r && r.w >= 72) ? '缓存音乐' : '缓存';
 }
 
-/* 单击 / 双击要分开：单击延迟两百多毫秒再执行，双击会在这个窗口内取消它 */
+/* 单击即切换播放列表 / 缓存音乐视图 */
 function onCacheBtnClick() {
-  var now = Date.now();
-  if (now - cacheBtnAt < 380) {
-    if (cacheBtnTimer) { clearTimeout(cacheBtnTimer); cacheBtnTimer = 0; }
-    cacheBtnAt = 0;
-    toggleCacheView();
-    return;
-  }
-  cacheBtnAt = now;
-  if (cacheBtnTimer) clearTimeout(cacheBtnTimer);
-  cacheBtnTimer = setTimeout(function () {
-    cacheBtnTimer = 0;
-    cacheBtnAt = 0;
-    setWatchOn(!WATCH_ON, false);
-  }, 400);
+  toggleCacheView();
 }
 
 function openPathDir(path) {
@@ -10719,7 +10632,7 @@ function rightContextMenu(x, y) {
     m.AppendMenuSeparator();
   }
   m.AppendMenuItem(MF_STRING, 805, isCache ? '返回播放列表' : '只看缓存音乐（不写列表）');
-  m.AppendMenuItem(MF_STRING, 806, WATCH_ON ? '停止监视缓存' : '监视缓存：把已缓存的加入播放列表');
+  m.AppendMenuItem(MF_STRING, 806, '缓存音乐：只显示缓存里的音乐');
   m.AppendMenuItem(MF_STRING, 807, '重新扫描缓存');
   /* 标题栏不再有定位入口后的常驻兜底（双击状态栏也能定位） */
   m.AppendMenuItem(MF_STRING, 809, '定位播放曲目');
@@ -10742,7 +10655,7 @@ function rightContextMenu(x, y) {
     repaint();
   }
   else if (id === 805) toggleCacheView();
-  else if (id === 806) setWatchOn(!WATCH_ON, false);
+  else if (id === 806) toggleCacheView();
   else if (id === 809) locatePlayingInRight();
   else if (id === 808) {
     var cd0 = '';
@@ -10756,9 +10669,8 @@ function rightContextMenu(x, y) {
     CACHE_VER++;
     rightHandles = null;
     rightSig = '';
-    if (WATCH_ON) watchScan(true);
     repaint();
-    setStatus(rightMode === 'cache' ? '缓存已重新扫描' : '缓存已重新扫描，监视中会同步补进列表');
+    setStatus(rightMode === 'cache' ? '缓存已重新扫描' : '缓存已重新扫描');
   }
   return true;
 }
@@ -11358,10 +11270,6 @@ function drawCacheBtn(gr) {
     bg = solidTint(C.accent, hot ? 92 : 70);
     bd = A(C.accent, hot ? 235 : 200);
     fg = C.accent;
-  } else if (WATCH_ON) {
-    bg = solidTint(C.accent, hot ? 66 : 46);
-    bd = A(C.accent, hot ? 210 : 165);
-    fg = C.accent;
   } else {
     bg = solidTint(C.btn, hot ? 84 : 52);
     bd = A(C.line, hot ? 190 : 120);
@@ -11546,12 +11454,308 @@ function drawTrackHeader(gr) {
   var title = trackTitle || fallback;
   var hx = L.track.x + (sideCollapsed ? PAD : 0);
   var hw = Math.max(40, L.track.w - (sideCollapsed ? PAD : 0));
-  gr.GdiDrawText(title, F.head, C.text, hx, L.trackHeaderY, Math.max(40, hw - 90), 26, FLAG_LEFT);
-  if (tracks.length) {
+  gr.GdiDrawText(title, F.head, C.text, hx, L.trackHeaderY, Math.max(40, hw - 210), 26, FLAG_LEFT);
+
+  /* 「播放全部」：只在有曲目且当前页有名字（trackTitle）时可点；
+     配色与右侧「缓存音乐」按钮一致 */
+  var hOn = headButtonsReady();
+  var pw = L.hbtnPlay;
+  if (pw) {
+    var pHot = hOn && hoverOn(pw);
+    gr.FillSolidRect(pw.x, pw.y, pw.w, pw.h, solidTint(C.btn, pHot ? 84 : 52));
+    gr.DrawRect(pw.x + 0.5, pw.y + 0.5, pw.w - 1, pw.h - 1, 1, A(C.line, pHot ? 190 : 120));
+    gr.GdiDrawText('播放全部', F.small, !hOn ? C.dim : (pHot ? C.text : C.dim),
+                   pw.x, pw.y, pw.w, pw.h, FLAG_CENTER);
+    if (tracks.length) {
+      gr.GdiDrawText(tracks.length + ' 首', F.small, C.dim,
+                     hx, L.trackHeaderY, pw.x - hx - 8, 26, FLAG_RIGHT);
+    }
+  } else if (tracks.length) {
     gr.GdiDrawText(tracks.length + ' 首', F.small, C.dim,
                    hx, L.trackHeaderY, hw, 26, FLAG_RIGHT);
   }
 }
+
+function headButtonsReady() {
+  if (tab === 1) return false;
+  if (!L.hbtnPlay) return false;
+  return !!(trackTitle && tracks.length && !busy);
+}
+
+function headPlaylistName() {
+  var name = String(trackTitle || '').replace(/[\\/:*?"<>|\[\]]/g, '').trim().slice(0, 60);
+  return (SET_PLAT_LABEL[platform] || '') + name;
+}
+
+/* 在线桥（系统 Node，online\bridge.js）：推送只登记 + 写 m3u8（桥地址入列，EXTINF 显示），
+   取链发生在播放那一刻（302 重定向到直链）。桥不可用时回退为面板逐首取直链的纯 m3u8 方案。 */
+var BRIDGE_INFO = null;
+var BRIDGE_CHECKED_AT = 0;
+var BRIDGE_ALIVE = false;
+var BRIDGE_STARTING = false;
+
+function bridgeInfo() {
+  if (BRIDGE_INFO) return BRIDGE_INFO;
+  try {
+    var j = JSON.parse(utils.ReadTextFile(fb.ProfilePath + 'Lxbox\\online\\install.json', 65001));
+    if (j && j.state === 'ready' && j.port && j.key && j.node && j.app) BRIDGE_INFO = j;
+  } catch (e) { /* 未安装 */ }
+  return BRIDGE_INFO;
+}
+function bridgePing() {
+  var info = bridgeInfo();
+  if (!info) return Promise.resolve(false);
+  if (Date.now() - BRIDGE_CHECKED_AT < 30000) return Promise.resolve(BRIDGE_ALIVE);
+  BRIDGE_CHECKED_AT = Date.now();
+  return NM.http.getJson('http://127.0.0.1:' + info.port + '/lx/status?k=' + encodeURIComponent(info.key),
+                         { timeout: 3000 }).then(function (j) {
+    BRIDGE_ALIVE = !!(j && j.ok);
+    return BRIDGE_ALIVE;
+  }, function () { BRIDGE_ALIVE = false; return false; });
+}
+/* 桥没在跑就拉起来：cmd start 脱离面板调用链，桥常驻（端口占用时新实例自动退出） */
+function bridgeEnsureStarted() {
+  var info = bridgeInfo();
+  if (!info || BRIDGE_STARTING) return Promise.resolve(false);
+  BRIDGE_STARTING = true;
+  /* 经静态 ANSI VBS 隐藏启动（Run(...,0,False)），不弹 Node 控制台黑窗；
+     vbs 由外部生成（运行时写文件会带 BOM，WSH 报“无效字符”），这里只传参 */
+  var vbsPath = info.app.replace(/[\\\/][^\\\/]+$/, '') + '\\bridge-launch.vbs';
+  var ok = runShellOpen('wscript.exe', '"' + vbsPath + '" "' + info.node + '" "' + info.app + '"' +
+                        ' "' + info.data + '" ' + info.key +
+                        ' "' + info.sources + '" ' + String(info.port));
+  BRIDGE_STARTING = false;
+  if (!ok) return Promise.resolve(false);
+  return new Promise(function (done) {
+    setTimeout(function () { bridgePing().then(function (a) { done(a || false); }); }, 2500);
+  });
+}
+/* 桥推送：登记 → 写 m3u8（桥地址）→ AddLocations 一个文件 */
+function pushViaBridge(list, opts) {
+  var info = bridgeInfo();
+  if (!info || !list.length) return Promise.resolve(false);
+  var name = opts.playlistName || PLAYLIST_NAME;
+  var q = quality || '320k';
+
+  var entries = [], seen = {};
+  list.forEach(function (t) {
+    if (!t || !t.source) return;
+    var id = t.songmid || t.hash || t.rid || t.id || t.songId || t.musicId || t.copyrightId || '';
+    var key = (t.source || '') + '|' + id;
+    if (!id || seen[key]) return;
+    seen[key] = 1;
+    entries.push({
+      key: key, source: t.source, musicInfo: buildMusicInfo(t) || t,
+      title: t.title || '', artist: t.artist || '', album: t.album || '',
+      pic: t.pic || '', duration: t.duration || 0
+    });
+  });
+  if (!entries.length) return Promise.resolve(false);
+
+  return NM.http.request({
+    url: 'http://127.0.0.1:' + info.port + '/lx/register?k=' + encodeURIComponent(info.key),
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tracks: entries }),
+    timeout: 15000
+  }).then(function (r) {
+    var j = JSON.parse(r.body || '{}');
+    if (!j || !j.ok) throw new Error('桥登记失败');
+    /* m3u8：#EXTINF 带「歌手 - 歌名」（fb 原生列表的标题列整段显示，艺术家列
+       要等播放读到桥注入的 ID3 才分列——audio-archive 同款行为）；
+       桥地址不过期，m3u8 落盘后列表可重建 */
+    var lines = ['#EXTM3U'];
+    var pushTs = Date.now();
+    var dbN = null;
+    try { dbN = nowInfoRead(); } catch (eNR) { dbN = null; }
+    if (!dbN || !dbN.items) dbN = { v: NOW_INFO_VER, now: null, items: {} };
+    entries.forEach(function (en) {
+      var u = 'http://127.0.0.1:' + info.port + '/lx/play/' + encodeURIComponent(en.key) +
+              '?k=' + encodeURIComponent(info.key) + '&q=' + encodeURIComponent(q) +
+              '&t=' + pushTs;
+      var artist = String(en.artist || '').replace(/\r?\n/g, ' ').trim();
+      var title = String(en.title || '').replace(/\r?\n/g, ' ').trim();
+      lines.push('#EXTINF:' + Math.max(0, Math.round(Number(en.duration) || 0)) + ',' +
+                 (artist ? artist + ' - ' : '') + title);
+      lines.push(u);
+      var t0 = null;
+      for (var i = 0; i < list.length; i++) {
+        if ((list[i].source || '') + '|' + (list[i].songmid || list[i].hash || list[i].rid || list[i].id || list[i].songId || list[i].musicId || list[i].copyrightId || '') === en.key) { t0 = list[i]; break; }
+      }
+      if (t0) {
+        try { lxUrlMapPut(u, t0); } catch (eUM) { }
+        /* 右侧自绘列表分列显示用：条目信息登记进 info.json 的 items 表 */
+        try {
+          dbN.items[u.toLowerCase()] = {
+            artist: String(en.artist || ''), title: String(en.title || ''),
+            album: String(en.album || ''), cover: String(en.pic || ''), ts: pushTs
+          };
+        } catch (eNI) { }
+      }
+    });
+    try { nowInfoWrite(dbN); } catch (eNW) { }
+    var m3u = M3U_DIR + '\\' + name.replace(/[\\/:*?"<>|]/g, '') + '.m3u8';
+    try {
+      if (utils.WriteTextFile(m3u, lines.join('\r\n') + '\r\n') === false) throw new Error('写入失败');
+    } catch (eW) { return false; }
+    var idx;
+    try { idx = plman.FindOrCreatePlaylist(name, true); } catch (e) { return false; }
+    try { plman.AddLocations(idx, [m3u], true); } catch (e) { return false; }
+    if (opts.autoplay) {
+      setTimeout(function () {
+        try { plman.ExecutePlaylistDefaultAction(idx, 0); } catch (e1) { try { fb.Play(); } catch (e2) { } }
+        refreshBackground(false);
+      }, 120);
+    }
+    setStatus((opts.autoplay ? '已推送并播放' : '已推送') + '「' + name + '」：' +
+              entries.length + ' 首（在线桥）');
+    return true;
+  }, function () { return false; });
+}
+
+/* 双模式：桥在就桥推（秒推 + 播放时取链），不在就面板逐首取直链写 m3u8 */
+function bridgeReadyThenPush(list, opts, onFallback) {
+  bridgePing().then(function (alive) {
+    var p = alive ? Promise.resolve(true) : bridgeEnsureStarted();
+    p.then(function (up) {
+      if (up) {
+        pushViaBridge(list, opts).then(function (ok) { if (!ok) onFallback(); });
+        return;
+      }
+      onFallback();
+    });
+  });
+}
+
+/* 无 Node 方案：面板自身逐首取直链，写成本地 m3u8（#EXTINF 带歌名/歌手/时长），
+   foobar 加载 m3u 即显示完整信息；直链有时效，过期后回面板重推即可 */
+var M3U_DIR = (function () {
+  try { return fb.ProfilePath + 'Lxbox\\playlists'; } catch (e) { return ''; }
+})();
+
+function mapLimit(list, limit, fn) {
+  return new Promise(function (done) {
+    var out = new Array(list.length), next = 0, active = 0, failed = 0;
+    function pump() {
+      while (active < limit && next < list.length) {
+        (function (i) {
+          active++;
+          fn(list[i]).then(function (r) { out[i] = r; }, function () { out[i] = null; failed++; })
+            .then(function () { active--; if (next >= list.length && !active) done({ out: out, failed: failed }); else pump(); });
+        })(next++);
+      }
+      if (next >= list.length && !active) done({ out: out, failed: failed });
+    }
+    pump();
+  });
+}
+
+function pushViaM3u(list, opts) {
+  if (!list || !list.length || !M3U_DIR) return Promise.resolve(false);
+  var name = opts.playlistName || PLAYLIST_NAME;
+  setStatus('正在取链（' + name + '）：0/' + list.length + ' …');
+  var done = 0;
+  return mapLimit(list, 2, function (t) {
+    return txResolve(t, quality).then(function (res) {
+      if (!res || !res.url || !/^https?:\/\//i.test(res.url)) throw new Error('无直链');
+      done++;
+      try { lxUrlMapPut(res.url, t); } catch (eUM) { }   /* 播放时反查曲目 → 封面/歌词/死链重取都靠它 */
+      setStatus('正在取链（' + name + '）：' + done + '/' + list.length + ' …');
+      return {
+        url: res.url,
+        duration: t.duration || 0,
+        artist: String(t.artist || '').replace(/\r?\n/g, ' ').trim(),
+        title: String(t.title || '').replace(/\r?\n/g, ' ').trim(),
+        album: String(t.album || '').trim(),
+        pic: String(t.picUrl || t.pic || '').trim()
+      };
+    }, function (e) {
+      done++;
+      NM.lx.pushLog('warn', '取链失败 ' + (t.title || '') + '：' + ((e && e.message) || e));
+      setStatus('正在取链（' + name + '）：' + done + '/' + list.length + ' …');
+      return null;
+    });
+  }).then(function (r) {
+    var lines = ['#EXTM3U'], n = 0;
+    var dbN = null;
+    try { dbN = nowInfoRead(); } catch (eNR2) { dbN = null; }
+    if (!dbN || !dbN.items) dbN = { v: NOW_INFO_VER, now: null, items: {} };
+    r.out.forEach(function (it) {
+      if (!it) return;
+      n++;
+      lines.push('#EXTINF:' + Math.max(0, Math.round(Number(it.duration) || 0)) + ',' +
+                 (it.artist ? it.artist + ' - ' : '') + it.title);
+      lines.push(it.url);
+      try {
+        dbN.items[String(it.url).toLowerCase()] = {
+          artist: it.artist, title: it.title, album: it.album, cover: it.pic, ts: Date.now()
+        };
+      } catch (eNI2) { }
+    });
+    try { nowInfoWrite(dbN); } catch (eNW2) { }
+    if (!n) { setStatus('没有一首取链成功', true); return false; }
+    var m3u = M3U_DIR + '\\' + name.replace(/[\\/:*?"<>|]/g, '') + '.m3u8';
+    try {
+      if (utils.WriteTextFile(m3u, lines.join('\r\n') + '\r\n') === false) throw new Error('写入失败');
+    } catch (eW) {
+      setStatus('写播放列表文件失败：' + ((eW && eW.message) || eW), true);
+      return false;
+    }
+    var idx;
+    try {
+      idx = plman.FindOrCreatePlaylist(name, true);
+    } catch (e) {
+      setStatus('创建播放列表失败：' + ((e && e.message) || e), true);
+      return false;
+    }
+    try {
+      plman.AddLocations(idx, [m3u], true);
+    } catch (e) {
+      setStatus('加入播放列表失败：' + ((e && e.message) || e), true);
+      return false;
+    }
+    if (opts.autoplay) {
+      setTimeout(function () {
+        try { plman.ExecutePlaylistDefaultAction(idx, 0); } catch (e1) {
+          try { fb.Play(); } catch (e2) { }
+        }
+        refreshBackground(false);
+      }, 120);
+    }
+    setStatus((opts.autoplay ? '已推送并播放' : '已推送') + '「' + name + '」：' + n + '/' + list.length +
+              ' 首取链成功' + (r.failed ? ('，' + r.failed + ' 首失败') : ''));
+    return true;
+  });
+}
+
+function headPlayAll() {
+  if (!headButtonsReady()) {
+    setStatus(trackTitle ? '正在加载，稍候' : '先在左侧选择榜单 / 条目', true);
+    return;
+  }
+  var name = headPlaylistName();
+  var list = tracks.slice();
+  bridgeReadyThenPush(list, { playlistName: name, autoplay: true }, function () {
+    pushViaM3u(list, { playlistName: name, autoplay: true });
+  });
+}
+
+function headQueueAll() {
+  if (!headButtonsReady()) {
+    setStatus(trackTitle ? '正在加载，稍候' : '先在左侧选择榜单 / 条目', true);
+    return;
+  }
+  var name = headPlaylistName();
+  var list = tracks.slice();
+  bridgeReadyThenPush(list, { playlistName: name }, function () {
+    pushViaM3u(list, { playlistName: name });
+  });
+}
+
+/* 面板加载 1s 后预热桥（没在跑就用系统 Node 拉起） */
+setTimeout(function () {
+  bridgeEnsureStarted();
+}, 1000);
 
 function drawSearchBox(gr) {
   var r = L.search;
@@ -12830,94 +13034,10 @@ function srcSections() {
           return '下完再播：先把整首缓存到本地、写完标签和封面再播，起播慢几秒，' +
                  '换来断网能重播、播放列表里看到的就是整理好的曲目信息。';
         } },
-      { kind: 'seg', id: 'streamattach', label: '流播封面自动挂载', value: attachOn() ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.streamAttach', v);
-          ATTACH_KEY = '';
-          if (v === '1') {
-            setStatus('已开启：封面会挂到当前播放项，所有面板自动读到，不用再填 fb2k 路径');
-            attachLastTrack('手动');
-          } else {
-            setStatus('已关闭流播封面自动挂载');
-          }
-          repaint();
-        } },
-      { kind: 'seg', id: 'streamcover', label: '同时写固定 cover.jpg（备用）', value: streamCoverOn() ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.streamCover', v);
-          NOWPLAY_KEY = '';
-          if (v === '1') {
-            NM.lx.pushLog('info', '流播封面另存到：' + nowPlayCoverFile());
-            setStatus('已开启：额外留一份 cover.jpg（自动挂载失灵时排查用）');
-            pushStreamCover(lastTrack);
-          } else {
-            try { utils.RemovePath(nowPlayCoverFile()); } catch (e) {}
-            setStatus('已关闭固定 cover.jpg');
-          }
-          repaint();
-        } },
       { kind: 'note', text: function () {
-          if (!attachOn()) {
-            return '在线流播播的是直链，fb2k 手上没有文件，自带封面读取是空的。' +
-                   '开启自动挂载后，面板把封面挂到这条播放项上，所有面板按 album art 读就能拿到。';
-          }
-          return '自动挂载：每次播流把封面挂到播放项的 metadb handle 上（attached image，' +
-                 'album art 优先级最高），Eole、播放列表缩略图、系统媒体控制都能读到，' +
-                 '不需要在 fb2k 里填任何路径，也不会影响本地曲目。' +
-                 '下面那个 cover.jpg 只是备用留档，不开也不影响显示。';
+          return '流播封面自动挂载、曲目信息广播（皮肤/歌词共享歌手歌名）、ESLyric 代搜词：' +
+                 '均默认开启并自动执行，不再提供设置项。';
         } },
-      { kind: 'btn', id: 'openNowPlay', label: '打开流播封面文件夹（排查用）…', close: true, ctl: true },
-      { kind: 'seg', id: 'lxcast', label: '把曲目信息广播给皮肤面板', value: broadcastOn() ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.broadcast', v);
-          NOW_INFO_KEY = '';
-          if (v === '1') {
-            lxPublishNow(0);
-            setStatus('已开启：流播时把歌手 / 歌名广播给其他面板（lx_now_info / lx_now_json / lx_now_text）');
-          } else {
-            lxClearNow();
-            setStatus('已关闭：皮肤只能从 metadb 取，流播时会显示 URL 末段');
-          }
-          repaint();
-        } },
-      { kind: 'note', text: function () {
-          if (!broadcastOn()) {
-            return '关掉后皮肤面板拿不到歌手 / 歌名，流播时列表行和标题只能显示 URL 末段（一串 hash）。';
-          }
-          return '每首流播曲目起播约 0.9 秒广播一次：lx_now_info（对象）、lx_now_json（JSON 串）、' +
-                 'lx_now_text（「歌手 - 歌名」）；切到本地文件时发 lx_now_clear。' +
-                 '同时写一份 <缓存目录>\\nowplaying\\info.json，里面的 items 按播放项路径索引，' +
-                 '列表面板拿 handle.Path 查表就能逐行显示正确名字。' +
-                 '面板晚加载可以发 lx_now_request 要一次。';
-        } },
-      { kind: 'btn', id: 'lxcastNow', label: '立即广播一次…', close: true, ctl: true },
-      { kind: 'seg', id: 'eslreq', label: '流播时让 ESLyric 按面板信息搜词', value: eslRequestOn() ? '1' : '0',
-        options: [['1', '开'], ['0', '关']],
-        onPick: function (v) {
-          setProp('lx.eslRequest', v);
-          if (v === '1') {
-            var ctl = eslControl();
-            setStatus(ctl ? '已开启：流播换歌后会把歌手 / 歌名直接交给 ESLyric 搜词'
-                          : '已开启，但连不上 ESLyric 控制接口（看诊断日志）', !ctl);
-          } else {
-            setStatus('已关闭：ESLyric 只能拿到 %artist%（流播时为空）');
-          }
-          repaint();
-        } },
-      { kind: 'note', text: function () {
-          if (!eslRequestOn()) {
-            return 'ESLyric 的搜索框分开取 %title% 和 %artist%，而流播项的 %artist% 永远是空的' +
-                   '（fb2k 没有给流式项目写文本标签的接口）。关掉这个开关，自动搜词就只能靠 title。';
-          }
-          return '开启后，流播换歌时面板直接调用 ESLyric 的 RequestLyric(歌名, 歌手)，' +
-                 '用的是 Lxbox 自己的曲目信息，不经过 fb2k 的 %artist% —— 所以搜索框里' +
-                 '「标题」「艺术家」两栏都会有值。默认对每一首流播曲目只发一次，' +
-                 '本地文件不插手（它们有真标签）。';
-        } },
-      { kind: 'btn', id: 'eslreqNow', label: '立即让 ESLyric 搜一次…', close: true, ctl: true },
       { kind: 'text', id: 'scriptDir', label: '音源目录',
         value: propStr('lx.scriptDir', ''),
         disp: function () {
@@ -13817,14 +13937,13 @@ function drawFooter(gr) {
   gr.GdiDrawText(hint, F.small, hintCol, W - 230, y, 220, FOOT_H, FLAG_RIGHT);
 }
 
+var WATCH_BOOTED = false;
 function on_paint(gr) {
   if (W <= 0 || H <= 0) return;
 
-  /* 面板重载后如果监视还开着，补一次全量扫描（只做一次） */
-  if (!WATCH_BOOTED) {
-    WATCH_BOOTED = true;
+  /* 面板重载后做一次播放状态检查（只做一次） */
+  if (!WATCH_BOOTED) {    WATCH_BOOTED = true;
     try { if (fb.IsPlaying && !fb.IsPaused) ensureProgressTimer(); } catch (ePT0) { }
-    if (WATCH_ON) setTimeout(function () { try { watchScan(true); } catch (eW0) { } }, 2000);
   }
 
   gr = scaledGraphics(gr);
@@ -14158,6 +14277,9 @@ function on_mouse_move(x, y, mask) {
   else if (newKind === 'track') hand = false;
   else if ((tab === 1 || isBrowseTab()) && inRect(L.search, x, y)) hand = true;
   else if (collRecRect() && inRect(collRecRect(), x, y)) hand = true;
+  else if (headButtonsReady() &&
+           ((L.hbtnPlay && inRect(L.hbtnPlay, x, y)) ||
+            (L.hbtnQueue && inRect(L.hbtnQueue, x, y)))) hand = true;
   else if (sideToggleRect() && inRect(sideToggleRect(), x, y)) hand = true;
   else if (rightToggleRect() && inRect(rightToggleRect(), x, y)) hand = true;
   else if (cacheBtnRect() && inRect(cacheBtnRect(), x, y)) hand = true;
@@ -14227,6 +14349,12 @@ function on_mouse_move(x, y, mask) {
   }
 
   updateScrollbarHot(x, y);
+
+  /* 内容区标题按钮悬停淡底：进出时重画一次 */
+  var hHot = headButtonsReady() &&
+             ((L.hbtnPlay && inRect(L.hbtnPlay, x, y)) ||
+              (L.hbtnQueue && inRect(L.hbtnQueue, x, y)));
+  if (hHot !== hbtnHot) { hbtnHot = hHot; repaint(); }
 
   if (!drawHover) return;
 
@@ -14368,7 +14496,7 @@ function on_mouse_lbtn_up(x, y) {
     return;
   }
 
-  /* 右侧播放列表栏：监视缓存按钮 / 收起按钮 / 选中一行 */
+  /* 右侧播放列表栏：缓存音乐按钮 / 收起按钮 / 选中一行 */
   if (L.right && !overlay) {
     var cb0 = cacheBtnRect();
     if (cb0 && inRect(cb0, x, y)) { onCacheBtnClick(); return true; }
@@ -14575,6 +14703,11 @@ function on_mouse_lbtn_up(x, y) {
     var qrr = qualityRect();
     openQualityMenu(qrr.x, qrr.y + qrr.h);
     return;
+  }
+
+  /* 内容区标题行的「播放全部」按钮 */
+  if (!overlay && L.hbtnPlay) {
+    if (inRect(L.hbtnPlay, x, y)) { headPlayAll(); return; }
   }
 
   if ((tab === 1) && inRect(L.search, x, y)) {
@@ -15151,6 +15284,11 @@ function on_playback_new_track(handle) {
     var qp = String(handle && handle.Path || '');
     if (qp) {
       var qt = LX_QUEUED[qp.toLowerCase()];
+      /* m3u8 推送的项不在 LX_QUEUED 里：按地址在 url 映射里认回来，
+         认到后 lastTrack/LAST_PLAY_URL 就位，封面挂载、信息广播都能走通 */
+      if (!qt && /^https?:\/\//i.test(qp)) {
+        try { qt = lxUrlMapGet(qp); } catch (eUM2) { qt = null; }
+      }
       if (qt) { lastTrack = qt; LAST_PLAY_URL = qp; }
     }
   } catch (eQP) { }
@@ -15159,8 +15297,6 @@ function on_playback_new_track(handle) {
     try { lxSweepStaleUrls(false); } catch (eSw) { }
     /* 再裁一次条数：本地文件没有过期时间，只能按条数兜住 */
     try { lxTrimPlaylist(plman.FindPlaylist(PLAYLIST_NAME)); } catch (eTp) { }
-    /* 开着监视缓存的话，趁换歌的空当把新落盘的补进去（内部三秒节流） */
-    try { watchScan(false); } catch (eWc) { }
   }, 1500);
   setTimeout(function () { refreshBackground(true); }, 0);
   try { pushCoverForHandle(handle); } catch (e) {}

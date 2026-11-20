@@ -56,10 +56,7 @@ var randomBtnTimer = false;
 var animationStartTime = 0;
 var animationCounter = 0;
 var Randomsetfocus=false;
-var border_top=1;
 var border_right=1;
-var border_bottom=0;
-var border_left=0;
 var g_avoid_on_focus_change = false;
 var g_avoid_metadb_updated = false;
 var focus_on_now_playing = false;
@@ -931,6 +928,14 @@ function setDarkLayout(){
 			break;
 			case 4:
 				/* 模式 4 主区是 MilkDrop 黑画面，右栏曲目信息跟模式 3 一样走可视化深色主题 */
+				properties.darklayout = properties.visualization_dark_theme;
+			break;
+			case 5:
+				/* 模式 5（MPV 视频 / ESL 歌词）同上 */
+				properties.darklayout = properties.visualization_dark_theme;
+			break;
+			case 6:
+				/* 模式 6（主题设置）同上 */
 				properties.darklayout = properties.visualization_dark_theme;
 			break;
 		}

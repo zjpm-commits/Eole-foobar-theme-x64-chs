@@ -134,6 +134,22 @@ function getPanel(names) {
             if (p) return p;
         } catch (e) {}
     }
+    /* caption 对不上时（新建面板的 DUI 标题常停在插件默认名），
+       再按子面板的 Name / Text 比一遍 */
+    var n = 0;
+    try { n = window.GetPanelCount(); } catch (eScan) { return null; }
+    for (var k = 0; k < n; ++k) {
+        var q = null;
+        try { q = window.GetPanelByIndex(k); } catch (eK) { continue; }
+        if (!q) continue;
+        var t = '', nm = '';
+        try { t = String(q.Text === undefined ? '' : q.Text).replace(/^\s+|\s+$/g, ''); } catch (eT) {}
+        try { nm = String(q.Name === undefined ? '' : q.Name).replace(/^\s+|\s+$/g, ''); } catch (eN) {}
+        for (var j = 0; j < names.length; ++j) {
+            var want = String(names[j]).toLowerCase();
+            if (t.toLowerCase() === want || nm.toLowerCase() === want) return q;
+        }
+    }
     return null;
 }
 
@@ -151,7 +167,8 @@ var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'LIBRARYFILTER
     'NOWPLAYINGLIB', 'NOWPLAYINGPLAYLIST', 'NOWPLAYINGBIO', 'NOWPLAYINGLXBOX', 'RIGHTPLAYLISTWIDTH',
     'COVERPANELBIG', 'COVERPANELMINI', 'MINICONTROLBAR', 'SHOWTRACKINFOBIG', 'SHOWTRACKINFOSMALL',
     'TRACKINFOSLIB', 'TRACKINFOSPLAYLIST', 'TRACKINFOSBIO', 'TRACKINFOSLXBOX', 'TRACKINFOSMDROP',
-    'NOWPLAYINGMDROP', 'TRACKINFOSTEXT'];
+    'NOWPLAYINGMDROP', 'TRACKINFOSTEXT', 'NOWPLAYINGMPV', 'TRACKINFOSMPV',
+    'NOWPLAYINGTHEME', 'TRACKINFOSTHEME'];
 
 
 function snapshot() {
@@ -186,7 +203,7 @@ function arrange(arg) {
         !setting('MINICONTROLBAR', 1) ? 72 : setting('SHOWTRACKINFOBIG', 1) ? 54 : 47;
     var bodyHeight = Math.max(1, h - top - bottom);
 
-    var suffix = ['LIB', 'PLAYLIST', 'BIO', 'LXBOX', 'MDROP'][mode] || 'LIB';
+    var suffix = ['LIB', 'PLAYLIST', 'BIO', 'LXBOX', 'MDROP', 'MPV', 'THEME'][mode] || 'LIB';
     var right = mini ? w : setting('NOWPLAYING' + suffix, 1) ?
         Math.min(setting('RIGHTPLAYLISTWIDTH', 210), Math.floor(w * 0.4)) : 0;
     var mainWidth = w - right;
@@ -305,6 +322,28 @@ function arrange(arg) {
                摆不上（没在面板清单里建这个面板）就沿用模式 3 的兜底，别留一块空白。 */
             panel('MilkDrop', 0, top, mainWidth, bodyHeight, true) ||
                 panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+
+        } else if (mode === 5) {
+            /* 模式 5：装了 foo_mpv 就把 MPV 元素铺满主区（视频本身不透明，强制关伪透明）；
+               没装插件则用 ESLyric（caption = Lyrics）铺满主区，当作纯歌词页。
+               两者都取不到（面板没建）就沿用模式 3 的兜底，别留空白。 */
+            var mpvOn = false;
+            try { mpvOn = !!utils.CheckComponent('foo_mpv', true); } catch (eMpv) { mpvOn = false; }
+            (mpvOn ? panel(['MPV', 'mpv', 'mpv Video', 'Video player'], 0, top, mainWidth, bodyHeight, true) : null) ||
+                panel('Lyrics', 0, top, mainWidth, bodyHeight) ||
+                panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+
+        } else if (mode === 6) {
+            /* 模式 6：主题设置页铺满主区，右栏照常保留。
+               布局里还没建 ThemeSettings 面板时退回模式 0 的内容，别留一块空白。 */
+            panel('ThemeSettings', 0, top, mainWidth, bodyHeight) ||
+                /* 兜底照抄模式 0：左筛选栏 + 主图画廊，至少还能用 */
+                (function () {
+                    var left = setting('LIBRARYFILTER', 1) ? Math.min(setting('LIBRARYFILTERWIDTH', 210), mainWidth * 0.4) : 0;
+                    panel(setting('LIBRARYTREE', 0) ? ['LibraryTree', 'LibraryFilter'] : ['LibraryFilter', 'LibraryTree'],
+                        0, top, left, bodyHeight);
+                    panel('GraphicBrowser', left, top, mainWidth - left, bodyHeight);
+                })();
 
         } else {
             panel('Lxbox', 0, top, mainWidth, bodyHeight) ||
