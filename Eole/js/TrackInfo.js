@@ -956,6 +956,11 @@ function on_layout_change() {
 	adaptButtons();
 }
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
@@ -975,6 +980,7 @@ function on_notify_data(name, info) {
 				}
 			} catch (eLxCover) {}
 		break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

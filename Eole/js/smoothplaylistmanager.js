@@ -2819,8 +2819,42 @@ function g_sendResponse() {
     if(brw.selectedRow < 0 || brw.selectedRow > brw.rowsCount - 1) brw.selectedRow = 0;
 }
 
+/* ---------- 屏幕适配（高 DPI / 4K）
+   设置页「窗口外观 → 屏幕显示」发 ts_dpi_preset。本面板行高是固定像素
+   （属性·行高），不跟字号走，所以按比例乘一下；字行走全局 set_font。
+   基准行高第一次适配时记下，还原时写回。 */
+function tsDpiRowApply(scale, restore) {
+	var KEY = '屏幕适配·基准行高·属性行高';
+	var base = parseInt(window.GetProperty(KEY, 0), 10);
+	if (!isFinite(base) || base <= 0) {
+		base = parseInt(window.GetProperty('属性·行高', 46), 10);
+		if (!isFinite(base) || base <= 0) base = 46;
+		window.SetProperty(KEY, base);
+	}
+	var n = restore ? base : Math.round(base * scale);
+	if (n < 20) n = 20;
+	if (n > 450) n = 450;
+	properties.defaultRowHeight = n;
+	window.SetProperty('属性·行高', n);
+	/* 与 Shift+滚轮那条路径同样的收尾：get_metrics 会把 rowHeight 重算出来 */
+	try {
+		get_metrics();
+		brw.repaint();
+	} catch (eDR) {}
+}
+
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
     switch(name) {
+		case "ts_dpi_preset":
+			try { tsDpiRowApply(parseFloat(info && info.scale) || 1, !!(info && info.mode === 'restore')); } catch (eDPI) {}
+			window.Repaint();
+		break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

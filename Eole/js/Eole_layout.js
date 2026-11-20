@@ -63,7 +63,7 @@ function fwSeedShared() {
     try { on = !!fw_enabled(); } catch (e2) { on = false; }
     if (!on) return;
     try { fw_sharedSet(true); } catch (e3) {}
-    try { console.log('[FW] [宿主] 共享开关已补写: 1'); } catch (e4) {}
+    /* 共享开关补写成功：不输出日志 */
 }
 
 
@@ -442,6 +442,11 @@ function relayoutSoon() {
 }
 
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
     /* 布局重排只认这两个名字，不做兜底。'eole_layout' 的发送方主要是
        pss_switch.js 的 RefreshPSS()（每次 setValue 后调用），以及面板重载前
        补发的地方——普通重排同时退出 MilkDrop 全屏；'milkdrop_fullscreen'
@@ -604,10 +609,7 @@ function fwEnsure(force, qOverride) {
         var __built = low ? fw_buildWallpaper(w, h, np, qOverride) : fw_buildWallpaper(w, h, np);
         fwImg = __built || __fwOld;
         fwKey = __built ? cacheKey : "";
-        try {
-            console.log("[FW] [宿主] 壁纸生成 " + w + "x" + h + (low ? "（低清预热）" : "") +
-                " 用时 " + ((new Date()).getTime() - __t0) + "ms");
-        } catch (eL) {}
+        
         if (!__built) fwFailAt = (new Date()).getTime();
     } catch (e2) {
         fwImg = __fwOld;
@@ -634,7 +636,7 @@ function fwQueue(ms, soft) {
             try { same = fwKeySame(); } catch (eK) { same = false; }
             if (same) {
                 try { window.Repaint(); } catch (eR0) {}
-                try { console.log("[FW] [宿主] 封面未变，跳过壁纸重建（" + fwArtKeyPart() + "）"); } catch (eL0) {}
+                
                 return;
             }
         }

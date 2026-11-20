@@ -4926,7 +4926,13 @@ function get_images() {
 	reset_bt = new button(images.resetIcon_off, images.resetIcon_ov, images.resetIcon_dn,"reset_bt", "重置筛选");
 };
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
     switch(name) {
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

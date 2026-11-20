@@ -142,6 +142,28 @@ oPanelSetting = function (name, file_prefix, default_value, min_value, max_value
    所以任何"面板尺寸/可见性变了"的地方都必须发这个名字。 */
 function RefreshPSS() { window.NotifyOthers("eole_layout", true); }
 
+/* 收到别的面板发来的状态广播时，把本地这份 oPanelSetting 的 .value 同步过来。
+   只改本地副本，绝不调 setValue —— setValue 会再移动一次状态文件、再广播一轮。
+   返回 true 表示"这个通知确实是一个状态变化"，调用方可以据此补自己的重绘/重排。 */
+function syncStateFromNotify(name, info) {
+	var ps = panelSetting(name);
+	if (!ps) return false;
+	var v;
+	if (typeof info === 'number') { v = info; }
+	else if (typeof info === 'boolean') { v = info ? 1 : 0; }
+	else if (typeof info === 'string') { v = parseInt(info, 10); if (!isFinite(v)) v = (info === 'true' ? 1 : 0); }
+	else return false;
+	if (!isFinite(v)) return false;
+	if (v < ps.min_value) v = ps.min_value;
+	if (v > ps.max_value) v = ps.max_value;
+	if (v === ps.value) return false;
+	ps.value = v;
+	if (typeof onPanelSettingChanged === 'function') {
+		try { onPanelSettingChanged(name, v); } catch (eHookSync) {}
+	}
+	return true;
+}
+
 /* 0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源 / 4 MilkDrop / 5 MPV 视频（无插件时为 ESL 歌词） / 6 主题设置 */
 var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 6);
 var layout_state = new oPanelSetting("layout_state", "LAYOUT_", 0, 0, 1);
@@ -165,7 +187,7 @@ var librarytree = new oPanelSetting("librarytree", "LIBRARYTREE_", 0, 0, 1);
 var mini_controlbar = new oPanelSetting("mini_controlbar", "MINICONTROLBAR_", 1, 0, 1);
 var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 2);
 
-if (typeof InitHiResDisplay === "function") InitHiResDisplay();
+/* 高分屏适配方案已废弃（用户明确否决），InitHiResDisplay 已删除 */
 
 //Individual Filter state
 var filter1_state = new oPanelSetting("filter1_state", "FILTER1_", 1, 0, 1);

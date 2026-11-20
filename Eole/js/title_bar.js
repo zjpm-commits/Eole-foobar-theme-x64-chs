@@ -125,11 +125,14 @@ function fwWriteWallDark(dark) {
     return dark;
 }
 
+/* 搜索框轮廓：占位字“搜索...”比输入文字大一号，所以框也要跟着高一点。
+   marginTop 就是框顶到标题栏顶的距离，减 4 等于把框（连同右侧那条竖线）
+   向上长高 4px；paddingTop 不动，文字在更高的框里自动垂直居中。 */
 var cSearchBoxMainLight = {
 	width:240,
 	marginRight:128,
 	marginLeft:5,
-	marginTop:35,
+	marginTop:31,
 	marginBottom:0,
 	paddingLeft:37,
 	paddingRight:40,
@@ -153,7 +156,7 @@ var cSearchBoxMainDark = {
 	width:240,
 	marginRight:128,
 	marginLeft:5,
-	marginTop:35,
+	marginTop:31,
 	marginBottom:0,
 	paddingLeft:37,
 	paddingRight:40,
@@ -164,7 +167,7 @@ var cSearchBoxMini = {
 	width:300,
 	marginRight:34,
 	marginLeft:5,
-	marginTop:34,
+	marginTop:30,
 	marginBottom:4,
 	paddingLeft:37,
 	paddingRight:40,
@@ -613,7 +616,7 @@ function build_buttons(){
 			btn.height = btn.height_small;			
 		}
 		buttons = {
-			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "媒体库", "Library", "", function () {
+			Library: new JSButton(btn.left_m+btn.margin*0, btn.top_m, btn.width, btn.height, "本地音乐", "Library", "", function () {
 				main_panel_state.setValue(0);
 				get_colors();g_searchbox.adapt_look_to_layout();
 			}, false,false,images.library_img,images.library_img,0, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
@@ -1332,7 +1335,7 @@ function on_mouse_rbtn_up(x, y){
 		_menu.AppendMenuSeparator();
 
 		if(layout_state.isEqual(0)) {
-			_menu.AppendMenuItem(MF_STRING, 1, "媒体库");
+			_menu.AppendMenuItem(MF_STRING, 1, "本地音乐");
 			_menu.AppendMenuItem(MF_STRING, 2, "播放列表");
 			_menu.AppendMenuItem(MF_STRING, 3, "简介歌词");
 			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "洛雪音源");
@@ -1506,12 +1509,16 @@ function draw_settings_menu(x,y){
 				window.SetProperty("显示·显示明暗切换按钮", properties.showLightswitchBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
 				break;
 			case (idx == 1804):
 				properties.showFullscreenBtn = !properties.showFullscreenBtn;
 				window.SetProperty("显示·显示全屏按钮", properties.showFullscreenBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
 				break;
 			case (idx == 1805):
 				properties.toUpperCase = !properties.toUpperCase;
@@ -1526,18 +1533,24 @@ function draw_settings_menu(x,y){
 				window.SetProperty("显示·显示正在播放按钮", properties.showNowPlayingBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
 				break;
 			case (idx == 1807):
 				properties.showRightSidebarBtn = !properties.showRightSidebarBtn;
 				window.SetProperty("显示·显示右侧栏按钮", properties.showRightSidebarBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
 				break;
 			case (idx == 1808):
 				properties.showConfigLayoutBtn = !properties.showConfigLayoutBtn;
 				window.SetProperty("显示·显示布局配置按钮", properties.showConfigLayoutBtn);
 				adapt_buttons_to_layout();
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
 				break;				
 			case (idx == 1809):
 				try {
@@ -2581,6 +2594,17 @@ function on_focus(is_focused) {
 	g_searchbox.on_focus(is_focused)
 }
 function on_notify_data(name, info) {
+	/* 状态对象同步 + 本面板的收尾动作：
+	   紧凑标题栏 / 迷你控制栏 / 模式这类状态一变，按钮组、配色、拖动区都要重算 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try {
+			btn_initialized = false;
+			get_colors();
+			adapt_buttons_to_layout();
+			window.Repaint();
+			window.SetTimeout(function () { try { SetPseudoCaption(); } catch (eSynPC) {} }, 200);
+		} catch (eSyncTB) {}
+	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
@@ -2682,8 +2706,14 @@ function on_notify_data(name, info) {
 					window.SetProperty("启动时恢复面板状态(可视化页除外)", properties.Remember_previous_state);
 					window.Repaint();
 				} else if (tbKey === "hide_lxbox") {
+					/* 与菜单 1901「洛雪音源」完全一致：
+					   关掉可视化标签页时，若当前正停在洛雪音源模式（main_panel_state=3），
+					   必须立刻切走，否则要重启才会生效 */
 					properties.show_visualization = !tbVal;
 					window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
+					if (main_panel_state.isEqual(3)) main_panel_state.setValue(0);
+					get_colors();
+					adapt_buttons_to_layout();
 					window.Repaint();
 				} else if (tbKey === "btn_nowplaying") {
 					properties.showNowPlayingBtn = !!tbVal;
@@ -2724,6 +2754,19 @@ function on_notify_data(name, info) {
 							get_colors(); g_searchbox.adapt_look_to_layout();
 						}
 					}
+				} else if (tbKey === "compacttitlebar") {
+					/* 标题栏形态（标准两行 / 常规紧凑 / 加宽紧凑）：与菜单 1811/1812/1813
+					   那一整套动作完全对齐 —— 状态文件已经由设置页的 setValue 移好，
+					   这里只写本地 .value（再 setValue 会二次移动文件、还会把旧文件搬错）；
+					   顺便补上菜单里那几步：重建按钮、重算配色、重排布局、重设伪标题栏拖动区。 */
+					var cm = parseInt(tbVal, 10);
+					if (isNaN(cm) || cm < 0 || cm > 2) cm = 0;
+					btn_initialized = false;
+					try { compact_titlebar.value = cm; } catch (eCMv) {}
+					get_colors();
+					adapt_buttons_to_layout();
+					window.Repaint();
+					window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePCx) {} }, 200);
 				} else if (tbKey === "titleformat") {
 					/* 同菜单 1809：弹输入框改「正在播放曲目标题格式」 */
 					try {
@@ -2738,6 +2781,9 @@ function on_notify_data(name, info) {
 					} catch (eTF) {}
 					window.Repaint();
 				}
+				/* 回广播一次：把「设置...」菜单的勾选状态推回主题设置页，
+                   避免设置页图标条与菜单勾选各显各的 */
+				try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eTBR) {}
 			} catch(eTBS) {}
 		break;
 		case "toggleLayoutMode":
@@ -2796,6 +2842,7 @@ function on_notify_data(name, info) {
 		case "wallpaperBlur":
 			toggleBlurWallpaper(info);
 		break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
@@ -3220,7 +3267,9 @@ oSearch = function() {
 		}
 	};
 	this.on_init = function() {
-		this.inputbox = new oInputbox(this.w, this.h, "", "搜索...", colors.search_txt , 0, 0, colors.selected_bg, g_launchSearch, "g_searchbox", undefined, "g_font.min1");
+		/* 占位文字“搜索...”用大一号的 normal（比原来的 min1 大 1 号），
+		   真正输入的搜索词仍用 min1，避免整条框被撑高 */
+		this.inputbox = new oInputbox(this.w, this.h, "", "点击输入搜索词...", colors.search_txt , 0, 0, colors.selected_bg, g_launchSearch, "g_searchbox", undefined, "g_font.normal", "g_font.min1");
         this.inputbox.autovalidation = properties.autosearch;
 		this.adapt_look_to_layout();
     };
@@ -3432,15 +3481,17 @@ function build_fw_menu() {
 	blur_menu.AppendMenuItem(MF_GRAYED, 0, "当前 " + b + " · " + (fw_isDark() ? "深色" : "浅色"));
 	blur_menu.AppendMenuSeparator();
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_0, "不模糊");
-	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_30, "轻微 20");
-	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_60, "中等 40");
-	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_90, "强烈 70");
+	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_20, "轻微 20");
+	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_40, "中等 40");
+	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_70, "强烈 70");
 	blur_menu.AppendTo(fw_menu, MF_STRING, "模糊强度");
 
 	var mask_menu = window.CreatePopupMenu();
-	var a = fw_maskAlpha();
-	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_INC, "加深 +20");
-	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_DEC, "减淡 -20");
+	/* 与设置面板同源：读原始属性，不用 fw_maskAlpha()——后者在没有真实
+	   壁纸图时会把值折成 1/3，用它显示/加减会和设置面板的数值对不上。 */
+	var a = fw_maskRaw();
+	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_INC, "加深 +10");
+	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_DEC, "减淡 -10");
 	mask_menu.AppendMenuSeparator();
 	mask_menu.AppendMenuItem(MF_GRAYED, 0, "当前 " + a + " · " + (fw_isDark() ? "深色" : "浅色"));
 	mask_menu.AppendMenuSeparator();
@@ -3520,12 +3571,12 @@ function fw_handle_menu(idx) {
 		case (idx == FW_ID_BLUR_INC): fw_setBlur(fw_blurValue() + 5); dirty = true; break;
 		case (idx == FW_ID_BLUR_DEC): fw_setBlur(fw_blurValue() - 5); dirty = true; break;
 		case (idx == FW_ID_BLUR_0):  fw_setBlur(0);  dirty = true; break;
-		case (idx == FW_ID_BLUR_30): fw_setBlur(20); dirty = true; break;
-		case (idx == FW_ID_BLUR_60): fw_setBlur(40); dirty = true; break;
-		case (idx == FW_ID_BLUR_90): fw_setBlur(70); dirty = true; break;
+		case (idx == FW_ID_BLUR_20): fw_setBlur(20); dirty = true; break;
+		case (idx == FW_ID_BLUR_40): fw_setBlur(40); dirty = true; break;
+		case (idx == FW_ID_BLUR_70): fw_setBlur(70); dirty = true; break;
 
-		case (idx == FW_ID_MASK_INC): fw_setMask(fw_maskAlpha() + 20); dirty = true; break;
-		case (idx == FW_ID_MASK_DEC): fw_setMask(fw_maskAlpha() - 20); dirty = true; break;
+		case (idx == FW_ID_MASK_INC): fw_setMask(fw_maskRaw() + 10); dirty = true; break;
+		case (idx == FW_ID_MASK_DEC): fw_setMask(fw_maskRaw() - 10); dirty = true; break;
 		case (idx == FW_ID_MASK_0):   fw_setMask(0);   dirty = true; break;
 		case (idx == FW_ID_MASK_120): fw_setMask(120); dirty = true; break;
 		case (idx == FW_ID_MASK_180): fw_setMask(180); dirty = true; break;
@@ -3555,6 +3606,7 @@ function fw_handle_menu(idx) {
 	if (!dirty) return false;
 
 	if (dirty) { try { fw_cfgWrite(); } catch (eW) {} }
+	try { fw_publish(); } catch (eP) {}      /* 同步给设置面板等其他面板 */
 	try { window.NotifyOthers("fullscreenWallpaperRefit", true); } catch (e) {}
 	fw_setOn(fw_enabled());
 	window.Repaint();

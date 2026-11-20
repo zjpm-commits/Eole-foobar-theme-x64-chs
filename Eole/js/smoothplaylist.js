@@ -6557,10 +6557,62 @@ function stopFlashNowPlaying() {
 	cNowPlaying.flashescounter = 0;
 	cNowPlaying.flash = false;
 }
+/* ---------- 屏幕适配（高 DPI / 4K）
+   设置页「窗口外观 → 屏幕显示」发 ts_dpi_preset，这里只管自己两个行高属性：
+   大面板 / 迷你各有独立的固定像素行高，不跟字号走，所以要按比例乘一下；
+   字号由全局 set_font 负责，不走这条广播。
+   基准行高只在第一次适配时记下，还原时用它写回。 */
+function tsDpiRowApply(scale, restore) {
+	var items = [
+		{ scope: 'big',  prop: '大面板·默认行高', def: 30, lo: 10, hi: 140 },
+		{ scope: 'mini', prop: '迷你·默认行高', def: 26, lo: 10, hi: 140 }
+	];
+	for (var i = 0; i < items.length; ++i) {
+		var it = items[i];
+		var key = '屏幕适配·基准行高·' + it.prop;
+		var base = parseInt(window.GetProperty(key, 0), 10);
+		if (!isFinite(base) || base <= 0) {
+			base = parseInt(window.GetProperty(it.prop, it.def), 10);
+			if (!isFinite(base) || base <= 0) base = it.def;
+			window.SetProperty(key, base);
+		}
+		var n = restore ? base : Math.round(base * scale);
+		if (n < it.lo) n = it.lo;
+		if (n > it.hi) n = it.hi;
+		window.SetProperty(it.prop, n);
+		if (it.scope === 'big') properties_big.defaultRowHeight = n;
+		else properties_mini.defaultRowHeight = n;
+	}
+	/* 当前正在用的那份属性是副本，按当前布局重新读一次（和 Shift+滚轮同源） */
+	try {
+		properties.defaultRowHeight = parseInt(
+			window.GetProperty(propKey(layout_state.isEqual(1) ? 'mini' : 'big', 'defaultRowHeight'), 30), 10) || properties.defaultRowHeight;
+	} catch (eDP) {}
+	/* 收尾与 setRowHeight 那条路径完全一致 */
+	try {
+		get_font();
+		g_var_cache.resetAll();
+		get_metrics();
+		get_images();
+		brw.refreshThumbnails();
+		brw.repaint();
+	} catch (eDR) {}
+}
+
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
+		case "ts_dpi_preset":
+			try { tsDpiRowApply(parseFloat(info && info.scale) || 1, !!(info && info.mode === 'restore')); } catch (eDPI) {}
+			window.Repaint();
+		break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

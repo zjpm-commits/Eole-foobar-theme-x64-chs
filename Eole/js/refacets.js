@@ -5425,10 +5425,51 @@ function g_sendResponse() {
     brw.populate(true,13);
 };
 
+/* ---------- 屏幕适配（高 DPI / 4K）
+   设置页「窗口外观 → 屏幕显示」发 ts_dpi_preset，只处理列表形态（displayMode 0/2）
+   的「系统·最小行高」：它是固定像素、不跟字号走，所以要按比例乘一下。
+   displayMode 1/3 调的是封面宽度，属于视觉偏好，不跟着 DPI 放大。
+   基准行高第一次适配时记下，还原时写回（三种标签模式各存一份）。 */
+function tsDpiRowApply(scale, restore) {
+	if (!(properties.displayMode === 0 || properties.displayMode === 2)) return;
+	var KEY = '屏幕适配·基准行高·最小行高';
+	var baseKey = KEY + properties.tagMode;
+	var suffix = properties.tagMode ? '(标签模式' + properties.tagMode + ')' : '';
+	var base = parseInt(window.GetProperty(baseKey, 0), 10);
+	if (!isFinite(base) || base <= 0) {
+		base = parseInt(window.GetProperty('系统·最小行高' + suffix, 34), 10);
+		if (!isFinite(base) || base <= 0) base = 34;
+		window.SetProperty(baseKey, base);
+	}
+	var n = restore ? base : Math.round(base * scale);
+	if (n < Math.round(g_fsize * 1.2)) n = Math.round(g_fsize * 1.2);
+	properties.default_lineHeightMin = n;
+	properties['default_lineHeightMin' + properties.tagMode] = n;
+	window.SetProperty('系统·最小行高', n);
+	window.SetProperty('系统·最小行高' + suffix, n);
+	/* 与 Shift+滚轮那条路径同样的收尾 */
+	try {
+		get_metrics();
+		brw.setList();
+		brw.refresh_all_covers();
+		brw.update();
+	} catch (eDR) {}
+}
+
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
+		case "ts_dpi_preset":
+			try { tsDpiRowApply(parseFloat(info && info.scale) || 1, !!(info && info.mode === 'restore')); } catch (eDPI) {}
+			window.Repaint();
+		break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}

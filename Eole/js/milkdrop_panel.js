@@ -228,6 +228,11 @@ function md_togglePlaylistOverlay() {
 // 通知：设置文件是各面板共用的，谁改了都会广播
 // ---------------------------------------------------------------------------
 function on_notify_data(name, info) {
+	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
+	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try { window.Repaint(); } catch (eSyncRp) {}
+	}
     if (name === 'milkdropvis_state') { md_applyVis(parseInt(info)); return; }
     if (name === 'milkdropfps_state') { md_applyFps(parseInt(info)); return; }
     if (name === 'main_panel_state') {

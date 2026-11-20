@@ -1667,10 +1667,43 @@ function on_key_down(vkey) {
 		break;
 	};
 }
+/* 主动把整份状态推给主题设置页（菜单勾选、设置页写入，两边都靠它对齐）。
+   不走 refresh 往返，直接推 payload，少一层嵌套通知，最稳。 */
+function pushControlStateNow() {
+	try {
+		window.NotifyOthers("ts_control_state", {
+			rows: properties.twoLinesDetails ? 1 : 0,
+			trackinfo: properties.showTrackInfo ? 1 : 0,
+			prefix: properties.showTrackPrefix ? 1 : 0,
+			volume: properties.volumeA1waysVisible ? 1 : 0,
+			cursor: properties.cursor_style,
+			btn_stop: properties.displayStop ? 1 : 0,
+			btn_repeat: properties.displayRepeat ? 1 : 0,
+			btn_shuffle: properties.displayShuffle ? 1 : 0,
+			btn_random: properties.displayPlayRandom ? 1 : 0,
+			btn_open: properties.displayOpen ? 1 : 0,
+			btn_device: properties.displayDevice ? 1 : 0,
+			btn_equalizer: properties.displayEqualizer ? 1 : 0,
+			btn_rating: properties.displayRating ? 1 : 0,
+			btn_scheduler: properties.displayScheduler ? 1 : 0
+		});
+	} catch (ePCS) {}
+}
+
 function on_notify_data(name, info) {
+	/* 状态对象同步 + 本面板的收尾动作：迷你控制栏 / 布局切换后按钮与进度条要重排 */
+	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
+		try {
+			build_buttons();
+			adapt_display_to_layout();
+			on_size(window.Width, window.Height);
+			window.Repaint();
+		} catch (eSyncCT) {}
+	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
@@ -1706,6 +1739,7 @@ function on_notify_data(name, info) {
 			window.Repaint();
 			break;
 		case "ts_control_get":			/* 主题设置页读取本面板的曲目详情 / 音量条 / 滑块样式（同步应答） */
+
 			try {
 				window.NotifyOthers("ts_control_state", {
 					rows: properties.twoLinesDetails ? 1 : 0,
@@ -1783,6 +1817,8 @@ function on_notify_data(name, info) {
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 回广播一次：让主题设置页把快照拉齐（右键菜单与本面板状态永远同源） */
+				try { window.NotifyOthers("ts_control_refresh", 1); } catch(eTSR) {}
 			} catch(eTS) {}
 		break;
 		case "use_ratings_file_tags":
@@ -2773,6 +2809,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4018):
 				properties.displayRating = !properties.displayRating;
@@ -2781,6 +2819,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4019):
 				properties.displayScheduler = !properties.displayScheduler;
@@ -2789,6 +2829,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4020):
 				properties.displayPlayRandom = !properties.displayPlayRandom;
@@ -2797,6 +2839,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4021):
 				properties.displayShuffle = !properties.displayShuffle;
@@ -2805,6 +2849,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4022):
 				properties.displayRepeat = !properties.displayRepeat;
@@ -2813,6 +2859,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4023):
 				properties.displayOpen = !properties.displayOpen;
@@ -2821,6 +2869,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 4024):
 				properties.displayDevice = !properties.displayDevice;
@@ -2829,6 +2879,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;		
             case (idx == 4016):
 				properties.displayStop = !properties.displayStop;
@@ -2837,6 +2889,8 @@ function moreMenu(x, y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 100):
                 window.ShowProperties();
@@ -3210,6 +3264,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3029):
 				properties.displayDevice = !properties.displayDevice;
@@ -3218,6 +3274,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;					
             case (idx == 3018):
 				properties.displayRating = !properties.displayRating;
@@ -3226,6 +3284,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3019):
 				properties.displayScheduler = !properties.displayScheduler;
@@ -3234,6 +3294,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3020):
 				properties.displayPlayRandom = !properties.displayPlayRandom;
@@ -3242,6 +3304,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3021):
 				properties.displayShuffle = !properties.displayShuffle;
@@ -3250,6 +3314,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3022):
 				properties.displayRepeat = !properties.displayRepeat;
@@ -3258,6 +3324,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3023):
 				properties.displayOpen = !properties.displayOpen;
@@ -3266,6 +3334,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3024):
 				properties.cursor_style = 0;
@@ -3317,6 +3387,8 @@ function draw_settings_menu(x,y){
 				adapt_display_to_layout();
 				on_size(window.Width, window.Height);
 				window.Repaint();
+				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
+				 pushControlStateNow();
                 break;
             case (idx == 3030):
 				properties.volumeA1waysVisible = !properties.volumeA1waysVisible;

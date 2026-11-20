@@ -46,7 +46,9 @@ var globalProperties = {
 	tooltip_delay:500,
 	tooltip_button_delay:500,
 	fontAdjustement_min:-5,
-	fontAdjustement_max:5,
+	/* 上限放到 +20：4K/200% 屏要字号×2（基准 14 号需要 +14），原来钳在 +5
+	   会把「一键适配」卡在半路。Ctrl+滚轮仍是一档一档加减，语义不变。 */
+	fontAdjustement_max:20,
     fontAdjustement: window.GetProperty("全局·字体调整", 0),
 	mem_solicitation:window.GetProperty("全局·内存占用策略", 0),
 	lx_artist_cache_dir: "",
@@ -3102,42 +3104,7 @@ var g_instancetype = window.InstanceType;
 
 var g_hires_display = false;
 var g_hires_checked = false;
-var g_hires_mode = 0;
-function InitHiResDisplay() {
-    var hires_dpi = 96;
-    if (!g_hires_checked) {
-        g_hires_checked = true;
-        g_hires_mode = 0;
-        try {
-            g_hires_mode = parseInt(window.GetProperty("全局·高分屏适配模式", 0));
-            window.SetProperty("全局·高分屏适配模式", (isNaN(g_hires_mode)?0:g_hires_mode));
-        } catch(e) { g_hires_mode = 0; }
-        if (isNaN(g_hires_mode)) g_hires_mode = 0;
-        if (g_hires_mode == 1) {
-            g_hires_display = true;
-        } else if (g_hires_mode == 2) {
-            g_hires_display = false;
-        } else {
-            try { hires_dpi = Number(window.DPI); } catch(e) { hires_dpi = 96; }
-            if (!hires_dpi || isNaN(hires_dpi) || hires_dpi <= 0) hires_dpi = 96;
-            g_hires_display = (hires_dpi >= 144);
-        }
-        g_hires_dpi = hires_dpi;
-    }
-    if (!g_hires_display) return;
-    try {
-        if (typeof compact_titlebar !== "undefined" && compact_titlebar && compact_titlebar.value != 2) {
-            compact_titlebar.value = 2;
-        }
-    } catch(e) {}
-    try {
-        if (typeof mini_controlbar !== "undefined" && mini_controlbar && mini_controlbar.value != 0) {
-            mini_controlbar.value = 0;
-        }
-    } catch(e) {}
-}
-var g_hires_dpi = 96;
-InitHiResDisplay();
+
 
 var g_font = {};
 var g_font_cache = {};
@@ -3756,9 +3723,9 @@ var FW_ID_CLEAR       = 7106;
 var FW_ID_BLUR_INC    = 7110;
 var FW_ID_BLUR_DEC    = 7111;
 var FW_ID_BLUR_0      = 7112;
-var FW_ID_BLUR_30     = 7113;
-var FW_ID_BLUR_60     = 7114;
-var FW_ID_BLUR_90     = 7115;
+var FW_ID_BLUR_20     = 7113;
+var FW_ID_BLUR_40     = 7114;
+var FW_ID_BLUR_70     = 7115;
 var FW_ID_MASK_INC    = 7120;
 var FW_ID_MASK_DEC    = 7121;
 var FW_ID_MASK_0      = 7122;
@@ -4033,6 +4000,17 @@ function fw_maskAlpha() {
     v = Math.max(0, Math.min(255, Math.round(v)));
     if (g_fw_lastHasRealImg === false) v = Math.round(v / 3);
     return v;
+}
+
+/* 蒙版浓度的原始属性值（不折三倍）：用于菜单与设置面板的数值显示和加减，
+   保证两边同源；fw_maskAlpha() 保留那份"无真实图时自动减淡"的渲染逻辑。 */
+function fw_maskRaw() {
+    var key = fw_isDark() ? FW_PROP_MASK : FW_PROP_MASK_LT;
+    var def = fw_isDark() ? 180 : 210;
+    var v = def;
+    try { v = Number(window.GetProperty(key, def)); } catch (e) { v = def; }
+    if (!isFinite(v)) v = def;
+    return Math.max(0, Math.min(255, Math.round(v)));
 }
 
 function fw_maskColor() {
@@ -4408,6 +4386,56 @@ function fw_broadcast(on) {
     try { window.NotifyOthers("fullscreenWallpaper", v); } catch (e) {}
     try { window.NotifyOthers("wallpaper", { enabled: v }); } catch (e2) {}
     try { window.Repaint(); } catch (e3) {}
+}
+
+/* ---- 壁纸参数跨面板同步 -------------------------------------------------
+   SMP 的 window.GetProperty / SetProperty 是各面板私有的，同一项参数在每个
+   面板里各存一份副本。菜单和设置页只改自己那份，数值就会分叉（菜单显示
+   30、设置页显示 20 那种）。这里用一次 JSON 快照广播把这些参数统一：
+   写入方改完自己的属性后调 fw_publish()，其他面板收到 "fw_values" 后调
+   fw_adopt() 写进各自的属性，再用自己的逻辑重建壁纸。 */
+var g_fw_adopt = false;
+
+function fw_propsSnapshot() {
+    return {
+        on:  fw_enabled() ? 1 : 0,
+        src: fw_source(),
+        img: fw_imagePath(),
+        bd:  fw_rawNum(FW_PROP_BLUR, 30),
+        bl:  fw_rawNum(FW_PROP_BLUR_LT, 20),
+        md:  fw_rawNum(FW_PROP_MASK, 180),
+        ml:  fw_rawNum(FW_PROP_MASK_LT, 210),
+        q:   fw_quality(),
+        dk:  fw_rawNum(FW_PROP_DARK, -1),
+        dr:  fw_rawNum(FW_PROP_DARK_REF, -1)
+    };
+}
+
+function fw_publish() {
+    if (g_fw_adopt) return;      /* 正在接收别人的值：不要再回播，避免来回打架 */
+    try { window.NotifyOthers("fw_values", JSON.stringify(fw_propsSnapshot())); } catch (e) {}
+}
+
+function fw_adopt(info) {
+    var o = null;
+    try { o = (typeof info === "string") ? JSON.parse(info) : info; } catch (e) { o = null; }
+    if (!o || typeof o !== "object") return;
+    g_fw_adopt = true;
+    try {
+        if (o.on !== undefined)  window.SetProperty(FW_PROP_ENABLED, !!o.on);
+        if (o.src !== undefined) window.SetProperty(FW_PROP_SOURCE, Number(o.src) || 0);
+        if (o.img !== undefined) window.SetProperty(FW_PROP_IMAGE, String(o.img || ""));
+        if (o.bd !== undefined)  window.SetProperty(FW_PROP_BLUR, Number(o.bd) || 0);
+        if (o.bl !== undefined)  window.SetProperty(FW_PROP_BLUR_LT, Number(o.bl) || 0);
+        if (o.md !== undefined)  window.SetProperty(FW_PROP_MASK, Number(o.md) || 0);
+        if (o.ml !== undefined)  window.SetProperty(FW_PROP_MASK_LT, Number(o.ml) || 0);
+        if (o.q !== undefined)   window.SetProperty(FW_PROP_QUALITY, Number(o.q) || 1);
+        if (o.dk !== undefined)  window.SetProperty(FW_PROP_DARK, Number(o.dk));
+        if (o.dr !== undefined)  window.SetProperty(FW_PROP_DARK_REF, Number(o.dr));
+    } catch (eA) {}
+    g_fw_adopt = false;
+    try { g_fw_sharedRaw = null; } catch (eC) {}
+    try { g_fw_live = !!window.GetProperty(FW_PROP_ENABLED, false); } catch (eL) {}
 }
 
 //JSON wrappers
