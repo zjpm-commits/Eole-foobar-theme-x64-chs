@@ -10,9 +10,12 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 ## 🖼️ 截图展示
 
-<img width="1006" height="636" alt="image" src="https://github.com/user-attachments/assets/ec2ff86e-b030-40ec-a59a-3b0c10bfc472" />
+<img width="1066" height="683" alt="image" src="https://github.com/user-attachments/assets/1ed67ed5-cedd-4e6b-8951-16a40d2b9971" />
 
-<img width="1006" height="636" alt="image" src="https://github.com/user-attachments/assets/54c0e338-e2f9-4112-a5a3-38f2e8de55e1" />
+<img width="1066" height="683" alt="image" src="https://github.com/user-attachments/assets/d24d8755-6f50-417b-8469-acbae968fae2" />
+
+<img width="1066" height="683" alt="image" src="https://github.com/user-attachments/assets/bc22141b-46a3-49c0-8bb9-98d4e62d6a1e" />
+
 
 
 ## 🛠️ 依赖环境
@@ -50,6 +53,8 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 将原来模块化壁纸替换为全屏壁纸伪透明的样式； 
 - 减少文件夹层级，配置文件同主题目录便于管理
 - 增加第5模式：MilkDrop，标题栏右键菜单启动。
+- 增加第6模式：MPV 视频，标题栏右键菜单启动。
+- 增加第7模式：设置面板，标题栏增加设置入口图标。
 
 ## 🙏 致谢
 - 感谢 **Ottodix** 及所有贡献者开发了如此精美的Eole主题。
