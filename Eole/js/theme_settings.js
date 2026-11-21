@@ -901,7 +901,7 @@ function tsRows() {
             set: function (v) { tsSetTitlebar('search', v ? 1 : 0); }
         });
         R.push({
-            id: 'tb_remember', label: '启动时恢复面板状态', desc: '重新打开时回到上次停留的主区模式',
+            id: 'tb_remember', label: '启动时恢复面板状态', desc: '重新打开时回到上次停留的主区模式（MilkDrop、MPV、主题设置除外）',
             kind: 'toggle',
             get: function () { return g_tb.valid ? tsInt(g_tb.remember, 0) : 0; },
             set: function (v) { tsSetTitlebar('remember', v ? 1 : 0); }

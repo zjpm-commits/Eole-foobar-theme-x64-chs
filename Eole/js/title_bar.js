@@ -1476,7 +1476,7 @@ function draw_settings_menu(x,y){
 		
 		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1800, "标题栏显示曲目信息");
 		_menu.CheckMenuItem(1800, properties.tracktitle_ontop)
-		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1809, "正在播放曲目标题格式...");
+		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1809, "标题栏曲目信息格式...");
 		_menu.AppendMenuItem(MF_STRING, 1805, "面板按钮文字大写");
 		_menu.CheckMenuItem(1805, properties.toUpperCase)
 		_menu.AppendMenuItem(MF_STRING, 1810, "迷你主菜单按钮");
@@ -2800,7 +2800,7 @@ function on_notify_data(name, info) {
 					window.Repaint();
 					window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePCx) {} }, 200);
 				} else if (tbKey === "titleformat") {
-					/* 同菜单 1809：弹输入框改「正在播放曲目标题格式」 */
+					/* 同菜单 1809：弹输入框改「标题栏曲目信息格式」 */
 					try {
 						var newfmt = utils.InputBox(window.ID,
 							"请输入标题格式化脚本。\n此处可使用完整的 foobar2000 标题格式化语法。\n\n有关 foobar 标题格式化的信息，请参阅 http://tinyurl.com/lwhay6f",
@@ -3645,9 +3645,15 @@ function fw_handle_menu(idx) {
 	return true;
 }
 function on_init(){
-	if(properties.Remember_previous_state && (main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6))) {
-		main_panel_state.setValue(0);
-	} else if(!properties.Remember_previous_state){
+	/* 启动时恢复上次的主区模式：0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源可恢复；
+	   4 MilkDrop / 5 MPV / 6 主题设置属于可视化或临时页，一律回落到 0。
+	   洛雪音源在「隐藏可视化标签页」时也回落，否则会停在一个看不见的标签上。 */
+	if(properties.Remember_previous_state) {
+		if(main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)
+			|| (main_panel_state.isEqual(3) && !properties.show_visualization)) {
+			main_panel_state.setValue(0);
+		}
+	} else {
 		main_panel_state.setValue(0);
 	}
 	get_font();
