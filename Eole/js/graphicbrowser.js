@@ -103,7 +103,9 @@ var properties = {
 	right_panel_follow_cursor: window.GetProperty("主面板·右侧面板跟随光标", true),
     expandInPlace: window.GetProperty("曲目列表·原地展开", true),
     expandOnHover: window.GetProperty("曲目列表·悬停展开", true),
-    showListColored: window.GetProperty("曲目列表·按封面取色", true),
+    /* 原来的「曲目列表·按封面取色」总开关已废弃：曲目列表用哪一档背景，
+       只由「曲目列表 → 背景」的主色/模糊/混合/透明四项自己决定，不再受
+       主面板配色状态牵连（详见 on_notify_data 里 colors 分支的注释）。 */
     showListColoredOneColor: window.GetProperty("曲目列表·按封面取色(主色)", true),
     showListColoredBlurred: window.GetProperty("曲目列表·按封面取色(模糊)", false),
     showListColoredMixedColor: window.GetProperty("曲目列表·按封面取色(混合)", false),
@@ -1414,11 +1416,49 @@ oShowList = function(parentPanelName) {
 			brw.GetAlbumCover(this.idx);
 		}
 		this.showlist_img = brw.groups[this.idx].cover_img;
+		this.blurBg = null;   /* 换封面后模糊底图必须重建 */
 
 		this.setShowListArrow();
 		this.setColumnsButtons(false);
 		this.setCloseButton(false);
 		this.setPlayButton();
+	}
+	/* 「模糊 / 混合」背景用的封面模糊图：缩到 320 宽再 StackBlur。
+	   只缓一份（当前展开的专辑），靠 setCover 失效，不会随列表重绘反复算。 */
+	this.getBlurBg = function() {
+		if(this.blurBg) return this.blurBg;
+		if(!isImage(this.showlist_img)) this.setCover();
+		if(!isImage(this.showlist_img)) return null;
+		var src = this.showlist_img;
+		var bw = 320;
+		var bh = Math.max(1, Math.round(bw * src.Height / src.Width));
+		var img = null;
+		try { img = src.Resize(bw, bh, 2); } catch (eRB) { img = null; }
+		if(!img) return null;
+		try { img.StackBlur(Math.max(4, Math.round(bw / 32))); } catch (eSB) {}
+		this.blurBg = img;
+		return img;
+	}
+	/* 把模糊底图铺进列表条：按列表条的宽高比居中裁切，避免横竖比例差太大被拉伸变形。
+	   没有封面（或建图失败）返回 false，由调用方回退纯色。 */
+	this.paintBlurBg = function(gr, x, y, w, h) {
+		var img = this.getBlurBg();
+		if(!img || w <= 0 || h <= 0) return false;
+		var sx = 0, sy = 0, sw = img.Width, sh = img.Height;
+		var bandAspect = w / h, srcAspect = img.Width / img.Height;
+		if(bandAspect > srcAspect) {
+			sw = img.Width;
+			sh = Math.max(1, Math.round(sw / bandAspect));
+			sy = Math.round((img.Height - sh) / 2);
+		} else {
+			sh = img.Height;
+			sw = Math.max(1, Math.round(sh * bandAspect));
+			sx = Math.round((img.Width - sw) / 2);
+		}
+		try {
+			gr.DrawImage(img, x, y, w, h, sx, sy, sw, sh);
+			return true;
+		} catch (ePB) { return false; }
 	}
 	this.getColorSchemeFromImage = function() {
         if(!isImage(this.showlist_img)) this.setCover();
@@ -1459,7 +1499,7 @@ oShowList = function(parentPanelName) {
 			this.progressbar_color_bg_on = setAlpha(HSL2RGB(new_H, Math.min(new_S*0.45,100), Math.min(40,new_L*0.75), "RGB"),200);
 		} else if(properties.AlbumArtProgressbar){
 			this.progressbar_color_bg_on = setAlpha(HSL2RGB(new_H, Math.min(new_S*0.75,100), Math.min(50,Math.max(35,new_L*1.6)), "RGB"),200);
-		} else if(new_L<10 && (properties.showListColoredOneColor || properties.showListColoredMixedColor) && properties.showListColored) {
+		} else if(new_L<10 && (properties.showListColoredOneColor || properties.showListColoredMixedColor)) {
 			this.progressbar_color_bg_on = HSL2RGB(new_H, Math.min(new_S*0.35,100), new_L+13, "RGB");
 		}
 		if(this.light_bg) {
@@ -1834,7 +1874,7 @@ oShowList = function(parentPanelName) {
 			this.rating_icon_off = light.rating_icon_off;
 			this.rating_icon_border = light.rating_icon_border;
 
-			if((properties.showListColoredOneColor || properties.showListColoredMixedColor) && properties.showListColored){
+			if(properties.showListColoredOneColor || properties.showListColoredMixedColor){
 				if(properties.darklayout) this.border_color = light.border_color_colored_darklayout;
 				else this.border_color = light.border_color_colored;
 			} else
@@ -1893,14 +1933,18 @@ oShowList = function(parentPanelName) {
 			this.showlist_selected_grad2_play = dark.showlist_selected_grad2_play;
 		}
 		if(properties.showListColoredMixedColor) {
-			this.colorSchemeOverlay = setAlpha(this.colorSchemeBack,180);
+			/* 混合 = 封面模糊图 + 主色半透明叠加，固定 170，不再随列表高度改配方 */
+			this.colorSchemeOverlay = setAlpha(this.colorSchemeBack,170);
 			this.colorSchemeBgScrollbar = setAlpha(this.colorSchemeBack,50);
 		} else {
 			this.colorSchemeBgScrollbar = this.colorSchemeBack;
 		}
-		if(!((properties.showListColoredOneColor || properties.showListColoredMixedColor || properties.showListColoredBlurred) && properties.showListColored)){
-			this.colorSchemeBack = colors.showlist_bg;
-			this.color_showlist_arrow = colors.showlist_bg;
+		/* 模糊档压在图上的那层遮罩：保图片可见，同时把文字衬出来。
+		   先无条件算一份，封面还没读到时 draw 里回退纯色也不会拿到 undefined。 */
+		this.colorSchemeMask = this.light_bg ? GetGrey(255,120) : GetGrey(0,110);
+		if(!(properties.showListColoredOneColor || properties.showListColoredMixedColor || properties.showListColoredBlurred)){
+			this.colorSchemeBack = fwListPlainBg();
+			this.color_showlist_arrow = this.colorSchemeBack;
 		}
         this.setShowListArrow();
         this.setColumnsButtons();
@@ -1966,18 +2010,19 @@ oShowList = function(parentPanelName) {
 			if(!isImage(this.showlist_img)){
 				this.setCover();
 			}
-			if(properties.showListColoredOneColor && properties.showListColored) {
+			if(properties.showListColoredOneColor) {
 				this.getColorSchemeFromImage();
-			} else if(properties.showListColoredMixedColor && properties.showListColored) {
+			} else if(properties.showListColoredMixedColor) {
 				this.getColorSchemeFromImage();
-			} else if(properties.showListColoredBlurred && properties.showListColored) {
+			} else if(properties.showListColoredBlurred) {
+				/* 模糊档也用封面取色：决定文字深浅、进度条和遮罩色调，
+				   底色本身由封面模糊图铺（见 draw 里的 paintBlurBg）。 */
 				this.light_bg = false;
-				this.colorSchemeBack = GetGrey(0);
-				this.setColors();
+				this.getColorSchemeFromImage();
 			} else {
 				if(properties.darklayout) this.light_bg = false;
 				else this.light_bg = true;
-				this.colorSchemeBack = colors.showlist_bg;
+				this.colorSchemeBack = fwListPlainBg();
 				this.setColors();
 			}
 
@@ -2261,7 +2306,7 @@ oShowList = function(parentPanelName) {
 		if(!isImage(this.showlist_img)){
 			this.setCover();
 		}
-		if((properties.showListColoredMixedColor || properties.showListColoredOneColor)  && properties.showListColored && !this.getColorSchemeFromImageDone){
+		if((properties.showListColoredMixedColor || properties.showListColoredOneColor || properties.showListColoredBlurred) && !this.getColorSchemeFromImageDone){
 			this.getColorSchemeFromImage();
 		}
         if(this.delta > 0) {
@@ -2270,22 +2315,20 @@ oShowList = function(parentPanelName) {
 				
 				var slh = Math.floor(this.delta_ < (this.marginTop+this.marginBot) ? 0 : this.delta_ - (this.marginTop+this.marginBot));
 			
+				var bgX = this.x, bgY = this.y + this.marginTop, bgW = this.w + g_scrollbar.w, bgH = slh + 1;
 				if(properties.showListColoredBlurred) {
-					try {
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
-					} catch(e) {
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					}
+					/* 封面模糊图铺底，再压一层主题遮罩；无封面时退回纯色底 */
+					if(!this.paintBlurBg(gr, bgX, bgY, bgW, bgH))
+						gr.FillSolidRect(bgX, bgY, bgW, bgH, this.colorSchemeBack);
+					gr.FillSolidRect(bgX, bgY, bgW, bgH, this.colorSchemeMask);
 				}
-				else if(properties.showListColoredMixedColor && properties.showListColored) {
-					try {
-						if((this.h-this.delta_)<40) {
-							gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeOverlay);
-						} else gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					} catch(e) {
-						gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.colorSchemeBack);
-					}
-				} else gr.FillSolidRect(this.x, this.y + this.marginTop, this.w + g_scrollbar.w, slh+1, this.color_showlist_arrow);
+				else if(properties.showListColoredMixedColor) {
+					/* 模糊封面 + 主色半透明，就是「混合」的叠加效果 */
+					if(this.paintBlurBg(gr, bgX, bgY, bgW, bgH))
+						gr.FillSolidRect(bgX, bgY, bgW, bgH, this.colorSchemeOverlay);
+					else gr.FillSolidRect(bgX, bgY, bgW, bgH, this.colorSchemeBack);
+				}
+				else gr.FillSolidRect(bgX, bgY, bgW, bgH, this.color_showlist_arrow);
 
                 if(slh > 0) {
 					// draw Album Selected Arrow
@@ -3218,7 +3261,7 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	if(properties.show2linesCustomTag!="")
 	_additionalInfos.AppendMenuItem(MF_STRING, 62, "重置");
 	_additionalInfos.AppendMenuSeparator();
-	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 28, "为每首曲目显示艺术家名称");
+	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 28, "显示艺术家名称");
 	_additionalInfos.CheckMenuItem(28, properties.showArtistName);
 	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 56, "显示播放次数");
 	_additionalInfos.CheckMenuItem(56, properties.showPlaycount);
@@ -3250,9 +3293,9 @@ function draw_settings_menu(x,y,right_align,sort_group){
 
 	_menuTracklist.AppendMenuSeparator();
 
-	_menuProgressBar.AppendMenuItem(MF_STRING, 21, "无进度条");
+	_menuProgressBar.AppendMenuItem(MF_STRING, 21, "没有进度条");
 	_menuProgressBar.AppendMenuItem(MF_STRING, 24, "白色进度条");
-	_menuProgressBar.AppendMenuItem(MF_STRING, 23, "根据封面颜色显示进度条");
+	_menuProgressBar.AppendMenuItem(MF_STRING, 23, "封面进度条");
 	_menuProgressBar.CheckMenuRadioItem(21, 24, (!properties.drawProgressBar) ? 21 : (properties.AlbumArtProgressbar) ? 23 : 24);
 	_menuProgressBar.AppendTo(_menuTracklist,MF_STRING, "进度条");
 
@@ -3268,9 +3311,9 @@ function draw_settings_menu(x,y,right_align,sort_group){
 
 	_menuTracklist.AppendMenuSeparator();
 
-	_menuBackground.AppendMenuItem(MF_STRING, 16, "根据封面颜色设置背景（主色）");
-	_menuBackground.AppendMenuItem(MF_STRING, 17, "根据封面颜色设置背景（模糊）");
-	_menuBackground.AppendMenuItem(MF_STRING, 18, "根据封面颜色设置背景（混合）");
+	_menuBackground.AppendMenuItem(MF_STRING, 16, "封面主色");
+	_menuBackground.AppendMenuItem(MF_STRING, 17, "封面模糊");
+	_menuBackground.AppendMenuItem(MF_STRING, 18, "封面混合");
 	_menuBackground.AppendMenuItem(MF_STRING, 19, "透明背景");
 	_menuBackground.CheckMenuRadioItem(16, 19, (properties.showListColoredOneColor) ? 16 : (properties.showListColoredBlurred) ? 17 :  (properties.showListColoredMixedColor) ? 18 : 19);
 	_menuBackground.AppendTo(_menuTracklist,MF_STRING, "背景");
@@ -5777,6 +5820,8 @@ function toggleWallpaper(wallpaper_state){
 	properties.showwallpaper = wallpaper_state;
 	window.SetProperty("显示·显示壁纸", properties.showwallpaper);
 	on_colours_changed();
+	/* 「透明背景」档的 alpha 取决于壁纸开关，切换后要重算一次列表底色 */
+	try { g_showlist.reset(); } catch (eWR) {}
 
 	brw.repaint();
 }
@@ -5785,6 +5830,19 @@ function toggleBlurWallpaper(wallpaper_blur_state){
 	properties.wallpaperblurred = wallpaper_blur_state; on_colours_changed();
 	window.SetProperty("显示·壁纸模糊", properties.wallpaperblurred);
 	brw.repaint();
+}
+
+/* 「透明背景」档的底色。
+   壁纸开着时列表这一层是整幅 FillSolidRect，只要颜色不透明就会在壁纸上
+   压出一条纯黑/纯白带；面板本身靠 SupportPseudoTransparency 透出宿主壁纸，
+   所以这里必须留 0 alpha。壁纸没开时仍用主题底色，和原来一致。 */
+function fwListPlainBg() {
+	var base = colors.showlist_bg;
+	var wp = false;
+	try { wp = (typeof fw_sharedOn === 'function') ? !!fw_sharedOn() : false; } catch (eFW) { wp = false; }
+	if (!wp) wp = !!properties.showwallpaper;
+	if (!wp) return base;
+	try { return properties.darklayout ? GetGrey(25, 0) : GetGrey(255, 0); } catch (eFW2) { return base; }
 }
 
 // ============================================= JScript Callbacks ===========================================================
@@ -6644,6 +6702,12 @@ function get_colors() {
 				colors.showlist_border_color = GetGrey(255,50);
 				break;
 
+			case 3: //Fullscreen wallpaper：半透明让壁纸透出来
+				colors.showlist_bg = GetGrey(25, 70);
+				colors.showlist_arrow = GetGrey(25,255);
+				colors.showlist_border_color = GetGrey(255,30);
+				break;
+
 			default: //Pure dark (Main color for tracklist is default grey)
 				colors.showlist_bg = GetGrey(25);
 				colors.showlist_arrow = GetGrey(25,255);
@@ -6722,6 +6786,12 @@ function get_colors() {
 
 			case 2: //White and Grey and Album Art
 				colors.showlist_bg = GetGrey(0,10);
+				colors.showlist_border_color = GetGrey(210);
+				break;
+
+			case 3: //Fullscreen wallpaper：半透明让壁纸透出来
+				colors.showlist_bg = GetGrey(255,70);
+				colors.showlist_arrow = GetGrey(255,255);
 				colors.showlist_border_color = GetGrey(210);
 				break;
 
@@ -7132,10 +7202,11 @@ function on_notify_data(name, info) {
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
     switch(name) {
-		case "fw_values": try { fw_adopt(info); } catch (eFV) {} window.Repaint(); break;
+		case "fw_values": try { fw_adopt(info); } catch (eFV) {} try { g_showlist.reset(); } catch (eFW2) {} window.Repaint(); break;
 		case "fullscreenWallpaper":
 			fw_setOn(info);
 			try { window.SupportPseudoTransparency = !!info; } catch(e) {}
+			try { g_showlist.reset(); } catch (eFW3) {}
 			window.Repaint();
 		break;
 		case "fullscreenWallpaperRepaint":
@@ -7153,10 +7224,11 @@ function on_notify_data(name, info) {
 			if(layout_state.isEqual(0)) {
 				globalProperties.colorsMainPanel = info;
 				window.SetProperty("全局·主面板配色", globalProperties.colorsMainPanel);
-				properties.showListColored = (globalProperties.colorsMainPanel!=0);
-				properties.AlbumArtProgressbar = (globalProperties.colorsMainPanel!=0);
-				window.SetProperty("曲目列表·模糊封面进度条", properties.AlbumArtProgressbar);
-				window.SetProperty("曲目列表·按封面取色", properties.showListColored);
+				/* 这里不再顺手改「按封面取色 / 模糊封面进度条」：
+				   主面板配色只负责深浅与底色调，列表背景由「曲目列表 → 背景」
+				   的四项自己决定。旧代码在这里把 showListColored 按
+				   colorsMainPanel!=0 关掉，导致主色/混合在收到一次 colors
+				   广播后就整体失效（而全仓早已没有发送方，属于残留链路）。 */
 				get_colors();
 				g_showlist.reset();
 				brw.repaint();

@@ -71,6 +71,8 @@ var properties = {
 	showPanelBtnText: window.GetProperty("显示·显示面板按钮文字", true),
 	showNowPlayingBtn: window.GetProperty("显示·显示正在播放按钮", true),
 	showFullscreenBtn: window.GetProperty("显示·显示全屏按钮", true),
+	/* 主题设置按钮：快捷进主区模式 6（设置面板）。默认显示，和其它按钮同源开关 */
+	showThemeSettingsBtn: window.GetProperty("显示·显示主题设置按钮", true),
 	LightswitchBtnGlobal: window.GetProperty("显示·全局明暗切换按钮", true),
 	savedFilterState: window.GetProperty("属性·已保存的筛选状态", -1),
 	SuperCompact_titlebar: window.GetProperty("属性·精简面板按钮", false),
@@ -250,6 +252,7 @@ function build_images() {
 		trackinfos_on: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\trackinfos_on.png`),
 		trackinfos_off: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\trackinfos_off.png`),
 		fullscreen_img: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\fullscreen_icon.png`),
+		theme_settings_img: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\theme_settings.png`),
 		search_toggle_img: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\search_icon.png`),
 		lightswitch_img: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\lightswitch_icon3.png`),
 		minimode_on_img: gdi.Image(`${theme_img_path}\\icons\\${colors.icons_folder}\\minimode_on_icon.png`),
@@ -637,7 +640,11 @@ function build_buttons(){
 			}, false, false,images.nowplaying_off_icon,images.nowplaying_off_icon,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
 			ConfigLayout: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "Configlayout", "布局配置", function () {
 				draw_layout_menu(this.x+this.w,this.y+this.h-1);
-			}, false, false,images.config_layout_img,images.config_layout_img,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),			
+			}, false, false,images.config_layout_img,images.config_layout_img,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),
+			/* 主题设置按钮：直接落到主区模式 6；迷你布局没有主区，先切回完整布局 */
+			ThemeSettings: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "themesettings", "打开主题设置面板", function () {
+				openThemeSettingsPanel();
+			}, false, false,images.theme_settings_img,images.theme_settings_img,-1, false, false, true,(compact_titlebar.isEqual(2)?'plus1':'normal')),			
 			RightSidebar: new JSButton(-38, btn.top_m, btn.width_small_btns, btn.height, "", "rightsidebar", "隐藏/显示曲目信息", function () {
 				if(getNowPlayingState()==1) {
 					toggleTrackInfosState();
@@ -712,10 +719,10 @@ function build_buttons(){
 		window_btns.addButtons([buttons.Close,buttons.Max,buttons.Mini,buttons.Reduce], [0,0,0,0]);
 
 		additional_btns = new JSButtonGroup("top-right", 11, btn.top_m, 'additional_btns', true);
-		additional_btns.addButtons([buttons.NowPlaying,buttons.ConfigLayout,buttons.RightSidebar,buttons.Fullscreen,buttons.Lightswitch,buttons.ShowSearch], [0,9,0,0]);
+		additional_btns.addButtons([buttons.NowPlaying,buttons.ConfigLayout,buttons.ThemeSettings,buttons.RightSidebar,buttons.Fullscreen,buttons.Lightswitch,buttons.ShowSearch], [0,9,0,0]);
 
 		compact_btns = new JSButtonGroup("top-left", 0, -1, 'compact_btns', true);
-		compact_btns.addButtons([buttons.Settings,buttons.NowPlaying,buttons.ConfigLayout,buttons.RightSidebar,buttons.Lightswitch,buttons.Fullscreen,buttons.ShowSearch], [0,0,0,0]);
+		compact_btns.addButtons([buttons.Settings,buttons.NowPlaying,buttons.ConfigLayout,buttons.ThemeSettings,buttons.RightSidebar,buttons.Lightswitch,buttons.Fullscreen,buttons.ShowSearch], [0,0,0,0]);
 		compact_btns.addButtons([buttons.Library], [0,0,0,btn.margin+5]);
 		compact_btns.addButtons([buttons.Playlists,buttons.Artist_Bio,buttons.Visualization], [0,0,0,btn.margin]);
 	}
@@ -826,6 +833,7 @@ function adapt_buttons_to_layout(){
 		buttons.ConfigLayout.setVisibility(false);		
 		buttons.NowPlaying.setVisibility(false);
 		buttons.RightSidebar.setVisibility(false);
+		buttons.ThemeSettings.setVisibility(false);   /* 迷你布局没有主区，主题设置按钮无意义 */
 		buttons.Settings.calculate_size = true;
 
 		g_searchbox.toggleVisibility(true);
@@ -883,6 +891,11 @@ function adapt_buttons_to_layout(){
 			buttons.NowPlaying.setVisibility(false);
 		else buttons.NowPlaying.setVisibility(true);
 
+		/* 主题设置按钮：与「设置... → 按钮...」里的同名勾选同源 */
+		if(!properties.showThemeSettingsBtn)
+			buttons.ThemeSettings.setVisibility(false);
+		else buttons.ThemeSettings.setVisibility(true);
+
 		additional_btns.x = 14;
 
 		if(compact_titlebar.isEqual(2))
@@ -926,7 +939,7 @@ function adapt_buttons_to_layout(){
 		}
 		cSearchBoxMainDark.marginRight = cSearchBoxMainLight.marginRight = 18 + additional_btns.getWidth(true) - (!properties.alwaysShowSearch?buttons.ShowSearch.w+5:0);
 
-		if(!properties.showRightSidebarBtn && !properties.showLightswitchBtn && !properties.showFullscreenBtn && !properties.showNowPlayingBtn && !properties.showConfigLayoutBtn){
+		if(!properties.showRightSidebarBtn && !properties.showLightswitchBtn && !properties.showFullscreenBtn && !properties.showNowPlayingBtn && !properties.showConfigLayoutBtn && !properties.showThemeSettingsBtn){
 			cSearchBoxMainLight.marginRight -= 10;
 			cSearchBoxMainDark.marginRight -= 10;
 		}
@@ -1181,6 +1194,23 @@ function themeSettingsPanelOn() {
 	if (!g_themeSettingsReady) themeSettingsHandshake();
 	return !!themeSettingsPanelFind() || g_themeSettingsReady;
 }
+/* 打开主题设置面板（主区模式 6）。主菜单 id 10 与标题栏那个齿轮按钮共用这一处：
+   迷你布局没有主区，先切回完整布局；toggleLayoutMode 会改窗口尺寸，
+   所以要等一拍再切模式。 */
+function openThemeSettingsPanel() {
+	if(layout_state.isEqual(1)) {
+		toggleLayoutMode(0);
+		window.SetTimeout(function(){
+			try {
+				main_panel_state.setValue(6);
+				get_colors(); g_searchbox.adapt_look_to_layout();
+			} catch(eOTS) {}
+		}, 200);
+	} else {
+		main_panel_state.setValue(6);
+		get_colors(); g_searchbox.adapt_look_to_layout();
+	}
+}
 function mpvTrackIsVideo() {
 	var np = null;
 	try { np = fb.GetNowPlaying(); } catch(e0) { np = null; }
@@ -1397,20 +1427,8 @@ function on_mouse_rbtn_up(x, y){
 				get_colors();g_searchbox.adapt_look_to_layout();
                 break;
             case (idx == 10):
-				/* 主题设置页在主区里，迷你布局没有主区：先切回完整布局，
-				   等窗口恢复宽度（toggleLayoutMode 会改窗口尺寸）后再切模式 6 */
-				if(layout_state.isEqual(1)) {
-					toggleLayoutMode(0);
-					window.SetTimeout(function(){
-						try {
-							main_panel_state.setValue(6);
-							get_colors();g_searchbox.adapt_look_to_layout();
-						} catch(eTh) {}
-					}, 200);
-				} else {
-					main_panel_state.setValue(6);
-					get_colors();g_searchbox.adapt_look_to_layout();
-				}
+				/* 主题设置页在主区里，迷你布局没有主区：与标题栏齿轮按钮同源 */
+				openThemeSettingsPanel();
                 break;
             case (idx == 5):
 				g_uihacks.toggleFullscreen();
@@ -1484,6 +1502,8 @@ function draw_settings_menu(x,y){
 		_menu_button.CheckMenuItem(1803, properties.showLightswitchBtn);
 		_menu_button.AppendMenuItem(MF_STRING, 1804, "全屏");
 		_menu_button.CheckMenuItem(1804, properties.showFullscreenBtn);
+		_menu_button.AppendMenuItem(MF_STRING, 1814, "主题设置");
+		_menu_button.CheckMenuItem(1814, properties.showThemeSettingsBtn);
 		_menu_button.AppendTo(_menu,MF_STRING, "按钮...");
 
 
@@ -1535,6 +1555,13 @@ function draw_settings_menu(x,y){
 				window.Repaint();
 				/* 菜单里改了按钮显隐：广播一次，让主题设置页即时对齐 */
 				 try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT) {}
+				break;
+			case (idx == 1814):
+				properties.showThemeSettingsBtn = !properties.showThemeSettingsBtn;
+				window.SetProperty("显示·显示主题设置按钮", properties.showThemeSettingsBtn);
+				adapt_buttons_to_layout();
+				window.Repaint();
+				try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT2) {}
 				break;
 			case (idx == 1807):
 				properties.showRightSidebarBtn = !properties.showRightSidebarBtn;
@@ -2667,6 +2694,7 @@ function on_notify_data(name, info) {
 					btn_rightsidebar: properties.showRightSidebarBtn ? 1 : 0,
 					btn_lightswitch: properties.showLightswitchBtn ? 1 : 0,
 					btn_fullscreen: properties.showFullscreenBtn ? 1 : 0,
+					btn_themesettings: properties.showThemeSettingsBtn ? 1 : 0,
 					duifollow: properties.darklayout_follow_cui ? 1 : 0
 				});
 			} catch(eTBG) {}
@@ -2734,6 +2762,10 @@ function on_notify_data(name, info) {
 				} else if (tbKey === "btn_fullscreen") {
 					properties.showFullscreenBtn = !!tbVal;
 					window.SetProperty("显示·显示全屏按钮", properties.showFullscreenBtn);
+					tbFlush();
+				} else if (tbKey === "btn_themesettings") {
+					properties.showThemeSettingsBtn = !!tbVal;
+					window.SetProperty("显示·显示主题设置按钮", properties.showThemeSettingsBtn);
 					tbFlush();
 				} else if (tbKey === "duifollow") {
 					/* 等价于全屏壁纸菜单 5301「监视DUI深浅色」 */
@@ -3061,7 +3093,7 @@ oSearch = function() {
     };
 	this.on_size = function() {
 		if(layout_state.isEqual(0) && compact_titlebar.isActive()){
-			var btns_width = ((properties.showLightswitchBtn)?buttons.Lightswitch.w:0) + ((properties.showConfigLayoutBtn)?buttons.ConfigLayout.w:0) + ((properties.showRightSidebarBtn)?buttons.RightSidebar.w:0) + ((properties.showFullscreenBtn)?buttons.Fullscreen.w:0) + ((properties.showNowPlayingBtn)?buttons.NowPlaying.w:0);
+			var btns_width = ((properties.showLightswitchBtn)?buttons.Lightswitch.w:0) + ((properties.showConfigLayoutBtn)?buttons.ConfigLayout.w:0) + ((properties.showThemeSettingsBtn)?buttons.ThemeSettings.w:0) + ((properties.showRightSidebarBtn)?buttons.RightSidebar.w:0) + ((properties.showFullscreenBtn)?buttons.Fullscreen.w:0) + ((properties.showNowPlayingBtn)?buttons.NowPlaying.w:0);
 			this.setSize(ww - window_btns.getWidth() - buttons.Settings.w - 10 - btns_width, wh-cSearchBox.marginTop-cSearchBox.marginBottom, g_fsize);
 		} else if(layout_state.isEqual(0)){
 			this.setSize(cSearchBox.width, wh-cSearchBox.marginTop-cSearchBox.marginBottom, g_fsize);

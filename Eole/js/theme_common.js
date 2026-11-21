@@ -1,15 +1,53 @@
 ﻿var theme_name = "eole";
-function reloadPanelSafe() {
-	try {
-		if (typeof window.Reload === 'function') { window.Reload(); return true; }
-	} catch (e) {}
-	return false;
-}
-try {
-	if (typeof window.Reload !== 'function') {
-		window.Reload = function () { return false; };
+// 重新加载当前面板。
+// 说明：
+// 1. 不再给 window.Reload 装“空实现”兜底——那会把组件原生接口永久顶掉，导致此后所有
+//    「重新加载」都静默失效，且无法恢复。
+// 2. 组件原生右键菜单里的「重载」是 C++ 内部命令，没有暴露成 JS 命令，脚本里调不到；
+//    但组件另外提供了 window.SetProperties(values, reload_panel=true)：文档明确写它
+//    “不会清空现有属性”，只把传入的值写进去然后重载脚本。传一个空 Map 就等于
+//    “什么都不改，只借用它的 reload_panel 参数重载脚本”。
+// 3. 在右键菜单的 TrackPopupMenu 回调里同步重载，组件可能忽略，因此延后一拍执行。
+// 4. 失败不再静默：写入 foobar 控制台；两条通道都不可用时额外弹一次提示。
+var _reloadFailNotified = false;
+function _reloadPanelNow(clear) {
+	if (typeof window.Reload === 'function') {
+		window.Reload(clear === true);
+		return "Reload";
 	}
-} catch (eReload) {}
+	if (typeof window.SetProperties === 'function') {
+		try {
+			window.SetProperties(new Map(), true); // 空 Map：不改属性，只触发重载
+			return "SetProperties";
+		} catch (eMap) {
+			console.log("[Eole] SetProperties 重载失败：" + eMap);
+		}
+	}
+	return "";
+}
+function reloadPanelSafe(clear) {
+	try {
+		if (typeof window.Reload !== 'function' && typeof window.SetProperties !== 'function') {
+			console.log("[Eole] 重新加载失败：当前面板既没有 window.Reload 也没有 window.SetProperties。");
+			if (!_reloadFailNotified) {
+				_reloadFailNotified = true;
+				try { fb.ShowPopupMessage("当前面板既没有 window.Reload 也没有 window.SetProperties，无法重新加载面板脚本。", "Eole 重新加载"); } catch (ePopup) {}
+			}
+			return false;
+		}
+		window.SetTimeout(function () {
+			try {
+				if (_reloadPanelNow(clear) === "") console.log("[Eole] 重新加载未执行：可用接口调用失败。");
+			} catch (eReloadRun) {
+				console.log("[Eole] 重新加载异常：" + eReloadRun);
+			}
+		}, 1);
+		return true;
+	} catch (e) {
+		console.log("[Eole] 重新加载调用异常：" + e);
+		return false;
+	}
+}
 var ProfilePath = fb.ProfilePath;
 var FoobarPath = fb.FoobarPath;
 var skin_global_path = ProfilePath + "Eole";

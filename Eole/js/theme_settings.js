@@ -95,6 +95,9 @@ var g_ts = {
     scrollDrag: false,
     /* 鼠标是否停在滚动条热区（悬停变粗用） */
     sbHot: false,
+    /* 页头「退出设置面板」按钮：热区矩形在绘制时写入，exitHot 用于悬停变色 */
+    exitBtn: null,
+    exitHot: false,
     /* 拖动滚动条时鼠标与滑块顶部的偏移（按住滑块原处，不跳到鼠标位置） */
     sbGrab: 0,
     mouse: { x: -1, y: -1 },
@@ -222,6 +225,16 @@ function tsMdl2Small() {
         tsMdl2Small._s = gs;
     }
     return tsMdl2Small._f;
+}
+
+/* 页头小图标（退出按钮等）用 MDL2，按需建并把字号写进缓存键 */
+function tsMdl2Icon(px) {
+    px = Math.max(9, Math.round(px));
+    if (!tsMdl2Icon._f || tsMdl2Icon._s !== px) {
+        try { tsMdl2Icon._f = gdi.Font(TS_MDL2, px); } catch (e) { tsMdl2Icon._f = null; }
+        tsMdl2Icon._s = px;
+    }
+    return tsMdl2Icon._f;
 }
 
 function tsText(gr, text, font, color, x, y, w, h, flags) {
@@ -524,7 +537,7 @@ function tsSetControl(key, value) {
 var g_tb = {
     titleinfo: 0, uppercase: 0, minimenu: 0, search: 0, remember: 0, hide_lxbox: 0,
     btn_nowplaying: 0, btn_configlayout: 0, btn_rightsidebar: 0,
-    btn_lightswitch: 0, btn_fullscreen: 0, duifollow: 0, valid: false
+    btn_lightswitch: 0, btn_fullscreen: 0, btn_themesettings: 0, duifollow: 0, valid: false
 };
 
 function tsQueryTitlebar() {
@@ -907,6 +920,7 @@ function tsRows() {
             icons: [
                 { key: 'btn_nowplaying',    name: '右侧栏可见性按钮', file: 'nowplaying_off.png',  dir: 'tb' },
                 { key: 'btn_configlayout',  name: '面板布局按钮',     file: 'panel_settings.png',  dir: 'tb' },
+                { key: 'btn_themesettings', name: '主题设置按钮',     file: 'theme_settings.png',  dir: 'tb' },
                 { key: 'btn_rightsidebar',  name: '右侧栏功能按钮',   file: 'trackinfos_on.png',   dir: 'tb' },
                 { key: 'btn_lightswitch',   name: '明暗切换按钮',     file: 'lightswitch_icon3.png', dir: 'tb' },
                 { key: 'btn_fullscreen',    name: '全屏按钮',         file: 'fullscreen_icon.png', dir: 'tb' }
@@ -1549,9 +1563,20 @@ function tsDrawHeader(gr, c) {
     var x = tsNavW() + TS_PAD;
     var w = Math.max(1, ww - x - TS_PAD);
     var lh = tsNavLineH();
-    tsText(gr, page.title, tsFont('boldplus1'), c.text, x, Math.round(16 * k), w, lh, DT_LEFT | DT_VCENTER);
-    tsText(gr, page.sub, tsFont('min1'), c.sub, x, Math.round(16 * k) + lh, w, lh, DT_LEFT | DT_VCENTER);
+    tsText(gr, page.title, tsFont('boldplus1'), c.text, x, Math.round(16 * k), w - Math.round(44 * k), lh, DT_LEFT | DT_VCENTER);
+    tsText(gr, page.sub, tsFont('min1'), c.sub, x, Math.round(16 * k) + lh, w - Math.round(44 * k), lh, DT_LEFT | DT_VCENTER);
     gr.FillSolidRect(x, tsHeaderH() - Math.round(8 * k), w, 1, c.rowLine);
+
+    /* 右上角「退出设置面板」：MDL2 E711，点一下回媒体库（主区模式 0） */
+    var bs = Math.max(18, Math.round(24 * k));
+    var bx = ww - TS_PAD - bs;
+    var by = Math.round(16 * k) + Math.round((lh * 2 - bs) / 2);
+    g_ts.exitBtn = { x: bx, y: by, w: bs, h: bs };
+    var ef = tsMdl2Icon(Math.max(13, Math.round(bs * 0.72)));
+    if (ef) {
+        tsText(gr, '\uE711', ef, g_ts.exitHot ? c.accent : c.sub, bx, by, bs, bs,
+            DT_CENTER | DT_VCENTER | DT_NOPREFIX);
+    }
 }
 
 function tsDrawRows(gr, c) {
@@ -2501,15 +2526,21 @@ function on_mouse_move(x, y, m) {
     var crS = tsContentRect();
     var sbHot = (g_ts.contentH > crS.h) && (x >= ww - 16) && (y >= crS.y) && (y <= crS.y + crS.h);
 
+    /* 页头退出按钮的热区（绘制时算出来，首帧之前为空） */
+    var eb = g_ts.exitBtn;
+    var exitHot = !!(eb && x >= eb.x && x < eb.x + eb.w && y >= eb.y && y < eb.y + eb.h);
+
     var changed = (nav !== g_ts.navHover) || (rowHover !== g_ts.rowHover) || (key !== g_ts.hoverKey) ||
-        (sbHot !== !!g_ts.sbHot);
+        (sbHot !== !!g_ts.sbHot) || (exitHot !== !!g_ts.exitHot);
     g_ts.sbHot = sbHot;
+    g_ts.exitHot = exitHot;
 
     g_ts.navHover = nav;
     g_ts.rowHover = rowHover;
     g_ts.hoverKey = key;
 
     if (tsNavSplitterHit(x, y)) window.SetCursor(IDC_SIZEWE);
+    else if (g_ts.exitHot) window.SetCursor(IDC_HAND);
     else if (x < tsNavW()) window.SetCursor(IDC_HAND);
     else window.SetCursor(overCtrl ? IDC_HAND : IDC_ARROW);
 
@@ -2526,6 +2557,7 @@ function on_mouse_leave() {
     g_ts.scrollDrag = false;
     g_ts.navDrag = false;
     g_ts.sbHot = false;
+    g_ts.exitHot = false;
     window.Repaint();
 }
 
@@ -2566,6 +2598,14 @@ function on_mouse_lbtn_up(x, y, m) {
     var nav = tsNavAt(x, y);
     if (nav >= 0) { tsSetPage(nav); g_ts.downRow = ''; return; }
     if (x < tsNavW()) { g_ts.downRow = ''; return; }
+
+    /* 页头右上角「退出设置面板」：单点即回媒体库（主区模式 0） */
+    var eb = g_ts.exitBtn;
+    if (eb && x >= eb.x && x < eb.x + eb.w && y >= eb.y && y < eb.y + eb.h && y < tsHeaderH()) {
+        g_ts.downRow = '';
+        try { main_panel_state.setValue(0); } catch (eExit) {}
+        return;
+    }
 
     var hit = tsHitAt(x, y);
     var downId = g_ts.downRow;
