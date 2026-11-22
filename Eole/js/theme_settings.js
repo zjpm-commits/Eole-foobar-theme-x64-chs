@@ -1563,19 +1563,33 @@ function tsDrawHeader(gr, c) {
     var x = tsNavW() + TS_PAD;
     var w = Math.max(1, ww - x - TS_PAD);
     var lh = tsNavLineH();
-    tsText(gr, page.title, tsFont('boldplus1'), c.text, x, Math.round(16 * k), w - Math.round(44 * k), lh, DT_LEFT | DT_VCENTER);
-    tsText(gr, page.sub, tsFont('min1'), c.sub, x, Math.round(16 * k) + lh, w - Math.round(44 * k), lh, DT_LEFT | DT_VCENTER);
+
+    /* 右上角「退出设置」：MDL2 EB96 图标 + 四字文案，热区包住两者，
+       点文字和点图标都能退出；文案在图标左侧，避免顶到窗口右边 */
+    var bs = Math.max(18, Math.round(24 * k));
+    var by = Math.round(16 * k) + Math.round((lh * 2 - bs) / 2);
+    var ef = tsMdl2Icon(Math.max(13, Math.round(bs * 0.72)));
+    var lf = null;
+    try { lf = tsFont('min1'); } catch (eLF) { lf = null; }
+    var exitLabel = '退出设置';
+    var gap = Math.round(6 * k);
+    var lw = (lf && ef) ? tsTextW(gr, exitLabel, lf) : 0;
+    var bx = ww - TS_PAD - bs;
+    var totalW = bs + (lw > 0 ? gap + lw : 0);
+    g_ts.exitBtn = { x: ww - TS_PAD - totalW, y: by, w: totalW, h: bs };
+
+    /* 标题要让出整块按钮的宽度，否则长标题会压到「退出设置」上 */
+    var tw = Math.max(1, w - totalW - Math.round(8 * k));
+    tsText(gr, page.title, tsFont('boldplus1'), c.text, x, Math.round(16 * k), tw, lh, DT_LEFT | DT_VCENTER);
+    tsText(gr, page.sub, tsFont('min1'), c.sub, x, Math.round(16 * k) + lh, tw, lh, DT_LEFT | DT_VCENTER);
     gr.FillSolidRect(x, tsHeaderH() - Math.round(8 * k), w, 1, c.rowLine);
 
-    /* 右上角「退出设置面板」：MDL2 E711，点一下回媒体库（主区模式 0） */
-    var bs = Math.max(18, Math.round(24 * k));
-    var bx = ww - TS_PAD - bs;
-    var by = Math.round(16 * k) + Math.round((lh * 2 - bs) / 2);
-    g_ts.exitBtn = { x: bx, y: by, w: bs, h: bs };
-    var ef = tsMdl2Icon(Math.max(13, Math.round(bs * 0.72)));
+    var exCol = g_ts.exitHot ? c.accent : c.sub;
+    if (lw > 0) {
+        tsText(gr, exitLabel, lf, exCol, bx - gap - lw, by, lw, bs, DT_RIGHT | DT_VCENTER | DT_NOPREFIX);
+    }
     if (ef) {
-        tsText(gr, '\uE711', ef, g_ts.exitHot ? c.accent : c.sub, bx, by, bs, bs,
-            DT_CENTER | DT_VCENTER | DT_NOPREFIX);
+        tsText(gr, '\uEB96', ef, exCol, bx, by, bs, bs, DT_CENTER | DT_VCENTER | DT_NOPREFIX);
     }
 }
 
@@ -2599,11 +2613,24 @@ function on_mouse_lbtn_up(x, y, m) {
     if (nav >= 0) { tsSetPage(nav); g_ts.downRow = ''; return; }
     if (x < tsNavW()) { g_ts.downRow = ''; return; }
 
-    /* 页头右上角「退出设置面板」：单点即回媒体库（主区模式 0） */
+    /* 页头右上角「退出设置」：点图标或文字都退出，回到进设置页之前的主区模式。
+       模式记忆存在标题栏面板的属性里，而 window.GetProperty 是按面板隔离的，
+       本面板读不到那个值，只能发广播让标题栏自己按记忆值切回去。 */
     var eb = g_ts.exitBtn;
     if (eb && x >= eb.x && x < eb.x + eb.w && y >= eb.y && y < eb.y + eb.h && y < tsHeaderH()) {
         g_ts.downRow = '';
-        try { main_panel_state.setValue(0); } catch (eExit) {}
+        var asked = false;
+        try { window.NotifyOthers('ts_exit_theme_settings', 1); asked = true; } catch (eAsk) { asked = false; }
+        /* 兜底：布局里没有标题栏面板接手时，退一步回媒体库，别把用户困在设置页 */
+        try {
+            window.SetTimeout(function () {
+                try {
+                    if (Number(main_panel_state.value) === 6) main_panel_state.setValue(0);
+                } catch (eFB) {}
+            }, 400);
+        } catch (eTmr) {
+            if (!asked) { try { main_panel_state.setValue(0); } catch (eExit0) {} }
+        }
         return;
     }
 

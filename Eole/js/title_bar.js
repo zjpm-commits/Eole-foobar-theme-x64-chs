@@ -573,6 +573,12 @@ function build_buttons(){
 		buttons.ConfigLayout.N_img = images.config_layout_img;
 		buttons.ConfigLayout.D_img = buttons.ConfigLayout.H_img;
 
+		/* 主题设置按钮也要跟着主题重取图标：原来这段没写，深浅切换后它一直
+		   用建按钮那一刻的图（浅色下还是白图标），看着像没变色 */
+		buttons.ThemeSettings.H_img = images.theme_settings_img;
+		buttons.ThemeSettings.N_img = images.theme_settings_img;
+		buttons.ThemeSettings.D_img = buttons.ThemeSettings.H_img;
+
 		var tinfo_img = (getTrackInfosState()>=1) ? images.trackinfos_off : images.trackinfos_on;
 		if(!tinfo_img) tinfo_img = images.nowplaying_off_icon;
 		buttons.RightSidebar.H_img = tinfo_img;
@@ -1197,7 +1203,35 @@ function themeSettingsPanelOn() {
 /* 打开主题设置面板（主区模式 6）。主菜单 id 10 与标题栏那个齿轮按钮共用这一处：
    迷你布局没有主区，先切回完整布局；toggleLayoutMode 会改窗口尺寸，
    所以要等一拍再切模式。 */
+/* 退出主题设置面板：回到进入前的主区模式；异常或首次使用回媒体库（模式 0）。
+   设置面板右上角的「退出设置」和标题栏按钮的二次点击共用这一处。 */
+function exitThemeSettingsPanel() {
+	var prev = 0;
+	try {
+		prev = parseInt(window.GetProperty("属性·主题设置返回模式", 0));
+		if (!isFinite(prev) || prev < 0 || prev > 5) prev = 0;
+	} catch(eEP) { prev = 0; }
+	main_panel_state.setValue(prev);
+	get_colors(); g_searchbox.adapt_look_to_layout();
+}
+
 function openThemeSettingsPanel() {
+	/* 二次点击同一个入口 = 退出：已经停在模式 6 就直接回上一次的界面 */
+	try {
+		var nowMode = parseInt(main_panel_state.value);
+		if (isFinite(nowMode) && nowMode === 6) {
+			exitThemeSettingsPanel();
+			return;
+		}
+	} catch(eTM) {}
+	/* 先记住当前主区模式，设置面板点「退出设置」时原路返回；
+	   已经就在模式 6 时不覆盖，免得把记忆写成 6 之后回不去 */
+	try {
+		var curMode = parseInt(main_panel_state.value);
+		if (isFinite(curMode) && curMode >= 0 && curMode <= 5) {
+			window.SetProperty("属性·主题设置返回模式", curMode);
+		}
+	} catch(eRS) {}
 	if(layout_state.isEqual(1)) {
 		toggleLayoutMode(0);
 		window.SetTimeout(function(){
@@ -2158,8 +2192,8 @@ function draw_main_menu(x,y){
 	var chrome_menu = window.CreatePopupMenu();
 	var _cst = chromeRead();
 	var _cohm = (typeof openhacksGet === 'function') && !!openhacksGet();
-	chrome_menu.AppendMenuItem(_cohm ? MF_STRING : (MF_STRING | MF_GRAYED), 4060, "Openhacks 接管");
-	chrome_menu.AppendMenuItem(MF_STRING, 4061, "uie_jsplitter 接管");
+	chrome_menu.AppendMenuItem(_cohm ? MF_STRING : (MF_STRING | MF_GRAYED), 4060, "Openhacks接管");
+	chrome_menu.AppendMenuItem(MF_STRING, 4061, "uie_jsplitter接管");
 	chrome_menu.CheckMenuRadioItem(4060, 4061, (_cst.manager === 'openhacks' && _cohm) ? 4060 : 4061);
 	chrome_menu.AppendMenuSeparator();
 	var _cok = ((_cst.manager === 'openhacks' && _cohm) || chromeAvailable());
@@ -2634,6 +2668,13 @@ function on_notify_data(name, info) {
 	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
+	/* 主题设置面板点「退出设置」时来这里：模式记忆写在标题栏自己的面板属性里，
+	   设置面板用 window.GetProperty 读不到（属性是按面板隔离的），
+	   所以只能由标题栏按记忆值把主区模式切回去。 */
+	if (name === "ts_exit_theme_settings") {
+		try { exitThemeSettingsPanel(); } catch (eXTS) {}
+		return;
+	}
     switch(name) {
 		case "fw_theme_request": {
 			/* 简介 / Lxbox 这类外部面板启动时会来问一次当前深浅（它们读不到本主题的
