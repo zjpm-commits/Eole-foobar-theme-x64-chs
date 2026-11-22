@@ -1023,39 +1023,39 @@ oRow = function(metadb,itemIndex) {
 		};
 
 		this.tracknumber === "NaN" && (this.tracknumber = "?");
-		this.tracknumber_w === 0 && (this.tracknumber_w = gr.CalcTextWidth(this.discnumber + this.tracknumber, g_font.normal) + 22);
+		this.tracknumber_w === 0 && (this.tracknumber_w = gr.CalcTextWidth(this.discnumber + this.tracknumber, g_font.plus1) + 22);
 
 		if (isPlaying) {
 			elapsed_seconds % 2 === 0
 				? gr.DrawImage(image0, this.x+12,  text_y+Math.ceil((text_height-image0.Height)/2), image0.Width, image0.Height, 0, 0, image0.Width, image0.Height,0,255)
 				: gr.DrawImage(image1, this.x+12,  text_y+Math.ceil((text_height-image1.Height)/2), image1.Width, image1.Height, 0, 0, image1.Width, image1.Height,0,255);
 		} else {
-			gr.GdiDrawText(this.discnumber + this.tracknumber, g_font.normal, g_showlist.colorSchemeTextFaded, this.x - 2, text_y, this.tracknumber_w, text_height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+			gr.GdiDrawText(this.discnumber + this.tracknumber, g_font.plus1, g_showlist.colorSchemeTextFaded, this.x - 2, text_y, this.tracknumber_w, text_height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 		}
 
 		var tx = this.x + this.tracknumber_w + 10;
 		var tw = this.w - this.tracknumber_w - length_w - (this.rating_length==0?0:this.rating_length+10)
 		var tw2 = this.w - this.tracknumber_w - length_w;
-        gr.GdiDrawText(this.title, g_font.normal, g_showlist.colorSchemeText, tx, text_y, tw, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+        gr.GdiDrawText(this.title, g_font.plus1, g_showlist.colorSchemeText, tx, text_y, tw, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
-		this.title_length === 0 && (this.title_length = gr.CalcTextWidth(this.title, g_font.normal));
+		this.title_length === 0 && (this.title_length = gr.CalcTextWidth(this.title, g_font.plus1));
 
 		if (this.artist_text !== "" && !properties.show2lines) {
-			gr.GdiDrawText(` - ${this.artist_text}`, g_font.normal, g_showlist.colorSchemeTextFaded, tx + this.title_length, text_y, tw - this.title_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-			this.artist_length === 0 && (this.artist_length = gr.CalcTextWidth(` - ${this.artist_text}`, g_font.normal));
+			gr.GdiDrawText(` - ${this.artist_text}`, g_font.plus1, g_showlist.colorSchemeTextFaded, tx + this.title_length, text_y, tw - this.title_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+			this.artist_length === 0 && (this.artist_length = gr.CalcTextWidth(` - ${this.artist_text}`, g_font.plus1));
 		}
 		if((properties.showPlaycount || properties.showCodec || properties.showBitrate) && !properties.show2lines){
 			this.playcount_text = "  ("+this.playcount+")";
-			if(this.playcount_length==0) this.playcount_length = gr.CalcTextWidth(this.playcount_text, g_font.min2);
-			gr.GdiDrawText(this.playcount_text, g_font.min2, g_showlist.colorSchemeTextFaded, tx + this.title_length + this.artist_length, text_y, tw - this.title_length - this.artist_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+			if(this.playcount_length==0) this.playcount_length = gr.CalcTextWidth(this.playcount_text, g_font.min1);
+			gr.GdiDrawText(this.playcount_text, g_font.min1, g_showlist.colorSchemeTextFaded, tx + this.title_length + this.artist_length, text_y, tw - this.title_length - this.artist_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 		} else {
 			this.playcount_length = 0;
 			this.playcount_text = '';
 		}
 		if(properties.show2lines) {
 			if(this.secondLine=="") this.secondLine = this.artist_text+(this.artist_text!=""?" - ":"")+this.playcount;
-			if(this.secondLine_length==0) this.secondLine_length = gr.CalcTextWidth(this.secondLine, g_font.normal);
-			gr.GdiDrawText(this.secondLine, g_font.normal, g_showlist.colorSchemeTextFaded, tx, text_y+text_height-6, tw2, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);			
+			if(this.secondLine_length==0) this.secondLine_length = gr.CalcTextWidth(this.secondLine, g_font.plus1);
+			gr.GdiDrawText(this.secondLine, g_font.plus1, g_showlist.colorSchemeTextFaded, tx, text_y+text_height-6, tw2, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);			
 		}
 		if(properties.showToolTip && ((this.title_length + this.artist_length + this.playcount_length) > tw || this.secondLine_length>tw2)) {
 			this.showToolTip = true;
@@ -1069,7 +1069,7 @@ oRow = function(metadb,itemIndex) {
 			
 		} else this.showToolTip = false;
 
-        gr.GdiDrawText(duration, g_font.normal, g_showlist.colorSchemeText, this.x + this.w - length_w, text_y, length_w, text_height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+        gr.GdiDrawText(duration, g_font.plus1, g_showlist.colorSchemeText, this.x + this.w - length_w, text_y, length_w, text_height, DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
         if(isPlaying && properties.AlbumArtProgressbar && properties.drawProgressBar && (cNowPlaying.flashescounter<5 || !cNowPlaying.flashEnable)) {
 				var playingText = gdi.CreateImage(this.w+10, this.h);
@@ -1085,22 +1085,22 @@ oRow = function(metadb,itemIndex) {
 						pt.DrawImage(now_playing_progress0, 12, text_y-this.y+Math.round(text_height/2-now_playing_progress0.Height/2), now_playing_progress0.Width, now_playing_progress0.Height, 0, 0, now_playing_progress0.Width, now_playing_progress0.Height,0,255);
 					else
 						pt.DrawImage(now_playing_progress1, 12, text_y-this.y+Math.round(text_height/2-now_playing_progress0.Height/2), now_playing_progress1.Width, now_playing_progress1.Height, 0, 0, now_playing_progress1.Width, now_playing_progress1.Height,0,255);
-					pt.DrawString(duration, g_font.normal, colors.albumartprogressbar_txt, 0 + this.w - length_w, text_y-this.y+1, length_w, text_height-g_showlist.textBot, 554696704);
+					pt.DrawString(duration, g_font.plus1, colors.albumartprogressbar_txt, 0 + this.w - length_w, text_y-this.y+1, length_w, text_height-g_showlist.textBot, 554696704);
 				playingText.ReleaseGraphics(pt);
 				gr.DrawImage(playingText, this.x, this.y, current_size+12, this.h, 0, 0, current_size+12, this.h, 0, 255);
 				gr.DrawRect(this.x+10, this.y, Math.min(current_size+1,this.w), this.h-1,1,g_showlist.albumartprogressbar_color_rectline);
 
 				if(this.rating_x>0) var title_w = Math.min(current_size-this.tracknumber_w+2,(this.rating_x - this.x - this.tracknumber_w - 20));
 				else var title_w = Math.min(current_size-this.tracknumber_w+2,this.w-this.tracknumber_w+12-length_w);
-				gr.GdiDrawText(this.title, g_font.normal, colors.albumartprogressbar_txt, tx, text_y, title_w, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+				gr.GdiDrawText(this.title, g_font.plus1, colors.albumartprogressbar_txt, tx, text_y, title_w, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 				if(this.artist_text!="" && !properties.show2lines){
-					gr.GdiDrawText(" - "+this.artist_text, g_font.normal, colors.albumartprogressbar_txt, tx + this.title_length, text_y, title_w - this.title_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+					gr.GdiDrawText(" - "+this.artist_text, g_font.plus1, colors.albumartprogressbar_txt, tx + this.title_length, text_y, title_w - this.title_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 				}
 				if(properties.show2lines) {
-					gr.GdiDrawText(this.artist_text+(this.artist_text!=""?" - ":"")+this.playcount, g_font.normal, colors.albumartprogressbar_txt, tx, text_y+text_height-6, title_w, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+					gr.GdiDrawText(this.artist_text+(this.artist_text!=""?" - ":"")+this.playcount, g_font.plus1, colors.albumartprogressbar_txt, tx, text_y+text_height-6, title_w, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 				}				
 				if((properties.showPlaycount || properties.showCodec || properties.showBitrate) && ((tx + this.title_length+ this.artist_length+this.playcount_length+5)<this.rating_x) || (this.rating_x<=0 && (this.tracknumber_w -12 + this.title_length+ this.artist_length+this.playcount_length<this.w - length_w))){
-					gr.GdiDrawText(this.playcount_text, g_font.min2, colors.albumartprogressbar_txt, tx + this.title_length + this.artist_length, text_y, current_size-this.tracknumber_w+2 - this.title_length- this.artist_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
+					gr.GdiDrawText(this.playcount_text, g_font.min1, colors.albumartprogressbar_txt, tx + this.title_length + this.artist_length, text_y, current_size-this.tracknumber_w+2 - this.title_length- this.artist_length, text_height, DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX);
 				}
         }
 		// rating Stars
@@ -4818,7 +4818,7 @@ oBrowser = function(name) {
 							gr.GdiDrawText(this.groups[loop_id].firstRow, g_font.plus2, colors.normal_txt, ax, this.groups[loop_id].text_y, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 						if(this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines >= coverClipTop)
-							gr.GdiDrawText(this.groups[loop_id].secondRow, g_font.normal, colors.faded_txt, ax, this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
+							gr.GdiDrawText(this.groups[loop_id].secondRow, g_font.plus1, colors.faded_txt, ax, this.groups[loop_id].text_y + this.firstRowHeight + space_between_lines, this.coverRealWith, 50+g_fsize, ((properties.centerText | properties.circleMode)?DT_CENTER:DT_LEFT) | DT_TOP | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(typeof this.groups[loop_id].firstRowLength == 'undefined') this.groups[loop_id].firstRowLength = gr.CalcTextWidth(this.groups[loop_id].firstRow,g_font.plus2);
 							if(typeof this.groups[loop_id].secondRowLength == 'undefined') this.groups[loop_id].secondRowLength = gr.CalcTextWidth(this.groups[loop_id].secondRow,g_font.normal);
@@ -6639,8 +6639,8 @@ function on_mouse_leave() {
 function get_colors() {
 	get_colors_global();
 	dark = {
-		normal_txt : GetGrey(240),
-		faded_txt : GetGrey(210),
+		normal_txt : darkcolors.normal_txt,
+		faded_txt : colors.faded_txt,
 		progressbar_linecolor1 : GetGrey(255,25),
 		progressbar_linecolor2 : GetGrey(255,0),
 		progressbar_color_bg_off : GetGrey(0,0),
@@ -6730,7 +6730,7 @@ function get_colors() {
 		colors.headerbar_resize_btnhv = GetGrey(255);
 		colors.no_headerbar_top = GetGrey(0,0);
 
-		colors.albumartprogressbar_txt = GetGrey(255);
+		colors.albumartprogressbar_txt = darkcolors.normal_txt;
 		colors.albumartprogressbar_overlay = GetGrey(0,80);
 		colors.albumartprogressbar_rectline = GetGrey(255,40);
 

@@ -273,6 +273,24 @@ function tsIsDark() {
     return vis || (cm !== 0 && cm !== 1 && cm !== 2);
 }
 
+/* 深色正文跟 theme_common.js 第 950 行的 darkcolors.normal_txt 同源（当前 200）。
+   本面板的 colors / darkcolors 只是占位对象（见文件上方说明），绘制全部走 tsColors()
+   返回的局部对象，所以这里补调一次 get_colors_global() 取常量不会有副作用。
+   取到后缓存；改了 950 行需重载本面板才跟随。 */
+var tsDarkTxtCache = null;
+function tsDarkTxt() {
+    if (tsDarkTxtCache) return tsDarkTxtCache;
+    try {
+        if (typeof get_colors_global === 'function') get_colors_global();
+        if (typeof darkcolors !== 'undefined' && darkcolors &&
+            typeof darkcolors.normal_txt === 'number' && darkcolors.normal_txt) {
+            tsDarkTxtCache = darkcolors.normal_txt;
+        }
+    } catch (e) {}
+    if (!tsDarkTxtCache) tsDarkTxtCache = GetGrey(200);
+    return tsDarkTxtCache;
+}
+
 function tsColors() {
     if (tsIsDark()) {
         return {
@@ -281,10 +299,10 @@ function tsColors() {
             rowHover: GetGrey(255, 12),
             rowHover2: GetGrey(255, 8),
             rowLine: GetGrey(255, 16),
-            text: GetGrey(238),
+            text: tsDarkTxt(),
             sub: GetGrey(150),
             sub2: GetGrey(110),
-            value: GetGrey(200),
+            value: GetGrey(178),
             accent: RGB(15, 177, 255),
             accentText: GetGrey(255),
             ctrlBg: GetGrey(255, 14),

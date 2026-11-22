@@ -347,7 +347,7 @@ function get_colors(){
 		colors.line_top_dark = GetGrey(200);
 		colors.line_bottom = GetGrey(40,200);
 		colors.dotted_progress = GetGrey(255,220);
-		colors.normal_txt = GetGrey(255);
+		colors.normal_txt = darkcolors.normal_txt;
         colors.normal_txt_secondary = GetGrey(192);
 	} else {
 		colors.wallpaper_overlay = GetGrey(255,212);

@@ -2412,7 +2412,7 @@ function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
 		colors.icon_opacity = 200;
-		colors.normal_txt = GetGrey(210);	
+		colors.normal_txt = darkcolors.normal_txt;
 		colors.dragdrop_bg_selected_item = GetGrey(0,190);
 		colors.dragdrop_line_selected_item = GetGrey(255,45);
 		colors.dragdrop_disabled_item = RGBA(255,0,0,60)

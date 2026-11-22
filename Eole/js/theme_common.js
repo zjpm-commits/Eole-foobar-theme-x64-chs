@@ -112,7 +112,7 @@ var globalProperties = {
 	filter_playlist : "筛选结果",	
 	whole_library : "整个媒体库",
 	media_library : "媒体库",
-	default_wallpaper : theme_img_path+"\\nothing_played_full.png",
+	default_wallpaper : theme_img_path+"\\Background\\np_Background.jpg",
     nocover_img: gdi.Image(theme_img_path+"\\no_cover.png"),
     stream_img: gdi.Image(theme_img_path+"\\stream_icon.png"),
 	ResizeQLY: 0,
@@ -947,7 +947,7 @@ function unclipListArea(gr) {
 }
 
 function get_colors_global(){
-	darkcolors.normal_txt = GetGrey(240);
+	darkcolors.normal_txt = GetGrey(200);
 	if(properties.darklayout || properties.stick2darklayout){
 		colors.normal_bg = GetGrey(30);
 		if(globalProperties.colorsMainPanel==0 || globalProperties.colorsMainPanel==1){

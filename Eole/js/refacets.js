@@ -4873,7 +4873,7 @@ function get_images() {
 function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
-		colors.normal_txt = GetGrey(210);
+		colors.normal_txt = darkcolors.normal_txt;
 		colors.grid_txt = GetGrey(255)
 		colors.grid_bg = GetGrey(0,190)
 		colors.gridselected_txt = GetGrey(0)

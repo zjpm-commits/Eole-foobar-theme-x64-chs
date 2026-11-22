@@ -453,3 +453,59 @@ properties = {
 positionButtons();
 get_colors();
 get_font();
+
+/* ===== Eole 接管：深色「用户界面」档的文字色 =====
+   interface.js 的 getUIColours() 在 Eole 深色下把文字写死成 240/255（第 519–520 行），
+   落在 25 灰的面板上偏亮。这里在原函数之后覆盖一次。
+   生效条件与 Eole 自己那段一致（收到深色广播、非模糊主题），并限定在「用户界面」档
+   （ppt.theme == 0）；用户另外选了自定义主题配色时不动。
+   挂在 getUIColours 而不是 getItemColours，是因为后者与 getAccentColour() 都从
+   col.txt / col.txt_h 派生，改这两个值能一次带动正文、标题、副标题、星级与分割线。 */
+
+/* 正文色不写死：跟随 theme_common.js 第 950 行的 darkcolors.normal_txt（当前 200）。
+   简介面板和 theme_common 在同一个脚本上下文（见 theme_common.js:3929 的注释），
+   但这个面板从不调 get_colors_global()，所以第一次用时补调一次、只取常量，
+   并把它顺手改掉的 colors 键原样还原；取到后缓存，改了 950 行要重载面板才生效。 */
+var eoleBioDarkTxtCache = null;
+function eoleBioDarkTxt() {
+	if (eoleBioDarkTxtCache) return eoleBioDarkTxtCache;
+	var v = 0;
+	try {
+		if (typeof get_colors_global === 'function') {
+			var keepTxt = colors.normal_txt, keepFaded = colors.faded_txt,
+				keepBg = colors.bg, keepSeek = colors.imgseekbar;
+			try { get_colors_global(); } catch (e0) {}
+			colors.normal_txt = keepTxt;
+			colors.faded_txt = keepFaded;
+			colors.bg = keepBg;
+			colors.imgseekbar = keepSeek;
+		}
+		if (typeof darkcolors !== 'undefined' && darkcolors && typeof darkcolors.normal_txt === 'number') v = darkcolors.normal_txt;
+	} catch (e1) {}
+	if (!v) v = (typeof GetGrey === 'function') ? GetGrey(200) : RGB(200, 200, 200);
+	eoleBioDarkTxtCache = v;
+	return v;
+}
+var EOLE_BIO_DARK_TXT_H = GetGrey(230);
+
+(function () {
+	if (typeof ui === 'undefined' || !ui || typeof ui.getUIColours !== 'function') return;
+
+	var orig_getUIColours = ui.getUIColours;
+	ui.getUIColours = function () {
+		/* 用户自己选了主题配色时（themed + themeColour），原函数走自定义分支，这里不覆盖 */
+		var customColours = !!(ppt.themed && ppt.themeColour && (ppt.theme == 0 || ppt.theme == 6 || ppt.theme == 7));
+		var ret = orig_getUIColours.apply(this, arguments);
+		try {
+			if (!customColours && eoleDarkState === true && Number(ppt.theme) === 0 &&
+				!this.blur.dark && !this.blur.light) {
+				this.col.txt = eoleBioDarkTxt();
+				this.col.txt_h = EOLE_BIO_DARK_TXT_H;
+			}
+		} catch (e) {}
+		return ret;
+	};
+
+	/* 首次绘制前补算一次，免得要等切换主题才生效 */
+	try { ui.getColours(); } catch (e) {}
+})();

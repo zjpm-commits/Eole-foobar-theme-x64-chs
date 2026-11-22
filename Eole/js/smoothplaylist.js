@@ -5429,7 +5429,7 @@ function get_images() {
 function get_colors() {
 	get_colors_global();
 	if(properties.darklayout){
-		if(window.Name!="BottomPlaylist") colors.normal_txt = GetGrey(210);		
+		colors.normal_txt = darkcolors.normal_txt; /* 原为 210，BottomPlaylist 例外一并取消 */
 		colors.fadedsmall_txt = GetGrey(200);
 		colors.tracknumber_txt = GetGrey(230);
 		colors.flash_bg = GetGrey(255,30),

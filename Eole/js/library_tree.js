@@ -4820,7 +4820,7 @@ function on_focus(is_focused) {
 function get_colors() {
 	get_colors_global();
     if (properties.darklayout) {
-		colors.normal_txt = GetGrey(210);				
+		colors.normal_txt = darkcolors.normal_txt;
 		colors.btn_inactive_opacity = 140;
 		colors.inactive_txt = GetGrey(185);
 

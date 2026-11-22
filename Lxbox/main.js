@@ -458,7 +458,7 @@ var PALETTE = {
     hover: 0xFF1E2633,
     sel: 0xFF14303A,
     line: 0xFF232A36,
-    text: 0xFFE8EEF7,
+    text: 0xFFC8C8C8,
     dim: 0xFF8A96A8,
     accent: 0xFF4CD6FF,
     accentDim: 0xFF163642,
