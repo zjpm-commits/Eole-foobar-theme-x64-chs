@@ -2313,7 +2313,6 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 		}
 		if (DefaultGenreIndex>0 && !showBelow) {
 			genrePopupMenu.AppendMenuItem(MF_STRING, DefaultGenreIndex+999, g_genre_cache.genreList[DefaultGenreIndex-1][0].replace("&","&&")+"（从首个文件路径推断）");
-			genrePopupMenu.AppendMenuSeparator();
 		}
     }
 
@@ -2331,7 +2330,6 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 		else {
 			genrePopupMenu.AppendMenuItem(MF_DISABLED, 0, "从媒体库生成的列表当前为空。");
 			genrePopupMenu.AppendMenuItem(MF_DISABLED, 0, "注意：列表将在下次启动时刷新。");
-			genrePopupMenu.AppendMenuSeparator();
 			genrePopupMenu.AppendMenuItem(MF_STRING, 10000, "立即刷新");
 		}
 	} else {
@@ -2356,8 +2354,6 @@ function createGenrePopupMenu(firstFile, checked_item, genrePopupMenu){
 	}
 	if(firstFile){
 		if(firstFileGenre!="") var currentGenre="Current genre: '"+firstFileGenre.replace("&","&&")+"'";
-
-		genrePopupMenu.AppendMenuSeparator();
 		genrePopupMenu.AppendMenuItem(MF_GRAYED, 0, currentGenre);
 		if(showBelow && firstFileGenre!="") genrePopupMenu.AppendMenuItem(MF_GRAYED, 0, "从路径推断的流派相同");
 	}

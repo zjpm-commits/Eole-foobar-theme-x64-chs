@@ -743,6 +743,14 @@ var MINI_MODE_WIDTH = 300;
 function setFoobarWindowWidth(newWidth) {
 	newWidth = Math.round(newWidth);
 	if (!(newWidth > 0)) return false;
+	/* JSplitter v4.4.2 起移除了旧版 FoobarWindow* / MoveFoobarWindow API（BREAKING CHANGE），
+	   新版统一用 FbWindow；这里优先走 FbWindow，旧插件继续走原路径。 */
+	try {
+		if (window.FbWindow) {
+			window.FbWindow.Width = newWidth;
+			return true;
+		}
+	} catch (eFb) {}
 	try {
 		window.FoobarWindowWidth = newWidth;
 		return true;
@@ -1396,7 +1404,6 @@ function on_mouse_rbtn_up(x, y){
         var idx;
 
 		_menu.AppendMenuItem(MF_STRING, 103, "设置...");
-		_menu.AppendMenuSeparator();
 
 		if(layout_state.isEqual(0)) {
 			_menu.AppendMenuItem(MF_STRING, 1, "本地音乐");
@@ -1417,7 +1424,6 @@ function on_mouse_rbtn_up(x, y){
 			else if(_mpIdx === 4) _menu.CheckMenuItem(8, true);
 			else if(_mpIdx === 5) _menu.CheckMenuItem(9, true);
 			else _menu.CheckMenuItem(10, true);
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
 				_menu.AppendMenuItem(MF_STRING, 5, "退出全屏");
@@ -1428,10 +1434,8 @@ function on_mouse_rbtn_up(x, y){
 		}
 
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 100, "属性 ");
 			_menu.AppendMenuItem(MF_STRING, 101, "配置...");
-            _menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 102, "重新加载");
 		}
         idx = _menu.TrackPopupMenu(x,y);
@@ -1524,8 +1528,6 @@ function draw_settings_menu(x,y){
 
 		_menu.AppendMenuItem(MF_STRING, 1901, "隐藏洛雪音源面板");
 		_menu.CheckMenuItem(1901, !properties.show_visualization)
-
-		_menu.AppendMenuSeparator();
 		_menu_button.AppendMenuItem(MF_STRING, 1806, "右侧栏可见性");
 		_menu_button.CheckMenuItem(1806, properties.showNowPlayingBtn);
 		_menu_button.AppendMenuItem(MF_STRING, 1808, "面板布局");
@@ -1762,8 +1764,6 @@ function draw_layout_menu(x,y){
 	else if(track_infos_state==2) var checked = 203;
 	right_menu_trackdetails.CheckMenuRadioItem(202, 204, checked);				
 	right_menu_trackdetails.AppendTo(nowplaying,MF_STRING, "封面、属性");	
-		
-	nowplaying.AppendMenuSeparator();
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4030, "增加宽度");
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4031, "减小宽度");
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4033, "自定义宽度...");
@@ -1771,20 +1771,17 @@ function draw_layout_menu(x,y){
 
 	if(main_panel_state.isEqual(0)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "媒体库布局");
-		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧列表");
 		left_menu = window.CreatePopupMenu();
 		left_menu.AppendTo(basemenu,MF_STRING, "左侧菜单");
 		if(libraryfilter_state.isActive()) left_menu.AppendMenuItem(MF_STRING, 4028, "隐藏");
 		else left_menu.AppendMenuItem(MF_STRING, 4028, "显示");
-		left_menu.AppendMenuSeparator();
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4034, "增加宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4035, "减小宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4037, "自定义宽度...");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4036, "重置");
 	} else if(main_panel_state.isEqual(1)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "播放列表布局");
-		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 		playlistpanel_menu = window.CreatePopupMenu();
 		playlistpanel_menu.AppendTo(basemenu,MF_STRING, "左侧列表管理");
@@ -1799,7 +1796,6 @@ function draw_layout_menu(x,y){
 			FiltersMenu.AppendMenuItem(MF_STRING, 4988, "显示");
 		FiltersMenu.AppendMenuItem(MF_STRING, 4992, "增加高度");
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive()? MF_STRING : MF_GRAYED), 4991, "减小高度");
-		FiltersMenu.AppendMenuSeparator();
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4993, "启用第 1 个筛选器");
 		FiltersMenu.CheckMenuItem(4993, (filter1_state.isActive()));
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4994, "启用第 2 个筛选器");
@@ -1811,7 +1807,6 @@ function draw_layout_menu(x,y){
 		else basemenu.AppendMenuItem(MF_STRING, 4997, "显示底部播放列表");
 	} else if(main_panel_state.isEqual(2)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "正在播放布局");
-		basemenu.AppendMenuSeparator();				
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 
 		if(!lyrics_state.isActive()){
@@ -1819,37 +1814,27 @@ function draw_layout_menu(x,y){
 		} else {
 			var LyricsMenu = window.CreatePopupMenu();
 			LyricsMenu.AppendMenuItem(MF_STRING, 5000, "隐藏");
-			LyricsMenu.AppendMenuSeparator();
 			LyricsMenu.AppendMenuItem((!lyrics_state.isMaximumValue())?MF_STRING:MF_GRAYED, 4999, "增加宽度");
 			LyricsMenu.AppendMenuItem(MF_STRING, 4998, "减小宽度");
 			LyricsMenu.AppendTo(basemenu, MF_STRING, "歌词面板");
-			LyricsMenu.AppendMenuSeparator();
 			LyricsMenu.AppendMenuItem(MF_STRING, 6000, "显示切换按钮");
 			LyricsMenu.AppendMenuItem(MF_STRING, 6001, "隐藏切换按钮");			
 		}
 	} else if(main_panel_state.isEqual(3)){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "洛雪音源布局");
-		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
-		basemenu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(4)){
 		/* 模式 4（MilkDrop）：右栏开关、宽度调整与其它模式同款 */
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "MilkDrop 布局");
-		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
-		basemenu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(5)){
 		/* 模式 5（MPV 视频 / ESL 歌词）：同上，标题随插件安装状态走 */
 		basemenu.AppendMenuItem(MF_GRAYED, 0, mpvPluginOn() ? "MPV 视频布局" : "ESL 歌词布局");
-		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
-		basemenu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(6)){
 		/* 模式 6（主题设置）：右栏照常保留 */
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "主题设置布局");
-		basemenu.AppendMenuSeparator();
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
-		basemenu.AppendMenuSeparator();
 	}
 
     idx = basemenu.TrackPopupMenu(x, y, 0x0008);
@@ -2088,7 +2073,6 @@ function draw_main_menu(x,y){
 	bio_menu = window.CreatePopupMenu();
 	visu_menu = window.CreatePopupMenu();
 	minimode_menu = window.CreatePopupMenu();
-	basemenu.AppendMenuSeparator();
 
 	wallpaper_visibility = window.CreatePopupMenu();
 	wallpaper_visibility.AppendMenuItem(MF_STRING, 4005, "启用");
@@ -2101,7 +2085,6 @@ function draw_main_menu(x,y){
 	var now_playing_state = getNowPlayingState();
 	if(now_playing_state==1) nowplaying.AppendMenuItem(MF_STRING, 4027, "隐藏");
 	else nowplaying.AppendMenuItem(MF_STRING, 4027, "显示");
-	nowplaying.AppendMenuSeparator();
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4030, "增加宽度");
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4031, "减小宽度");
 	nowplaying.AppendMenuItem((now_playing_state?MF_STRING:MF_GRAYED), 4033, "自定义宽度...");
@@ -2116,7 +2099,6 @@ function draw_main_menu(x,y){
 		left_menu.AppendTo(library_menu,MF_STRING, "左侧菜单");
 		if(libraryfilter_state.isActive()) left_menu.AppendMenuItem(MF_STRING, 4028, "隐藏");
 		else left_menu.AppendMenuItem(MF_STRING, 4028, "显示");
-		left_menu.AppendMenuSeparator();
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4034, "增加宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4035, "减小宽度");
 		left_menu.AppendMenuItem((libraryfilter_state.isActive()?MF_STRING:MF_GRAYED), 4037, "自定义宽度...");
@@ -2137,7 +2119,6 @@ function draw_main_menu(x,y){
 			FiltersMenu.AppendMenuItem(MF_STRING, 4988, "显示");
 		FiltersMenu.AppendMenuItem(MF_STRING, 4992, "增加高度");
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive()? MF_STRING : MF_GRAYED), 4991, "减小高度");
-		FiltersMenu.AppendMenuSeparator();
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4993, "启用第 1 个筛选器");
 		FiltersMenu.CheckMenuItem(4993, (filter1_state.isActive()));
 		FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4994, "启用第 2 个筛选器");
@@ -2157,7 +2138,6 @@ function draw_main_menu(x,y){
 		} else {
 			var LyricsMenu = window.CreatePopupMenu();
 			LyricsMenu.AppendMenuItem(MF_STRING, 5000, "隐藏");
-			LyricsMenu.AppendMenuSeparator();
 			LyricsMenu.AppendMenuItem((!lyrics_state.isMaximumValue())?MF_STRING:MF_GRAYED, 4999, "增加宽度");
 			LyricsMenu.AppendMenuItem(MF_STRING, 4998, "减小宽度");
 			LyricsMenu.AppendTo(bio_menu, MF_STRING, "歌词面板");
@@ -2166,22 +2146,18 @@ function draw_main_menu(x,y){
 	} else if(main_panel_state.isEqual(3)){
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
-		visu_menu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(4)){
 		/* 模式 4（MilkDrop）：复用可视化面板布局，右栏开关与深色开关同模式 3 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
-		visu_menu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(5)){
 		/* 模式 5（MPV 视频 / ESL 歌词）：复用可视化面板布局与深色开关 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
-		visu_menu.AppendMenuSeparator();
 	} else if(main_panel_state.isEqual(6)){
 		/* 模式 6（主题设置）：复用可视化面板布局与深色开关 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
-		visu_menu.AppendMenuSeparator();
 	}
 
 	font_size = window.CreatePopupMenu();
@@ -2195,7 +2171,6 @@ function draw_main_menu(x,y){
 	chrome_menu.AppendMenuItem(_cohm ? MF_STRING : (MF_STRING | MF_GRAYED), 4060, "Openhacks接管");
 	chrome_menu.AppendMenuItem(MF_STRING, 4061, "uie_jsplitter接管");
 	chrome_menu.CheckMenuRadioItem(4060, 4061, (_cst.manager === 'openhacks' && _cohm) ? 4060 : 4061);
-	chrome_menu.AppendMenuSeparator();
 	var _cok = ((_cst.manager === 'openhacks' && _cohm) || chromeAvailable());
 	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4062, "隐藏边框标题栏");
 	chrome_menu.CheckMenuItem(4062, !_cst.frame);
@@ -2203,21 +2178,16 @@ function draw_main_menu(x,y){
 	chrome_menu.CheckMenuItem(4063, !_cst.menu);
 	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4064, "隐藏原生状态栏");
 	chrome_menu.CheckMenuItem(4064, !_cst.status);
-	chrome_menu.AppendMenuSeparator();
 	chrome_menu.AppendMenuItem(_cok ? MF_STRING : (MF_STRING | MF_GRAYED), 4065, "隐藏以上全部栏");
 	chrome_menu.AppendTo(skin_settings_menu, MF_STRING, "边框开关");
 	font_size.AppendMenuItem(MF_STRING, 4012, "增大");
 	font_size.AppendMenuItem(MF_STRING, 4013, "减小");
 	font_size.AppendMenuItem(MF_STRING, 4014, "重置");
-	font_size.AppendMenuSeparator();
 	font_size.AppendMenuItem(MF_DISABLED, 0, "提示：按住 CTRL 并在（几乎）");
 	font_size.AppendMenuItem(MF_DISABLED, 0, "任意面板上滚动鼠标滚轮！");
 
-	skin_settings_menu.AppendMenuSeparator();
-
 	skin_settings_menu.AppendMenuItem(MF_STRING, 4029, "封面内存占用");
 	skin_settings_menu.AppendMenuItem(MF_STRING, 4026, "重置图像缓存");
-	skin_settings_menu.AppendMenuSeparator();
 
 	var ratingMenu = window.CreatePopupMenu();
 	ratingMenu.AppendMenuItem(MF_STRING, 4047, "保存到文件标签-从文件标签读取");
@@ -2232,11 +2202,9 @@ function draw_main_menu(x,y){
 
 	var schedulerMenu = window.CreatePopupMenu();
 	schedulerMenu.AppendMenuItem(MF_STRING, 3018, "不做任何操作");
-	schedulerMenu.AppendMenuSeparator();
 	schedulerMenu.AppendMenuItem(MF_STRING, 3019, "播完当前后停止");
 	schedulerMenu.AppendMenuItem(MF_STRING, 3020, "播完当前后休眠");
 	schedulerMenu.AppendMenuItem(MF_STRING, 3021, "播完当前后关机");
-	schedulerMenu.AppendMenuSeparator();
 	schedulerMenu.AppendMenuItem(MF_STRING, 3022, "播放列表结束后休眠");
 	schedulerMenu.AppendMenuItem(MF_STRING, 3023, "播放列表结束后关机");
 		checked_item=0;
@@ -2272,7 +2240,6 @@ function draw_main_menu(x,y){
 	} else {
 		skin_settings_menu.AppendMenuItem(MF_STRING, 4011, "标准播放器");
 	}
-	skin_settings_menu.AppendMenuSeparator();
 	skin_settings_menu.AppendMenuItem(MF_GRAYED, 0, "Eole v"+globalProperties.theme_version);
 
 	skin_settings_menu.AppendTo(basemenu, MF_STRING, "主题...");
@@ -3436,7 +3403,6 @@ function draw_searchHistory_menu(x, y) {
 	if (typeof y == "undefined") y=30;
 
     basemenu.AppendMenuItem(MF_GRAYED, 0, "搜索历史：");
-	basemenu.AppendMenuSeparator();
 
 	for (var i = g_searchHistory.historyList.length-1; i >=0; i--) {
 		basemenu.AppendMenuItem(MF_STRING, i+1, g_searchHistory.historyList[i][0].replace("&","&&"));
@@ -3444,7 +3410,6 @@ function draw_searchHistory_menu(x, y) {
 	if(g_searchHistory.historyList.length==0) {
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "搜索历史为空");
 	} else {
-		basemenu.AppendMenuSeparator();
 		basemenu.AppendMenuItem(MF_STRING, properties.searchHistory_max_items+10, "清除历史");
 	}
 	basemenu.AppendMenuItem(MF_STRING, 1000, "输入时搜索");
@@ -3508,7 +3473,6 @@ function build_fw_menu() {
 	fw_menu.CheckMenuItem(FW_ID_ON, on);
 	fw_menu.AppendMenuItem(MF_STRING, FW_ID_OFF, "禁用");
 	fw_menu.CheckMenuItem(FW_ID_OFF, !on);
-	fw_menu.AppendMenuSeparator();
 
 	var src_menu = window.CreatePopupMenu();
 	src_menu.AppendMenuItem(MF_STRING, FW_ID_SRC0, "跟随封面");
@@ -3517,7 +3481,6 @@ function build_fw_menu() {
 	var src = fw_source();
 	src_menu.CheckMenuRadioItem(FW_ID_SRC0, FW_ID_SRC2,
 		src === 1 ? FW_ID_SRC1 : (src === 2 ? FW_ID_SRC2 : FW_ID_SRC0));
-	src_menu.AppendMenuSeparator();
 	var p = fw_imagePath();
 	src_menu.AppendMenuItem(MF_STRING, FW_ID_PICK, "选择图片");
 
@@ -3541,7 +3504,6 @@ function build_fw_menu() {
 		pre_menu.AppendMenuItem(MF_GRAYED, 0, "（先把图片放进 img\\Background）");
 	}
 	pre_menu.AppendTo(src_menu, MF_STRING, "预置背景");
-	src_menu.AppendMenuSeparator();
 	src_menu.AppendMenuItem(MF_STRING, FW_ID_CLEAR, "清除已选图片");
 	src_menu.AppendMenuItem((p ? MF_STRING : MF_GRAYED), 0, p ? ("当前：" + p.split("\\").pop()) : "当前：未选择");
 	src_menu.AppendTo(fw_menu, MF_STRING, "壁纸来源");
@@ -3550,9 +3512,7 @@ function build_fw_menu() {
 	var b = Math.round(fw_blurValue());
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_INC, "增强 +5");
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_DEC, "减弱 -5");
-	blur_menu.AppendMenuSeparator();
 	blur_menu.AppendMenuItem(MF_GRAYED, 0, "当前 " + b + " · " + (fw_isDark() ? "深色" : "浅色"));
-	blur_menu.AppendMenuSeparator();
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_0, "不模糊");
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_20, "轻微 20");
 	blur_menu.AppendMenuItem(MF_STRING, FW_ID_BLUR_40, "中等 40");
@@ -3565,9 +3525,7 @@ function build_fw_menu() {
 	var a = fw_maskRaw();
 	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_INC, "加深 +10");
 	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_DEC, "减淡 -10");
-	mask_menu.AppendMenuSeparator();
 	mask_menu.AppendMenuItem(MF_GRAYED, 0, "当前 " + a + " · " + (fw_isDark() ? "深色" : "浅色"));
-	mask_menu.AppendMenuSeparator();
 	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_0, "无蒙版");
 	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_120, "轻 120");
 	mask_menu.AppendMenuItem(MF_STRING, FW_ID_MASK_180, "中 180");
@@ -3581,10 +3539,7 @@ function build_fw_menu() {
 	q_menu.CheckMenuRadioItem(FW_ID_Q1, FW_ID_Q3,
 		FW_ID_Q1 + (fw_quality() - 1));
 	q_menu.AppendTo(fw_menu, MF_STRING, "壁纸质量");
-
-	fw_menu.AppendMenuSeparator();
 	fw_menu.AppendMenuItem(MF_STRING, FW_ID_REFRESH, "刷新壁纸");
-	fw_menu.AppendMenuSeparator();
 	fw_menu.AppendMenuItem(MF_STRING, 5301, "监视DUI深浅色");
 	fw_menu.CheckMenuItem(5301, properties.darklayout_follow_cui);
 	fw_menu.AppendMenuItem(MF_STRING, 5105, "控制栏跟随面板");

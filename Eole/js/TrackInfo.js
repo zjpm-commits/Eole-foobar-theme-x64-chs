@@ -1623,7 +1623,6 @@ function on_mouse_rbtn_up(x, y){
 	var idx;
 
 	main_menu.AppendMenuItem(MF_STRING, 35, "设置...");
-	main_menu.AppendMenuSeparator();
 	if(g_cover.isValid()){
 		var now_playing_track = fb.GetNowPlaying();
 		main_menu.AppendMenuItem(MF_STRING, 1, "以完整/原始尺寸打开封面");
@@ -1637,16 +1636,11 @@ function on_mouse_rbtn_up(x, y){
 		quickSearchMenu.AppendMenuItem(MF_STRING, 33,"相同日期");
 		quickSearchMenu.AppendTo(main_menu, MF_STRING, "快速搜索...");
 	}
-	
-	main_menu.AppendMenuSeparator();
 	main_menu.AppendMenuItem(MF_STRING, 9, "显示正在播放");
-	main_menu.AppendMenuSeparator();
 	main_menu.AppendMenuItem(MF_STRING, 2, "属性");
 	if(utils.IsKeyPressed(VK_SHIFT)) {
-		main_menu.AppendMenuSeparator();
 		main_menu.AppendMenuItem(MF_STRING, 100, "属性 ");
 		main_menu.AppendMenuItem(MF_STRING, 101, "配置...");
-		main_menu.AppendMenuSeparator();
 		main_menu.AppendMenuItem(MF_STRING, 102, "重新加载");
 	}
 	idx = main_menu.TrackPopupMenu(x,y);
@@ -1773,7 +1767,6 @@ function draw_settings_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 20, "对此封面禁用封面缓存");
 		_menu.CheckMenuItem(20,properties.disableCoverCache);		
 		_menu.CheckMenuItem(13,!trackinfostext_state.isActive() && properties.coverNoPadding);				
-		_menu.AppendMenuSeparator();
 		_menu.AppendMenuItem(MF_STRING, 18, "显示曲目详情");
 		_menu.CheckMenuItem(18, trackinfostext_state.isActive());		
 		_menu.AppendMenuItem(trackinfostext_state.isActive()?MF_STRING:MF_GRAYED, 17, "分两行显示详情");
@@ -1782,7 +1775,6 @@ function draw_settings_menu(x,y){
 		_menu.CheckMenuItem(19, properties.customInfos!="");
 		_menu.AppendMenuItem(trackinfostext_state.isActive()?MF_STRING:MF_GRAYED, 16, "显示评级");
 		_menu.CheckMenuItem(16,properties.showRating);		
-		_menu.AppendMenuSeparator();
 
 		var _single_click_menu = window.CreatePopupMenu();
 		_single_click_menu.AppendMenuItem(MF_STRING, 14, "播放 / 暂停");

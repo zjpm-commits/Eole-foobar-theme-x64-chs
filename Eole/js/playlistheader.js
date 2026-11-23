@@ -18,8 +18,22 @@ var g_avoid_on_playlist_items_removed = false;
 var settings_off,settings_hover;
 var showTitleTooltip = false;
 var g_pinfo = null;
-var margin_left=25;
+var margin_left=28;
 var rightpadding=6;
+/* 「分组标题」切换按钮状态：由播放列表面板广播 showGroupHeaders_state 回传，
+   这里只做缓存，用于画开/关两态。 */
+var sgState = window.GetProperty("主面板·分组标题状态", true);
+/* 「古典分组」切换按钮状态：由播放列表面板广播 groupTemplate_state 回传（0=按专辑（默认），1=按专辑（古典）） */
+var sgClassical = window.GetProperty("主面板·古典分组状态", false);
+var group_toggle_imgs = { off: null, on: null, hover_on: null, hover_off: null };
+/* 药丸开关几何：左侧文字 + 右侧 38×18 胶囊轨道，滑块直径 12 */
+var sgSwitchW = 38, sgSwitchH = 18, sgSwitchArc = 9, sgSwitchGap = 6, sgKnobD = 12, sgKnobPad = 3;
+var sgLabelW = 28, sgLabelTxt = "分组";
+var sgTemplateLabelW = 28, sgTemplateLabelTxt = "乐章";
+var sgToggleW = 72, sgToggleH = 22, sgToggleShift = 24, sgToggleGap = 10;
+var sgTemplateToggleW = 72;
+var sgTemplateRetry1 = false, sgTemplateRetry2 = false;
+var sgToggleNeedRebuild = true;
 
 var black_images = {
 	playlist_increase_icon : gdi.Image(theme_img_path + "\\icons\\playlist_increase.png"),
@@ -72,10 +86,91 @@ function get_colors() {
 		colors.settings_hover_bg = GetGrey(230);
 	}
 	setSettingsBtn();
+	setGroupToggleBtn();
+	refreshGroupToggleBtn();
+	if (typeof buttons !== 'undefined' && buttons && buttons.groupToggle) positionButtons();
 } get_colors();
+/* ===== 分组标题切换按钮：文字“分组” + 药丸开关（开=轨道填充、滑块靠右；关=灰轨道、滑块靠左） =====
+   不做预渲染图，直接在 draw 里用 FillRoundRect/FillEllipse 画；宽度按字体实际宽度算，紧随主题字体变化。 */
+function setGroupToggleBtn() {
+	var px_h = 22;                       /* 按钮高度，文字仍按 plus2 字号排 */
+	var fnt = null;
+	try {
+		if (typeof g_fname !== 'undefined' && g_fname) fnt = g_font.plus2;
+	} catch (eFT0) { fnt = null; }
+	sgToggleNeedRebuild = !(fnt && typeof g_fname !== 'undefined' && g_fname);
+	if (!fnt) { try { fnt = gdi.Font("Microsoft YaHei UI", 14); } catch (eFT1) { fnt = null; } }
+	if (!fnt) { try { fnt = gdi.Font("Segoe UI", 14); } catch (eFT2) { fnt = null; } }
+	var wl = 0, w_shift = 0, wl2 = 0;
+	try {
+		var tmp = gdi.CreateImage(1, 1);
+		var gtm = tmp.GetGraphics();
+		wl = gtm.CalcTextWidth(sgLabelTxt, fnt);
+		wl2 = gtm.CalcTextWidth(sgTemplateLabelTxt, fnt);
+		/* 按钮整体右移 2 个字距（即“分组”二字宽） */
+		w_shift = gtm.CalcTextWidth(sgLabelTxt, fnt);
+		tmp.ReleaseGraphics(gtm);
+	} catch (eMW) { wl = 0; w_shift = 0; wl2 = 0; }
+	if (!isFinite(wl) || wl <= 0) wl = 28;
+	if (!isFinite(wl2) || wl2 <= 0) wl2 = wl;
+	if (!isFinite(w_shift) || w_shift <= 0) w_shift = 28;
+	sgLabelW = wl;
+	sgTemplateLabelW = wl2;
+	/* 偏移量不参与按钮自身宽度，但绘制时以自增后的 x 为准 */
+	sgToggleShift = w_shift;
+	/* 总宽 = 文字 + 间距 + 轨道 */
+	sgToggleW = sgLabelW + sgSwitchGap + sgSwitchW;
+	if (!isFinite(sgToggleW) || sgToggleW < 40) sgToggleW = 72;
+	sgTemplateToggleW = sgTemplateLabelW + sgSwitchGap + sgSwitchW;
+	if (!isFinite(sgTemplateToggleW) || sgTemplateToggleW < 40) sgTemplateToggleW = sgToggleW;
+	sgToggleH = px_h;
+}
+function refreshTemplateToggleBtn() {
+	if (typeof buttons === 'undefined' || !buttons || !buttons.templateToggle) return;
+	buttons.templateToggle.w = sgTemplateToggleW;
+	buttons.templateToggle.h = sgToggleH;
+	buttons.templateToggle.tooltip_text = "分组方式：" + (sgClassical ? "按专辑（古典）" : "按专辑（默认）") + "（点击切换）";
+}
+function refreshGroupToggleBtn() {
+	if (typeof buttons === 'undefined' || !buttons || !buttons.groupToggle) return;
+	buttons.groupToggle.w = sgToggleW;
+	buttons.groupToggle.h = sgToggleH;
+	buttons.groupToggle.tooltip_text = "分组标题：" + (sgState ? "开" : "关") + "（点击切换）";
+}
 buttons = {
     Settings: new SimpleButton(0, 8, 21, 21, "Settings", "设置...", function () {
         if(plman.PlaylistItemCount(plman.ActivePlaylist)>0) draw_menu(buttons.Settings.x+25,buttons.Settings.y+25);
+    },false,settings_off,settings_hover,ButtonStates.normal),
+    groupToggle: new SimpleButton(1, 8, 20, 20, "groupToggle", "分组标题：开（点击切换）", function () {
+        sgState = !sgState;
+        try { window.SetProperty("主面板·分组标题状态", sgState); } catch (eSGS0) {}
+        refreshGroupToggleBtn();
+        window.Repaint();
+        try { window.NotifyOthers("showGroupHeaders_set", sgState); } catch (eSGS1) {}
+    },false,group_toggle_imgs.off || settings_off,group_toggle_imgs.hover_off || settings_hover,ButtonStates.normal),
+    templateToggle: new SimpleButton(1, 8, 20, 20, "templateToggle", "分组方式：按专辑（默认）（点击切换）", function () {
+        sgClassical = !sgClassical;
+        try { window.SetProperty("主面板·古典分组状态", sgClassical); } catch (eSGT0) {}
+        refreshTemplateToggleBtn();
+        window.Repaint();
+        /* 真正切分组方式是各播放列表面板：BottomPlaylist 与 NowPlayingPlaylist 都要切。
+           目标面板可能正忙着重建立表而丢掉这次通知，所以隔一会儿再补发两次。 */
+        var sgSendTemplateState = function () {
+            try { window.NotifyOthers("groupTemplate_set", sgClassical); } catch (eSGT1) {}
+        };
+        sgSendTemplateState();
+        if (sgTemplateRetry1) clearTimeout(sgTemplateRetry1);
+        sgTemplateRetry1 = setTimeout(function () {
+            sgSendTemplateState();
+            clearTimeout(sgTemplateRetry1);
+            sgTemplateRetry1 = false;
+            if (sgTemplateRetry2) clearTimeout(sgTemplateRetry2);
+            sgTemplateRetry2 = setTimeout(function () {
+                sgSendTemplateState();
+                clearTimeout(sgTemplateRetry2);
+                sgTemplateRetry2 = false;
+            }, 150);
+        }, 60);
     },false,settings_off,settings_hover,ButtonStates.normal),
     filtersToggle: new SimpleButton(18, 8, 50, 21, "filtersToggle", "加宽筛选器", function () {
 		if(filters_panel_state.isMaximumValue()) filters_panel_state.decrement(1);
@@ -89,9 +184,53 @@ buttons = {
     },black_images.playlist_decrease_icon,black_images.playlist_decrease_hover_icon,ButtonStates.normal,224),
 }
 
+/* 文字 + 药丸开关自绘：开态轨道填充主题强调色、滑块靠右；关态灰轨道、滑块靠左。
+   两个开关（分组标题 / 古典分组）共用这套画法，只是文字与状态不同。 */
+function sgDrawPillToggle(gr, btn, label, label_w, on) {
+	if (btn.state == ButtonStates.hide) return;
+	var hovered = (btn.state == ButtonStates.hover);
+	var sh = sgSwitchH, arc = sgSwitchArc;
+	var tx = btn.x, ty = btn.y, th = btn.h;
+	/* DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX */
+	gr.GdiDrawText(label, g_font.plus2, colors.normal_txt, tx, ty, label_w, th,
+		0x00000004 | 0x00000020 | 0x00000010);
+	/* 轨道 */
+	var x0 = tx + label_w + sgSwitchGap;
+	var y0 = ty + Math.round((th - sh) / 2);
+	var track_col;
+	if (on) {
+		track_col = colors.selected_bg;                       /* 主题强调色（深浅布局都定义了） */
+	} else {
+		track_col = properties.darklayout ? GetGrey(255, hovered ? 78 : 46) : GetGrey(0, hovered ? 78 : 46);
+	}
+	try { gr.SetSmoothingMode(2); } catch (eSM0) {}
+	gr.FillRoundRect(x0, y0, sgSwitchW, sh, arc, arc, track_col);
+	/* 滑块：纯白，深浅主题上都立得住；轨道内上下左右留 sgKnobPad */
+	var kd = sgKnobD;
+	var kx = on ? x0 + sgSwitchW - sgKnobPad - kd : x0 + sgKnobPad;
+	var ky = y0 + Math.round((sh - kd) / 2);
+	gr.FillEllipse(kx, ky, kd, kd, GetGrey(255));
+	try { gr.SetSmoothingMode(0); } catch (eSM1) {}
+}
+buttons.groupToggle.draw = function (gr) {
+	sgDrawPillToggle(gr, this, sgLabelTxt, sgLabelW, sgState);
+};
+buttons.templateToggle.draw = function (gr) {
+	sgDrawPillToggle(gr, this, sgTemplateLabelTxt, sgTemplateLabelW, sgClassical);
+};
+
 function positionButtons(){
 	buttons.filtersToggle.x=ww-38;
 	buttons.Settings.x=ww-40;
+	buttons.groupToggle.x = 1 + sgToggleShift;
+	buttons.templateToggle.x = buttons.groupToggle.x + sgToggleW + sgToggleGap;
+	/* 垂直居中，和标题栏主标题同一条中线 */
+	buttons.groupToggle.y = Math.round((wh - sgToggleH) / 2);
+	buttons.templateToggle.y = buttons.groupToggle.y;
+	/* 标题文字起点跟随两个开关的实际宽度 */
+	margin_left = buttons.templateToggle.x + sgTemplateToggleW + 8;
+	refreshGroupToggleBtn();
+	refreshTemplateToggleBtn();
 
 	if(properties.darklayout){
 
@@ -250,19 +389,14 @@ function draw_settings_menu(x, y) {
 
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive())? MF_STRING : MF_GRAYED, 4991, "减小高度");
 	FiltersMenu.AppendMenuItem(MF_STRING, 4992, "增加高度");
-
-	FiltersMenu.AppendMenuSeparator();
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4993, "启用第 1 个筛选器");
 	FiltersMenu.CheckMenuItem(4993, (filter1_state.isActive()));
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4994, "启用第 2 个筛选器");
 	FiltersMenu.CheckMenuItem(4994, (filter2_state.isActive()));
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4995, "启用第 3 个筛选器");
 	FiltersMenu.CheckMenuItem(4995, (filter3_state.isActive()));
-
-	basemenu.AppendMenuSeparator();
 	basemenu.AppendMenuItem(MF_STRING, 4989, "显示切换按钮");
 	basemenu.CheckMenuItem(4989, properties.displayToggleBtns);
-	basemenu.AppendMenuSeparator();
 
     idx = 0;
     idx = basemenu.TrackPopupMenu(x, y, 0x0008);
@@ -351,8 +485,6 @@ function draw_menu(x, y) {
 
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive())? MF_STRING : MF_GRAYED, 4991, "减小高度");
 	FiltersMenu.AppendMenuItem(MF_STRING, 4992, "增加高度");
-
-	FiltersMenu.AppendMenuSeparator();
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4993, "启用第 1 个筛选器");
 	FiltersMenu.CheckMenuItem(4993, (filter1_state.isActive()));
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4994, "启用第 2 个筛选器");
@@ -360,14 +492,11 @@ function draw_menu(x, y) {
 	FiltersMenu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 4995, "启用第 3 个筛选器");
 	FiltersMenu.CheckMenuItem(4995, (filter3_state.isActive()));
 	FiltersMenu.AppendTo(panelsMenu, MF_STRING, "筛选器");
-
-	panelsMenu.AppendMenuSeparator();
 	panelsMenu.AppendMenuItem(MF_STRING, 4989, "显示切换按钮");
 	panelsMenu.CheckMenuItem(4989, properties.displayToggleBtns);
 	panelsMenu.AppendTo(basemenu, MF_STRING, "面板位置");
 
 	if(!plman.IsAutoPlaylist(plman.ActivePlaylist)){
-		basemenu.AppendMenuSeparator();
 		var SortMenu = window.CreatePopupMenu(); //Custom Entries
 		SortMenu.AppendTo(basemenu, MF_STRING, "排序方式");
 		
@@ -381,11 +510,8 @@ function draw_menu(x, y) {
 		SortMenu.AppendMenuItem(MF_STRING, 3008, "从长到短");
 		SortMenu.AppendMenuItem(MF_STRING, 3009, "评级");
 		SortMenu.AppendMenuItem(MF_STRING, 3010, "自定义标题格式...");
-		SortMenu.AppendMenuSeparator();
 		SortMenu.AppendMenuItem(MF_STRING, 3011, "随机排列");
 	}
-	
-    basemenu.AppendMenuSeparator();
     basemenu.AppendMenuItem(MF_STRING, 3000, "全选");
     basemenu.AppendMenuItem(MF_STRING, 2998, "全部移除");
 	metadblist_selection = plman.GetPlaylistSelectedItems(plman.ActivePlaylist);
@@ -400,10 +526,8 @@ function draw_menu(x, y) {
 	basemenu.AppendMenuItem(MF_STRING, 2000, "曲目属性");
 
 	if(utils.IsKeyPressed(VK_SHIFT)) {
-		basemenu.AppendMenuSeparator();
 		basemenu.AppendMenuItem(MF_STRING, 5100, "属性 ");
 		basemenu.AppendMenuItem(MF_STRING, 5101, "配置...");
-		basemenu.AppendMenuSeparator();
 		basemenu.AppendMenuItem(MF_STRING, 5102, "重新加载");
 	}
 
@@ -814,6 +938,18 @@ function on_size(w, h) {
 
 
 function on_paint(gr) {
+	/* include 阶段主题字体还没就绪，首帧补建一次文字按钮 */
+	if (sgToggleNeedRebuild) {
+		try {
+			if (typeof g_fname !== 'undefined' && g_fname) {
+				sgToggleNeedRebuild = false;
+				setGroupToggleBtn();
+				refreshGroupToggleBtn();
+				refreshTemplateToggleBtn();
+				positionButtons();
+			}
+		} catch (eTRB) {}
+	}
 	try {
 		if (typeof fw_sharedOn === 'function' && fw_sharedOn() &&
 			window.SupportPseudoTransparency !== true) window.SupportPseudoTransparency = true;
@@ -994,6 +1130,8 @@ function on_mouse_mbtn_down(x, y, mask) {
     runContextCommand("Properties",plman.GetPlaylistItems(plman.ActivePlaylist));
 }
 function on_mouse_lbtn_dblclk(x,y){
+    var b = chooseButton(x, y);
+    if (b && (b.text === "groupToggle" || b.text === "templateToggle")) return;   /* 双击切换按钮不要顺带播放第一首 */
     plman.ExecutePlaylistDefaultAction(plman.ActivePlaylist,0);
 }
 function on_playback_new_track(metadb) {
@@ -1100,6 +1238,20 @@ function on_notify_data(name, info) {
 			properties.TFsorting = info;
 			window.SetProperty("主面板·播放列表排序格式", properties.TFsorting);
 		break;		
+		case "showGroupHeaders_state_bottom":
+			sgState = !!info;
+			try { window.SetProperty("主面板·分组标题状态", sgState); } catch (eSGS2) {}
+			refreshGroupToggleBtn();
+			window.Repaint();
+		break;
+		case "groupTemplate_state":
+			/* 播放列表面板回传的真实分组方式：info 为 {index, classical}，也兼容直接传布尔 */
+			if (info && typeof info === 'object') sgClassical = !!info.classical;
+			else sgClassical = !!info;
+			try { window.SetProperty("主面板·古典分组状态", sgClassical); } catch (eSGT2) {}
+			refreshTemplateToggleBtn();
+			window.Repaint();
+		break;
     };
 };
 function on_init(){
@@ -1109,5 +1261,8 @@ function on_init(){
 	g_pinfo = new playlistInfo();
 	g_pinfo.refresh_needed = 4;
 	positionButtons();
+	/* 问一次播放列表面板的真实状态，按钮才不会和面板脱节 */
+	try { window.NotifyOthers("showGroupHeaders_query", true); } catch (eSGQ) {}
+	try { window.NotifyOthers("groupTemplate_query", true); } catch (eGTQ) {}
 }
 on_init();

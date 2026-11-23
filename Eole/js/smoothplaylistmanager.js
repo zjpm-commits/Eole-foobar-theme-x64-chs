@@ -125,6 +125,147 @@ timers = {
 	sendManagerHeight:false
 };
 
+/* =====================================================================
+   播放列表虚拟分组
+   - pmGroups: [{ id, name, collapsed }]
+   - pmGroupMap: { playlistGUID : groupId }
+   只改"显示层"，不动 plman 的物理顺序（拖拽入组时才会顺带移动播放列表）。
+   持久化用面板属性，键 "分组·数据"，存 JSON。
+   ===================================================================== */
+var pmGroups = [];
+var pmGroupMap = {};
+var pmGroupsLoaded = false;
+var g_pm_mdl2_font = null;
+function get_pm_mdl2_font() {
+	if(!g_pm_mdl2_font) {
+		try { g_pm_mdl2_font = gdi.Font("Segoe MDL2 Assets", Math.max(10, g_fsize)); } catch(eMF) { g_pm_mdl2_font = null; }
+	}
+	return g_pm_mdl2_font;
+}
+
+function pmLoadGroups() {
+	if(pmGroupsLoaded) return;
+	pmGroupsLoaded = true;
+	try {
+		var raw = window.GetProperty("分组·数据", "");
+		if(raw && raw.length > 2) {
+			var obj = JSON.parse(raw);
+			pmGroups = (obj && obj.groups && obj.groups.length) ? obj.groups : [];
+			pmGroupMap = (obj && obj.map) ? obj.map : {};
+		}
+	} catch(ePL) {
+		pmGroups = [];
+		pmGroupMap = {};
+	}
+	pmSanitizeGroups();
+}
+function pmSaveGroups() {
+	try {
+		window.SetProperty("分组·数据", JSON.stringify({ groups: pmGroups, map: pmGroupMap }));
+	} catch(ePS) {}
+}
+function pmFindGroup(gid) {
+	for(var i = 0; i < pmGroups.length; i++) {
+		if(pmGroups[i].id === gid) return pmGroups[i];
+	}
+	return null;
+}
+function pmNewGroupId() {
+	return "pg_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+}
+function pmUniqueGroupName(base) {
+	var name = base;
+	var n = 2;
+	while(pmGroupNameTaken(name)) { name = base + " " + n; n++; }
+	return name;
+}
+function pmGroupNameTaken(name) {
+	for(var i = 0; i < pmGroups.length; i++) {
+		if(pmGroups[i].name === name) return true;
+	}
+	return false;
+}
+/* 组内成员：按 plman 物理顺序返回索引 */
+function pmGroupMembers(gid) {
+	var arr = [];
+	for(var i = 0; i < plman.PlaylistCount; i++) {
+		if(pmGroupMap[plman.GetGUID(i)] === gid) arr.push(i);
+	}
+	return arr;
+}
+function pmGroupHasMembers(gid) {
+	for(var guid in pmGroupMap) {
+		if(pmGroupMap[guid] === gid) return true;
+	}
+	return false;
+}
+/* MovePlaylist 会改变索引，用 GUID 重新定位（不依赖 plman.GetPlaylistIndex） */
+function pmFindPlaylistIndexByGuid(guid) {
+	for(var i = 0; i < plman.PlaylistCount; i++) {
+		if(plman.GetGUID(i) === guid) return i;
+	}
+	return -1;
+}
+/* 清掉已消失播放列表留下的映射；空组保留但不再显示成员 */
+function pmSanitizeGroups() {
+	var alive = {};
+	for(var i = 0; i < plman.PlaylistCount; i++) alive[plman.GetGUID(i)] = true;
+	for(var guid in pmGroupMap) {
+		if(!alive[guid]) delete pmGroupMap[guid];
+	}
+	for(var gi = pmGroups.length - 1; gi >= 0; gi--) {
+		if(!pmGroups[gi] || typeof pmGroups[gi].name !== "string") pmGroups.splice(gi, 1);
+	}
+}
+function pmAddGroup(name, anchorIdx) {
+	var g = { id: pmNewGroupId(), name: pmUniqueGroupName(name || "新分组"), collapsed: false };
+	pmGroups.push(g);
+	if(typeof anchorIdx === "number" && anchorIdx >= 0 && anchorIdx < plman.PlaylistCount) {
+		pmGroupMap[plman.GetGUID(anchorIdx)] = g.id;
+	}
+	pmSaveGroups();
+	return g;
+}
+function pmRemoveGroup(gid) {
+	for(var i = pmGroups.length - 1; i >= 0; i--) {
+		if(pmGroups[i].id === gid) pmGroups.splice(i, 1);
+	}
+	for(var guid in pmGroupMap) {
+		if(pmGroupMap[guid] === gid) delete pmGroupMap[guid];
+	}
+	pmSaveGroups();
+}
+function pmSetCollapsed(gid, state) {
+	var g = pmFindGroup(gid);
+	if(g) { g.collapsed = !!state; pmSaveGroups(); }
+}
+function pmToggleCollapsed(gid) {
+	var g = pmFindGroup(gid);
+	if(g) { g.collapsed = !g.collapsed; pmSaveGroups(); }
+}
+/* 把一组播放列表移入分组：写映射；若传了目标索引，顺带把物理位置挪到一起 */
+function pmMoveIntoGroup(rowIdxList, gid) {
+	var moved = false;
+	for(var i = 0; i < rowIdxList.length; i++) {
+		var idx = rowIdxList[i];
+		if(idx < 0 || idx >= plman.PlaylistCount) continue;
+		var guid = plman.GetGUID(idx);
+		if(pmGroupMap[guid] !== gid) { pmGroupMap[guid] = gid; moved = true; }
+	}
+	if(moved) pmSaveGroups();
+	return moved;
+}
+function pmRemoveFromGroup(rowIdxList) {
+	var moved = false;
+	for(var i = 0; i < rowIdxList.length; i++) {
+		var idx = rowIdxList[i];
+		if(idx < 0 || idx >= plman.PlaylistCount) continue;
+		var guid = plman.GetGUID(idx);
+		if(pmGroupMap[guid]) { delete pmGroupMap[guid]; moved = true; }
+	}
+	if(moved) pmSaveGroups();
+	return moved;
+}
 function CreateAutoPlaylist(pl_place, pl_name, query) {
 	try {
 		result = utils.InputBox(window.ID, "为您的播放列表命名。", "新建自动播放列表", "新建自动播放列表", true);
@@ -151,13 +292,13 @@ function DeletePlaylist(delete_pid) {
 				timers.deletePlaylist && clearTimeout(timers.deletePlaylist);
 				timers.deletePlaylist = false;
 			}, 150);
-			var updateActivePlaylist = (brw.selectedRow == plman.ActivePlaylist || plman.ActivePlaylist == parent.delete_pid);
+			var updateActivePlaylist = (brw.selectedRow == brw.getRowIdFromIdx(plman.ActivePlaylist) || plman.ActivePlaylist == parent.delete_pid);
 			var row = brw.getRowIdFromIdx(parent.delete_pid);
 			plman.RemovePlaylistSwitch(parent.delete_pid);
 			if(row < brw.rowsCount - 1) {
-				brw.selectedRow = parent.delete_pid;
+				brw.selectedRow = row;
 			} else if(row > 0) {
-				brw.selectedRow = parent.delete_pid - 1;
+				brw.selectedRow = row - 1;
 			};
 			if(updateActivePlaylist) {
 				if(row < brw.rowsCount - 1) {
@@ -836,7 +977,7 @@ oBrowser = function(name) {
     this.keypressed = false;
     this.inputbox = null;
     this.inputboxID = -1;
-    this.selectedRow = plman.ActivePlaylist;
+    this.selectedRow = 0;
 	this.playing_icon_x = 0;
 	this.playing_icon_y = 0;
 	this.playing_icon_w = 0;
@@ -894,47 +1035,115 @@ oBrowser = function(name) {
 			return 0;
 		}		
 		g_avoid_on_playlists_changed = true;
-		if(properties.showNewPlaylistButton) this.rows.shift();
-		this.rows.sort(sortPlaylistAlphabetically);
-		var order = [];
-		for(var i = this.rows.length - 1; i > 0; i--) {
-			order[this.rows[i].idx] = i;
-			g_avoid_on_playlists_changed = true;
+		/* 只排序真实播放列表行；组头（idx=-1）不参与，否则 MovePlaylist(-1) 会崩 */
+		var real_rows = [];
+		for(var s = 0; s < this.rows.length; s++) {
+			var sr = this.rows[s];
+			if(sr.isGroup || sr.idx < 0) continue;
+			real_rows.push(sr);
 		}
-		order.forEach((v, i) => {
-			plman.MovePlaylist(v, i);
-		});
+		real_rows.sort(sortPlaylistAlphabetically);
+		var guids = [];
+		for(var q = 0; q < real_rows.length; q++) guids.push(plman.GetGUID(real_rows[q].idx));
+		for(var i2 = 0; i2 < guids.length; i2++) {
+			var cur_i = pmFindPlaylistIndexByGuid(guids[i2]);
+			if(cur_i >= 0 && cur_i !== i2) plman.MovePlaylist(cur_i, i2);
+		}
 		this.populate(true,14);
 	}
     this.init_groups = () => {
         var rowId = 0;
-        var name = "";
-        var total = plman.PlaylistCount;
-        this.previous_playlistCount = total;
+        this.previous_playlistCount = plman.PlaylistCount;
 		this.rows.splice(0, this.rows.length);
+        pmLoadGroups();
+        pmSanitizeGroups();
         var str_filter = process_string(filter_text);
+        var has_filter = str_filter.length > 0;
 
 		// draw Create playlist Button
 		if(properties.showNewPlaylistButton) {
 			this.rows.push(new oPlaylistRow(-1, rowId, globalProperties.create_playlist));
 			rowId++;
 		}
-		
-		for(var i = 0; i < total; i++) {
-			name = plman.GetPlaylistName(i);
-			if(name==globalProperties.filter_playlist) this.filter_results = i;
-			if(ExcludePlaylist(name)){
-				var toAdd = false;
-			} else if(str_filter.length > 0) {
-				var toAdd = match(name, str_filter);
-			} else {
-				var toAdd = true;
-			};
-			if(toAdd) {
-				this.rows.push(new oPlaylistRow(i, rowId, name));
-				rowId++;
-			};
-		};
+
+        /* 第一遍：按物理顺序收集「组块」的可见成员和散项 */
+        var blockMembers = {};   // gid -> [idx...]
+        var blockMatch = {};     // gid -> bool（组名本身是否命中筛选）
+        var loose = [];
+        var i, name, gid;
+        for(var g = 0; g < pmGroups.length; g++) {
+            blockMembers[pmGroups[g].id] = [];
+            blockMatch[pmGroups[g].id] = !has_filter || match(pmGroups[g].name, str_filter);
+        }
+        for(i = 0; i < plman.PlaylistCount; i++) {
+            name = plman.GetPlaylistName(i);
+            if(name == globalProperties.filter_playlist) this.filter_results = i;
+            if(ExcludePlaylist(name)) continue;
+            var name_ok = !has_filter || match(name, str_filter);
+            gid = pmGroupMap[plman.GetGUID(i)];
+            if(gid && pmFindGroup(gid)) {
+                if(name_ok || blockMatch[gid]) blockMembers[gid].push(i);
+            } else if(name_ok) {
+                loose.push(i);
+            }
+        }
+
+        /* 第二遍：输出。组头插在「该组第一个可见成员」的位置；折叠组不输出成员。 */
+        var emitted = {};
+        var loose_set = {};
+        for(var l = 0; l < loose.length; l++) loose_set[loose[l]] = true;
+        for(i = 0; i < plman.PlaylistCount; i++) {
+            name = plman.GetPlaylistName(i);
+            if(ExcludePlaylist(name)) continue;
+            gid = pmGroupMap[plman.GetGUID(i)];
+            if(gid && pmFindGroup(gid)) {
+                if(emitted[gid]) continue;
+                emitted[gid] = true;
+                if(has_filter && !blockMatch[gid] && (!blockMembers[gid] || blockMembers[gid].length === 0)) continue;
+                var grp = pmFindGroup(gid);
+                var header = new oPlaylistRow(-1, rowId, grp.name);
+                header.isGroup = true;
+                header.groupId = grp.id;
+                header.isExpanded = !grp.collapsed;
+                header.groupTrackCount = 0;
+                /* 曲数按整组统计（折叠时也要显示） */
+                var all_members = pmGroupMembers(gid);
+                for(var am = 0; am < all_members.length; am++) {
+                    header.groupTrackCount += plman.PlaylistItemCount(all_members[am]);
+                }
+                this.rows.push(header);
+                rowId++;
+                if(grp.collapsed) continue;
+                var mem = blockMembers[gid] || [];
+                for(var m = 0; m < mem.length; m++) {
+                    var midx = mem[m];
+                    var mn = plman.GetPlaylistName(midx);
+                    if(ExcludePlaylist(mn)) continue;
+                    var prow = new oPlaylistRow(midx, rowId, mn);
+                    prow.level = 1;
+                    prow.groupId = gid;
+                    this.rows.push(prow);
+                    rowId++;
+                }
+            } else if(loose_set[i]) {
+                this.rows.push(new oPlaylistRow(i, rowId, plman.GetPlaylistName(i)));
+                rowId++;
+            }
+        }
+        /* 空组（没有任何成员）也要有组头，否则新建分组后看不见 */
+        for(var eg = 0; eg < pmGroups.length; eg++) {
+            var egid = pmGroups[eg].id;
+            if(emitted[egid]) continue;
+            if(has_filter && !blockMatch[egid]) continue;
+            var eheader = new oPlaylistRow(-1, rowId, pmGroups[eg].name);
+            eheader.isGroup = true;
+            eheader.groupId = egid;
+            eheader.isExpanded = !pmGroups[eg].collapsed;
+            eheader.groupTrackCount = 0;
+            this.rows.push(eheader);
+            rowId++;
+            emitted[egid] = true;
+        }
 
         this.rowsCount = rowId;
         this.getlimits();
@@ -959,7 +1168,7 @@ oBrowser = function(name) {
 
     this.populate = (is_first_populate, call_id, reset_scroll) => {
         this.init_groups();
-		if(this.selectedRow > this.rowsCount) this.selectedRow = plman.ActivePlaylist;		
+		if(this.selectedRow > this.rowsCount) this.selectedRow = this.getRowIdFromIdx(plman.ActivePlaylist);		
         if(reset_scroll) scroll = scroll_ = 0;
         this.scrollbar.updateScrollbar();
         this.repaint();
@@ -997,9 +1206,10 @@ oBrowser = function(name) {
     };
 
     this.showSelectedPlaylist = () => {
-        var rowId = this.getRowIdFromIdx(brw.selectedRow);
-
-        if(!this.isVisiblePlaylist(brw.selectedRow)) {
+        var rowId = brw.selectedRow;
+        if(rowId < 0) rowId = this.getRowIdFromIdx(plman.ActivePlaylist);
+        if(rowId < 0) return;
+        if(rowId < g_start_ || rowId > g_end_) {
             scroll = (rowId - Math.floor(this.totalRowsVis / 2)) * properties.rowHeight;
             scroll = check_scroll(scroll);
             this.scrollbar.updateScrollbar();
@@ -1019,6 +1229,32 @@ oBrowser = function(name) {
 	this.FindPlayingPlaylist = () => {
 		if(!fb.IsPlaying) this.PlayingPlaylist = -1;
 		this.PlayingPlaylist = this.getRowIdFromIdx(plman.PlayingPlaylist);
+	};
+	/* 分组头：固定行高，左侧三角 + 名称 + 右侧组内合计曲数 */
+	this.drawGroupHeader = function(gr, ax, ay, aw, ah, i) {
+		var row = this.rows[i];
+		/* 分组头也画左侧 hover 竖线：条件与普通列表行完全一致 */
+		if((((g_rightClickedIndex > -1 && g_rightClickedIndex == i) || i == this.activeRow) && !(this.scrollbar.cursorDrag || this.scrollbar.cursorHover) && !g_dragndrop_status && !(cPlaylistManager.drag_clicked && cPlaylistManager.drag_source_id!=i)) || (cPlaylistManager.drag_clicked && cPlaylistManager.drag_source_id==i && !g_dragndrop_status)) {
+			gr.FillSolidRect(ax, ay, colors.width_marker_hover_item, ah, colors.marker_hover_item);
+		}
+		gr.FillSolidRect(ax + this.paddingLeft, ay + ah - 1, aw - this.paddingLeft - this.paddingRight, 1, colors.alternate_row);
+		var tri = row.isExpanded ? "\uE70D" : "\uE76C";
+		var f = get_pm_mdl2_font();
+		var tri_x = ax + this.paddingLeft + 2;
+		var tx = ax + this.paddingLeft + 22;
+		if(f) {
+			/* 用固定 14×14 的盒子做垂直居中：整行高度直接绘制时 MDL2 chevron 会明显偏上 */
+			var tri_box = 14;
+			var tri_y = ay + Math.round((ah - tri_box) / 2) + 1;
+			gr.GdiDrawText(tri, f, colors.faded_txt, tri_x, tri_y, tri_box, tri_box, 0x00000001 | 0x00000004 | 0x00000020 | 0x00000010);
+		}
+		var count_txt = (row.groupTrackCount || 0) + "";
+		var cw = gr.CalcTextWidth(count_txt, g_font.min2);
+		var name_w = aw - tx - this.paddingRight - (properties.drawItemsCounter ? (cw + 8) : 0);
+		gr.GdiDrawText(row.name, g_font.boldplus1, colors.normal_txt, tx, ay, name_w, ah, 0x00000004 | 0x00000020 | 0x00008000 | 0x00000010);
+		if(properties.drawItemsCounter) {
+			gr.GdiDrawText(count_txt, g_font.min2, colors.faded_txt, ax + aw - cw - this.paddingRight, ay, cw + 2, ah, 0x00000002 | 0x00000004 | 0x00000020 | 0x00000010);
+		}
 	};
 
     this.draw = function(gr) {
@@ -1047,6 +1283,10 @@ oBrowser = function(name) {
                     this.rows[i].x = ax;
                     this.rows[i].y = ay;
 					if(ay >= this.y && ay < this.y + this.h) {
+                        if(this.rows[i].isGroup) {
+                            this.drawGroupHeader(gr, ax, ay, aw, ah, i);
+                            continue;
+                        }
                         // =========
                         // row bg
                         // =========
@@ -1269,13 +1509,21 @@ oBrowser = function(name) {
 					if(!cTouch.down && !timers.mouseDown && this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
 						window.NotifyOthers("g_avoid_on_focus_change",true);
 						this.selectedRow = this.activeRow;
+						/* 分组头：单击折叠 / 展开（整行重新铺一遍，行数会变） */
+						if(this.rows[this.activeRow].isGroup) {
+							var pause_gid = this.rows[this.activeRow].groupId;
+							pmToggleCollapsed(pause_gid);
+							this.populate(true, 6, false);
+							this.repaint();
+							break;
+						}
 						if(properties.showNewPlaylistButton && this.rows[this.activeRow].idx ==-1 && !avoidDbleClick){
 							avoidDbleClick = true;
 							var total = plman.PlaylistCount;
 							if(CreatePlaylist(total, "")){
 								plman.MovePlaylist(total, total);
 								plman.ActivePlaylist = total;
-								brw.selectedRow = total;
+								brw.selectedRow = Math.max(0, brw.getRowIdFromIdx(total));
 							}
 							g_cursor.setCursor(IDC_ARROW,40);
 							avoidDbleClickTimer = setTimeout(function() {
@@ -1324,14 +1572,46 @@ oBrowser = function(name) {
                     } else {
                         // drop playlist switch
                         if(cPlaylistManager.drag_target_id > -1) {
-                            if(cPlaylistManager.drag_target_id != cPlaylistManager.drag_source_id) {
-                                cPlaylistManager.drag_droped = true
-                                if(cPlaylistManager.drag_target_id < cPlaylistManager.drag_source_id) {
-                                    plman.MovePlaylist(this.rows[cPlaylistManager.drag_source_id].idx, this.rows[cPlaylistManager.drag_target_id].idx);
-                                } else if(cPlaylistManager.drag_target_id > cPlaylistManager.drag_source_id) {
-                                    plman.MovePlaylist(this.rows[cPlaylistManager.drag_source_id].idx, this.rows[cPlaylistManager.drag_target_id].idx);
-                                };
-                            };
+                            var src_row = this.rows[cPlaylistManager.drag_source_id];
+                            var tgt_row = this.rows[cPlaylistManager.drag_target_id];
+                            if(src_row && src_row.idx >= 0 && !src_row.isGroup && !tgt_row) {
+                                /* 拖到列表末尾的空白区：直接挪到最后一个物理位置 */
+                                var src_guid_end = plman.GetGUID(src_row.idx);
+                                plman.MovePlaylist(src_row.idx, plman.PlaylistCount - 1);
+                                var end_idx = pmFindPlaylistIndexByGuid(src_guid_end);
+                                if(end_idx >= 0) pmRemoveFromGroup([end_idx]);
+                                cPlaylistManager.drag_droped = true;
+                                this.populate(true, 20, false);
+                            } else if(src_row && tgt_row && !src_row.isGroup && src_row.idx >= 0) {
+                                var src_guid = plman.GetGUID(src_row.idx);
+                                if(tgt_row.isGroup) {
+                                    /* 拖到组头：挪到该组最后一个成员之后，并归入该组 */
+                                    var members_g = pmGroupMembers(tgt_row.groupId);
+                                    if(members_g.length) {
+                                        plman.MovePlaylist(src_row.idx, members_g[members_g.length - 1] + 1);
+                                    }
+                                    var moved_idx = pmFindPlaylistIndexByGuid(src_guid);
+                                    if(moved_idx >= 0) pmMoveIntoGroup([moved_idx], tgt_row.groupId);
+                                    pmSetCollapsed(tgt_row.groupId, false);
+                                    cPlaylistManager.drag_droped = true;
+                                } else if(cPlaylistManager.drag_target_id != cPlaylistManager.drag_source_id) {
+                                    cPlaylistManager.drag_droped = true;
+                                    var tgt_gid = tgt_row.groupId || null;
+                                    if(tgt_row.idx >= 0) {
+                                        if(cPlaylistManager.drag_target_id < cPlaylistManager.drag_source_id) {
+                                            plman.MovePlaylist(src_row.idx, tgt_row.idx);
+                                        } else {
+                                            plman.MovePlaylist(src_row.idx, tgt_row.idx);
+                                        }
+                                    }
+                                    var moved_idx2 = pmFindPlaylistIndexByGuid(src_guid);
+                                    if(moved_idx2 >= 0) {
+                                        if(tgt_gid) pmMoveIntoGroup([moved_idx2], tgt_gid);
+                                        else pmRemoveFromGroup([moved_idx2]);
+                                    }
+                                }
+                                this.populate(true, 17, false);
+                            }
                             this.selectedRow = cPlaylistManager.drag_target_id;
                         };
                     };
@@ -1356,6 +1636,12 @@ oBrowser = function(name) {
             case "dblclk":  //browser dblclk
 
                 if(this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
+					if(this.rows[this.activeRow].isGroup) {
+						pmToggleCollapsed(this.rows[this.activeRow].groupId);
+						this.populate(true, 19, false);
+						this.repaint();
+						break;
+					}
 					plman.ExecutePlaylistDefaultAction(this.rows[this.activeRow].idx,0);
                 } else {
                     // scrollbar
@@ -1365,7 +1651,7 @@ oBrowser = function(name) {
 						var total = plman.PlaylistCount;
 						if(CreatePlaylist(total, "")){
 							plman.ActivePlaylist = total;
-							brw.selectedRow = total;
+							brw.selectedRow = Math.max(0, brw.getRowIdFromIdx(total));
 						}
 						g_cursor.setCursor(IDC_ARROW,43);
 					}
@@ -1382,7 +1668,7 @@ oBrowser = function(name) {
                     };
                     if(cPlaylistManager.drag_moved) {
                         if(this.activeRow > -1) {
-							if(properties.showNewPlaylistButton && this.rows[this.activeRow].idx ==-1) this.activeRow=this.activeRow+1
+			if(properties.showNewPlaylistButton && !this.rows[this.activeRow].isGroup && this.rows[this.activeRow].idx ==-1) this.activeRow=this.activeRow+1
                             if(timers.movePlaylist) {
                                 timers.movePlaylist && window.ClearInterval(timers.movePlaylist);
                                 timers.movePlaylist = false;
@@ -1606,6 +1892,80 @@ oBrowser = function(name) {
         scroll_prev = scroll;
     }
 
+	/* 分组头专属右键菜单 */
+	this.group_context_menu = function(x, y, id) {
+		var MF_SEPARATOR = 0x00000800;
+		var MF_STRING = 0x00000000;
+		var row = this.rows[id];
+		var grp = pmFindGroup(row.groupId);
+		if(!grp) return true;
+		var _menu = window.CreatePopupMenu();
+		_menu.AppendMenuItem(MF_STRING, 300, grp.collapsed ? "展开分组" : "折叠分组");
+		_menu.AppendMenuItem(MF_STRING, 301, "重命名分组");
+		_menu.AppendMenuItem(MF_SEPARATOR, 0, "");
+		_menu.AppendMenuItem(MF_STRING, 302, "删除分组（列表保留）");
+		_menu.AppendMenuItem(MF_STRING, 303, "全部移出分组");
+		_menu.AppendMenuItem(MF_STRING, 304, "在此分组新建播放列表");
+		_menu.AppendMenuItem(MF_SEPARATOR, 0, "");
+		_menu.AppendMenuItem(MF_STRING, 1, "设置...");
+
+		var idx = _menu.TrackPopupMenu(x, y);
+		switch(true) {
+			case (idx == 300):
+				pmToggleCollapsed(grp.id);
+				this.populate(true, 8, false);
+				this.repaint();
+				break;
+			case (idx == 301):
+				try {
+					var nm = utils.InputBox(window.ID, "重命名分组：" + grp.name, "重命名分组", grp.name, true);
+					if(nm && nm != "") { grp.name = nm; pmSaveGroups(); this.populate(true, 9, false); this.repaint(); }
+				} catch(eR) {}
+				break;
+			case (idx == 302): {
+				/* 与「删除此播放列表」用同一个确认对话框（HtmlDialog），确认后才删 */
+				var del_grp = grp;
+				var mgr_self = this;
+				var group_delete_confirmation = function(status, confirmed) {
+					if(!confirmed) return;
+					pmRemoveGroup(del_grp.id);
+					mgr_self.populate(true, 10, false);
+					mgr_self.repaint();
+				};
+				try {
+					HtmlDialog("删除此分组", "删除分组 '"+del_grp.name+"' 吗？（分组内的播放列表会保留）", '是', '否', group_delete_confirmation);
+				} catch(eGD) {
+					pmRemoveGroup(del_grp.id);
+					mgr_self.populate(true, 10, false);
+					mgr_self.repaint();
+				}
+				break;
+			}
+			case (idx == 303):
+				pmRemoveFromGroup(pmGroupMembers(grp.id));
+				this.populate(true, 11, false);
+				this.repaint();
+				break;
+			case (idx == 304):
+				var total = plman.PlaylistCount;
+				if(CreatePlaylist(total, "分组内新列表")) {
+					pmGroupMap[plman.GetGUID(total)] = grp.id;
+					pmSaveGroups();
+					grp.collapsed = false;
+					plman.ActivePlaylist = total;
+					this.populate(true, 12, false);
+					this.repaint();
+				}
+				break;
+			case (idx == 1):
+				this.settings_context_menu(x, y);
+				break;
+		}
+		_menu = undefined;
+		g_rbtn_click = false;
+		return true;
+	};
+
 	this.context_menu = function(x, y, id) {
         var MF_SEPARATOR = 0x00000800;
         var MF_STRING = 0x00000000;
@@ -1613,13 +1973,16 @@ oBrowser = function(name) {
         var _newplaylist = window.CreatePopupMenu();
         var _autoplaylist = window.CreatePopupMenu();
         var idx;
+        var orig_row_id = id;
         var total_area, visible_area;
         var bout, z;
+        if(id != null && id >= 0 && this.rows[id] && this.rows[id].isGroup) {
+            return this.group_context_menu(x, y, id);
+        }
         var add_mode = (id == null || id < 0 || (this.rows[id] && this.rows[id].idx<0));
         var total = plman.PlaylistCount;
 
 		_menu.AppendMenuItem(MF_STRING, 1, "设置...");
-		_menu.AppendMenuSeparator();
 
         if(!add_mode) {
             var pl_idx = this.rows[id].idx;
@@ -1642,6 +2005,21 @@ oBrowser = function(name) {
         _autoplaylist.AppendMenuItem(MF_STRING, 213, properties.podcasts);
         _menu.AppendMenuItem(MF_SEPARATOR, 0, "");
         _menu.AppendMenuItem(MF_STRING, 2, "加载播放列表");
+
+        /* 分组操作 */
+        var _toGroup = window.CreatePopupMenu();
+        var member_gid = (!add_mode && this.rows[id]) ? this.rows[id].groupId : null;
+        var group_cnt = 0;
+        for(var gi = 0; gi < pmGroups.length; gi++) {
+            if(pmGroups[gi].id === member_gid) continue;
+            _toGroup.AppendMenuItem(MF_STRING, 400 + gi, pmGroups[gi].name);
+            group_cnt++;
+        }
+        _toGroup.AppendMenuItem(MF_STRING, 410, "新建分组并移入");
+        _toGroup.AppendTo(_menu, MF_STRING, "移到分组");
+        if(member_gid) _menu.AppendMenuItem(MF_STRING, 320, "移出分组");
+        _menu.AppendMenuItem(MF_STRING, 330, "新建分组");
+
         if(!add_mode) {
             _menu.AppendMenuItem(MF_STRING, 4, "保存此播放列表");
             _menu.AppendMenuItem(MF_SEPARATOR, 0, "");
@@ -1668,7 +2046,7 @@ oBrowser = function(name) {
 			if(CreatePlaylist(total, "")){
 				plman.MovePlaylist(total, pl_idx);
 				plman.ActivePlaylist = pl_idx;
-				brw.selectedRow = total;
+				brw.selectedRow = Math.max(0, brw.getRowIdFromIdx(total));
 			}
 			g_cursor.setCursor(IDC_ARROW,44);
             this.repaint();
@@ -1721,6 +2099,34 @@ oBrowser = function(name) {
             if(brw.rowsCount > 0) {
 				DeletePlaylist(pl_idx);
             };
+            break;
+        case (idx==320):
+            if(!add_mode && this.rows[id]) {
+                pmRemoveFromGroup([this.rows[id].idx]);
+                this.populate(true, 13, false);
+                this.repaint();
+            }
+            break;
+        case (idx>=400 && idx<410):
+            var gi2 = idx - 400;
+            if(!add_mode && this.rows[id] && pmGroups[gi2]) {
+                pmMoveIntoGroup([this.rows[id].idx], pmGroups[gi2].id);
+                this.populate(true, 14, false);
+                this.repaint();
+            }
+            break;
+        case (idx==410):
+            if(!add_mode && this.rows[id]) {
+                pmAddGroup("新分组", this.rows[id].idx);
+                this.populate(true, 15, false);
+                this.repaint();
+            }
+            break;
+        case (idx==330):
+            var anchor_pl = (orig_row_id != null && orig_row_id >= 0 && this.rows[orig_row_id] && !this.rows[orig_row_id].isGroup) ? this.rows[orig_row_id].idx : -1;
+            pmAddGroup("新分组", anchor_pl);
+            this.populate(true, 16, false);
+            this.repaint();
             break;
         case (idx==200):
             var total = plman.PlaylistCount;
@@ -1796,7 +2202,6 @@ oBrowser = function(name) {
         var idx;
 
         _menu.AppendMenuItem(MF_GRAYED, 0, "显示：");
-        _menu.AppendMenuSeparator();
 
         _menu.AppendMenuItem(MF_STRING, 910, "搜索栏");
         _menu.CheckMenuItem(910, properties.showHeaderBar);
@@ -1808,12 +2213,9 @@ oBrowser = function(name) {
 
 		_menu.AppendMenuItem(MF_STRING, 913, "播放列表图标");
 		_menu.CheckMenuItem(913, properties.showPlaylistIcons);
-		
-		_menu.AppendMenuSeparator();
 
 		_rowHeight.AppendMenuItem(MF_STRING, 1000, "增大");
 		_rowHeight.AppendMenuItem(MF_STRING, 1001, "减小");
-		_rowHeight.AppendMenuSeparator();
 		_rowHeight.AppendMenuItem(MF_DISABLED, 0, "提示：按住 SHIFT 并使用");
 		_rowHeight.AppendMenuItem(MF_DISABLED, 0, "鼠标滚轮在面板上滚动！");
 		_rowHeight.AppendTo(_menu,MF_STRING, "行高");
@@ -2437,6 +2839,7 @@ function get_colors() {
 }
 
 function on_font_changed() {
+	g_pm_mdl2_font = null;
     get_font();
 	g_filterbox.setSize(ww, cFilterBox.h+2, g_fsize+2);
 	g_filterbox.onFontChanged();
@@ -2592,9 +2995,16 @@ function on_key_down(vkey) {
                     if(brw.rowsCount > 0) {
                         if(g_filterbox.inputbox && g_filterbox.inputbox.edit) return;
                         brw.repaint();
+						var sel_row = brw.rows[brw.selectedRow];
+						if(sel_row && sel_row.isGroup) {
+							pmToggleCollapsed(sel_row.groupId);
+							brw.populate(true, 21, false);
+							brw.repaint();
+							break;
+						}
 						try{
-							plman.ActivePlaylist = brw.selectedRow;
-						} catch(e){plman.ActivePlaylist = brw.rowsCount - 1;console.log("active error")}
+							if(sel_row && sel_row.idx >= 0) plman.ActivePlaylist = sel_row.idx;
+						} catch(e){console.log("active error")}
                         cPlaylistManager.playlist_switch_pending = true;
                     };
                     break;
@@ -2753,6 +3163,10 @@ function on_playback_time(time) {
 
 //=================================================// Playlist Callbacks
 function on_playlists_changed() {
+	/* 播放列表被删/被复制后，先清掉失效 GUID 的分组映射 */
+	pmLoadGroups();
+	pmSanitizeGroups();
+	pmSaveGroups();
 	if(!g_avoid_on_playlists_changed && g_first_populate_done && window.IsVisible){
 		if(cPlaylistManager.drag_droped) {
 			g_cursor.setCursor(IDC_ARROW,46);
@@ -2770,7 +3184,7 @@ function on_playlist_switch() {
 	if(window.IsVisible) {
 		g_active_playlist = plman.ActivePlaylist;
 		brw.showActivePlaylist();
-		if(brw.selectedRow > brw.rowsCount) brw.selectedRow = plman.ActivePlaylist;
+		if(brw.selectedRow > brw.rowsCount) brw.selectedRow = brw.getRowIdFromIdx(plman.ActivePlaylist);
 		brw.repaint();
 	} else set_update_function('on_playlist_switch()');
 }
@@ -2964,6 +3378,8 @@ function on_drag_over(action, x, y, mask) {
 	try{
 		if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].isAutoPlaylist) {
 			return;
+		} else if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].isGroup) {
+			action.Text = "移入分组";
 		} else if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].idx>-1) {
 			action.Text = "插入";
 		} else {
@@ -2979,11 +3395,21 @@ function on_drag_drop(action, x, y, mask) {
     if(y > brw.y) {
         var drop_done = false;
 		var rename_playlist = false;
+        var drop_into_group = null;
         if(brw.activeRow > -1) {
             drop_done = true;
 			if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].isAutoPlaylist) {
 				action.Effect = 0;
-				HtmlMsg("错误", "'"+plman.GetPlaylistName(g_dragndrop_targetPlaylistId)+"' 是自动生成的播放列表（自动播放列表）。\n无法手动向自动播放列表添加曲目", "确定");
+				HtmlMsg("错误", "'"+plman.GetPlaylistName(brw.rows[g_dragndrop_targetPlaylistId].idx)+"' 是自动生成的播放列表（自动播放列表）。\n无法手动向自动播放列表添加曲目", "确定");
+            } else if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].isGroup) {
+                /* 拖到组头：新建播放列表后直接归入该组 */
+                drop_into_group = brw.rows[g_dragndrop_targetPlaylistId].groupId;
+				var total_pl = plman.PlaylistCount;
+				plman.CreatePlaylist(total_pl, "拖放的项目");
+				action.Effect = 1;
+				action.Playlist = total_pl;
+				action.ToSelect = false;
+				rename_playlist = true;
             } else if(g_dragndrop_targetPlaylistId > -1 && brw.rows[g_dragndrop_targetPlaylistId].idx>-1) {
                 action.Effect = 1;
                 action.Playlist = brw.rows[g_dragndrop_targetPlaylistId].idx;
@@ -3017,6 +3443,15 @@ function on_drag_drop(action, x, y, mask) {
 				}
 			} catch(e) {
 			}
+		}
+		if(drop_into_group) {
+			try {
+				var new_guid = plman.GetGUID(total_pl);
+				if(new_guid) pmMoveIntoGroup([total_pl], drop_into_group);
+				var dg = pmFindGroup(drop_into_group);
+				if(dg) { dg.collapsed = false; pmSaveGroups(); }
+				brw.populate(true, 18, false);
+			} catch(eDG) {}
 		}
         if(drop_done) {
             // create a timer to blink the playlist item where tracks have been droped!

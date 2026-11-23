@@ -271,17 +271,14 @@ function on_mouse_rbtn_up(x, y) {
         m.AppendMenuItem(MF_STRING, 3008, md_playlistVisible() ? '关闭浮层列表' : '打开浮层列表');
         m.AppendMenuItem(MF_STRING, 3006, md_sidebarHidden ? '显示左侧设置面板' : '隐藏左侧设置面板');
         m.AppendMenuItem(MF_STRING, 3007, md_fullscreen ? '退出全屏' : '全屏');
-        m.AppendMenuSeparator();
         m.AppendMenuItem(MF_STRING, 3004, '重新编译当前预设');
         m.AppendMenuItem(MF_STRING, 3005, '回到媒体库模式');
-        m.AppendMenuSeparator();
         fpsM.AppendTo(m, MF_STRING, '帧率');
         list.AppendTo(m, MF_STRING, '预设');
     } else {
         m.AppendMenuItem(MF_GRAYED, 0, 'MilkDrop样例未加载或目录为空');
         try { m.AppendMenuItem(MF_GRAYED, 0, typeof presetDir !== 'undefined' ? presetDir : ''); } catch (eP) { }
         /* 样例坏了也可能正处全屏：留一条退出通道 */
-        m.AppendMenuSeparator();
         m.AppendMenuItem(MF_STRING, 3007, md_fullscreen ? '退出全屏' : '全屏');
     }
 

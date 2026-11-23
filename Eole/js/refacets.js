@@ -1087,7 +1087,6 @@ oTagSwitcherBar = function() {
 		this.search_history_bt.changeState(ButtonStates.normal);
 		
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "分组依据：");
-		basemenu.AppendMenuSeparator();
 		
 		for(i = this.items_txt.length-1; i >= 0; i--) {
 			basemenu.AppendMenuItem(MF_STRING, i+1, this.items_txt[i]);
@@ -3705,10 +3704,8 @@ oBrowser = function(name) {
 		this.metadblist_selection = this.groups[albumIndex].pl.Clone();
 
 		_menu.AppendMenuItem(MF_STRING, 1, "设置...");
-		_menu.AppendMenuSeparator();
 		if(fb.IsPlaying && this.current_sourceMode==0){
 			_menu.AppendMenuItem(MF_STRING, 1011, "定位当前播放分组");
-			_menu.AppendMenuSeparator();
 		}
 		if(properties.displayMode==1 || properties.displayMode==2 || properties.displayMode==3){
 			_menu.AppendMenuItem(MF_STRING, 1010, "刷新此图像");
@@ -3732,10 +3729,8 @@ oBrowser = function(name) {
 		Context.BuildMenu(_menu, 2, -1);
 
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 1001, "属性 ");
 			_menu.AppendMenuItem(MF_STRING, 1002, "配置...");
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 1003, "重新加载");
 		}
 
@@ -3809,7 +3804,6 @@ oBrowser = function(name) {
 				_menu0.AppendMenuItem(MF_STRING, 51, "播放列表");
 				_menu0.CheckMenuRadioItem(50, 51, 50 + (properties.adapt_to_playlist?1:0));
 				_menu0.AppendTo(_menu,MF_STRING, "来源");
-				_menu.AppendMenuSeparator();
 			}
 
             _menu13.AppendMenuItem(MF_STRING, 113, "默认（%genre%）");
@@ -3830,7 +3824,6 @@ oBrowser = function(name) {
 
 			if(properties.showLibraryTreeSwitch) {
 				_menu.AppendMenuItem(MF_STRING, 990, "切换到媒体库树");
-				_menu.AppendMenuSeparator();
 			}
             _menu13.AppendTo(_menu1,(properties.tagMode==3)?MF_CHECKED:MF_STRING, "预设 1（"+properties.genre_label.toUpperCase()+")");
             _menu12.AppendTo(_menu1,(properties.tagMode==2)?MF_CHECKED:MF_STRING, "预设 2（"+properties.artist_label.toUpperCase()+")");
@@ -3846,7 +3839,6 @@ oBrowser = function(name) {
 			}
             _menu2.AppendMenuItem(MF_STRING, 910, "搜索栏");
             _menu2.CheckMenuItem(910, properties.showHeaderBar);
-            _menu2.AppendMenuSeparator();
 
             _menu2.AppendMenuItem(MF_STRING, 900, "仅文本");
             _menu2.AppendMenuItem(MF_STRING, 902, "文本（封面在右侧）");
@@ -3855,7 +3847,6 @@ oBrowser = function(name) {
 			_menu2.AppendMenuItem(MF_STRING, 1806, "封面网格（无文本）");
 			if (properties.displayModeGridNoText) _menu2.CheckMenuItem(1806, properties.showTagSwitcherBar);
 			else _menu2.CheckMenuRadioItem(900, 903, 900 + properties.displayMode);
-            _menu2.AppendMenuSeparator();
 			if(properties.tagMode!=1){
 				_menu2.AppendMenuItem(MF_STRING, 918, "封面回退");
 				_menu2.CheckMenuItem(918, properties.AlbumArtFallback);
@@ -3873,7 +3864,6 @@ oBrowser = function(name) {
 
 			_rowHeight.AppendMenuItem(MF_STRING, 1001, "增大");
 			_rowHeight.AppendMenuItem(MF_STRING, 1000, "减小");
-			_rowHeight.AppendMenuSeparator();
 			_rowHeight.AppendMenuItem(MF_DISABLED, 0, "提示：按住 SHIFT 并使用");
 			_rowHeight.AppendMenuItem(MF_DISABLED, 0, "鼠标滚轮滚动面板！");
 			if(properties.displayMode==0 || properties.displayMode==2){
@@ -3912,14 +3902,12 @@ oBrowser = function(name) {
 			_menu.CheckMenuItem(2998, properties.removePrefix);			
 
 			if(main_panel_state.isEqual(1)) {
-				_menu.AppendMenuSeparator();
 				_menu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 2993, "启用第 1 筛选器");
 				_menu.CheckMenuItem(2993, (filter1_state.isActive()));
 				_menu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 2994, "启用第 2 筛选器");
 				_menu.CheckMenuItem(2994, (filter2_state.isActive()));
 				_menu.AppendMenuItem((filters_panel_state.isActive() ? MF_STRING : MF_GRAYED | MF_DISABLED), 2995, "启用第 3 筛选器");
 				_menu.CheckMenuItem(2995, (filter3_state.isActive()));
-				_menu.AppendMenuSeparator();
 				if(!filters_panel_state.isMaximumValue())
 					_menu.AppendMenuItem(MF_STRING, 2992, "隐藏筛选器");
 				else
@@ -3927,12 +3915,9 @@ oBrowser = function(name) {
 			}
 
 			if(utils.IsKeyPressed(VK_SHIFT)) {
-				_menu.AppendMenuSeparator();
 				_menu.AppendMenuItem(MF_STRING, 991, "属性 ");
 				_menu.AppendMenuItem(MF_STRING, 992, "配置...");
-				_menu.AppendMenuSeparator();
 				_menu.AppendMenuItem(MF_STRING, 993, "重新加载");
-				_menu.AppendMenuSeparator();
 				_menu.AppendMenuItem(MF_STRING, 994, "深色布局：" + (properties.darklayout ? "开" : "关") + "（点击切换）");
 			}
 

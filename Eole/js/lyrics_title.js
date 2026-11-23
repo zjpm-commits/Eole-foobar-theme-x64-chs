@@ -298,12 +298,9 @@ function on_mouse_rbtn_up(x, y){
 	_menu.CheckMenuItem(99,properties.stick2darklayout);
 
 	if(utils.IsKeyPressed(VK_SHIFT)) {
-		_menu.AppendMenuSeparator();
 		_menu.AppendMenuItem(MF_STRING, 100, "属性 ");
 		_menu.AppendMenuItem(MF_STRING, 101, "配置...");
-		_menu.AppendMenuSeparator();
 		_menu.AppendMenuItem(MF_STRING, 102, "重新加载");
-		_menu.AppendMenuSeparator();
 		_menu.AppendMenuItem(MF_STRING, 103, "重新应用 ESLyric 样式");
 		_menu.AppendMenuItem(MF_STRING, 104, "ESLyric 联动诊断...");
 		_menu.AppendMenuItem(MF_STRING, 105, "测试：歌词变红 40px");
@@ -318,7 +315,6 @@ function on_mouse_rbtn_up(x, y){
 			+ "（点击切换）");
 		_menu.AppendMenuItem(MF_STRING, 111, "频谱重新拾取封面色（当前：" + ((spec_cover && spec_cover.colour) ? "已拾到" : "未拾到，用主题色") + "）");
 		_menu.AppendMenuItem(MF_STRING, 112, "频谱配色诊断...");
-		_menu.AppendMenuSeparator();
 	}
 	idx = _menu.TrackPopupMenu(x,y);
 	switch(true) {

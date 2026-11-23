@@ -49,6 +49,7 @@
 	enableAutoSwitchPlaylistMode: window.GetProperty("大面板·自动切换播放列表模式", true),
 	displayActiveOnPlaybackStopped: window.GetProperty("大面板·停止播放时仍显示活动项", false),
     showGroupHeaders: window.GetProperty("大面板·显示分组标题", true),
+    groupTemplate: window.GetProperty("大面板·分组方式", 0),
     autocollapse: window.GetProperty("大面板·自动折叠", false),
     addedRows_end_default: window.GetProperty("大面板·末尾空行数", 1),
 };
@@ -104,6 +105,7 @@ var properties_mini = {
 	enableAutoSwitchPlaylistMode: window.GetProperty("迷你·自动切换播放列表模式", false),
 	displayActiveOnPlaybackStopped: window.GetProperty("迷你·停止播放时仍显示活动项", true),
     showGroupHeaders: window.GetProperty("迷你·显示分组标题", false),
+    groupTemplate: window.GetProperty("迷你·分组方式", 0),
     autocollapse: window.GetProperty("迷你·自动折叠", false),
     addedRows_end_default: window.GetProperty("迷你·末尾空行数", 2),
 };
@@ -136,7 +138,181 @@ var properties_common = {
 	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
 
 };
+/* ============ 章节分组模板 ============
+   第 0 段（^^ 之前）是分组键，决定分组边界；^^ 之后依次是章节头副标题、
+   补充段 1、补充段 2；## 之后是曲目行模板（artist ^^ title ^^ genre ^^ date）。
+   以前 tf_groupkey 是写死的字符串，古典乐无法按作品分章，这里改成可选预设。 */
+var GROUP_TEMPLATES = [
+    {
+        label: "按专辑（默认）",
+        tf: "$if2(%album%$ifgreater(%totaldiscs%,1,[' - Disc '%discnumber%],),$if(%length%,'?',%path%)) ^^ $if2(%album artist%,$if(%length%,'Unknown artist(s)',%title%)) ^^ %discnumber% ## $if2(%artist%,$if(%length%,'Unknown artist',%path%)) ^^ %title% ^^ [%genre%] ^^ [%date%]"
+    },
+    {
+        label: "按作品（古典）",
+        tf: "$if2(%work%,$if2(%album%$ifgreater(%totaldiscs%,1,[' - Disc '%discnumber%],),$if(%length%,'?',%path%))) ^^ $if2(%composer%,$if2(%album artist%,$if(%length%,'Unknown artist(s)',%title%))) ^^ $if2(%date%,) ^^ ## $if2(%artist%,$if(%length%,'Unknown artist',%path%)) ^^ %title% ^^ [%genre%] ^^ [%date%]"
+    },
+    {
+        label: "按作曲家+作品",
+        tf: "$if2(%composer%,'未知作曲家') - $if2(%work%,$if2(%album%$ifgreater(%totaldiscs%,1,[' - Disc '%discnumber%],),$if(%length%,'?',%path%))) ^^ $if2(%album artist%,$if(%length%,'Unknown artist(s)',%title%)) ^^ $if2(%date%,) ^^ ## $if2(%artist%,$if(%length%,'Unknown artist',%path%)) ^^ %title% ^^ [%genre%] ^^ [%date%]"
+    },
+    {
+        label: "按目录结构",
+        tf: "$directory_path(%path%) ^^ $if2(%album artist%,$if(%length%,'Unknown artist(s)',%title%)) ^^ $if2(%date%,) ^^ ## $if2(%artist%,$if(%length%,'Unknown artist',%path%)) ^^ %title% ^^ [%genre%] ^^ [%date%]"
+    },
+    {
+        /* 两层：专辑为一级，作品为二级。作品键优先 %work%，没有则从文件名猜（仅古典流派）；
+           切换到此模板时由菜单侧按 专辑/碟号/音轨号 排序一次。 */
+        label: "按专辑（古典）",
+        classical: true,
+        tf: "$if2(%album%$ifgreater(%totaldiscs%,1,[' - Disc '%discnumber%],),$if(%length%,'?',%path%)) ^^ $if2(%album artist%,$if(%length%,'Unknown artist(s)',%title%)) ^^ $if2(%date%,) ## $if2(%artist%,$if(%length%,'Unknown artist',%path%)) ^^ %title% ^^ [%genre%] ^^ [%date%]"
+    }
+];
+/* ---------- 「按专辑（古典）」：流派判定 + 文件名猜作品 / 乐章 ---------- */
+var SG_CLASSICAL_GENRES = ["classical", "classique", "古典", "交响乐"];
+var sgTF_cls = null;
+var sg_cls_cache = {};
+function sgIsClassicalGenre(genre) {
+    var g = String(genre || "").toLowerCase().replace(/\s+/g, " ").trim();
+    if (g == "") return false;
+    for (var i = 0; i < SG_CLASSICAL_GENRES.length; i++) {
+        if (g.indexOf(SG_CLASSICAL_GENRES[i]) >= 0) return true;
+    }
+    return false;
+}
+/* 从曲目标题里切出作品名：命中乐章标记就截断，切不动则返回 null（宁可不拆） */
+function sgSplitMovement(base) {
+    var pats = [
+        /(?:^|[\s\-_.,:(])(?:第\s*[0-9一二三四五六七八九十]+\s*乐章)/,
+        /\s*[-_.,:(]?\s*(?:movement|mov|mvt|satz)\.?\s*\d{1,2}\b/i,
+        /\s*[-_.,:]?\s*\d{1,2}(?:st|nd|rd|th)?\s*(?:movement|mov|mvt|satz)\b/i,
+        /\s*[-_.,:(]\s*[IVX]{1,5}\s*[.):,\-]/,
+        /\s*[-_.:]\s*\d{1,2}\s*[.\-)]\s/
+    ];
+    for (var i = 0; i < pats.length; i++) {
+        var m = base.match(pats[i]);
+        if (m && m.index > 0) {
+            var w = base.substring(0, m.index).replace(/[\s\-_.,:(]+$/, "");
+            if (w.length >= 3) return { work: w, mark: String(m[0]).trim() };
+        }
+    }
+    return null;
+}
+/* 归一化作品名，保证同一作品的各乐章得到同一个键 */
+function sgNormWork(s) {
+    return String(s).toLowerCase()
+        .replace(/[\u3000\s]+/g, " ")
+        .replace(/[\(\)\[\]【】]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+/* 按文件路径缓存整条结果：列表反复 populate（切列表、点击自愈都会重建）时
+   不必对每首再跑一次标题格式化，几千首的列表差别很明显 */
+var sg_cls_handle_cache = {};
+/* 分组键（模板 + 文件路径 → 原始标题格式化结果）缓存，见 init_groups */
+var sg_gk_cache = {};
+var sg_gk_cache_n = 0;
+/* 返回 { albumKey, subKey, subTitle }；subKey 为空表示不细分（整专辑一组） */
+function sgClassicalKeys(handle) {
+    var ck = "";
+    try { ck = String(handle.RawPath || ""); } catch (eCKP) { ck = ""; }
+    /* 流地址（洛雪等 http 流）里同一个 URL 可能代表不同曲目，不能按路径缓存 */
+    if (ck.indexOf("://") !== -1) ck = "";
+    if (ck != "" && sg_cls_handle_cache[ck]) {
+        var hit = sg_cls_handle_cache[ck];
+        return { albumKey: hit.albumKey, subKey: hit.subKey, subTitle: hit.subTitle };
+    }
+    if (!sgTF_cls) {
+        sgTF_cls = fb.TitleFormat("$if2(%work%,) | $if2(%album%,) | $if2(%genre%,) | $if2(%title%,)");
+    }
+    var out = "";
+    try { out = sgTF_cls.EvalWithMetadb(handle); } catch (eSCK) { out = ""; }
+    var parts = String(out).split(" | ");
+    var work = (parts[0] || "").trim();
+    var album = (parts[1] || "").trim();
+    var genre = (parts[2] || "").trim();
+    var trk_title = (parts[3] || "").trim();
+    var albumKey = (album != "") ? album : "?";
+    var subKey = "", subTitle = "";
+    if (work != "") {
+        subKey = sgNormWork(work);
+        subTitle = work;
+    } else if (sgIsClassicalGenre(genre) && trk_title != "") {
+        var cached = sg_cls_cache[trk_title];
+        if (cached === undefined) {
+            var gs = sgSplitMovement(trk_title);
+            cached = (gs && gs.work) ? gs.work : "";
+            sg_cls_cache[trk_title] = cached;
+        }
+        if (cached != "") {
+            subKey = sgNormWork(cached);
+            subTitle = cached;
+        }
+    }
+    /* 猜出的“作品名”等于专辑名，说明其实没拆出东西 */
+    if (subKey != "" && subKey == sgNormWork(albumKey)) { subKey = ""; subTitle = ""; }
+    if (ck != "") sg_cls_handle_cache[ck] = { albumKey: albumKey, subKey: subKey, subTitle: subTitle };
+    return { albumKey: albumKey, subKey: subKey, subTitle: subTitle };
+}
+/* 按当前布局的 groupTemplate 属性重建 tf_groupkey（模板改动后必须调一次再 populate） */
+function applyGroupTemplate(){
+    var idx = 0;
+    try { idx = parseInt(properties.groupTemplate, 10); } catch(eGT) { idx = 0; }
+    if (!isFinite(idx) || idx < 0 || idx >= GROUP_TEMPLATES.length) idx = 0;
+    if (parseInt(properties.groupTemplate, 10) !== idx) {
+        /* 模板被删掉后属性里可能残留旧序号（比如 4），回写成 0，避免菜单无选中 */
+        try { setOneProperty("groupTemplate", 0); } catch (eGR) { }
+    }
+    properties.groupTemplateIndex = idx;
+    properties.isClassicalTemplate = !!(GROUP_TEMPLATES[idx] && GROUP_TEMPLATES[idx].classical);
+    try { properties.tf_groupkey = fb.TitleFormat(GROUP_TEMPLATES[idx].tf); } catch(eGTF) { }
+}
 var properties = {}
+/* 「按专辑（古典）」模板序号（按 classical 标记找，不写死） */
+function sgClassicalTemplateIndex(){
+    for (var ti = 0; ti < GROUP_TEMPLATES.length; ti++) {
+        if (GROUP_TEMPLATES[ti] && GROUP_TEMPLATES[ti].classical) return ti;
+    }
+    return -1;
+}
+function sgNotifyGroupTemplateState(){
+    /* 只有底部播放列表实例对外广播：表头开关只镜像 BottomPlaylist 的状态 */
+    if (typeof sgIsBottomPlaylistInstance === 'function' && !sgIsBottomPlaylistInstance()) return;
+    try {
+        window.NotifyOthers("groupTemplate_state", {
+            index: properties.groupTemplateIndex || 0,
+            classical: !!properties.isClassicalTemplate
+        });
+    } catch (eGTS) {}
+}
+/* 统一切换分组模板：菜单与表头开关都走这里，避免两处逻辑分叉。
+   force = true 时即使属性里已经是这个模板也重画一遍（多个播放列表面板之间
+   属性与画面可能不同步，靠“相等就跳过”会让某个面板一直停在旧分组上）。 */
+function sgSetGroupTemplate(gmIdx, call_id, force){
+    if (!(gmIdx >= 0 && gmIdx < GROUP_TEMPLATES.length)) return false;
+    if (!force && parseInt(properties.groupTemplate, 10) === gmIdx) {
+        sgNotifyGroupTemplateState();
+        return false;
+    }
+    setOneProperty("groupTemplate", gmIdx);
+    applyGroupTemplate();
+    if (!properties.showGroupHeaders) setOneProperty("showGroupHeaders", true);
+    /* 古典模板需要“相邻才合并”，切换到古典时按 专辑/碟号/音轨号 排一次。
+       以前写成 !force，导致表头开关（force=true）切古典时不排序，
+       只有右键菜单切换才排——同一个功能两条入口行为不一致。 */
+    if (GROUP_TEMPLATES[gmIdx] && GROUP_TEMPLATES[gmIdx].classical) {
+        try { plman.SortByFormat(g_active_playlist, "%album% ^^ %discnumber% ^^ %tracknumber%"); } catch (eSrtCls) { }
+    }
+    get_metrics();
+    on_colours_changed();
+    brw.populate(is_first_populate = false, call_id || 5, false);
+    brw.repaint();
+    sgNotifyGroupTemplateState();
+    /* 分组标题可能被连带打开，底部列表要把这个状态同步给表头 */
+    if (typeof sgIsBottomPlaylistInstance === 'function' && sgIsBottomPlaylistInstance()) {
+        try { window.NotifyOthers("showGroupHeaders_state_bottom", properties.showGroupHeaders); } catch (eGMS2) {}
+    }
+    return true;
+}
 function setShowHeaderBar(){
 	if(getTrackInfosState() && window.Name!="BottomPlaylist" && layout_state.isEqual(0)) properties.showHeaderBar = properties.showHeaderBarTrackInfosOn;
 	else properties.showHeaderBar = properties.showHeaderBarTrackInfosOff;
@@ -147,6 +323,7 @@ function setAllProperties(){
 	properties.rowHeight = properties.defaultRowHeight;
 	properties.groupHeaderRowsNumberSimple = properties.groupHeaderRowsNumber;
 	setShowHeaderBar();
+	applyGroupTemplate();
 }
 setAllProperties();
 
@@ -168,7 +345,7 @@ var PROP_KEY_BIG = {
 		"enableTouchControl": "大面板·启用触摸控制", 	"DropInplaylist": "大面板·可拖入播放列表", 	"thumbnailWidthMin": "大面板·缩略图最小宽度",
 		"thumbnailWidth": "大面板·缩略图宽度", 	"circleMode": "大面板·圆形模式", 	"showSettingsMenu": "大面板·显示设置菜单",
 		"enableAutoSwitchPlaylistMode": "大面板·自动切换播放列表模式", 	"displayActiveOnPlaybackStopped": "大面板·停止播放时仍显示活动项", 	"showGroupHeaders": "大面板·显示分组标题",
-		"autocollapse": "大面板·自动折叠", 	"addedRows_end_default": "大面板·末尾空行数"
+		"autocollapse": "大面板·自动折叠", 	"addedRows_end_default": "大面板·末尾空行数", 	"groupTemplate": "大面板·分组方式"
 };
 
 var PROP_KEY_MINI = {
@@ -189,7 +366,7 @@ var PROP_KEY_MINI = {
 		"enableTouchControl": "迷你·启用触摸控制", 	"DropInplaylist": "迷你·可拖入播放列表", 	"thumbnailWidthMin": "迷你·缩略图最小宽度",
 		"thumbnailWidth": "迷你·缩略图宽度", 	"circleMode": "迷你·圆形模式", 	"showSettingsMenu": "迷你·显示设置菜单",
 		"enableAutoSwitchPlaylistMode": "迷你·自动切换播放列表模式", 	"displayActiveOnPlaybackStopped": "迷你·停止播放时仍显示活动项", 	"showGroupHeaders": "迷你·显示分组标题",
-		"autocollapse": "迷你·自动折叠", 	"addedRows_end_default": "迷你·末尾空行数"
+		"autocollapse": "迷你·自动折叠", 	"addedRows_end_default": "迷你·末尾空行数", 	"groupTemplate": "迷你·分组方式"
 };
 
 function propKey(scope, name) {
@@ -1489,6 +1666,40 @@ oScrollbar = function(themed) {
     };
 };
 
+/* 某个组实际占用几行组头：古典模板的子组只占 1 行，键盘导航要按真实行数跳 */
+function sgHeaderRowsOf(groupId) {
+    var gp = null;
+    try { gp = brw.groups[groupId]; } catch (eSH) { gp = null; }
+    if (gp && gp.headerTotalRows) return gp.headerTotalRows;
+    return properties.groupHeaderRowsNumber;
+}
+/* 古典模板里作品名行的缩进：与曲目标题文字同一条左边界 */
+function sgClassicalSubIndent(gr) {
+    var off = 0;
+    try {
+        if (properties.doubleRowShowCover) {
+            off = properties.groupHeaderRowsNumber * properties.rowHeight + 10;
+        } else {
+            off = gr.CalcTextWidth("000", g_font.normal) + 24;
+        }
+    } catch (eSSI) { off = 0; }
+    if (!(off > 0)) off = 100;
+    return off;
+}
+/* 阿拉伯数字转中文序号（1→一），用于作品名行的“一、二、三、…”前缀 */
+function sgCnNumeral(n) {
+    var d = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];
+    if (!(n > 0)) return "";
+    if (n < 10) return d[n];
+    if (n < 20) return "十" + (n % 10 ? d[n % 10] : "");
+    var tens = Math.floor(n / 10), ones = n % 10;
+    if (tens < 10) return d[tens] + "十" + (ones ? d[ones] : "");
+    return String(n);
+}
+/* 作品名行左侧固定的对齐位置：与曲目编号列同一个左边界 */
+function sgClassicalWorkIndent(gr) {
+    return 10;
+}
 oGroup = function(index, start, handle, groupkey) {
 	this.index = index;
 	this.start = start;
@@ -1541,7 +1752,10 @@ oGroup = function(index, start, handle, groupkey) {
         } else {
             this.rowsToAdd = 0;
         };
-        this.rowsToAdd += properties.extraRowsNumber;
+        /* 有组头时不再额外补一整行空行：组头本身已经是分隔，避免专辑之间空出一整行 */
+        this.rowsToAdd += properties.showGroupHeaders ? 0 : properties.extraRowsNumber;
+        /* 古典模板的作品子组不补底部空行，乐章之间不隔行 */
+        if(this.isSub) this.rowsToAdd = 0;
 		this.TimeString = this.FormatTime(this.TotalTime);
         if(this.collapsed) {
             if(brw.expanded_group<0 && brw.focusedTrackId >= this.start && brw.focusedTrackId < this.start + count) { // focused track is in this group!
@@ -1676,8 +1890,11 @@ oBrowser = function(name) {
 		}
 	};
 
-    this.showNowPlaying = function(flash_nowplaying) {
+    this.showNowPlaying = function(flash_nowplaying, force) {
 		var flash_nowplaying = typeof flash_nowplaying !== 'undefined' ? flash_nowplaying : true;
+		/* force=true：用户在右键菜单里明确点了「显示正在播放」，必须跳，
+		   不允许被下面的 override 保护拦回去（面板被 resync 拖到别的列表后，
+		   override 必然成立，不强制就永远跳不回在播列表）。 */
 
         if(fb.IsPlaying) {
 			g_filterbox.clearInputbox();
@@ -1697,9 +1914,14 @@ oBrowser = function(name) {
 						}
 						/* 用户手动选定了别的列表就不要再抢：抢过去以后表头换了、
 						   正文换了，用户正点着的那一行却还在旧列表里。 */
-						if(g_playlist_user_override > -1 && g_playlist_user_override == g_active_playlist
+						if(!force && g_playlist_user_override > -1 && g_playlist_user_override == g_active_playlist
 							&& g_playlist_override_playing == plman.PlayingPlaylist) return;
                         g_active_playlist = plman.ActivePlaylist = plman.PlayingPlaylist;
+						/* 跳到在播列表即视为放弃之前手动选定的列表：不清掉的话，
+						   populate 里的 setActivePlaylist(1) 会按 override 把
+						   g_active_playlist 再拽回旧列表（锁定面板 override 始终有效，
+						   表现就是「显示正在播放」点了也不跳）。 */
+						g_playlist_user_override = -1;
 						this.showNowPlaying_trigger = true;
 						this.populate(is_first_populate = true,21);
                     } else {
@@ -1834,7 +2056,7 @@ oBrowser = function(name) {
                             row_idx = i;
                         } else {
                             var albumTrackId = g_focus_id - this.groups[g_focus_album_id].start;
-                            row_idx = i + this.groupHeaderRowHeight + albumTrackId;
+                            row_idx = i + sgHeaderRowsOf(g_focus_album_id) + albumTrackId;
                         };
                         break;
                     };
@@ -1943,9 +2165,36 @@ oBrowser = function(name) {
 		try { lxLoadItems(true); } catch (eLx0) { }
         var tf = properties.tf_groupkey;
         var str_filter = process_string(filter_text);
+        /* 古典模板：分组边界是 (专辑, 作品) 二元组，作品键为空时退回单层 */
+        var isCls = !!properties.isClassicalTemplate;
+        var prevAlbumKey = "";
+        var prevBoundary = "";
+        var prevSubKey_ = "";
+        var prevSubTitle_ = "";
+        /* 同一专辑内第几个作品，用来给作品名行加“一、二、三、…”前缀 */
+        var workSeqInAlbum = 0;
 		for(var i = 0; i < total; i++) {
 			handle = this.list[i];
-            arr = tf.EvalWithMetadb(handle).replace(/\r?\n/gm, ' ').split(/ ## ([^]*)/);
+            /* 分组键按（模板, 文件路径）缓存：切列表来回、点击自愈兜底都会整表重建，
+               几千首的列表每首要跑一次标题格式化，重建成几百毫秒的卡顿就是这么来的。
+               缓存的是未套洛雪广播的原始结果，广播信息每次仍实时套用。 */
+            var gkc = "";
+            try { gkc = String(handle.RawPath || ""); } catch (eGKC) { gkc = ""; }
+            var gk_key = (gkc != "" && gkc.indexOf("://") === -1) ? (properties.groupTemplateIndex + "|" + gkc) : "";
+            var tf_out;
+            if (gk_key != "" && sg_gk_cache[gk_key] !== undefined) {
+                tf_out = sg_gk_cache[gk_key];
+            } else {
+                tf_out = tf.EvalWithMetadb(handle).replace(/\r?\n/gm, ' ');
+                if (gk_key != "") {
+                    if (sg_gk_cache_n > 30000) { sg_gk_cache = {}; sg_gk_cache_n = 0; }
+                    sg_gk_cache[gk_key] = tf_out;
+                    sg_gk_cache_n++;
+                }
+            }
+            /* 分隔符容错：## 前后空格数量/制表符不一定固定，用 \s* 包住 */
+            arr = tf_out.split(/\s*##\s*/);
+            if(arr.length < 2) arr.push("");
 			/* 洛雪广播里有这首的歌手 / 歌名就用它（流播项自身没有标签） */
 			try {
 				var lxInfo0 = lxRowInfo(handle);
@@ -1956,7 +2205,22 @@ oBrowser = function(name) {
 					arr[1] = lxParts.join(" ^^ ");
 				}
 			} catch (eLx4) { }
-            current = arr[0].toLowerCase();
+            var tpl_now = GROUP_TEMPLATES[properties.groupTemplateIndex] || GROUP_TEMPLATES[0];
+            var clsInfo = null;
+            if (isCls) {
+                clsInfo = sgClassicalKeys(handle);
+                current = clsInfo.albumKey.toLowerCase();
+                /* 同一专辑里某首没有作品标识时，沿用上一个作品，避免半路又冒出一个专辑头 */
+                if (clsInfo.subKey == "" && !(current != prevAlbumKey) && prevSubKey_ != "") {
+                    clsInfo.subKey = prevSubKey_;
+                    clsInfo.subTitle = prevSubTitle_;
+                }
+                /* 古典模板下用“专辑\t作品”当边界键，作品为空就只剩专辑 */
+                var curBoundary = current + "\u0001" + (clsInfo.subKey || "");
+            } else {
+                current = arr[0].toLowerCase();
+                var curBoundary = current;
+            }
             if(str_filter.length > 0) {
                 var toAdd = match(arr[0]+" "+arr[1], str_filter);
             } else {
@@ -1964,11 +2228,14 @@ oBrowser = function(name) {
             };
             if(toAdd) {
 				this.totaltracks++;
-                if(current != previous) {
+                var isFirstOfAlbum = (current != prevAlbumKey);
+                if(curBoundary != prevBoundary) {
                     if(g > 0) {
                         // finalize current group
                         this.groups[g-1].finalize(t, tr);
-						p = this.groups[g-1].rowsToAdd;
+                        /* 古典模板：同一专辑内相邻的作品组之间不补底部空行（含承载专辑头的首组） */
+                        if (properties.isClassicalTemplate && this.groups[g-1].groupkey == arr[0]) this.groups[g-1].rowsToAdd = 0;
+                        p = this.groups[g-1].rowsToAdd;
 
 						if(!properties.autocollapse){
 							for(n = 0; n < p; n++) {
@@ -1987,6 +2254,19 @@ oBrowser = function(name) {
                         tr.push(arr[1].split(" ^^ "));
                         t++;
                         this.groups.push(new oGroup(g, i, handle, arr[0]));
+                        /* 古典模板：同一专辑内的第 2 个及以后的作品组是“子组”，只占 1 行头 */
+                        this.groups[g].isSub = isCls && clsInfo && clsInfo.subKey != "" && !isFirstOfAlbum;
+                        this.groups[g].subTitle = (clsInfo && clsInfo.subTitle) ? clsInfo.subTitle : "";
+                        /* 作品在该专辑内的序号：新专辑归零，有作品键就递增，用来生成“一、二、三、…”前缀 */
+                        if(isFirstOfAlbum) workSeqInAlbum = 0;
+                        this.groups[g].workIndex = 0;
+                        if(clsInfo && clsInfo.subKey != "") {
+                            workSeqInAlbum += 1;
+                            this.groups[g].workIndex = workSeqInAlbum;
+                        }
+                        var hRows = this.groups[g].isSub ? 1 : properties.groupHeaderRowsNumber;
+						/* 古典模板首组多占一行：把该组第一个作品名独立成一行，画在首个曲目上方 */
+						if(!this.groups[g].isSub && isCls && this.groups[g].subTitle) hRows += 1;
 						if (lxInfo0) {
 							var lxGs = this.groups[g].groupkeysplit;
 							if (lxGs) {
@@ -2000,7 +2280,7 @@ oBrowser = function(name) {
 						this.groups[g].mask_applied = false;
 						this.groups[g].rowId = r;
 						if(properties.showGroupHeaders && !properties.autocollapse) {
-							for(k=0; k < properties.groupHeaderRowsNumber; k++) {
+							for(k=0; k < hRows; k++) {
 								this.rows[r] = new Object();
 								this.rows[r].type = k + 1; // 1st line of group header
 								this.rows[r].metadb = this.groups[g].metadb;
@@ -2013,8 +2293,8 @@ oBrowser = function(name) {
 								this.rows[r].selected = plman.IsPlaylistItemSelected(g_active_playlist, this.rows[r].playlistTrackId_original);
 								r++;
 							};
-							this.groups[g].headerTotalRows = properties.groupHeaderRowsNumber;
-						} else this.groups[g].headerTotalRows = properties.groupHeaderRowsNumber;
+							this.groups[g].headerTotalRows = hRows;
+						} else this.groups[g].headerTotalRows = hRows;
 						if(!(properties.autocollapse && properties.showGroupHeaders)) {
 							this.rows[r] = new Object();
 							this.rows[r].type = 0; // track
@@ -2034,6 +2314,12 @@ oBrowser = function(name) {
                         g++;
 						j = 1;
                         previous = current;
+                        prevBoundary = curBoundary;
+                        prevAlbumKey = current;
+                        if (isCls && clsInfo) {
+                            prevSubKey_ = clsInfo.subKey || "";
+                            prevSubTitle_ = clsInfo.subTitle || "";
+                        }
                     };
                 } else {
                     // add track to current group
@@ -2075,15 +2361,14 @@ oBrowser = function(name) {
 		var finalize_groups = typeof finalize_groups !== 'undefined' ? finalize_groups : false;
         this.rows.splice(0, this.rows.length);
         var r = 0, i = 0, j = 0, m = 0, n = 0, p = 0;
-        var headerTotalRows = properties.groupHeaderRowsNumber;
-
         var end = this.groups.length;
-		this.isPlayingIdx = -1;
         for(i = 0; i < end; i++) {
 
 			if(finalize_groups) this.groups[i].finalize(this.groups[i].count, this.groups[i].tracks);
 
 			this.groups[i].rowId = r;
+			/* 子组只占 1 行头（作品名），专辑组仍用设置里的行数 */
+			var headerTotalRows = this.groups[i].headerTotalRows || properties.groupHeaderRowsNumber;
 			if(properties.showGroupHeaders) {
 				for(k=0; k < headerTotalRows; k++) {
 					this.rows[r] = new Object();
@@ -2137,6 +2422,9 @@ oBrowser = function(name) {
 
     this.populate = function(is_first_populate,call_id, set_active_playlist) {
 		var set_active_playlist = typeof set_active_playlist !== 'undefined' ? set_active_playlist : true;
+		/* 每次重建都按当前属性重算分组键：模板可能被菜单/表头开关改过，
+		   tf_groupkey 万一没跟上（比如通知在重建当中到达），这里能自愈。 */
+		try { applyGroupTemplate(); } catch (eAGP) {}
         this.list && (this.list = undefined);
         this.playlistId2row.splice(0, this.playlistId2row.length);		
 
@@ -2237,16 +2525,16 @@ oBrowser = function(name) {
 				if(!this.rows[i].infosraw){
 					switch(this.rows[i].type) {
 					case this.groupHeaderRowHeight: // last group header row
-						// group tags
-						this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ');
+						// group tags（惰性求值也要先切掉 ## 之后的曲目段，否则章节头会带出 ## 与曲名）
+						this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ').split(/\s*##\s*/)[0];
 						this.rows[i].groupkeysplit = this.rows[i].groupkey.split(" ^^ ");
 						// track tags
 						this.rows[i].infosraw = tf_trk.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ');
 						this.rows[i].infos = this.rows[i].infosraw.split(" ^^ ");
 						break;
 					case 0: // track row
-						// group tags
-						this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ');
+						// group tags（同样只取 ## 之前的章节头段）
+						this.rows[i].groupkey = tf_grp.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ').split(/\s*##\s*/)[0];
 						this.rows[i].groupkeysplit = this.rows[i].groupkey.split(" ^^ ");
 						// track tags
 						this.rows[i].infosraw = tf_trk.EvalWithMetadb(this.rows[i].metadb).replace(/\r?\n/mg, ' ');
@@ -2422,6 +2710,31 @@ oBrowser = function(name) {
 
                     if(ay < this.y) continue;
 
+                    /* 古典模板的子组头只占 1 行，单独画一行作品名（不画封面、渐变线）：左对齐编号列，带中文序号前缀 */
+                    if(this.rows[i].type == 1 && this.groups[this.rows[i].albumId] && this.groups[this.rows[i].albumId].isSub) {
+                        var sub_group = this.groups[this.rows[i].albumId];
+                        if(ay > 0 - ah && ay < this.h + ah) {
+                            var sub_title_txt = sub_group.subTitle || sub_group.group_header_row_1 || "";
+                            var sub_prefix = (sub_group.workIndex > 0) ? (sgCnNumeral(sub_group.workIndex) + "、") : "";
+                            var sub_indent = sgClassicalWorkIndent(gr);
+                            gr.GdiDrawText(sub_prefix + sub_title_txt, g_font.plus1, colors.normal_txt, ax + sub_indent, ay, aw - sub_indent - this.paddingRight, ah, DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                            sub_group.group_header_row_1 = sub_title_txt;
+                            sub_group.group_header_row_2 = "";
+                        }
+                        continue;
+                    }
+                    /* 古典模板首组的最后一行：该组第一个作品名，画在首个曲目上方，样式与子组头一致 */
+                    if(this.rows[i].type > ghrh && this.groups[this.rows[i].albumId] && !this.groups[this.rows[i].albumId].isSub && this.groups[this.rows[i].albumId].subTitle
+                        && this.rows[i].type == (this.groups[this.rows[i].albumId].headerTotalRows || ghrh)) {
+                        var top_group = this.groups[this.rows[i].albumId];
+                        if(ay > 0 - ah && ay < this.h + ah) {
+                            var top_prefix = (top_group.workIndex > 0) ? (sgCnNumeral(top_group.workIndex) + "、") : "";
+                            var top_indent = sgClassicalWorkIndent(gr);
+                            gr.GdiDrawText(top_prefix + String(top_group.subTitle), g_font.plus1, colors.normal_txt, ax + top_indent, ay, aw - top_indent - this.paddingRight, ah, DT_LEFT | DT_VCENTER | DT_END_ELLIPSIS | DT_NOPREFIX);
+                        }
+                        continue;
+                    }
+
                     switch(this.rows[i].type) {
                     case ghrh: // group header row
                         if(ay > 0 - (ghrh * ah) && ay < this.h + (ghrh * ah)) {
@@ -2446,7 +2759,11 @@ oBrowser = function(name) {
                                 var album_name = album_name;
                             };
 							this.groups[g].group_header_row_1 = album_name;
+							/* 古典模板：组头副标题行固定显示专辑艺术家；第一个作品名改为独立一行，画在首个曲目上方 */
 							this.groups[g].group_header_row_2 = album_artist_name;
+							/* 模板的第 3、4 段（如年份、碟号）只在非默认模板下并入副标题行 */
+							this.groups[g].group_header_row_3 = (arr_groupinfo && arr_groupinfo[2]) ? String(arr_groupinfo[2]) : "";
+							this.groups[g].group_header_row_4 = (arr_groupinfo && arr_groupinfo[3]) ? String(arr_groupinfo[3]) : "";
 							this.groups[g].date = arr_e[3];
 							this.groups[g].genre = arr_e[2];
                             // ================
@@ -2474,25 +2791,30 @@ oBrowser = function(name) {
 
 								}
 							}
+							/* 组头块顶部；line_vertical_fix 原本用来让分隔线离开封面一点，
+							   但组头上方不再留空行时会落进上一个曲目行里，这里钳住不越过块顶 */
+							var sg_gh_top_y = ay - ((ghrh - 1) * ah);
+							var sg_gh_line_y = sg_gh_top_y - line_vertical_fix;
+							if(sg_gh_line_y < sg_gh_top_y) sg_gh_line_y = sg_gh_top_y;
                             if(this.groups[g].selected) {
 								if(g>0) {
-									gr.FillGradRect(ax+gradient_m, ay - ((ghrh - 1) * ah)-line_vertical_fix, gradient_w-gradient_m, 1, 0, colors.grad_line_bg, colors.grad_line, 1.0);
-									gr.FillGradRect(ax+gradient_w, ay - ((ghrh - 1) * ah)-line_vertical_fix, aw+this.paddingRight, 1, 0, colors.grad_line, colors.grad_line, 1.0);
-									gr.FillSolidRect(ax+gradient_m-1, ay - ((ghrh - 1) * ah)-line_vertical_fix, 2, 1, colors.grad_line_bg);
+									gr.FillGradRect(ax+gradient_m, sg_gh_line_y, gradient_w-gradient_m, 1, 0, colors.grad_line_bg, colors.grad_line, 1.0);
+									gr.FillGradRect(ax+gradient_w, sg_gh_line_y, aw+this.paddingRight, 1, 0, colors.grad_line, colors.grad_line, 1.0);
+									gr.FillSolidRect(ax+gradient_m-1, sg_gh_line_y, 2, 1, colors.grad_line_bg);
 								}
                             } else {
 								if(g>0) {
-									gr.FillGradRect(ax+gradient_m, ay - ((ghrh - 1) * ah)-line_vertical_fix, gradient_w-gradient_m, 1, 0, colors.grad_line_bg, colors.grad_line, 1.0);
-									gr.FillGradRect(ax+gradient_w, ay - ((ghrh - 1) * ah)-line_vertical_fix, aw+this.paddingRight, 1, 0, colors.grad_line, colors.grad_line, 1.0);
-									gr.FillSolidRect(ax+gradient_m-1, ay - ((ghrh - 1) * ah)-line_vertical_fix, 2, 1, colors.grad_line_bg);
+									gr.FillGradRect(ax+gradient_m, sg_gh_line_y, gradient_w-gradient_m, 1, 0, colors.grad_line_bg, colors.grad_line, 1.0);
+									gr.FillGradRect(ax+gradient_w, sg_gh_line_y, aw+this.paddingRight, 1, 0, colors.grad_line, colors.grad_line, 1.0);
+									gr.FillSolidRect(ax+gradient_m-1, sg_gh_line_y, 2, 1, colors.grad_line_bg);
 								}
                             };
 							if(g_dragndrop_rowId>-1 && this.rows[g_dragndrop_rowId].albumId==g && this.rows[g_dragndrop_rowId].type!=0){
 								if(g==0) {
-									gr.FillSolidRect(ax, ay - ((ghrh - 1) * ah)-line_vertical_fix+8, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
+									gr.FillSolidRect(ax, sg_gh_line_y+8, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
 								}
-								else if(!g_dragndrop_bottom) gr.FillSolidRect(ax, ay - ((ghrh - 1) * ah)-line_vertical_fix, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
-								else gr.FillSolidRect(ax, ay - ((ghrh - 1) * ah)-line_vertical_fix, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
+								else if(!g_dragndrop_bottom) gr.FillSolidRect(ax, sg_gh_line_y, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
+								else gr.FillSolidRect(ax, sg_gh_line_y, aw+this.paddingRight, 2, colors.dragdrop_marker_line);
 							}
                             // ==========
                             // cover art
@@ -2569,8 +2891,13 @@ oBrowser = function(name) {
                             // =====
                             
                             arr_e[2]=arr_e[2].replace(/\s+/g, " ");
+							var g_row2_txt = this.groups[g].group_header_row_2;
+							if (properties.groupTemplateIndex > 0) {
+								/* 组头右侧已经单独显示日期了，副标题行不再重复拼日期 */
+								if (this.groups[g].group_header_row_4) g_row2_txt += "   " + this.groups[g].group_header_row_4;
+							}
 							if(!isDefined(this.groups[g].row1_Width)) this.groups[g].row1_Width = gr.CalcTextWidth(this.groups[g].group_header_row_1, g_font.plus3);
-							if(!isDefined(this.groups[g].row2_Width)) this.groups[g].row2_Width = gr.CalcTextWidth(this.groups[g].group_header_row_2, g_font.normal);
+							if(!isDefined(this.groups[g].row2_Width)) this.groups[g].row2_Width = gr.CalcTextWidth(g_row2_txt, g_font.normal);
                             if(!isDefined(this.groups[g].timeWidth)) this.groups[g].timeWidth = gr.CalcTextWidth(this.groups[g].TimeString, ((properties.doubleRowText)?g_font.normal:g_font.min1)) + 10;
 							if(!isDefined(this.groups[g].dateWidth)) this.groups[g].dateWidth = gr.CalcTextWidth(this.groups[g].date, g_font.min1);
 							header_text_x = ax;
@@ -2580,14 +2907,14 @@ oBrowser = function(name) {
                             gr.GdiDrawText(this.groups[g].date, g_font.min1,  colors.faded_txt, header_text_x, ay - ((ghrh - 2) * ah)+this.groups[g].group_height_fix-((properties.doubleRowText)?10:0), header_text_x + header_text_w -6-this.paddingLeft, Math.round(ah*2/3)*(ghrh - 1), DT_RIGHT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
                             // left area
                             gr.GdiDrawText(this.groups[g].group_header_row_1, g_font.plus3, colors.normal_txt, header_text_x + text_left_margin, ay - ((ghrh - 1) * ah) + Math.round(ah*1/3)*(ghrh - 1) - 2+this.groups[g].group_height_fix, header_text_w - text_left_margin - this.groups[g].timeWidth - 10, Math.round(ah*2/3), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
-                            gr.GdiDrawText(this.groups[g].group_header_row_2, g_font.normal, colors.faded_txt, header_text_x + text_left_margin, ay - ((ghrh - 2) * ah)+this.groups[g].group_height_fix-((properties.doubleRowText)?10:0), header_text_w - text_left_margin - this.groups[g].dateWidth-10, Math.round(ah*2/3)*(ghrh - 1), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
+                            gr.GdiDrawText(g_row2_txt, g_font.normal, colors.faded_txt, header_text_x + text_left_margin, ay - ((ghrh - 2) * ah)+this.groups[g].group_height_fix-((properties.doubleRowText)?10:0), header_text_w - text_left_margin - this.groups[g].dateWidth-10, Math.round(ah*2/3)*(ghrh - 1), DT_LEFT | DT_VCENTER | DT_CALCRECT | DT_END_ELLIPSIS | DT_NOPREFIX);
 
 							if(properties.showToolTip) {
-								if((header_text_w - text_left_margin - this.groups[g].dateWidth)<this.groups[g].row2_Width || (header_text_w - text_left_margin - this.groups[g].timeWidth - 10)<this.groups[g].row1_Width){
-									for(var p = 0; p < ghrh; p++) {this.rows[i-p].tooltip = true}
-
-								} else {
-									for(var p = 0; p < ghrh; p++) {this.rows[i-p].tooltip = false}
+								var hdr_row_span = sgHeaderRowsOf(g);
+								var hdr_tip_on = ((header_text_w - text_left_margin - this.groups[g].dateWidth) < this.groups[g].row2_Width || (header_text_w - text_left_margin - this.groups[g].timeWidth - 10) < this.groups[g].row1_Width);
+								/* 组头行数可能是 3（古典首组多一行作品名），i 很小时 i-p 会越界，必须判存在 */
+								for(var p = 0; p < hdr_row_span; p++) {
+									if(this.rows[i-p]) this.rows[i-p].tooltip = hdr_tip_on;
 								}
 							}
 
@@ -2646,6 +2973,15 @@ oBrowser = function(name) {
 								var add_infos = this.getAdditionalFields(arr_t);
 
                                 var track_title_part = arr_e[1];
+                                /* 古典模板：标题里已经带了作品名，曲目行只留乐章部分，避免和子组头重复 */
+                                var sub_hdr = this.groups[this.rows[i].albumId] ? this.groups[this.rows[i].albumId].subTitle : "";
+                                if(sub_hdr && sub_hdr != "") {
+                                    var t_low = String(track_title_part).toLowerCase(), s_low = String(sub_hdr).toLowerCase();
+                                    if(t_low.indexOf(s_low) == 0) {
+                                        var t_rest = String(track_title_part).substring(String(sub_hdr).length).replace(/^[\s:：\-–—,，.]+/, "");
+                                        if(t_rest != "") track_title_part = t_rest;
+                                    }
+                                }
                                 var track_time_part = arr_t[1];
                                 if(properties.showArtistAlways || !properties.showGroupHeaders || arr_e[0].toLowerCase() != arr_groupinfo[1].toLowerCase() || properties.doubleRowText) {
                                     var track_artist_part = ((properties.doubleRowText || track_time_part == "ON AIR")?"":" - ")+arr_e[0]+add_infos;
@@ -3328,6 +3664,33 @@ oBrowser = function(name) {
         };
         plman.SetPlaylistSelection(g_active_playlist, affectedItems, true);
     };
+    /* 古典模板的组头和普通模板语义不同：
+       - 专辑头（专辑名那几行）只属于该专辑的第一个作品组，点它选整张专辑；
+       - 作品/乐章头（isSub 组，或首组末尾那行独立作品名）只选自己那一组；
+       - 其余情况（非古典模板）保持原来的单组选择。
+       rowType 用来区分“专辑名行”和“首组末尾的作品名行”：后者是 hRows+1 那行。 */
+    this.selectAlbumTracks = function(groupId, rowType) {
+        var grp = this.groups[groupId];
+        if(!(properties.isClassicalTemplate && properties.showGroupHeaders) || !grp) {
+            return this.selectGroupTracks(groupId);
+        }
+        if(grp.isSub) return this.selectGroupTracks(groupId);
+        var grpRows = grp.headerTotalRows || properties.groupHeaderRowsNumber;
+        if(grp.subTitle && rowType == grpRows) {
+            /* 首组末尾的作品名行：点的是第一个乐章，不是专辑 */
+            return this.selectGroupTracks(groupId);
+        }
+        var key = grp.groupkey;
+        var affectedItems = [];
+        for(var i = groupId; i < this.groups.length; i++) {
+            if(this.groups[i].groupkey !== key) break;   /* 只连同一专辑的相邻组 */
+            var end = this.groups[i].start + this.groups[i].count;
+            for(var j = this.groups[i].start; j < end; j++) {
+                affectedItems.push(j);
+            };
+        };
+        plman.SetPlaylistSelection(g_active_playlist, affectedItems, true);
+    };
     this.getGroupTracks = function(aId) {
         var tracks = new FbMetadbHandleList();
         var end = this.groups[aId].rowId + this.groups[aId].count;
@@ -3354,16 +3717,25 @@ oBrowser = function(name) {
         };
     };
     this.on_mouse = function(event, x, y) {
+        /* 面板框还是旧尺寸时（窗口刚改变大小、on_size 因为不可见被跳过），
+           下面的 ishover 判断会是 false，点击就全被丢掉。坐标落在窗口里就按当前窗口尺寸纠正一次。 */
+        if(event == "down" && ww > 0 && wh > 0
+            && (this.w <= 0 || this.h <= 0 || this.x + this.w > ww + 2 || this.y + this.h > wh + 2)) {
+            try {
+                this.setSize(0, (properties.showHeaderBar ? properties.headerBarHeight : 0), ww, wh - (properties.showHeaderBar ? properties.headerBarHeight : 0));
+            } catch (eSZ) { }
+        }
         /* 兜底自愈：万一还有别的地方让「显示的列表」和「系统激活的列表」分叉
            （回调被 callback_avoid_populate 挡掉、窗口当时不可见等），
            先把自己对齐，再花一次点击把列表刷正确。
-           不对齐就直接点选，选中会用旧列表的行号打到新列表上，等于点了没反应。 */
-        if(plman.ActivePlaylist > -1 && plman.ActivePlaylist < plman.PlaylistCount
+           不对齐就直接点选，选中会用旧列表的行号打到新列表上，等于点了没反应。
+           注意：「锁定到指定播放列表」时两者本来就不该相等，那种情况不能算分叉，
+           否则每次点击都会重建一次列表，而且重建又会把列表拉回锁定项，永远点不动。 */
+        if(properties.lockOnPlaylistNamed == ""
+            && plman.ActivePlaylist > -1 && plman.ActivePlaylist < plman.PlaylistCount
             && plman.ActivePlaylist != g_active_playlist) {
-            if(properties.lockOnPlaylistNamed == "") {
-                g_playlist_user_override = plman.ActivePlaylist;
-                g_playlist_override_playing = plman.PlayingPlaylist;
-            }
+            g_playlist_user_override = plman.ActivePlaylist;
+            g_playlist_override_playing = plman.PlayingPlaylist;
             g_active_playlist = plman.ActivePlaylist;
             try { g_focus_id = getFocusId(g_active_playlist); } catch (eF) { g_focus_id = 0; }
             set_update_function("brw.populate(true,72, false)");
@@ -3417,8 +3789,20 @@ oBrowser = function(name) {
             case "down":
 				this.track_rating = false;
 				if( this.activeRow == -1) plman.ClearPlaylistSelection(g_active_playlist)
-                this.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
-                if(!cTouch.down && !timers.mouseDown && this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
+                /* 只在真的点在行上时才复制一份选中项：大列表里 GetPlaylistSelectedItems
+                   每次都要整份复制，点空白处/滚动条时完全用不上，白白多几十毫秒。 */
+                /* cTouch.down 只在松开时复位：上一次若是触摸滑动、而松手没落在这个面板上，
+                   它会一直为 true，之后每次点击都被下面这句挡掉，表现就是“彻底点不动”。
+                   新的按下进来时若没有惯性动画在跑，就当作残留清掉。 */
+                if(cTouch.down && !cTouch.timer) cTouch.down = false;
+                /* 这里原来是「scroll 与 scroll_ 相差 < 2px 才处理点击」：
+                   单击时为了先停住惯性滚动，往往会把 scroll 调整成离 scroll_ 一行，
+                   而动画被 clear 后就没人再把 scroll_ 追上去，差值一直 ≥ 2px，
+                   于是从此每一次按下都被这句挡掉——看起来就是“彻底点不动”，
+                   只有改变窗口大小（setSize 里 scroll_ = scroll）才恢复。
+                   改成只认「惯性动画还在跑」，其余情况都照常处理点击。 */
+                if(!cTouch.down && !timers.mouseDown && this.ishover && this.activeRow > -1 && !cTouch.timer) {
+                    this.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
                     var rowType = this.rows[this.activeRow].type;
 
                     this.drag_clicked = true;
@@ -3439,12 +3823,12 @@ oBrowser = function(name) {
                                     };
                                 };
                             } else if(utils.IsKeyPressed(VK_CONTROL)) {
-                                this.selectGroupTracks(groupId);
+                                this.selectAlbumTracks(groupId, this.rows[this.activeRow].type);
                                 this.SHIFT_start_id = null;
                             } else {
 								plman.ClearPlaylistSelection(g_active_playlist);
                                 if(!((properties.autocollapse || properties.expandBySingleClick) && this.groups[groupId].collapsed)) {
-                                    this.selectGroupTracks(groupId);
+                                    this.selectAlbumTracks(groupId, this.rows[this.activeRow].type);
                                 };
                                 this.SHIFT_start_id = null;
                             };
@@ -3466,7 +3850,7 @@ oBrowser = function(name) {
 								plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
 								focus_changes.collapse = true;
 							}
-							if(this.groups[groupId].collapsed && properties.expandBySingleClick) {
+							if(!this.groups[groupId].isSub && this.groups[groupId].collapsed && properties.expandBySingleClick) {
 								this.expand_group(groupId);
 								focus_changes.collapse = false;
 								focus_changes.scroll = true;
@@ -3592,7 +3976,7 @@ oBrowser = function(name) {
                 };
                 break;
             case "dblclk":
-                if(this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
+                if(this.ishover && this.activeRow > -1 && !cTouch.timer) {
                     var rowType = this.rows[this.activeRow].type;
                     if (rowType > 0 && rowType < 99) {
                         // group header
@@ -3632,9 +4016,12 @@ oBrowser = function(name) {
                 }
                 break;
             case "move":
+                /* 一次 move 事件里只取一次“选中项”：原来同一个判断里要连续取 2~4 次，
+                   几千首的列表每次鼠标移动都复制整份选择，拖拽/划过时会明显发涩。 */
+                brw.move_sel_items = null;
                 if(g_lbtn_click && this.drag_clicked && !this.drag_moving) {
                     if(!properties.DropInplaylist || this.h > cPlaylistManager.rowHeight * 6) {
-						if(properties.DropInplaylist && !this.drag_tracks && (Math.abs(y - this.drag_clicked_y) < 15 && Math.abs(x - this.drag_clicked_x) > 15) && plman.GetPlaylistSelectedItems(g_active_playlist).Count>0) {
+						if(properties.DropInplaylist && !this.drag_tracks && (Math.abs(y - this.drag_clicked_y) < 15 && Math.abs(x - this.drag_clicked_x) > 15) && (brw.move_sel_items = plman.GetPlaylistSelectedItems(g_active_playlist)).Count>0) {
 							this.drag_moving = true;
 							pman.state = 1;
 							g_cursor.setCursor(IDC_HELP,'dragtrack');
@@ -3646,7 +4033,7 @@ oBrowser = function(name) {
 							if(!timers.showPlaylistManager) {
 								timers.showPlaylistManager = setInterval(pman.showPanel, 25);
 							};
-							var items = plman.GetPlaylistSelectedItems(g_active_playlist);
+							var items = brw.move_sel_items || plman.GetPlaylistSelectedItems(g_active_playlist);
 							if(this.activeRow>-1 && (this.rows[this.activeRow].type==2 || this.rows[this.activeRow].type==1)){
 								album_info=this.rows[this.activeRow].groupkeysplit;
 								if(items.Count>1) {
@@ -3677,11 +4064,11 @@ oBrowser = function(name) {
 							items = undefined;
 							pman.on_mouse("leave", 0, 0);
 						} else if((!properties.DropInplaylist && (Math.abs(x - this.drag_clicked_x) > 5 || Math.abs(y - this.drag_clicked_y) > 5)) || (Math.abs(y - this.drag_clicked_y) > 15 && !this.drag_moving)){
-							if(!this.drag_tracks && this.dragSource_track.type!=99 && plman.GetPlaylistSelectedItems(g_active_playlist).Count>0) {
+							if(!this.drag_tracks && this.dragSource_track.type!=99 && (brw.move_sel_items = brw.move_sel_items || plman.GetPlaylistSelectedItems(g_active_playlist)).Count>0) {
 								this.drag_tracks = true;
 								g_tooltip.Deactivate();
 								on_drag_over(null, x, y, null);
-								var items = plman.GetPlaylistSelectedItems(g_active_playlist);
+								var items = brw.move_sel_items;
 
 								if(this.activeRow>-1 && (this.rows[this.activeRow].type==2 || this.rows[this.activeRow].type==1)){
 									album_info=this.rows[this.activeRow].groupkeysplit;
@@ -3756,7 +4143,7 @@ oBrowser = function(name) {
 				ToolTip_mouse_x = x;
 				ToolTip_mouse_y = y;
 
-				if(this.ishover && this.activeRowTooltip > -1 && Math.abs(scroll - scroll_) < 2 && (this.rows[this.activeRowTooltip].type==2 || this.rows[this.activeRowTooltip].type==1 || this.rows[this.activeRowTooltip].type==0) && properties.showToolTip && !this.drag_moving) {
+				if(this.ishover && this.activeRowTooltip > -1 && !cTouch.timer && (this.rows[this.activeRowTooltip].type==2 || this.rows[this.activeRowTooltip].type==1 || this.rows[this.activeRowTooltip].type==0) && properties.showToolTip && !this.drag_moving) {
 					if (!timers.showToolTip && !this.ishover_rating && g_tooltip.activeZone!=this.activeRowTooltip) {
 						if(g_tooltip.activeZone!='') g_tooltip.Deactivate();
 						if(this.rows[this.activeRowTooltip].tooltip && !(this.scrollbar.cursorDrag || this.scrollbar.cursorHover)){
@@ -3782,13 +4169,13 @@ oBrowser = function(name) {
                 break;
             case "right":
                 this.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
-                if(this.ishover && this.activeRow > -1 && Math.abs(scroll - scroll_) < 2) {
+                if(this.ishover && this.activeRow > -1 && !cTouch.timer) {
                     var rowType = this.rows[this.activeRow].type;
                     switch(true) {
                         case (rowType > 0 && rowType < 99):     // ----------------> group header row
                             var playlistTrackId = this.rows[this.activeRow].playlistTrackId;
                                 plman.ClearPlaylistSelection(g_active_playlist);
-                                this.selectGroupTracks(this.rows[this.activeRow].albumId);
+                                this.selectAlbumTracks(this.rows[this.activeRow].albumId, this.rows[this.activeRow].type);
                                 plman.SetPlaylistFocusItem(g_active_playlist, playlistTrackId);
 								focus_changes.collapse = true;
                                 this.SHIFT_start_id = null;
@@ -3837,7 +4224,7 @@ oBrowser = function(name) {
                         this.dragndrop_check(x, y, i);
                     };
                     var rowId = fin - 1;
-                    var item_height_row = (this.rows[rowId].type == 0 ? 1 : properties.groupHeaderRowsNumber+1);
+                    var item_height_row = (this.rows[rowId].type == 0 ? 1 : (((this.groups[this.rows[rowId].albumId] && this.groups[this.rows[rowId].albumId].headerTotalRows) || properties.groupHeaderRowsNumber) + 1));
                     var limit = this.rows[rowId].y + (item_height_row * properties.rowHeight);
 					if(y<this.y+this.PaddingTop) {
 						rowId=0
@@ -4049,6 +4436,55 @@ oBrowser = function(name) {
 		this.refreshThumbnails();
 	}	
 	
+	// 标签繁转简：只处理 标题/艺人/专辑/流派（LCMapString 逐字映射）
+	this.convertTagsToSimplified = function() {
+		var items = this.metadblist_selection;
+		if (!items || items.Count < 1) return;
+		if (typeof utils.MapString !== 'function') {
+			fb.ShowPopupMessage("当前面板不支持 utils.MapString，无法转换。", "标签繁转简");
+			return;
+		}
+		var fields = ["TITLE", "ARTIST", "ALBUM", "GENRE"];
+		var arr = [];
+		var total = 0;
+		var failed = 0;
+		for (var i = 0; i < items.Count; i++) {
+			var obj = {};
+			try {
+				var info = items[i].GetFileInfo();
+				for (var j = 0; j < info.MetaCount; j++) {
+					var mname = info.MetaName(j);
+					if (fields.indexOf(mname.toUpperCase()) == -1) continue;
+					var vcount = info.MetaValueCount(j);
+					var vals = [];
+					var diff = false;
+					for (var k = 0; k < vcount; k++) {
+						var oldv = info.MetaValue(j, k);
+						var newv = utils.MapString(oldv, 0x0804, 0x02000000);
+						if (newv !== oldv) diff = true;
+						vals.push(newv);
+					}
+					if (diff) {
+						obj[mname.toLowerCase()] = (vcount == 1) ? vals[0] : vals;
+						total++;
+					}
+				}
+			} catch (e) { failed++; }
+			arr.push(obj);
+		}
+		if (total == 0) {
+			fb.ShowPopupMessage("所选曲目没有需要转换的标签。", "标签繁转简");
+			return;
+		}
+		try {
+			items.UpdateFileInfoFromJSON(JSON.stringify(arr));
+			fb.ShowPopupMessage("已转换 " + total + " 个标签（标题/艺人/专辑/流派）。\n\n转换按字逐个映射，个别字（如 发/髮、里/裡）以及人名地名建议人工核对。", "标签繁转简");
+		} catch (e) {
+			fb.ShowPopupMessage("写入标签失败：" + e, "标签繁转简");
+		}
+		this.repaint();
+	};
+
 	this.context_menu = function(x, y, id, row_id, context_items) {
 		this.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
 		var context_items = typeof context_items !== 'undefined' ? context_items : this.metadblist_selection;
@@ -4060,7 +4496,6 @@ oBrowser = function(name) {
 		if(properties.showSettingsMenu) {
 			_menu.AppendMenuItem(MF_STRING, 1, "设置...");
 		}
-		_menu.AppendMenuSeparator();
 
 		if(!plman.IsAutoPlaylist(plman.ActivePlaylist)){
 			var SortMenu = window.CreatePopupMenu(); //Custom Entries
@@ -4076,7 +4511,6 @@ oBrowser = function(name) {
 			SortMenu.AppendMenuItem(MF_STRING, 1042, "从长到短");
 			SortMenu.AppendMenuItem(MF_STRING, 1046, "评级");			
 			SortMenu.AppendMenuItem(MF_STRING, 1047, "自定义标题格式...");			
-			SortMenu.AppendMenuSeparator();
 			SortMenu.AppendMenuItem(MF_STRING, 1039, "随机排列");
 		}
 
@@ -4088,20 +4522,17 @@ oBrowser = function(name) {
 		quickSearchMenu.AppendMenuItem(MF_STRING, 1033,"相同日期");
 		quickSearchMenu.AppendTo(_menu, MF_STRING, "快速搜索...");
 
-		_menu.AppendMenuSeparator();
-		_menu.AppendMenuItem(MF_STRING, 1034, "全选");
-		if(this.metadblist_selection.Count > 0) _menu.AppendMenuItem(plman.IsAutoPlaylist(g_active_playlist)?MF_DISABLED|MF_GRAYED:MF_STRING, 1020, "移除所选");
+		if(this.metadblist_selection.Count > 0) {
+			_menu.AppendMenuItem(MF_STRING, 1050, "标签繁转简（日语谨慎操作）");
+		}
 
 		if(brw.activeRow > -1 && !properties.showGroupHeaders && properties.doubleRowShowCover && properties.doubleRowText) {
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 1010, "刷新此图片");
 		} else if(brw.activeRow > -1 && this.rows[this.activeRow].type > 0 && this.rows[this.activeRow].type < 99){
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 1010, "刷新此图片");
 		}
 
 		if(id !== false){
-			_menu.AppendMenuSeparator();
 
 			_child01.AppendTo(_menu, MF_STRING, "发送到...");
 			_child01.AppendMenuItem(MF_STRING, 2000, "新播放列表...");
@@ -4148,6 +4579,9 @@ oBrowser = function(name) {
                     break;
                 case 1020:
                     removeItems(this.metadblist_selection,g_active_playlist);
+                    break;
+                case 1050:
+                    this.convertTagsToSimplified();
                     break;
                 case 1029:
                     quickSearch(this.metadblist_selection[0],"title");
@@ -4276,7 +4710,6 @@ oBrowser = function(name) {
 			lockOnMenu.AppendTo(_menu, MF_STRING, "显示的播放列表");
 			lockOnMenu.AppendMenuItem(MF_STRING, 3300, "正在播放的播放列表");
 			lockOnMenu.AppendMenuItem(MF_STRING, 3299, "当前播放列表");
-			lockOnMenu.AppendMenuSeparator();
 			lockOnMenu.AppendMenuItem(MF_STRING, 3298, "自动切换回正在播放或当前播放列表");
 			lockOnMenu.CheckMenuItem(3298, properties.enableAutoSwitchPlaylistMode);
 			lockOnMenu.AppendMenuItem(MF_STRING, 3297, "正在播放的播放列表：未播放时显示当前播放列表");
@@ -4311,13 +4744,10 @@ oBrowser = function(name) {
             _menu.AppendMenuItem(((fb.IsPlaying && !(!properties.enableAutoSwitchPlaylistMode && properties.lockOnPlaylistNamed!="")) ? MF_STRING : MF_GRAYED | MF_DISABLED), 900, "显示正在播放");
             _menu.AppendMenuItem(MF_STRING, 901, "启用拖放到播放列表");
 			_menu.CheckMenuItem(901, properties.DropInplaylist);
-
-            _menu.AppendMenuSeparator();
             _menu.AppendMenuItem(MF_STRING, 112, "圆形封面");
             _menu.CheckMenuItem(112, properties.circleMode);
 			_rowHeight.AppendMenuItem(MF_STRING, 1001, "增大");
 			_rowHeight.AppendMenuItem(MF_STRING, 1000, "减小");
-			_rowHeight.AppendMenuSeparator();
 			_rowHeight.AppendMenuItem(MF_DISABLED, 0, "提示：按住 SHIFT 并使用");
 			_rowHeight.AppendMenuItem(MF_DISABLED, 0, "鼠标滚轮在面板上滚动！");
 			_rowHeight.AppendTo(_menu,MF_STRING, "行高");
@@ -4330,10 +4760,16 @@ oBrowser = function(name) {
 
             _menu3.AppendMenuItem(MF_STRING, 300, "启用");
             _menu3.CheckMenuItem(300, properties.showGroupHeaders);
+
+            var _groupMode = window.CreatePopupMenu();
+            for (var gm = 0; gm < GROUP_TEMPLATES.length; gm++) {
+                _groupMode.AppendMenuItem((properties.showGroupHeaders ? MF_STRING : MF_GRAYED | MF_DISABLED), 340 + gm, GROUP_TEMPLATES[gm].label);
+            }
+            _groupMode.CheckMenuRadioItem(340, 340 + GROUP_TEMPLATES.length - 1, 340 + (properties.groupTemplateIndex || 0));
+            _groupMode.AppendTo(_menu3, (properties.showGroupHeaders ? MF_STRING : MF_GRAYED | MF_DISABLED), "分组方式");
+
             _menu3.AppendMenuItem((properties.showGroupHeaders ? MF_STRING : MF_GRAYED | MF_DISABLED), 310, "自动折叠");
             _menu3.CheckMenuItem(310, properties.autocollapse);
-
-            _menu3.AppendMenuSeparator();
             _menu3.AppendMenuItem((properties.showGroupHeaders && !properties.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 320, "全部折叠");
             _menu3.AppendMenuItem((properties.showGroupHeaders && !properties.autocollapse ? MF_STRING : MF_GRAYED | MF_DISABLED), 330, "全部展开");
 
@@ -4341,8 +4777,6 @@ oBrowser = function(name) {
 
             _menu.AppendMenuItem(MF_STRING, 910, "搜索栏");
             _menu.CheckMenuItem(910, properties.showHeaderBar);
-
-            _menu.AppendMenuSeparator();
 
 			var _menu_title = window.CreatePopupMenu();
             _menu_title.AppendMenuItem(MF_STRING, 905, "为长曲目标题显示工具提示");
@@ -4394,7 +4828,6 @@ oBrowser = function(name) {
 
 
 			if (layout_state === 0 && main_panel_state === 1) {
-				_menu.AppendMenuSeparator();
 				_menu.AppendMenuItem(MF_STRING, 993, "隐藏此播放列表");
 			}
 
@@ -4487,15 +4920,10 @@ oBrowser = function(name) {
                         brw.repaint();
                         break;
                     case 300:
-                        setOneProperty("showGroupHeaders",!properties.showGroupHeaders);
-                        get_metrics();
-                        on_colours_changed();
-                        if(properties.autocollapse) {
-                            setOneProperty("autocollapse",false);
-                        }
-                        if(!properties.showGroupHeaders) brw.collapseAll(false);
-                        brw.populate(is_first_populate = false,3, false);
-                        brw.repaint();
+                        sgToggleGroupHeaders();
+                        break;
+                    case 340: case 341: case 342: case 343: case 344:
+                        sgSetGroupTemplate(idx - 340, 5);
                         break;
                     case 301:
                         if(properties.groupHeaderRowsNumberSimple!=2 || properties.groupHeaderRowsNumberDouble!=1) {
@@ -4545,10 +4973,10 @@ oBrowser = function(name) {
                         break;
                     case 899:
                         setOneProperty("FollowNowPlaying",!properties.FollowNowPlaying);
-                        if(properties.FollowNowPlaying) brw.showNowPlaying();
+                        if(properties.FollowNowPlaying) brw.showNowPlaying(true, true);
                         break;
                     case 900:
-                        brw.showNowPlaying();
+                        brw.showNowPlaying(true, true);
                         break;
                     case 901:
                         setOneProperty("DropInplaylist",!properties.DropInplaylist);
@@ -5020,7 +5448,8 @@ function on_mouse_lbtn_down(x, y, m) {
 		var is_scroll_enabled = brw.rowsCount > brw.totalRowsVis;
 		if(properties.enableTouchControl && is_scroll_enabled) {
 			if(brw._isHover(x, y) && !(brw.scrollbar && brw.scrollbar._isHover(x, y))) {
-				if(!timers.mouseDown) {
+				if(timers.mouseDown) { clearTimeout(timers.mouseDown); timers.mouseDown = false; }
+					if(!timers.mouseDown) {
 					cTouch.y_prev = y;
 					cTouch.y_start = y;
 					if(cTouch.t1) {
@@ -5570,7 +5999,7 @@ function vk_up() {
             new_row = 0;
         } else {
             if(properties.showGroupHeaders) {
-                new_row = 0 + properties.groupHeaderRowsNumber;
+                new_row = 0 + sgHeaderRowsOf(0);
             } else {
                 new_row = 0;
             };
@@ -5592,9 +6021,9 @@ function vk_up() {
                 break;
             default: // group row
                 if(brw.groups[brw.rows[new_row].albumId].collapsed) {
-                    new_row -= (properties.groupHeaderRowsNumber - 1);
+                    new_row -= (sgHeaderRowsOf(brw.rows[new_row].albumId) - 1);
                 } else {
-                    new_row -= properties.groupHeaderRowsNumber;
+                    new_row -= sgHeaderRowsOf(brw.rows[new_row].albumId);
                 };
         };
     };
@@ -5622,7 +6051,7 @@ function vk_down() {
     if(new_row > brw.rowsCount - 1) {
         new_row = brw.rowsCount - 1;
         if(brw.groups[brw.rows[new_row].albumId].collapsed) {
-            new_row -= (properties.groupHeaderRowsNumber - 1);
+            new_row -= (sgHeaderRowsOf(brw.rows[new_row].albumId) - 1);
         };
         // kill timer
         cScrollBar.timerCounter = -1;
@@ -5642,15 +6071,15 @@ function vk_down() {
             default: // group row
                 if(brw.groups[brw.rows[new_row].albumId].collapsed) {
                     if(brw.rows[new_row].type > 1) { // if not 1st row of the group header
-                        new_row += (properties.groupHeaderRowsNumber - brw.rows[new_row].type + 1);
+                        new_row += (sgHeaderRowsOf(brw.rows[new_row].albumId) - brw.rows[new_row].type + 1);
                         if(new_row > brw.rowsCount - 1) {
                             new_row = brw.rowsCount - 1;
                             if(brw.groups[brw.rows[new_row].albumId].collapsed) {
-                                new_row -= (properties.groupHeaderRowsNumber - 1);
+                                new_row -= (sgHeaderRowsOf(brw.rows[new_row].albumId) - 1);
                             };
                         } else {
                             if(!brw.groups[brw.rows[new_row].albumId].collapsed) {
-                                new_row += properties.groupHeaderRowsNumber;
+                                new_row += sgHeaderRowsOf(brw.rows[new_row].albumId);
                             };
                         };
                     } else {
@@ -5660,7 +6089,7 @@ function vk_down() {
                     if(brw.rows[new_row].type > 1) { // if not 1st row of the group header
                         // RAS, can't happend
                     } else {
-                        new_row += properties.groupHeaderRowsNumber;
+                        new_row += sgHeaderRowsOf(brw.rows[new_row].albumId);
                     };
                 };
         };
@@ -5692,7 +6121,7 @@ function vk_pgup() {
         if(brw.groups[0].collapsed || !properties.showGroupHeaders) {
             new_row = 0;
         } else {
-            new_row = 0 + properties.groupHeaderRowsNumber;
+            new_row = 0 + sgHeaderRowsOf(0);
         };
         // kill timer
         cScrollBar.timerCounter = -1;
@@ -5716,7 +6145,7 @@ function vk_pgup() {
                         // RAS
                     };
                 } else {
-                    new_row += (properties.groupHeaderRowsNumber - brw.rows[new_row].type + 1);
+                    new_row += (sgHeaderRowsOf(brw.rows[new_row].albumId) - brw.rows[new_row].type + 1);
                 };
         };
     };
@@ -5765,7 +6194,7 @@ function vk_pgdn() {
                         // RAS
                     };
                 } else {
-                    new_row += (properties.groupHeaderRowsNumber - brw.rows[new_row].type + 1);
+                    new_row += (sgHeaderRowsOf(brw.rows[new_row].albumId) - brw.rows[new_row].type + 1);
                 };
         };
     };
@@ -6274,6 +6703,10 @@ function playlist_display_resync(call_id) {
 	try { g_focus_id = getFocusId(g_active_playlist); } catch (eF) { g_focus_id = 0; }
 	try { g_filterbox.clearInputbox(); } catch (eI) {}
 	callback_avoid_populate = true;
+	/* 换列表必须在这里同步重建：如果只排进 on_paint 队列，队列要等下一次
+	   重绘才执行，而切换瞬间恰恰没有重绘请求——表现就是“管理器里切了列表，
+	   正文停在旧列表上，点一下或滚一下才刷出来”。换列表是用户主动操作，
+	   一次同步 populate 的耗时可以接受。 */
 	try { brw.populate(true, call_id, false); } catch (eP) {}
 	try { brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist); } catch (eS) {}
 	if(properties.DropInplaylist) { try { pman.populate(false, false); pman.populate(false); } catch (eM) {} }
@@ -6311,31 +6744,59 @@ function on_playlists_changed() {
 	}
 };
 
+/* 切换列表后的重试：事件可能撞上 callback_avoid_populate 的 30ms 保护窗口，
+   或表格正在拖放（pman.drop_done）而被跳过。以前只是把它塞进 on_paint 队列，
+   没人请求重绘队列就一直不执行——表现就是“管理器里切了列表，正文不跟着变，
+   点一下或滚一下才刷出来”。这里改成短延时重试，最多 5 次，避免死循环。 */
+var sg_switch_retry_timer = false;
+var sg_switch_retry_count = 0;
+function sg_schedule_switch_retry(){
+	if (sg_switch_retry_timer) return;
+	if (sg_switch_retry_count >= 5) { sg_switch_retry_count = 0; return; }
+	sg_switch_retry_count++;
+	sg_switch_retry_timer = setTimeout(function() {
+		sg_switch_retry_timer = false;
+		on_playlist_switch();
+	}, 40);
+}
 function on_playlist_switch() {
-	if(!callback_avoid_populate){
-		/* 用户在播放列表管理器 / 表头下拉里激活了另一个列表（例如洛雪音源）：
-		   这里以用户的选择为准，不再被「锁定正在播放」挡回去排队，
-		   否则正文永远停在在播列表上，点击也就永远落在在播列表上。 */
-		if(playlist_display_resync(8)) return;
-		if(!(properties.lockOnNowPlaying || properties.lockOnPlaylistNamed!="") && window.IsVisible) {
-			if(pman.drop_done) return;
-			changed = brw.setActivePlaylist(3);
-			g_focus_id = getFocusId(g_active_playlist);
-			g_filterbox.clearInputbox();
-			if(changed) {
-				callback_avoid_populate=true;
-				brw.populate(is_first_populate = true,8, false);
-			}
-			brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
+	if(callback_avoid_populate){
+		if(plman.ActivePlaylist > -1 && plman.ActivePlaylist < plman.PlaylistCount
+			&& plman.ActivePlaylist != g_active_playlist) sg_schedule_switch_retry();
+		return;
+	}
+	/* 用户在播放列表管理器 / 表头下拉里激活了另一个列表（例如洛雪音源）：
+	   这里以用户的选择为准，不再被「锁定正在播放」挡回去排队，
+	   否则正文永远停在在播列表上，点击也就永远落在在播列表上。 */
+	/* 未锁定面板（BottomPlaylist）跟随系统激活列表；锁定面板（NowPlayingPlaylist）
+	   不跟随管理器切换——与原版脚本一致，原版锁定面板对 on_playlist_switch 不做任何事。 */
+	if(!(properties.lockOnNowPlaying || properties.lockOnPlaylistNamed!="") && window.IsVisible) {
+		if(playlist_display_resync(8)) { sg_switch_retry_count = 0; return; }
+		if(pman.drop_done) { sg_schedule_switch_retry(); return; }
+		changed = brw.setActivePlaylist(3);
+		g_focus_id = getFocusId(g_active_playlist);
+		g_filterbox.clearInputbox();
+		if(changed) {
+			callback_avoid_populate=true;
+			brw.populate(is_first_populate = true,8, false);
+		}
+		brw.metadblist_selection = plman.GetPlaylistSelectedItems(g_active_playlist);
 
-			// refresh playlists list
-			if(properties.DropInplaylist) pman.populate(exclude_active = false, reset_scroll = false);
-			if(properties.DropInplaylist) pman.populate(exclude_active = false);
-			timers.callback_avoid_populate = setTimeout(function() {
-				callback_avoid_populate=false;
-				clearTimeout(timers.callback_avoid_populate);
-			}, 30);
-		} else set_update_function("on_playlist_switch()");
+		// refresh playlists list
+		if(properties.DropInplaylist) pman.populate(exclude_active = false, reset_scroll = false);
+		if(properties.DropInplaylist) pman.populate(exclude_active = false);
+		timers.callback_avoid_populate = setTimeout(function() {
+			callback_avoid_populate=false;
+			clearTimeout(timers.callback_avoid_populate);
+		}, 30);
+		sg_switch_retry_count = 0;
+		brw.repaint();
+	} else if(window.IsVisible) {
+		/* 锁定面板：管理器切列表不影响它，仍显示锁定的那个列表（原版行为）。
+		   Active != g_active 在这里属于正常状态，不重试不排队。 */
+		sg_switch_retry_count = 0;
+	} else {
+		set_update_function("on_playlist_switch()");
 	}
 };
 
@@ -6448,6 +6909,11 @@ function on_item_focus_change(playlist, from, to) {
 };
 
 function on_metadb_changed(metadbs, fromhook) {
+    /* 标签变了，古典分组的缓存必须作废，否则 work/album 改动不会立刻反映到分组 */
+    sg_cls_handle_cache = {};
+    sg_cls_cache = {};
+    sg_gk_cache = {};
+    sg_gk_cache_n = 0;
     if(!brw.list || g_avoid_on_metadb_changed) {
 		g_avoid_on_metadb_changed = false;
 		return;
@@ -6599,7 +7065,51 @@ function tsDpiRowApply(scale, restore) {
 	} catch (eDR) {}
 }
 
+function sgIsBottomPlaylistInstance() {
+	return window.Name === "BottomPlaylist";
+}
+function sgToggleGroupHeaders(target){
+    var want = (typeof target === 'boolean') ? target : !properties.showGroupHeaders;
+    if (want === !!properties.showGroupHeaders) {
+        if (sgIsBottomPlaylistInstance()) {
+            try { window.NotifyOthers("showGroupHeaders_state_bottom", properties.showGroupHeaders); } catch(eSG0) {}
+        }
+        return;
+    }
+    setOneProperty("showGroupHeaders", want);
+    get_metrics();
+    on_colours_changed();
+    if(properties.autocollapse) {
+        setOneProperty("autocollapse",false);
+    }
+    if(!properties.showGroupHeaders) brw.collapseAll(false);
+    brw.populate(is_first_populate = false, 3, false);
+    brw.repaint();
+    /* 只有底部播放列表实例对外广播，正在播放列表/大面板/迷你都不参与 */
+    if (sgIsBottomPlaylistInstance()) {
+        try { window.NotifyOthers("showGroupHeaders_state_bottom", properties.showGroupHeaders); } catch(eSG1) {}
+    }
+}
 function on_notify_data(name, info) {
+	/* 分组方式广播放在最前面：它必须到达每一个播放列表面板（BottomPlaylist / NowPlayingPlaylist），
+	   不能被后面任何提前返回的分支挡掉；出错也只影响这一条，不连累其它通知。 */
+	if (name === "groupTemplate_set") {
+		/* 表头上的「古典」开关只对应底部播放列表：NowPlayingPlaylist 保持它自己的分组方式，
+		   否则右侧“正在播放”列表会被一起换成分组模板。 */
+		if (sgIsBottomPlaylistInstance()) {
+			try { sgSetGroupTemplate(info ? sgClassicalTemplateIndex() : 0, 6, true); }
+			catch (eGroupTpl) {
+				if (typeof console !== 'undefined') console.log('ERROR:groupTemplate_set: ' + (eGroupTpl && eGroupTpl.message));
+			}
+		}
+		return;
+	}
+	if (name === "groupTemplate_query") {
+		if (sgIsBottomPlaylistInstance()) {
+			try { sgNotifyGroupTemplateState(); } catch (eGroupTplQ) {}
+		}
+		return;
+	}
 	/* 状态对象同步：别的面板改了某个 oPanelSetting（模式/宽度/滤镜/迷你控制栏…），
 	   本地这份 .value 必须跟上，否则本面板还在按旧状态画。 */
 	if (typeof syncStateFromNotify === 'function' && syncStateFromNotify(name, info)) {
@@ -6908,14 +7418,15 @@ function on_notify_data(name, info) {
 			brw.populate(true,20);
 		break;
 		case "showGroupHeaders":
-			setOneProperty("showGroupHeaders",!properties.showGroupHeaders)
-			get_metrics();
-			if(properties.autocollapse) {
-				setOneProperty("autocollapse",false);
+			if(sgIsBottomPlaylistInstance()) sgToggleGroupHeaders();
+			break;
+		case "showGroupHeaders_set":
+			if(sgIsBottomPlaylistInstance()) sgToggleGroupHeaders(!!info);
+			break;
+		case "showGroupHeaders_query":
+			if(sgIsBottomPlaylistInstance()) {
+				try { window.NotifyOthers("showGroupHeaders_state_bottom", properties.showGroupHeaders); } catch(eSGQ) {}
 			}
-			if(!properties.showGroupHeaders) brw.collapseAll(false);
-			brw.populate(is_first_populate = false,22);
-			window.Repaint();
 			break;
 		case "doubletrackline":
 			setOneProperty("doubleRowText",!properties.doubleRowText);

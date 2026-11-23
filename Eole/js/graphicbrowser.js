@@ -2881,7 +2881,6 @@ oHeaderBar = function(name) {
 			SortMenu.AppendTo(basemenu, MF_STRING, "排序依据");
 
 			SortMenu.AppendMenuItem(MF_STRING, 2999, "不排序（播放顺序）");
-			SortMenu.AppendMenuSeparator();
 			SortMenu.AppendMenuItem(MF_STRING, 3000, "艺术家 / 专辑 / 音轨号");
 			SortMenu.AppendMenuItem(MF_STRING, 3001, "标题");
 			SortMenu.AppendMenuItem(MF_STRING, 3002, "音轨号");
@@ -2918,13 +2917,10 @@ oHeaderBar = function(name) {
 					break;
 			}
 			SortMenu.CheckMenuRadioItem(2999, 3006, checked_item);
-			SortMenu.AppendMenuSeparator();
 
 			SortMenu.AppendMenuItem(MF_STRING, 3007, "随机化");
-			SortMenu.AppendMenuSeparator();
 			SortMenu.AppendMenuItem(MF_STRING, 3008, "反转排序顺序");
 			SortMenu.CheckMenuItem(3008, properties.SortDescending);
-			SortMenu.AppendMenuSeparator();
 			SortMenu.AppendMenuItem(MF_STRING, 3009, "将当前排序设为默认");
 			SortMenu.CheckMenuItem(3009, (brw.currentSorting==properties.TFsorting_default));
 
@@ -3010,7 +3006,6 @@ oHeaderBar = function(name) {
 
 		GroupMenu.AppendMenuItem(MF_STRING, 4000, "默认（专辑，艺术家）");
 		GroupMenu.AppendMenuItem(MF_STRING, 4001, "自定义标题格式...");
-		GroupMenu.AppendMenuSeparator();
 		GroupMenu.AppendMenuItem(MF_STRING, 4002, "合并多碟专辑的所有曲目");
 		GroupMenu.CheckMenuItem(4002, properties.SingleMultiDisc);
 		checked_item=0;
@@ -3051,10 +3046,8 @@ oHeaderBar = function(name) {
 		}
 	}
 	this.append_properties_menu = function(basemenu,actions){
-		basemenu.AppendMenuSeparator();
 		if(fb.IsPlaying) basemenu.AppendMenuItem(MF_STRING, 802, "显示当前播放");
 		basemenu.AppendMenuItem(MF_STRING, 803, "播放全部");
-		basemenu.AppendMenuSeparator();
 				
 		actions[801] = function(){
 			runContextCommand("Properties", plman.GetPlaylistItems(brw.getSourcePlaylist()), 0);
@@ -3074,7 +3067,6 @@ oHeaderBar = function(name) {
 		if (typeof y == "undefined") y=this.padding_top+28;
 
 		basemenu.AppendMenuItem(MF_STRING, 1, "设置...");
-		basemenu.AppendMenuSeparator();
 
 		this.append_sort_menu(basemenu, actions);
 		this.append_group_menu(basemenu, actions);
@@ -3083,10 +3075,8 @@ oHeaderBar = function(name) {
 		var menu_settings = window.CreatePopupMenu();
 
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			basemenu.AppendMenuSeparator();
 			basemenu.AppendMenuItem(MF_STRING, 3100, "属性 ");
 			basemenu.AppendMenuItem(MF_STRING, 3101, "配置...");
-			basemenu.AppendMenuSeparator();
 			basemenu.AppendMenuItem(MF_STRING, 3102, "重新加载");
 		}
 
@@ -3162,7 +3152,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	if(sort_group){
 		g_headerbar.append_sort_menu(_menu, actions);
 		g_headerbar.append_group_menu(_menu, actions);
-		_menu.AppendMenuSeparator();
 	}
 	_menu.AppendMenuItem(MF_STRING, 10, "跟随当前播放（右侧播放列表隐藏）");
 	_menu.CheckMenuItem(10, properties.followNowPlaying);
@@ -3170,22 +3159,16 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menu.CheckMenuItem(31, properties.showToolTip);
 
 	_NowPlaying.AppendMenuItem(MF_GRAYED, 0, "右侧播放列表可见：");
-	_NowPlaying.AppendMenuSeparator();
 	_NowPlaying.AppendMenuItem(MF_STRING, 51, "在媒体库中显示");
 	_NowPlaying.AppendMenuItem(MF_STRING, 52, "在当前播放列表中显示");
 	_NowPlaying.CheckMenuRadioItem(51, 52, (properties.showInLibrary_RightPlaylistOn) ? 51 : 52);
-	_NowPlaying.AppendMenuSeparator();
 	_NowPlaying.AppendMenuItem(MF_GRAYED, 0, "右侧播放列表隐藏：");
-	_NowPlaying.AppendMenuSeparator();
 	_NowPlaying.AppendMenuItem(MF_STRING, 53, "在媒体库中显示");
 	_NowPlaying.AppendMenuItem(MF_STRING, 54, "在当前播放列表中显示");
 	_NowPlaying.CheckMenuRadioItem(53, 54, (properties.showInLibrary_RightPlaylistOff) ? 53 : 54);
 	_NowPlaying.AppendTo(_menu,MF_STRING, '"显示当前播放"行为');
-
-	_menu.AppendMenuSeparator();
 	_menuHeaderBar.AppendMenuItem(MF_STRING, 27, "显示");
 	_menuHeaderBar.CheckMenuItem(27, properties.showheaderbar);
-	_menuHeaderBar.AppendMenuSeparator();
 
 	_filterMenu.AppendMenuItem((!properties.showheaderbar)?MF_DISABLED:MF_STRING, 30, "显示")
 	_filterMenu.CheckMenuItem(30, properties.showFilterBox);
@@ -3210,7 +3193,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuGroupDisplay.AppendMenuItem(MF_STRING, 101, "圆形封面");
 	_menuGroupDisplay.AppendMenuItem(MF_STRING, 102, "网格模式，无边距，无标签");
 	_menuGroupDisplay.CheckMenuRadioItem(100, 102, (properties.CoverGridNoText) ? 102 : (properties.circleMode) ? 101 : 100);
-	_menuGroupDisplay.AppendMenuSeparator();
 
 	_dateMenu.AppendMenuItem(MF_STRING, 25, "显示");
 	_dateMenu.CheckMenuItem(25, properties.showdateOverCover);
@@ -3222,7 +3204,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuGroupDisplay.CheckMenuItem(26, properties.showDiscNbOverCover);
 	_menuGroupDisplay.AppendMenuItem(MF_STRING, 46, "显示当前播放时动画");
 	_menuGroupDisplay.CheckMenuItem(46, properties.animateShowNowPlaying);
-	_menuGroupDisplay.AppendMenuSeparator();
 
 	_menuGroupDisplay.AppendMenuItem((properties.CoverGridNoText | properties.circleMode)?MF_GRAYED:MF_STRING, 38, "居中文本");
 	_menuGroupDisplay.CheckMenuItem(38, properties.centerText);
@@ -3241,7 +3222,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuTracklist.CheckMenuItem(14, properties.showlistOneColumn);
 	_menuTracklist.AppendMenuItem(MF_STRING, 15, "水平滚动条");
 	_menuTracklist.CheckMenuItem(15, properties.showlistScrollbar);
-	_menuTracklist.AppendMenuSeparator();
 	
 	_menuCover.AppendMenuItem(MF_STRING, 80, "始终");
 	_menuCover.CheckMenuItem(80, properties.showlistShowCover==2);
@@ -3250,8 +3230,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuCover.AppendMenuItem(MF_STRING, 82, "从不");
 	_menuCover.CheckMenuItem(82, properties.showlistShowCover==0);	
 	_menuCover.AppendTo(_menuTracklist,MF_STRING, "右侧显示封面");
-	
-	_menuTracklist.AppendMenuSeparator();
 
 	var custom_tag = properties.show2linesCustomTag!="";
 	_additionalInfos.AppendMenuItem(MF_STRING, 60, "信息双行显示");
@@ -3260,7 +3238,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_additionalInfos.CheckMenuItem(61, custom_tag);	
 	if(properties.show2linesCustomTag!="")
 	_additionalInfos.AppendMenuItem(MF_STRING, 62, "重置");
-	_additionalInfos.AppendMenuSeparator();
 	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 28, "显示艺术家名称");
 	_additionalInfos.CheckMenuItem(28, properties.showArtistName);
 	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 56, "显示播放次数");
@@ -3269,13 +3246,10 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_additionalInfos.CheckMenuItem(44, properties.showCodec);
 	_additionalInfos.AppendMenuItem(custom_tag?MF_GRAYED:MF_STRING, 43, "显示比特率");
 	_additionalInfos.CheckMenuItem(43, properties.showBitrate);
-	_additionalInfos.AppendMenuSeparator();
 	_additionalInfos.AppendMenuItem(MF_GRAYED, 0, "按此顺序显示：");
 	_additionalInfos.AppendMenuItem(MF_GRAYED, 0, "[艺术家名称]（[播放次数] - [编码格式] - [比特率]）");
 
 	_additionalInfos.AppendTo(_menuTracklist,MF_STRING, "曲目详情");
-	
-	_menuTracklist.AppendMenuSeparator();
 
 	_menuGroupRow1.AppendMenuItem(MF_STRING, 300, "默认");
 	_menuGroupRow1.AppendMenuItem(MF_STRING, 301, "自定义标题格式...");
@@ -3291,15 +3265,11 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuGroupRow2.AppendTo(_menuGroupHeader,MF_STRING, "第二行");
 	_menuGroupHeader.AppendTo(_menuTracklist,MF_STRING, "标题栏");
 
-	_menuTracklist.AppendMenuSeparator();
-
 	_menuProgressBar.AppendMenuItem(MF_STRING, 21, "没有进度条");
 	_menuProgressBar.AppendMenuItem(MF_STRING, 24, "白色进度条");
 	_menuProgressBar.AppendMenuItem(MF_STRING, 23, "封面进度条");
 	_menuProgressBar.CheckMenuRadioItem(21, 24, (!properties.drawProgressBar) ? 21 : (properties.AlbumArtProgressbar) ? 23 : 24);
 	_menuProgressBar.AppendTo(_menuTracklist,MF_STRING, "进度条");
-
-	_menuTracklist.AppendMenuSeparator();
 
 	_menuRating.AppendMenuItem(MF_STRING, 32, "为每首曲目显示评级");
 	_menuRating.AppendMenuItem(MF_STRING, 33, "为选中曲目显示评级");
@@ -3308,8 +3278,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menuRating.AppendMenuItem(MF_STRING, 35, "不显示评级");
 	_menuRating.CheckMenuRadioItem(32, 36, (properties.showRating && !properties.showRatingSelected && !properties.showRatingRated) ? 32 : (properties.showRating && properties.showRatingSelected && !properties.showRatingRated) ? 33 : (properties.showRating && properties.showRatingSelected && properties.showRatingRated) ? 34 : (properties.showRating && properties.showRatingRated) ? 36 : 35);
 	_menuRating.AppendTo(_menuTracklist,MF_STRING, "评级");
-
-	_menuTracklist.AppendMenuSeparator();
 
 	_menuBackground.AppendMenuItem(MF_STRING, 16, "封面主色");
 	_menuBackground.AppendMenuItem(MF_STRING, 17, "封面模糊");
@@ -3331,9 +3299,6 @@ function draw_settings_menu(x,y,right_align,sort_group){
 	_menu2A.CheckMenuItem(222, properties.wallpaperdisplay==1);
 	_menu2A.AppendMenuItem(MF_STRING, 223, "拉伸");
 	_menu2A.CheckMenuItem(223, properties.wallpaperdisplay==2);
-
-
-	_menu.AppendMenuSeparator();
 	_menu.AppendMenuItem(MF_STRING, 9, "刷新图像缓存");
 
 	idx = 0;
@@ -6228,7 +6193,6 @@ function on_mouse_rbtn_down(x, y){
         var drawSeparator = false;
 
 		_menu.AppendMenuItem(MF_STRING, 1, "设置...");
-		_menu.AppendMenuSeparator();
 
         if(check__ > -1) {
 			album_clicked = true;
@@ -6244,9 +6208,7 @@ function on_mouse_rbtn_down(x, y){
 
 			var genrePopupMenu = createGenrePopupMenu(brw.groups[brw.groups_draw[check__]].pl[0]);
 			genrePopupMenu.AppendTo(_menu, MF_STRING, "编辑流派");
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 19, "刷新此图像");
-			_menu.AppendMenuSeparator();
 
 			sendTo.AppendTo(_menu, MF_STRING, "发送到...");
 			sendTo.AppendMenuItem(MF_STRING, 5000, "新建播放列表...");
@@ -6285,8 +6247,6 @@ function on_mouse_rbtn_down(x, y){
 								quickSearchMenu.AppendMenuItem(MF_STRING, 32,"相同流派");
 								quickSearchMenu.AppendMenuItem(MF_STRING, 33,"相同日期");
 								quickSearchMenu.AppendTo(_menu, MF_STRING, "快速搜索...");
-
-								_menu.AppendMenuSeparator();
 								sendTo.AppendTo(_menu, MF_STRING, "发送到...");
 								sendTo.AppendMenuItem(MF_STRING, 5000, "新建播放列表...");
 								var pl_count = plman.PlaylistCount;
@@ -6356,10 +6316,8 @@ function on_mouse_rbtn_down(x, y){
 		}
 
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 7, "属性 ");
 			_menu.AppendMenuItem(MF_STRING, 6, "配置...");
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 5, "重新加载");
 		}
         idx = _menu.TrackPopupMenu(x,y);

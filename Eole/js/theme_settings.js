@@ -1451,6 +1451,30 @@ function tsRows() {
             action: function () { tsOpenFolder(fb.ProfilePath + 'mpv'); }
         });
 
+        R.push(tsHeading('在线更新'));
+        R.push({
+            id: 'upd_check', label: '检查更新',
+            desc: '对比远端清单，只拉取有变动的文件（Eole 与 Lxbox 两目录）',
+            kind: 'button', button: '检查',
+            get: function () { return 0; }, set: function () {},
+            action: function () { tsUpdateCheck(); }
+        });
+        R.push({ kind: 'note', text: tsUpdState.msg });
+        R.push({
+            id: 'upd_apply', label: '立即更新',
+            desc: '下载并校验全部文件后才替换，替换前整份备份到 profile\\_update_backup',
+            kind: 'button', button: '更新',
+            get: function () { return 0; }, set: function () {},
+            action: function () { tsUpdateApply(); }
+        });
+        R.push({
+            id: 'upd_log', label: '更新日志与备份',
+            desc: '_update_backup\\last_update.log 与按时间戳存放的旧文件',
+            kind: 'button', button: '打开',
+            get: function () { return 0; }, set: function () {},
+            action: function () { tsOpenFolder(fb.ProfilePath + '_update_backup'); }
+        });
+
         R.push(tsHeading('开源地址'));
         R.push({
             id: 'gh_eole_x64', label: 'Eole x64 开源地址',
@@ -2719,7 +2743,6 @@ function on_mouse_rbtn_up(x, y) {
     var menu = window.CreatePopupMenu();
     menu.AppendMenuItem(MF_STRING, 9001, '重载所有面板');
     menu.AppendMenuItem(MF_STRING, 9002, '打开设置文件夹');
-    menu.AppendMenuSeparator();
     menu.AppendMenuItem(MF_GRAYED, 0, 'Eole 主题设置');
     var idx = menu.TrackPopupMenu(x, y, 0x0020);
     menu = null;
@@ -2942,3 +2965,116 @@ try {
     window.SetTimeout(tsAnnounce, 2500);
 } catch (eAnn) {}
 
+/* ---------------------------------------------------------------- 在线更新 */
+
+var TS_UPD_MANIFEST_URLS = [
+    'https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/update_manifest.json',
+    'https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/update_manifest.json'
+];
+/* 维护栏显示的状态；检查/更新后改写并重建行 */
+var tsUpdState = { checked: false, version: '', upd: 0, add: 0, del: 0,
+    msg: '尚未检查更新。检查只读取远端清单，不会改动任何文件。' };
+
+function tsHttpGet(url) {
+    try {
+        var x = new ActiveXObject('MSXML2.XMLHTTP');
+        x.open('GET', url, false);
+        x.setRequestHeader('User-Agent', 'Eole-Theme-Updater');
+        x.send();
+        if (x.status === 200 && x.responseText) return String(x.responseText);
+    } catch (e) {}
+    return null;
+}
+
+/* 本地文件修改时间（UTC 秒）；文件不存在返回 -1 */
+function tsUpdLocalMtime(rel) {
+    try {
+        var fso = new ActiveXObject('Scripting.FileSystemObject');
+        var f = fso.GetFile(fb.ProfilePath + String(rel).replace(/\//g, '\\'));
+        return Math.floor(new Date(f.DateLastModified).getTime() / 1000);
+    } catch (e) { return -1; }
+}
+
+function tsUpdRebuild() {
+    g_ts.rows = null;
+    window.Repaint();
+}
+
+function tsUpdateCheck() {
+    var txt = null;
+    for (var i = 0; i < TS_UPD_MANIFEST_URLS.length; i++) {
+        txt = tsHttpGet(TS_UPD_MANIFEST_URLS[i]);
+        if (txt) break;
+    }
+    if (!txt) {
+        tsUpdState = { checked: false, version: '', upd: 0, add: 0, del: 0,
+            msg: '无法获取更新清单（网络或代理问题），请稍后再试。' };
+        tsUpdRebuild();
+        return;
+    }
+    var m = null;
+    try { m = JSON.parse(txt); } catch (e) {}
+    if (!m || !m.files || !m.files.length) {
+        tsUpdState = { checked: false, version: '', upd: 0, add: 0, del: 0,
+            msg: '更新清单解析失败，请联系维护者。' };
+        tsUpdRebuild();
+        return;
+    }
+    var upd = 0, add = 0, del = 0;
+    for (var k = 0; k < m.files.length; k++) {
+        var rel = String(m.files[k].path);
+        var mt = tsUpdLocalMtime(rel);
+        var rm = parseInt(m.files[k].mtime, 10);
+        if (!isFinite(rm)) rm = 0;
+        if (mt < 0) add++;
+        else if (mt < rm) upd++;
+    }
+    if (m.removed) {
+        for (var r = 0; r < m.removed.length; r++) {
+            if (tsUpdLocalMtime(String(m.removed[r].path)) >= 0) del++;
+        }
+    }
+    var ver = String(m.version || '未知');
+    var msg;
+    if (upd + add + del === 0) {
+        msg = '已是最新（远端版本 ' + ver + '）。';
+    } else {
+        msg = '远端版本 ' + ver + '：更新 ' + upd + ' 个，新增 ' + add + ' 个，移除 ' + del +
+              ' 个。点“立即更新”执行，完成后重载所有面板。';
+    }
+    tsUpdState = { checked: true, version: ver, upd: upd, add: add, del: del, msg: msg };
+    tsUpdRebuild();
+}
+
+function tsUpdateApply() {
+    if (!tsUpdState.checked) tsUpdateCheck();
+    if (!tsUpdState.checked) return;
+    if (tsUpdState.upd + tsUpdState.add + tsUpdState.del === 0) {
+        tsUpdState.msg = '已是最新（远端版本 ' + tsUpdState.version + '），无需更新。';
+        tsUpdRebuild();
+        return;
+    }
+    var ps1 = skin_global_path + '\\js\\ts_update.ps1';
+    if (tsUpdLocalMtime('Eole\\js\\ts_update.ps1') < 0) {
+        tsUpdState.msg = '缺少更新执行器 js\\ts_update.ps1，无法更新。';
+        tsUpdRebuild();
+        return;
+    }
+    var log = fb.ProfilePath + '_update_backup\\last_update.log';
+    try {
+        var fso = new ActiveXObject('Scripting.FileSystemObject');
+        if (fso.FileExists(log)) fso.DeleteFile(log);
+    } catch (e2) {}
+    var cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + ps1 +
+              '" -Profile "' + fb.ProfilePath + '" -Log "' + log + '"';
+    var ok = false;
+    try {
+        var sh = new ActiveXObject('WScript.Shell');
+        sh.Run(cmd, 0, false);   /* 0 = 隐藏窗口，false = 不等待 */
+        ok = true;
+    } catch (e3) {}
+    tsUpdState.msg = ok
+        ? '更新已在后台执行（版本 ' + tsUpdState.version + '）。完成后点“重载所有面板”生效；日志在 _update_backup\\last_update.log。'
+        : '无法启动更新程序（PowerShell 不可用）。';
+    tsUpdRebuild();
+}

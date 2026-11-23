@@ -2199,15 +2199,11 @@ function draw_menu() {
     child5.AppendTo(basemenu, MF_STRING, "媒体库");
     child6.AppendTo(basemenu, MF_STRING, "帮助");
     child7.AppendTo(basemenu, MF_STRING, "当前播放");
-
-	basemenu.AppendMenuSeparator();
 	var _schedulerMenu = window.CreatePopupMenu();
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3018, "无操作");
-	_schedulerMenu.AppendMenuSeparator();
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3019, "当前曲目后停止");
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3020, "当前曲目后休眠");
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3021, "当前曲目后关机");
-	_schedulerMenu.AppendMenuSeparator();
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3022, "播放列表后休眠");
 	_schedulerMenu.AppendMenuItem(MF_STRING, 3023, "播放列表后关机");
 	checked_item=0;
@@ -2247,22 +2243,18 @@ function draw_menu() {
 	wallpaper_blur.AppendMenuItem(MF_STRING, 4008, "禁用");
 
 	if(main_panel_state.isEqual(0)){
-		basemenu.AppendMenuSeparator();
 		library_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		library_menu.AppendMenuItem(MF_STRING, 4000, "启用深色主题");
 		library_menu.CheckMenuItem(4000, properties.library_dark_theme);
 	} else if(main_panel_state.isEqual(1)){
-		basemenu.AppendMenuSeparator();
 		playlists_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		playlists_menu.AppendMenuItem(MF_STRING, 4001, "启用深色主题");
 		playlists_menu.CheckMenuItem(4001, properties.playlists_dark_theme);
 	} else if(main_panel_state.isEqual(2)){
-		basemenu.AppendMenuSeparator();
 		bio_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		bio_menu.AppendMenuItem(MF_STRING, 4002, "启用深色主题");
 		bio_menu.CheckMenuItem(4002, properties.bio_dark_theme);
 	} else if(main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)){
-		basemenu.AppendMenuSeparator();
 		visu_menu.AppendTo(basemenu,MF_STRING, "当前面板设置");
 		visu_menu.AppendMenuItem(MF_STRING, 4003, "启用深色主题");
 		visu_menu.CheckMenuItem(4003, properties.visualization_dark_theme);
@@ -2394,7 +2386,6 @@ function randomPlayMenu(x, y){
 
 		var checked_item_menu=3;
 		_menu.AppendMenuItem(MF_DISABLED, 0, "随机播放：");
-		_menu.AppendMenuSeparator();
         _menu.AppendMenuItem(MF_STRING, 3, "曲目");
 			if(properties.random_function=='200_tracks') checked_item_menu=3;
         _menu.AppendMenuItem(MF_STRING, 2, "专辑");
@@ -2459,7 +2450,6 @@ function menuOutputAndDSP(x, y){
 
 	var outputs = JSON.parse(fb.GetOutputDevices());
 	menu.AppendMenuItem(MF_GRAYED, 0, "输出设备：");
-	menu.AppendMenuSeparator();	
 	var active = -1;
 	for (var i = 0; i < outputs.length; i++) {
 		menu.AppendMenuItem(MF_STRING, i + 1, outputs[i].name);
@@ -2468,9 +2458,7 @@ function menuOutputAndDSP(x, y){
 	if (active > -1) menu.CheckMenuRadioItem(1, outputs.length + 1, active + 1);
 
 	var dsps = JSON.parse(fb.GetDSPPresets());
-	menu.AppendMenuSeparator();
 	menu.AppendMenuItem(MF_GRAYED, 0, "DSP 预设：");
-	menu.AppendMenuSeparator();	
 	if(dsps.length>0){
 		var active = -1;
 		for (var i = 0; i < dsps.length; i++) {
@@ -2514,7 +2502,6 @@ function moreMenu(x, y){
 			quickSearchMenu.AppendMenuItem(MF_STRING, 32,"相同流派");
 			quickSearchMenu.AppendMenuItem(MF_STRING, 33,"相同日期");
 			quickSearchMenu.AppendTo(_moreMenu, MF_STRING, "快速搜索...");
-			_moreMenu.AppendMenuSeparator();
 		}
 
 		var _controlsMenu = window.CreatePopupMenu();
@@ -2525,7 +2512,6 @@ function moreMenu(x, y){
 		_controlsMenu.AppendMenuItem(MF_STRING, 3003, "上一首");
 		_controlsMenu.AppendMenuItem(MF_STRING, 3004, "下一首");
 		_controlsMenu.AppendMenuItem(MF_STRING, 3005, "随机");
-		_controlsMenu.AppendMenuSeparator();
 			var _playbackOrder = window.CreatePopupMenu();
 			_playbackOrder.AppendMenuItem(MF_STRING, 3007, "默认");
 			_playbackOrder.AppendMenuItem(MF_STRING, 3008, "循环（列表）");
@@ -2541,20 +2527,15 @@ function moreMenu(x, y){
 			else if(plman.PlaybackOrder==4) _playbackOrder.CheckMenuItem(3011, true);
 			else if(plman.PlaybackOrder==5) _playbackOrder.CheckMenuItem(3012, true);
 			else if(plman.PlaybackOrder==6) _playbackOrder.CheckMenuItem(3013, true);
-			_playbackOrder.AppendMenuSeparator();
 			_playbackOrder.AppendMenuItem(MF_STRING, 3024, "随机化当前播放列表");
 			_playbackOrder.AppendTo(_controlsMenu, MF_STRING, "顺序");
-		_controlsMenu.AppendMenuSeparator();
 		_controlsMenu.AppendMenuItem(MF_STRING, 3006, "清空播放队列");
 		_controlsMenu.AppendTo(_moreMenu, MF_STRING, "播放");
-
-		if(!properties.displayOpen || !properties.displayPlayRandom) _moreMenu.AppendMenuSeparator();
 
 		if(!properties.displayOpen) {
 			var _openMenu = window.CreatePopupMenu();
 			_openMenu.AppendMenuItem(MF_STRING, 3025, "打开文件...");
 			_openMenu.AppendMenuItem(MF_STRING, 3026, "打开音频 CD...");
-			_openMenu.AppendMenuSeparator();
 			_openMenu.AppendMenuItem(MF_STRING, 3027, "添加文件...");
 			_openMenu.AppendMenuItem(MF_STRING, 3028, "添加文件夹...");
 			_openMenu.AppendMenuItem(MF_STRING, 3029, "添加位置...");
@@ -2582,16 +2563,12 @@ function moreMenu(x, y){
 			_playRandom.AppendTo(_moreMenu, MF_STRING, "随机播放");
 		}
 
-		if(!properties.displayScheduler || !properties.displayEqualizer) _moreMenu.AppendMenuSeparator();
-
 		if(!properties.displayScheduler) {
 			var _schedulerMenu = window.CreatePopupMenu();
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3018, "无操作");
-			_schedulerMenu.AppendMenuSeparator();
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3019, "当前曲目后停止");
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3020, "当前曲目后休眠");
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3021, "当前曲目后关机");
-			_schedulerMenu.AppendMenuSeparator();
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3022, "播放列表后休眠");
 			_schedulerMenu.AppendMenuItem(MF_STRING, 3023, "播放列表后关机");
 			checked_item=0;
@@ -2623,7 +2600,6 @@ function moreMenu(x, y){
 			_moreMenu.AppendMenuItem(MF_STRING, 3017, "均衡器");
 
 		var _menu_button = window.CreatePopupMenu();
-		_moreMenu.AppendMenuSeparator();
 		_menu_button.AppendMenuItem(MF_STRING, 4016, "停止");
 		_menu_button.CheckMenuItem(4016, properties.displayStop);
 		_menu_button.AppendMenuItem(MF_STRING, 4022, "循环");
@@ -2925,13 +2901,10 @@ function schedulerMenu(x, y){
 
 		var _schedulerMenu = window.CreatePopupMenu();
 		_schedulerMenu.AppendMenuItem(MF_DISABLED, 0, "电源计划：");
-		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3018, "无操作");
-		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3019, "当前曲目后停止");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3020, "当前曲目后休眠");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3021, "当前曲目后关机");
-		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3022, "播放列表后休眠");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3023, "播放列表后关机");
 			checked_item=0;
@@ -2993,7 +2966,6 @@ function draw_controls_menu(x,y){
         var idx;
 
 		_menu.AppendMenuItem(MF_STRING, 1, "设置...");
-		_menu.AppendMenuSeparator();
 
 		_menu.AppendMenuItem(MF_STRING, 3000, "停止");
 		if (fb.IsPlaying && !fb.IsPaused) _menu.AppendMenuItem(MF_STRING, 3001, "暂停");
@@ -3001,10 +2973,8 @@ function draw_controls_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 3003, "上一首");
 		_menu.AppendMenuItem(MF_STRING, 3004, "下一首");
 		_menu.AppendMenuItem(MF_STRING, 3005, "随机");
-		_menu.AppendMenuSeparator();
 
 		_menu.AppendMenuItem(MF_STRING, 3024, "随机化当前播放列表");
-		_menu.AppendMenuSeparator();
 
 		var _playbackOrder = window.CreatePopupMenu();
 		_playbackOrder.AppendMenuItem(MF_STRING, 3007, "默认");
@@ -3022,15 +2992,12 @@ function draw_controls_menu(x,y){
 		else if(plman.PlaybackOrder==5) _playbackOrder.CheckMenuItem(3012, true);
 		else if(plman.PlaybackOrder==6) _playbackOrder.CheckMenuItem(3013, true);
 		_playbackOrder.AppendTo(_menu, MF_STRING, "播放顺序");
-		_menu.AppendMenuSeparator();
 
 		var _schedulerMenu = window.CreatePopupMenu();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3018, "无操作");
-		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3019, "当前曲目后停止");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3020, "当前曲目后休眠");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3021, "当前曲目后关机");
-		_schedulerMenu.AppendMenuSeparator();
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3022, "播放列表后休眠");
 		_schedulerMenu.AppendMenuItem(MF_STRING, 3023, "播放列表后关机");
 		checked_item=0;
@@ -3058,7 +3025,6 @@ function draw_controls_menu(x,y){
 		_schedulerMenu.AppendTo(_menu, MF_STRING, "电源计划");
 
 		if(fb.IsPlaying){
-			_menu.AppendMenuSeparator();
 			var _quickSearchMenu = window.CreatePopupMenu();
 			_quickSearchMenu.AppendMenuItem(MF_STRING, 34,"相同标题");
 			_quickSearchMenu.AppendMenuItem(MF_STRING, 30,"相同艺术家");
@@ -3066,15 +3032,12 @@ function draw_controls_menu(x,y){
 			_quickSearchMenu.AppendMenuItem(MF_STRING, 32,"相同流派");
 			_quickSearchMenu.AppendMenuItem(MF_STRING, 33,"相同日期");
 			_quickSearchMenu.AppendTo(_menu, MF_STRING, "快速搜索...");			
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 2, "属性");
 		}
 		
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			_menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 100, "属性 ");
 			_menu.AppendMenuItem(MF_STRING, 101, "配置...");
-            _menu.AppendMenuSeparator();
 			_menu.AppendMenuItem(MF_STRING, 102, "重新加载");
 		}
         idx = _menu.TrackPopupMenu(x,y,0x0020);
@@ -3188,7 +3151,6 @@ function draw_settings_menu(x,y){
 		_menu_track_infos.AppendMenuItem(MF_STRING, 3015, properties.showTrackInfo?"隐藏":"显示");
 		_menu_track_infos.AppendMenuItem(properties.showTrackInfo?MF_STRING:MF_GRAYED, 3040, "曲目详情双行显示");
 		_menu_track_infos.CheckMenuItem(3040,!mini_controlbar.isActive() && properties.twoLinesDetails);		
-		_menu_track_infos.AppendMenuSeparator();		
         _menu_track_infos.AppendMenuItem(properties.showTrackInfo&&!custom_rows?MF_STRING:MF_GRAYED, 9001, "显示曲目标题前缀（碟号.音轨号）");
 		_menu_track_infos.CheckMenuItem(9001, properties.showTrackPrefix);
         _menu_track_infos.AppendMenuItem(properties.showTrackInfo?MF_STRING:MF_GRAYED, 3031, "自定义...");
@@ -3200,8 +3162,6 @@ function draw_settings_menu(x,y){
 		_menu.CheckMenuItem(3030, properties.volumeA1waysVisible);		
 		_menu.AppendMenuItem(MF_STRING, 3016, "显示当前播放封面");
 		_menu.CheckMenuItem(3016, (layout_state.isEqual(0)?coverpanel_state_big.isActive():coverpanel_state_mini.isActive()));
-
-		_menu.AppendMenuSeparator();
 		_menu_slider.AppendMenuItem(MF_STRING, 3024, "圆形");
 		_menu_slider.CheckMenuItem(3024, properties.cursor_style==0);
 		_menu_slider.AppendMenuItem(MF_STRING, 3025, "实心圆盘");
@@ -3209,8 +3169,6 @@ function draw_settings_menu(x,y){
 		_menu_slider.AppendMenuItem(MF_STRING, 3026, "悬停时显示实心圆盘");
 		_menu_slider.CheckMenuItem(3026, properties.cursor_style==2);
 		_menu_slider.AppendTo(_menu,MF_STRING, "滑块光标");
-
-		_menu.AppendMenuSeparator();
 		_menu_button.AppendMenuItem(MF_STRING, 3028, "停止");
 		_menu_button.CheckMenuItem(3028, properties.displayStop);
 		_menu_button.AppendMenuItem(MF_STRING, 3022, "循环");

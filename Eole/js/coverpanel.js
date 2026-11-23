@@ -918,7 +918,6 @@ function on_mouse_rbtn_up(x, y) {
   let now_playing_track;
 
 	main_menu.AppendMenuItem(MF_STRING, 35, "设置...");
-	main_menu.AppendMenuSeparator();
 
 	if(fb.IsPlaying){
 		now_playing_track = fb.GetNowPlaying();
@@ -934,11 +933,9 @@ function on_mouse_rbtn_up(x, y) {
 		quickSearchMenu.AppendMenuItem(MF_STRING, 32,"相同流派");
 		quickSearchMenu.AppendMenuItem(MF_STRING, 33,"相同日期");
 		quickSearchMenu.AppendTo(main_menu, MF_STRING, "快速搜索...");
-		main_menu.AppendMenuSeparator();
 	} else {
 		let checked_item_menu = 3;
 		main_menu.AppendMenuItem(MF_DISABLED, 0, "随机播放：");
-		main_menu.AppendMenuSeparator();
 		main_menu.AppendMenuItem(MF_STRING, 3, "曲目");
 		main_menu.AppendMenuItem(MF_STRING, 2, "专辑");
 		main_menu.AppendMenuItem(MF_STRING, 5, "艺术家");
@@ -961,10 +958,8 @@ function on_mouse_rbtn_up(x, y) {
 	fb.IsPlaying && main_menu.AppendMenuItem(MF_STRING, 200, "属性");
 
 	if(utils.IsKeyPressed(VK_SHIFT)) {
-		main_menu.AppendMenuSeparator();
 		main_menu.AppendMenuItem(MF_STRING, 100, "属性 ");
 		main_menu.AppendMenuItem(MF_STRING, 101, "配置...");
-		main_menu.AppendMenuSeparator();
 		main_menu.AppendMenuItem(MF_STRING, 102, "重新加载");
 	}
 
@@ -1090,7 +1085,6 @@ function draw_settings_menu(x,y) {
   _dble_click_menu.AppendMenuItem(MF_STRING, 7, "激活/退出迷你播放器");
   _dble_click_menu.CheckMenuRadioItem(3, 7, 3+properties.dble_click_action);
   _dble_click_menu.AppendTo(_menu, MF_STRING, "双击动作");
-  _menu.AppendMenuSeparator();
 
   var _visu_menu = window.CreatePopupMenu();
   _visu_menu.AppendMenuItem(MF_STRING, 8, "始终显示");

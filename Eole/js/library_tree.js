@@ -417,7 +417,6 @@ oTagSwitcherBar = function() {
 		this.search_history_bt.changeState(ButtonStates.normal);
 		
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "分组方式：");
-		basemenu.AppendMenuSeparator();
 		
 		for(i = this.items_txt.length-1; i >= 0; i--) {
 			basemenu.AppendMenuItem(MF_STRING, i+1, this.items_txt[i]);
@@ -3942,9 +3941,7 @@ function menu_object() {
             ix = Math.round((y + sbar.delta - p.s_h - ui.row_h * 0.5) / ui.row_h);
         if (y > p.s_h && pop.tree.length > ix && ix >= 0 && pop.check_ix(pop.tree[ix], x, y, false)) {
             menu.AppendMenuItem(MF_STRING, 7004, "设置...");
-            menu.AppendMenuSeparator();
             menu.AppendMenuItem(MF_STRING, 7006, "定位正在播放的分组");
-            menu.AppendMenuSeparator();
 
 			var show_collapse = false
 			for(var i=0; i < pop.tree.length; i++) {
@@ -3955,7 +3952,6 @@ function menu_object() {
 
 			if(ui.show_collapse_rclick && !pop.auto){
 				menu.AppendMenuItem(MF_STRING, 7005, "全部折叠");
-				menu.AppendMenuSeparator();
 			}
             if (!pop.tree[ix].sel) {
                 new_sel = true;
@@ -3992,7 +3988,6 @@ function menu_object() {
 			}
 
             Index = this.PlaylistTypeMenu(menu, Index);
-            menu.AppendMenuSeparator();
             show_context = true;
         }
         if (show_context) {
@@ -4001,16 +3996,13 @@ function menu_object() {
             Context.InitContext(items);
             Context.BuildMenu(menu, 5000, -1);
 			if(show_open_folder && p.view_by == p.folder_view) {
-				menu.AppendMenuSeparator();
 				menu.AppendMenuItem(MF_STRING, 9999, "打开文件夹");
 			}
         } else showOptionsMenu(x,y,false);
 
 		if(utils.IsKeyPressed(VK_SHIFT)) {
-			menu.AppendMenuSeparator();
 			menu.AppendMenuItem(MF_STRING, 7001, "属性");
 			menu.AppendMenuItem(MF_STRING, 7002, "配置...");
-			menu.AppendMenuSeparator();
 			menu.AppendMenuItem(MF_STRING, 7003, "重新加载");
 		}
 
@@ -4324,16 +4316,12 @@ function showOptionsMenu(x,y,reduced){
 	Index = 1, FilterStartIndex = 10000;
 
 	Index = men.OptionsTypeMenu(menu, Index,reduced);
-
-	menu.AppendMenuSeparator();
 	FilterEndIndex = men.FilterMenu(menuFilter, FilterStartIndex);
 	menuFilter.AppendTo(menu, (p.filter_by==0)?MF_STRING:MF_CHECKED, "筛选方式");
 
 	if(utils.IsKeyPressed(VK_SHIFT)) {
-		menu.AppendMenuSeparator();
 		menu.AppendMenuItem(MF_STRING, 7001, "属性");
 		menu.AppendMenuItem(MF_STRING, 7002, "配置...");
-		menu.AppendMenuSeparator();
 		menu.AppendMenuItem(MF_STRING, 7003, "重新加载");
 	}
 
