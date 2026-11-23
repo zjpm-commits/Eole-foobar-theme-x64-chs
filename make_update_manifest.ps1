@@ -46,7 +46,9 @@ $manifestPath = Join-Path $RepoDir 'update_manifest.json'
 
 # removed：显式维护的“远端已删除/移动走的旧文件”，默认空。
 # 需要删除旧文件时在下面的 $removedExtra 里追加仓库相对路径（如 'Eole/js/old_script.js'）。
-$removedExtra = @()
+$removedExtra = @(
+    'Eole/js/ts_update.ps1'   # 更新执行器已移到 Eole 根目录，旧位置要让客户端删掉
+)
 $removed = @()
 if (Test-Path -LiteralPath $manifestPath) {
     try {

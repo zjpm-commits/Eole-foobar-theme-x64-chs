@@ -37,6 +37,7 @@ if (typeof fw_enabled !== 'function') {
     var fw_quality = function () { return 1; };
     var FW_PROP_DARK = "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
     var FW_PROP_DARK_REF = "显示·全屏壁纸深色·fb2k基准";
+    var FW_PROP_DARK_AT = "显示·全屏壁纸深色·写入时刻";
     var fw_bgIsDark = function () { return true; };
     var fw_themeDark = function () { return true; };
     var fw_themeStale = function () { return false; };
@@ -472,9 +473,25 @@ function on_notify_data(name, info) {
         try { ref = (typeof fw_bgIsDark === 'function' && fw_bgIsDark()) ? 1 : 0; } catch (eR) {}
         try { window.SetProperty(FW_PROP_DARK, dv); } catch (eA) {}
         try { window.SetProperty(FW_PROP_DARK_REF, ref); } catch (eB) {}
+        try { window.SetProperty(FW_PROP_DARK_AT, (new Date()).getTime()); } catch (eAt) {}
+        /* 覆盖只在本会话有效；把主题的深浅状态也落到本面板的"深色布局"上，
+           这样下次冷启动没有新鲜覆盖时，fw_isDarkRaw() 仍然能给出正确答案。 */
+        try { window.SetProperty("显示·深色布局", dv === 1); } catch (eLay) {}
         try { fw_isDark(true); } catch (eC) {}
         try { fwQueue(50); } catch (eTQ) {}
         try { window.Repaint(); } catch (eTR) {}
+        return;
+    }
+    /* 设置页 / 标题栏改完壁纸参数会发一份统一快照。别的面板都靠它对齐，
+       宿主如果漏接，就会一直用自己的旧属性渲染 —— 模糊/蒙版各深浅两份，
+       一旦和写入方选的那份对不上，滑块怎么拉都不动。 */
+    if (name === 'fw_values') {
+        try { if (typeof fw_adopt === 'function') fw_adopt(info); } catch (eFv) {}
+        try { fw_isDark(true); } catch (eFv2) {}
+        window.SetTimeout(function () {
+            try { if (fw_hostOn()) fwQueue(30); } catch (eFv3) {}
+            try { window.Repaint(); } catch (eFv4) {}
+        }, 0);
         return;
     }
     if (name === 'lx_cover_ready' || name === 'lx_cover_path') {

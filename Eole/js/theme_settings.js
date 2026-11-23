@@ -3054,9 +3054,9 @@ function tsUpdateApply() {
         tsUpdRebuild();
         return;
     }
-    var ps1 = skin_global_path + '\\js\\ts_update.ps1';
-    if (tsUpdLocalMtime('Eole\\js\\ts_update.ps1') < 0) {
-        tsUpdState.msg = '缺少更新执行器 js\\ts_update.ps1，无法更新。';
+    var ps1 = skin_global_path + '\\ts_update.ps1';
+    if (tsUpdLocalMtime('Eole\\ts_update.ps1') < 0) {
+        tsUpdState.msg = '缺少更新执行器 ts_update.ps1，无法更新。';
         tsUpdRebuild();
         return;
     }

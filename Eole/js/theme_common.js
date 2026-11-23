@@ -3745,6 +3745,13 @@ var FW_PROP_QUALITY = "显示·全屏壁纸质量(1=已缩放 2=1.5x 3=2x)";
    换过界面主题"——一旦对不上，覆盖自动作废，壁纸回到跟随 fb2k 的老行为。 */
 var FW_PROP_DARK     = "显示·全屏壁纸深色(-1=跟随 0=浅 1=深)";
 var FW_PROP_DARK_REF = "显示·全屏壁纸深色·fb2k基准";
+/* 覆盖的写入时刻。SMP 的属性是各面板私有、且会跟着布局文件存盘，
+   所以"上一次会话"里写下的覆盖会被面板重载原样读回来；如果那之后主题换过
+   深浅而该面板没收到广播，它就会一直按旧覆盖选错那一套模糊/蒙版属性，
+   表现就是设置页把值写进浅色那份、宿主却去读深色那份，怎么调都不动。
+   只认本次会话内写下的覆盖，上一次会话留下来的按"跟随界面"处理。 */
+var FW_PROP_DARK_AT  = "显示·全屏壁纸深色·写入时刻";
+var g_fw_bootAt = (new Date()).getTime();
 
 var g_fw_lastHasRealImg = null;
 var g_fw_lastSrcCover = false;
@@ -3792,6 +3799,10 @@ function fw_themeDark() {
     var v = -1;
     try { v = Number(window.GetProperty(FW_PROP_DARK, -1)); } catch (e) { v = -1; }
     if (v !== 0 && v !== 1) return fw_isDarkRaw();
+    /* 只认本次会话写下的覆盖：否则面板重载会把以前的深/浅决定带回来 */
+    var at = 0;
+    try { at = Number(window.GetProperty(FW_PROP_DARK_AT, 0)); } catch (eAt) { at = 0; }
+    if (!(at >= g_fw_bootAt)) return fw_isDarkRaw();
     if (fw_themeStale()) return fw_isDarkRaw();
     return v === 1;
 }
@@ -3811,6 +3822,7 @@ function fw_setThemeDark(dark) {
     dark = !!dark;
     try { window.SetProperty(FW_PROP_DARK, dark ? 1 : 0); } catch (e) {}
     try { window.SetProperty(FW_PROP_DARK_REF, fw_bgIsDark() ? 1 : 0); } catch (e1) {}
+    try { window.SetProperty(FW_PROP_DARK_AT, (new Date()).getTime()); } catch (e2) {}
     g_fwDarkV = dark;
     g_fwDarkAt = (new Date()).getTime();
     return dark;
@@ -3819,6 +3831,7 @@ function fw_setThemeDark(dark) {
 function fw_clearThemeDark() {
     try { window.SetProperty(FW_PROP_DARK, -1); } catch (e) {}
     try { window.SetProperty(FW_PROP_DARK_REF, -1); } catch (e1) {}
+    try { window.SetProperty(FW_PROP_DARK_AT, 0); } catch (e2) {}
     g_fwDarkV = null;
     g_fwDarkAt = 0;
     return false;
@@ -4443,7 +4456,11 @@ function fw_propsSnapshot() {
         ml:  fw_rawNum(FW_PROP_MASK_LT, 210),
         q:   fw_quality(),
         dk:  fw_rawNum(FW_PROP_DARK, -1),
-        dr:  fw_rawNum(FW_PROP_DARK_REF, -1)
+        dr:  fw_rawNum(FW_PROP_DARK_REF, -1),
+        at:  fw_rawNum(FW_PROP_DARK_AT, 0),
+        /* 写入方"实际按哪一套渲染"（已经算上回退的结果）。接收方直接按它对齐，
+           就不会因为自己面板里存的旧覆盖 / 错的底色判断而读到另一套属性。 */
+        dkn: fw_isDark() ? 1 : 0
     };
 }
 
@@ -4468,6 +4485,14 @@ function fw_adopt(info) {
         if (o.q !== undefined)   window.SetProperty(FW_PROP_QUALITY, Number(o.q) || 1);
         if (o.dk !== undefined)  window.SetProperty(FW_PROP_DARK, Number(o.dk));
         if (o.dr !== undefined)  window.SetProperty(FW_PROP_DARK_REF, Number(o.dr));
+        if (o.at !== undefined)  window.SetProperty(FW_PROP_DARK_AT, Number(o.at));
+        /* 带 dkn 的发布是"这次改参数时写入方用的就是深/浅这一套"，
+           落成本次会话的新覆盖，接收方必须跟它走。 */
+        if (o.dkn !== undefined && o.dkn !== null && isFinite(Number(o.dkn))) {
+            window.SetProperty(FW_PROP_DARK, Number(o.dkn) ? 1 : 0);
+            try { window.SetProperty(FW_PROP_DARK_REF, fw_bgIsDark() ? 1 : 0); } catch (eDkR) {}
+            window.SetProperty(FW_PROP_DARK_AT, (new Date()).getTime());
+        }
     } catch (eA) {}
     g_fw_adopt = false;
     try { g_fw_sharedRaw = null; } catch (eC) {}

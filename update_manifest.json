@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.23-1413",
-  "generated": "2026-11-23T06:13:20Z",
+  "version": "2026.11.23-1539",
+  "generated": "2026-11-23T07:39:37Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -15,6 +15,11 @@
       "path": "Eole/preview.png",
       "mtime": 1794591726,
       "md5": "fd7ce3be4e0f024227b6c2b742cac5ab"
+    },
+    {
+      "path": "Eole/ts_update.ps1",
+      "mtime": 1795413900,
+      "md5": "bc06f73d73b95d742826aac1fc883654"
     },
     {
       "path": "Eole/Biography/LICENSE.txt",
@@ -3783,8 +3788,8 @@
     },
     {
       "path": "Eole/js/Eole_layout.js",
-      "mtime": 1795411099,
-      "md5": "e375d4690bdf361fbb0866a10f794b56"
+      "mtime": 1795418750,
+      "md5": "8bafd460d17742856e53c98e27d08413"
     },
     {
       "path": "Eole/js/graphicbrowser.js",
@@ -3838,28 +3843,23 @@
     },
     {
       "path": "Eole/js/theme_common.js",
-      "mtime": 1795411099,
-      "md5": "cd485ab6b95ee03c8276d05534eef7fc"
+      "mtime": 1795418696,
+      "md5": "604b4702dd03ca30e91f61c248a4ae09"
     },
     {
       "path": "Eole/js/theme_settings.js",
-      "mtime": 1795414394,
-      "md5": "37dab9798062540b1faa2bb0dd3dffe8"
+      "mtime": 1795419260,
+      "md5": "bec77d49288cf8e2add2154b3194e985"
     },
     {
       "path": "Eole/js/title_bar.js",
-      "mtime": 1795411099,
-      "md5": "bbb48b5f342867b3ef00dbca10e8fb72"
+      "mtime": 1795418644,
+      "md5": "b3beb33e0b7ff83f5181eac85c482ba4"
     },
     {
       "path": "Eole/js/TrackInfo.js",
       "mtime": 1795411099,
       "md5": "aff49b318fb0c14785a0caa4cf6f0c73"
-    },
-    {
-      "path": "Eole/js/ts_update.ps1",
-      "mtime": 1795413900,
-      "md5": "bc06f73d73b95d742826aac1fc883654"
     },
     {
       "path": "Lxbox/放到profile文件夹下然后用jsplitter面板加载.js",
@@ -3942,5 +3942,7 @@
       "md5": "8d2288344502f6aaa31fa836e5626996"
     }
   ],
-  "removed": []
+  "removed": [
+    "Eole/js/ts_update.ps1"
+  ]
 }

@@ -122,6 +122,8 @@ function fwWriteWallDark(dark) {
     dark = !!dark;
     try { window.SetProperty(fwWallPropName(), dark ? 1 : 0); } catch (e1) {}
     try { window.SetProperty(fwWallRefName(), fwWallBgDark() ? 1 : 0); } catch (e2) {}
+    /* 写入时刻：各面板重载后会读回旧覆盖，只有带本次会话时间戳的才作数 */
+    try { window.SetProperty("显示·全屏壁纸深色·写入时刻", (new Date()).getTime()); } catch (eAt) {}
     try { if (typeof fw_setThemeDark === 'function') fw_setThemeDark(dark); } catch (e3) {}
     try { window.NotifyOthers("fw_theme_dark", dark); } catch (e4) {}
     return dark;
