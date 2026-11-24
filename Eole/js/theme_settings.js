@@ -1462,7 +1462,7 @@ function tsRows() {
         R.push({ kind: 'note', text: tsUpdState.msg });
         R.push({
             id: 'upd_apply', label: '立即更新',
-            desc: '下载并校验全部文件后才替换，替换前整份备份到 profile\\_update_backup',
+            desc: '确认后退出 foobar2000，更新程序等进程退出并重试替换（先整份备份到 _update_backup）',
             kind: 'button', button: '更新',
             get: function () { return 0; }, set: function () {},
             action: function () { tsUpdateApply(); }
@@ -3021,17 +3021,32 @@ function tsUpdateCheck() {
         return;
     }
     var upd = 0, add = 0, del = 0;
+    /* 判据与执行器同源：优先 MD5 比对（utils.MD5FromFile，4.4.2 官方 API），
+       旧环境取不到该 API 时才退回 mtime。 */
+    var hasMd5 = false;
+    try { hasMd5 = (typeof utils.MD5FromFile === 'function'); } catch (eMd5) { hasMd5 = false; }
     for (var k = 0; k < m.files.length; k++) {
         var rel = String(m.files[k].path);
         var mt = tsUpdLocalMtime(rel);
-        var rm = parseInt(m.files[k].mtime, 10);
-        if (!isFinite(rm)) rm = 0;
-        if (mt < 0) add++;
-        else if (mt < rm) upd++;
+        if (mt < 0) { add++; continue; }
+        var same = false;
+        if (hasMd5) {
+            try {
+                same = String(utils.MD5FromFile(fb.ProfilePath + rel.replace(/\//g, '\\'))).toLowerCase() === String(m.files[k].md5 || '').toLowerCase();
+            } catch (e5) { same = false; }
+        }
+        if (!same && !hasMd5) {
+            var rm = parseInt(m.files[k].mtime, 10);
+            if (!isFinite(rm)) rm = 0;
+            same = (mt >= rm);
+        }
+        if (!same) upd++;
     }
     if (m.removed) {
         for (var r = 0; r < m.removed.length; r++) {
-            if (tsUpdLocalMtime(String(m.removed[r].path)) >= 0) del++;
+            var rr = m.removed[r];
+            var rp = (typeof rr === 'string') ? rr : (rr && rr.path);
+            if (rp && tsUpdLocalMtime(String(rp)) >= 0) del++;
         }
     }
     var ver = String(m.version || '未知');
@@ -3040,7 +3055,7 @@ function tsUpdateCheck() {
         msg = '已是最新（远端版本 ' + ver + '）。';
     } else {
         msg = '远端版本 ' + ver + '：更新 ' + upd + ' 个，新增 ' + add + ' 个，移除 ' + del +
-              ' 个。点“立即更新”执行，完成后重载所有面板。';
+              ' 个。点“立即更新”退出 foobar2000 自动完成，重启后生效。';
     }
     tsUpdState = { checked: true, version: ver, upd: upd, add: add, del: del, msg: msg };
     tsUpdRebuild();
@@ -3061,6 +3076,24 @@ function tsUpdateApply() {
         return;
     }
     var log = fb.ProfilePath + '_update_backup\\last_update.log';
+    /* 退出后应用：先弹窗确认 → 启动更新程序 → foobar2000 自行退出。
+       更新程序会等进程退出（最多 20 秒）并对替换重试（最多 60 次×250ms），
+       文件句柄全部释放后才动线上文件，完成后弹窗报告结果。 */
+    var r = 6;
+    try { r = utils.MessageBox('在线更新需要退出 foobar2000 完成文件替换。\n\n是否立即退出并完成更新？', 'Eole 主题更新', 0x4, 0x20); }
+    catch (eMB) {
+        /* 老版 JSplitter 没有 utils.MessageBox 时，用 WScript 原生弹窗兜底；
+           两条路都走不通就按“取消”处理，绝不在没有确认的情况下突然退出。 */
+        try {
+            var wsh = new ActiveXObject('WScript.Shell');
+            r = wsh.Popup('在线更新需要退出 foobar2000 完成文件替换。\n\n是否立即退出并完成更新？', 0, 'Eole 主题更新', 0x4 + 0x20);
+        } catch (eMB2) { r = 7; }
+    }
+    if (r !== 6) {
+        tsUpdState.msg = '已取消本次更新，可稍后再试。';
+        tsUpdRebuild();
+        return;
+    }
     try {
         var fso = new ActiveXObject('Scripting.FileSystemObject');
         if (fso.FileExists(log)) fso.DeleteFile(log);
@@ -3073,8 +3106,15 @@ function tsUpdateApply() {
         sh.Run(cmd, 0, false);   /* 0 = 隐藏窗口，false = 不等待 */
         ok = true;
     } catch (e3) {}
-    tsUpdState.msg = ok
-        ? '更新已在后台执行（版本 ' + tsUpdState.version + '）。完成后点“重载所有面板”生效；日志在 _update_backup\\last_update.log。'
-        : '无法启动更新程序（PowerShell 不可用）。';
+    if (!ok) {
+        tsUpdState.msg = '无法启动更新程序（PowerShell 不可用）。';
+        tsUpdRebuild();
+        return;
+    }
+    tsUpdState.msg = '更新程序已启动（版本 ' + tsUpdState.version + '），foobar2000 即将退出，完成后弹窗报告，重启后生效。';
     tsUpdRebuild();
+    try { fb.Exit(); } catch (eExit) {
+        tsUpdState.msg = '更新程序已启动，请手动关闭 foobar2000 以完成替换。';
+        tsUpdRebuild();
+    }
 }

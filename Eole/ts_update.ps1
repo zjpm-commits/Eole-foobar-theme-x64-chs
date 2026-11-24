@@ -1,6 +1,6 @@
 ﻿# Eole 主题在线更新执行器（由主题设置面板「维护→在线更新」调用）
 # 覆盖两个目录：profile\Eole 与 profile\Lxbox（清单里的路径均为“仓库相对路径”）
-# 流程：拉清单 → 比对(MD5) → 下载到临时目录并校验 → 整份备份 → 替换 → 处理 removed → 写日志
+# 流程：拉清单 → 比对(MD5) → 下载到临时目录并校验 → 等待 foobar2000 退出 → 整份备份 → 重试替换 → 处理 removed → 写日志 + 弹窗报告
 param(
     [Parameter(Mandatory = $true)][string]$Profile,
     [string]$ManifestUrl = 'https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/update_manifest.json',
@@ -24,8 +24,16 @@ function WriteLog([string]$msg) {
     }
 }
 
+function Show-UpdPopup([string]$msg) {
+    try {
+        Add-Type -AssemblyName System.Windows.Forms | Out-Null
+        [System.Windows.Forms.MessageBox]::Show($msg, 'Eole 主题更新', 'OK', 'Information') | Out-Null
+    } catch { }
+}
+
 function ExitFail([string]$msg) {
     WriteLog ('FAIL ' + $msg)
+    Show-UpdPopup ('主题更新失败：' + $msg + [Environment]::NewLine + '详细日志见 _update_backup\last_update.log')
     if ($tmpDir -and (Test-Path -LiteralPath $tmpDir)) { Remove-Item -LiteralPath $tmpDir -Recurse -Force -ErrorAction SilentlyContinue }
     exit 1
 }
@@ -76,6 +84,7 @@ if ($need.Count -eq 0 -and $removed.Count -eq 0) {
         }
     }
     WriteLog ('OK 已是最新：' + $version)
+    Show-UpdPopup ('已是最新版本（' + $version + '），无需更新。')
     exit 0
 }
 
@@ -126,27 +135,53 @@ foreach ($r in $removed) {
 }
 WriteLog ('BACKUP ' + $bakDir)
 
-# ---------- 5. 替换 ----------
+# ---------- 5. 等待 foobar2000 退出（退出后应用） ----------
+# 面板先弹窗确认 → 启动本脚本 → foobar2000 自行退出。
+# 只等待脚本启动瞬间已存在的实例（按 PID）：更新期间用户新开的实例不阻塞流程。
+$startPids = @(Get-Process -Name 'foobar2000' -ErrorAction SilentlyContinue | ForEach-Object { $_.Id })
+WriteLog ('WAIT 记录启动时实例 ' + $(if ($startPids.Count) { $startPids -join ',' } else { '（无）' }))
+$waited = 0
+while ($waited -lt 40) {
+    $alive = @(Get-Process -Name 'foobar2000' -ErrorAction SilentlyContinue | Where-Object { $startPids -contains $_.Id })
+    if ($alive.Count -eq 0) { break }
+    Start-Sleep -Milliseconds 500
+    $waited++
+}
+WriteLog ('WAIT 等待启动时实例退出 ' + ($waited / 2) + ' 秒')
+
+# ---------- 6. 替换（带重试：等文件句柄释放） ----------
 $upd = 0; $add = 0
 foreach ($f in $downloaded) {
-    $rel = [string]$f.path
-    $target = Join-Path $Profile ($rel.Replace('/', '\'))
-    $tmpFile = Join-Path $tmpDir ($rel.Replace('/', '\'))
-    $tParent = Split-Path -Parent $target
-    if (-not (Test-Path -LiteralPath $tParent)) { New-Item -ItemType Directory -Path $tParent -Force | Out-Null }
-    if (Test-Path -LiteralPath $target) { $upd++ } else { $add++ }
-    Copy-Item -LiteralPath $tmpFile -Destination $target -Force
-    try { (Get-Item -LiteralPath $target).LastWriteTimeUtc = $epochUtc.AddSeconds([double]$f.mtime) } catch { }
+    if (Test-Path -LiteralPath (Join-Path $Profile ([string]$f.path).Replace('/', '\'))) { $upd++ } else { $add++ }
+}
+$maxRetry = 60; $tried = 0; $fails = @()
+while ($true) {
+    $fails = @()
+    foreach ($f in $downloaded) {
+        $rel = [string]$f.path
+        $target = Join-Path $Profile ($rel.Replace('/', '\'))
+        $tmpFile = Join-Path $tmpDir ($rel.Replace('/', '\'))
+        $tParent = Split-Path -Parent $target
+        if (-not (Test-Path -LiteralPath $tParent)) { New-Item -ItemType Directory -Path $tParent -Force | Out-Null }
+        try {
+            Copy-Item -LiteralPath $tmpFile -Destination $target -Force -ErrorAction Stop
+            try { (Get-Item -LiteralPath $target).LastWriteTimeUtc = $epochUtc.AddSeconds([double]$f.mtime) } catch { }
+        } catch { $fails += ($rel + ' :: ' + $_.Exception.Message) }
+    }
+    if ($fails.Count -eq 0) { break }
+    $tried++
+    if ($tried -ge $maxRetry) { break }
+    Start-Sleep -Milliseconds 250
 }
 
-# ---------- 6. removed / 移动遗留 ----------
+# ---------- 7. removed / 移动遗留 ----------
 $del = 0
 foreach ($r in $removed) {
     $rel = if ($r -is [string]) { [string]$r } else { [string]$r.path }
     $target = Join-Path $Profile ($rel.Replace('/', '\'))
     if (Test-Path -LiteralPath $target) {
-        Remove-Item -LiteralPath $target -Force
-        $del++
+        try { Remove-Item -LiteralPath $target -Force -ErrorAction Stop; $del++ }
+        catch { $fails += ($rel + ' :: ' + $_.Exception.Message) }
     }
 }
 
@@ -158,5 +193,29 @@ try {
     [System.IO.File]::WriteAllText((Join-Path $bakRoot 'version.txt'), $version, (New-Object System.Text.UTF8Encoding($false)))
 } catch { }
 
+# 备份保留最近 10 份（目录名形如 yyyyMMdd_HHmmss），更早的自动清理；日志与 version.txt 不动
+try {
+    $oldBaks = @(Get-ChildItem -LiteralPath $bakRoot -Directory | Where-Object { $_.Name -match '^\d{8}_\d{6}$' } | Sort-Object Name)
+    if ($oldBaks.Count -gt 10) {
+        foreach ($d in @($oldBaks | Select-Object -First ($oldBaks.Count - 10))) {
+            Remove-Item -LiteralPath $d.FullName -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        WriteLog ('CLEAN 清理旧备份 ' + ($oldBaks.Count - 10) + ' 份')
+    }
+} catch { }
+
+if ($fails.Count -gt 0) {
+    WriteLog ('FAIL ' + $fails.Count + ' 个文件处理失败（替换已重试 ' + $tried + ' 次）：')
+    $i = 0
+    foreach ($fl in $fails) {
+        WriteLog ('  ' + $fl)
+        $i++
+        if ($i -ge 10) { WriteLog ('  … 等共 ' + $fails.Count + ' 个'); break }
+    }
+    Show-UpdPopup ('主题更新未完成：' + $fails.Count + ' 个文件替换失败。' + [Environment]::NewLine + '详细列表见 _update_backup\last_update.log' + [Environment]::NewLine + [Environment]::NewLine + '可启动 foobar2000 后重新执行一次更新。')
+    exit 2
+}
+
 WriteLog ('OK 完成：更新 ' + $upd + ' / 新增 ' + $add + ' / 删除 ' + $del + ' 版本 ' + $version)
+Show-UpdPopup ('主题更新完成：更新 ' + $upd + ' / 新增 ' + $add + ' / 删除 ' + $del + [Environment]::NewLine + '版本 ' + $version + [Environment]::NewLine + [Environment]::NewLine + '可启动 foobar2000 体验新的版本。')
 exit 0

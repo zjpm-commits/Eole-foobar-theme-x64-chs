@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.23-1539",
-  "generated": "2026-11-23T07:39:37Z",
+  "version": "2026.11.24-1533",
+  "generated": "2026-11-24T07:33:11Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -18,8 +18,8 @@
     },
     {
       "path": "Eole/ts_update.ps1",
-      "mtime": 1795413900,
-      "md5": "bc06f73d73b95d742826aac1fc883654"
+      "mtime": 1795505560,
+      "md5": "af795a27e45d4d23c525efd66db408a5"
     },
     {
       "path": "Eole/Biography/LICENSE.txt",
@@ -3848,8 +3848,8 @@
     },
     {
       "path": "Eole/js/theme_settings.js",
-      "mtime": 1795419260,
-      "md5": "bec77d49288cf8e2add2154b3194e985"
+      "mtime": 1795505540,
+      "md5": "ee35ce7a6bf1bd15963ba9c323458e7f"
     },
     {
       "path": "Eole/js/title_bar.js",
