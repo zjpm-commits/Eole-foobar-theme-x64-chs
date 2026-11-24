@@ -44,7 +44,7 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 将仓库中的 `themes` 、 `Lxbox` 、`user-components-x64`文件夹完整覆盖到你的配置目录下（通常是 `profile/`文件夹）。
 - 在 foobar2000 中导入 `DUI_eole_x64_chs.fth` 配置文件（位于 `Eole/` 目录下）。
 - 如果默认字体偏小，按住 `Ctrl + 鼠标滚轮` 进行全局缩放（ `shift+ 鼠标滚轮` 实时调整文字行间距）。
-- eole-settings和yttm为我个人的设置配置文件，可以直接覆盖使用。
+- eole-settings、configuration、yttm为我个人的设置配置文件，可以直接覆盖使用。
 
 ## 🔧 修改说明
 
