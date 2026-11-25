@@ -3546,33 +3546,43 @@ oImageCache = function () {
 	}
 	this.load_image_from_cache_async = async(albumIndex, cachekey, filename, save, metadb) =>
 	{
-		var save = typeof save !== 'undefined' ? save : false;		
-		if(brw.groups[albumIndex].load_requested == 0){
-			brw.groups[albumIndex].load_requested = 1;
+		var save = typeof save !== 'undefined' ? save : false;
+		/* 面板重建会让组索引失效：先取引用，后续全部走引用；空索引直接返回，避免跨 await 后访问已消失的组 */
+		var grp = brw.groups[albumIndex];
+		if(!grp) return;
+		if(grp.load_requested == 0){
+			grp.load_requested = 1;
 			try {
 				if(properties.load_image_from_cache_direct) {
 					var img = await gdi.LoadImageAsyncV2(window.ID, filename);
+					/* await 期间分组可能已重建：索引不存在或已指向别的组时，丢弃本次结果 */
+					if(brw.groups[albumIndex] !== grp) return;
 					this.addToCache(img,cachekey);
-					brw.groups[albumIndex].load_requested = 2;
-					brw.groups[albumIndex].cover_type = 1;
-					brw.groups[albumIndex].cover_img = img;
-					brw.groups[albumIndex].cover_img_mask = false;
-					brw.groups[albumIndex].cover_formated = false;
+					grp.load_requested = 2;
+					grp.cover_type = 1;
+					grp.cover_img = img;
+					grp.cover_img_mask = false;
+					grp.cover_formated = false;
 					brw.repaint();
 					if(save){
 						save_image_to_cache(img, albumIndex, cachekey, metadb);
 					}
 				} else {
-					brw.groups[albumIndex].tid = load_image_from_cache(filename);
-					brw.groups[albumIndex].load_requested = 1;
+					grp.tid = load_image_from_cache(filename);
+					grp.load_requested = 1;
 				}
 			} catch(e) {
-				brw.groups[albumIndex].load_requested = 0;
+				/* 只写引用，避免 catch 再次访问已失效的索引而二次抛错 */
+				grp.load_requested = 0;
 			};
 			brw.repaint();
 		}
 	};
     this.hit = function (metadb, albumIndex, direct_return, cachekey, artist_name, async_ok) {
+		/* 组索引缺失或分组已重建：不碰 brw.groups，命中缓存就返回缓存，否则按无封面处理 */
+		if(albumIndex == null || typeof albumIndex !== 'number' || !brw.groups[albumIndex]) {
+			return (typeof cachekey !== 'undefined') ? this.cachelist[cachekey] : undefined;
+		}
 		var cachekey = typeof cachekey !== 'undefined' ? cachekey : brw.groups[albumIndex].cachekey;
 		var artist_name = typeof artist_name !== 'undefined' ? artist_name : '';
 		var img = this.cachelist[cachekey];

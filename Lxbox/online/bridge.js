@@ -210,6 +210,62 @@ const encryptedExt = u => (/\.(\w{3,6})$/i.exec((u.split('?')[0])) || [])[1]
   ? ((/^(flac|mp3|m4a|aac|wav|ape|ogg|wma)$/i.test(RegExp.$1)) ? '' : RegExp.$1.toLowerCase())
   : ''
 
+/* 网易官方兜底：不依赖第三方音源脚本。
+   fee=8 的免费/限免曲目可直接拿到 320k 直链；fee=1 的数字专辑/会员曲目
+   官方接口也会返回 url:null，此时再交给脚本换源。 */
+function nativeWyUrl(musicInfo, wanted) {
+  const id = musicInfo && (musicInfo.songmid || musicInfo.id || musicInfo.songId || musicInfo.musicId || '')
+  if (!id || !/^\d+$/.test(String(id))) return Promise.resolve(null)
+  const q = wanted || 'auto'
+  const br = q === '128k' ? 128000 : (q === '192k' ? 192000 : 320000)
+  const label = q === '128k' ? '128k' : (q === '192k' ? '192k' : '320k')
+  const url = 'https://music.163.com/api/song/enhance/player/url?ids=%5B' + encodeURIComponent(String(id)) + '%5D&br=' + br
+  return new Promise(ok => {
+    httpRequest(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+        'Referer': 'https://music.163.com/',
+        'Cookie': 'appver=2.0.2; os=pc'
+      },
+      timeout: 8000
+    }, (err, resp) => {
+      if (err || !resp || resp.statusCode !== 200) return ok(null)
+      try {
+        const j = JSON.parse(resp.body)
+        const d = (j && j.data && j.data[0]) || null
+        if (d && d.code === 200 && typeof d.url === 'string' && /^https?:/i.test(d.url) && !d.freeTrialInfo) {
+          return ok({ url: d.url, q: label, script: '网易官方', at: Date.now() })
+        }
+      } catch (e) { /* 非 JSON，按无直链处理 */ }
+      ok(null)
+    })
+  })
+}
+
+/* 部分 fee=1 数字专辑/会员曲目官方接口不给直链，用公开 Meting 接口做最后兜底。
+   只探测前 4 字节，确认返回的是音频再交给 foobar，避免把 503/HTML 当歌播。 */
+async function metingWyUrl(musicInfo) {
+  const id = musicInfo && (musicInfo.songmid || musicInfo.id || musicInfo.songId || musicInfo.musicId || '')
+  if (!id || !/^\d+$/.test(String(id))) return null
+  const apis = [
+    'https://api.qijieya.cn/meting/?type=url&id=' + encodeURIComponent(String(id)),
+    'https://api.injahow.cn/meting/?type=url&id=' + encodeURIComponent(String(id))
+  ]
+  for (const api of apis) {
+    try {
+      const pr = await fetchRange(api, 'bytes=0-3')
+      const ct = String((pr && pr.headers && pr.headers['content-type']) || '')
+      const code = pr && pr.statusCode
+      try { if (pr) pr.destroy() } catch (e) {}
+      if ((code === 200 || code === 206) && /audio\/|octet-stream/i.test(ct)) return api
+      log('warn', 'Meting 未返回音频（' + code + ' ' + ct + '）：' + api)
+    } catch (e) {
+      log('warn', 'Meting 探测失败：' + ((e && e.message) || e))
+    }
+  }
+  return null
+}
+
 async function resolveOne(source, musicInfo, wanted) {
   const id = musicInfo && (musicInfo.songmid || musicInfo.hash || musicInfo.rid || musicInfo.id ||
     musicInfo.songId || musicInfo.musicId || musicInfo.copyrightId || '')
@@ -217,6 +273,28 @@ async function resolveOne(source, musicInfo, wanted) {
   const hit = resolveCache.get(rkey)
   if (hit && Date.now() - hit.at < 600000) return hit
   if (inflight.has(rkey)) return inflight.get(rkey)
+
+  // 网易先用官方接口，成功就不必再等第三方脚本
+  if (source === 'wy') {
+    try {
+      const nat = await nativeWyUrl(musicInfo, wanted)
+      if (nat) {
+        resolveCache.set(rkey, nat)
+        log('ok', `取链成功 网易官方 ${nat.q}：${nat.url.slice(0, 100)}`)
+        return nat
+      }
+      const met = await metingWyUrl(musicInfo)
+      if (met) {
+        const res = { url: met, q: '320k', script: 'Meting', at: Date.now() }
+        resolveCache.set(rkey, res)
+        log('ok', '取链成功 Meting 320k：' + met)
+        return res
+      }
+      log('info', '网易官方/Meting 无直链，转音源脚本：' + id)
+    } catch (e) {
+      log('warn', '网易官方取链失败：' + ((e && e.message) || e))
+    }
+  }
 
   let list = orderedRuntimes(source).filter(rt => !(rt.coolUntil > Date.now()))
   if (!list.length) list = orderedRuntimes(source)

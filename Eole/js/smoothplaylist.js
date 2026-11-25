@@ -3158,7 +3158,7 @@ oBrowser = function(name) {
 												}
 											};
 										} catch(e){}
-										if(properties.doubleRowShowCover){
+										if(properties.doubleRowShowCover && this.rows[i].albumId != null && this.rows[i].albumId >= 0 && this.rows[i].albumId < this.groups.length){
 											g = this.rows[i].albumId;
 											if(this.groups[g].cover_type == null) {
 												if(this.groups[g].load_requested == 0 && this.groups[g].start==this.rows[i].playlistTrackId) {
@@ -3228,7 +3228,7 @@ oBrowser = function(name) {
 											}
 										}
                                     } else { //default track
-										if(properties.doubleRowShowCover){
+										if(properties.doubleRowShowCover && this.rows[i].albumId != null && this.rows[i].albumId >= 0 && this.rows[i].albumId < this.groups.length){
 											g = this.rows[i].albumId;
 											if(this.groups[g].cover_type == null) {
 												if(this.groups[g].load_requested == 0) {

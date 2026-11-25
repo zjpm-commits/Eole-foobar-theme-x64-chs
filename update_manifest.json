@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.24-1533",
-  "generated": "2026-11-24T07:33:11Z",
+  "version": "2026.11.25-1255",
+  "generated": "2026-11-25T04:55:07Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -3833,8 +3833,8 @@
     },
     {
       "path": "Eole/js/smoothplaylist.js",
-      "mtime": 1795413629,
-      "md5": "d46cea4d5fec8cfc3e1e2e1590e5af2d"
+      "mtime": 1795582455,
+      "md5": "2c89709aff1a9b0d0611b0a408611eac"
     },
     {
       "path": "Eole/js/smoothplaylistmanager.js",
@@ -3843,8 +3843,8 @@
     },
     {
       "path": "Eole/js/theme_common.js",
-      "mtime": 1795418696,
-      "md5": "604b4702dd03ca30e91f61c248a4ae09"
+      "mtime": 1795582474,
+      "md5": "04e8f1297c9ab9a67781deb1839a6848"
     },
     {
       "path": "Eole/js/theme_settings.js",
@@ -3893,8 +3893,8 @@
     },
     {
       "path": "Lxbox/main.js",
-      "mtime": 1795341054,
-      "md5": "29c5ac02548d56bfdf5701af79579817"
+      "mtime": 1795533933,
+      "md5": "252a9645afdf2ec3224f3b9bd0802a47"
     },
     {
       "path": "Lxbox/providers.js",
@@ -3918,8 +3918,8 @@
     },
     {
       "path": "Lxbox/online/bridge.js",
-      "mtime": 1795110108,
-      "md5": "b882e336cac3b3841d4d9d829027b06e"
+      "mtime": 1795513514,
+      "md5": "fb95a7bd2fb363be35ce378a55cc836c"
     },
     {
       "path": "Lxbox/online/install-node.ps1",
