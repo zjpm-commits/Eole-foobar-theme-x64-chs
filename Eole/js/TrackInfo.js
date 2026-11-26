@@ -29,12 +29,12 @@ var properties = {
 	coverNoPadding : window.GetProperty("显示·封面无留白", true),
 	disableCoverCache : window.GetProperty("显示·禁用封面缓存", false),
 	rawBitmap: false,
-	panelFontAdjustement: 0,
+	panelFontAdjustement: -1,     /* 各自 -1：0 → -1 */
 	showInfos:true,
 }
 if(properties.single_click_action>1) properties.single_click_action=1;
 
-var track_infos_height = 85;
+var track_infos_height = 88;
 var rating_height = 12;
 var track_infos_margin_top = 0;
 var visu_margin_left = 0;
@@ -931,7 +931,7 @@ function setDarkLayout(){
 				properties.darklayout = properties.visualization_dark_theme;
 			break;
 			case 5:
-				/* 模式 5（MPV 视频 / ESL 歌词）同上 */
+				/* 模式 5（视频）同上 */
 				properties.darklayout = properties.visualization_dark_theme;
 			break;
 			case 6:
@@ -1542,17 +1542,17 @@ function oInfos() {
 
 		var line2 = ((this.txt_line2 !="" && this.show_info) || double_row) ? this.txt_line2 : this.txt_line3;
 		if(this.line2_width<0) {
-			this.line2_width = gr.CalcTextWidth(line2, g_font.min1);
+			this.line2_width = gr.CalcTextWidth(line2, g_font.plus1);
 			this.tooltip_line2 = (this.line2_width>this.txt_width);
 		}
-		gr.GdiDrawText(line2, g_font.min1, colors.faded_txt, this.x, this.y+(double_row?29:37)+text_y_adj, this.txt_width, 30, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+		gr.GdiDrawText(line2, g_font.plus1, colors.faded_txt, this.x, this.y+(double_row?29:37)+text_y_adj, this.txt_width, 30, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
 
 		if(double_row) {
 			if(this.line3_width<0) {
-				this.line3_width = gr.CalcTextWidth(this.txt_line3, g_font.min2);
+				this.line3_width = gr.CalcTextWidth(this.txt_line3, g_font.normal);
 				this.tooltip_line3 = (this.line3_width>this.txt_width);
 			}
-			gr.GdiDrawText(this.txt_line3, g_font.min2, colors.faded_txt, this.x, this.y+43+text_y_adj, this.txt_width, 30, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
+			gr.GdiDrawText(this.txt_line3, g_font.normal, colors.faded_txt, this.x, this.y+46+text_y_adj, this.txt_width, 30, DT_CENTER | DT_VCENTER | DT_CALCRECT | DT_NOPREFIX | DT_END_ELLIPSIS);
 		}
     };
     this.onMouse = function (state, x, y, m) {

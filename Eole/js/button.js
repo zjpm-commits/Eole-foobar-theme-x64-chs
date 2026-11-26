@@ -4,13 +4,14 @@
        传名字时按需实时解析，这样 Ctrl+滚轮 / 界面缩放重建 g_font 后
        按钮不会还抓着旧的 Font 对象画字。 */
     this.font_spec = (typeof btn_font === 'string' && btn_font) ? btn_font : null;
-    this.font = (!this.font_spec && btn_font) ? btn_font : g_font.normal;
+	/* 不传名字时把 Font 对象记为 font_obj，取字体时再回落到 g_font.normal（而不是构造时抓死） */
+    this.font_obj = (!this.font_spec && btn_font) ? btn_font : null;
     this.getFont = function () {
         if (this.font_spec) {
             var f = g_font[this.font_spec];
             if (f) return f;
         }
-        return this.font;
+        return this.font_obj || g_font.normal;
     };
     this.setFontSpec = function (name) {
         this.font_spec = name || null;

@@ -32,7 +32,7 @@ var properties = {
     visualization_dark_theme: window.GetProperty("可视化·深色主题", false),
 	playandrandom: window.GetProperty("全局·播放与随机",false),
     cursor_style: window.GetProperty("显示·滑块样式", 0),	//0 circle, 1 full disk, 2 full disk on hover
-	panelFontAdjustement: -1,
+	panelFontAdjustement: -1,     /* 各自 -1：0 → -1 */
 	volumeA1waysVisible: window.GetProperty("显示·始终显示音量条", false),
 	twoLinesDetails: window.GetProperty("显示·信息显示两行", false),	
 	repeatRandom: true,

@@ -134,7 +134,7 @@ var properties = {
     textLineHeight: 0,
     DrawRightLine: window.GetProperty("属性·右侧绘制分隔线", true),
     addedRows_end_default: window.GetProperty("属性·末尾空行", 1),
-	panelFontAdjustement: -1,
+	panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
 	load_image_from_cache_direct: true,
 	adapt_to_playlist: window.GetProperty("属性·从活动播放列表填充", false),
 };

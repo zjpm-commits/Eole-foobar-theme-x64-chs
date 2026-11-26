@@ -1414,10 +1414,25 @@ oUIHacks = function () {
         }
     };
 
-    this.enableMinSize = function () {}; this.disableMinSize = function () {};
-    this.setMinWidth = function () {}; this.setMinHeight = function () {};
-    this.enableMaxSize = function () {}; this.disableMaxSize = function () {};
-    this.setMaxWidth = function () {}; this.setMaxHeight = function () {};
+    /* 窗口尺寸限制：JSplitter 4.4.2 把这些搬到了 fb.Window（FbWindow）
+       ——MinSize/MinWidth/MaxSize/MaxWidth…，旧 foo_ui_hacks 的这组接口已不存在。
+       这里直连 fb.Window，值写进去就立即生效（文档：开启 MaxSize 会立刻按 MaxWidth 夹一次）。 */
+    this.enableMinSize = function () { try { if (fb.Window) fb.Window.MinSize = true; } catch (e) {} };
+    this.disableMinSize = function () { try { if (fb.Window) fb.Window.MinSize = false; } catch (e) {} };
+    this.setMinWidth = function (v) {
+        try { if (fb.Window) { fb.Window.MinWidth = Math.round(v); fb.Window.MinSize = true; } } catch (e) {}
+    };
+    this.setMinHeight = function (v) {
+        try { if (fb.Window) { fb.Window.MinHeight = Math.round(v); fb.Window.MinSize = true; } } catch (e) {}
+    };
+    this.enableMaxSize = function () { try { if (fb.Window) fb.Window.MaxSize = true; } catch (e) {} };
+    this.disableMaxSize = function () { try { if (fb.Window) fb.Window.MaxSize = false; } catch (e) {} };
+    this.setMaxWidth = function (v) {
+        try { if (fb.Window) { fb.Window.MaxWidth = Math.round(v); fb.Window.MaxSize = true; } } catch (e) {}
+    };
+    this.setMaxHeight = function (v) {
+        try { if (fb.Window) { fb.Window.MaxHeight = Math.round(v); fb.Window.MaxSize = true; } } catch (e) {}
+    };
     this.setAero = function () {}; this.setAeroEffect = function () {};
     
     this.setFrameStyle = function (v) { 
@@ -3191,6 +3206,68 @@ function g_font_build(spec) {
         })(g_font_specs[i]);
     }
 })();
+/* 字体族解析（设置面板「窗口外观 → 字体样式」写入的两个全局属性）
+   0=默认：主题内置 Microsoft YaHei UI
+   1=跟随DUI：取 foobar2000 播放列表字体族名（取不到回退默认）
+   2=自定义：系统字体对话框选出来的族名
+   只在 get_font() 里调用；取不到或异常一律回退默认，避免整页字体为 null。 */
+/* 跨面板字体状态落盘：面板属性（window.SetProperty）是每个面板各存一份的，
+   设置面板改了别的面板读不到，所以字体模式/族名必须写同一个文件才真正全局。
+   文件一行：mode|family。读不到返回 mode=-1，调用方回落到本面板属性。 */
+var TS_FONT_STATE_PATH = (typeof fb !== 'undefined' && fb.ProfilePath) ? (fb.ProfilePath + 'Eole\\font-state.txt') : '';
+function tsReadFontState() {
+	var mode = -1, fam = '';
+	try {
+		var raw = TS_FONT_STATE_PATH ? String(utils.ReadUTF8(TS_FONT_STATE_PATH) || '') : '';
+		if (raw) {
+			var p = raw.indexOf('|');
+			if (p > 0) {
+				mode = Number(raw.substring(0, p));
+				fam = raw.substring(p + 1).replace(/\r/g, '').replace(/\n/g, '').trim();
+			}
+		}
+	} catch (eFR3) { mode = -1; fam = ''; }
+	if (!isFinite(mode)) mode = -1;
+	return { mode: mode, fam: fam };
+}
+function tsResolveFontFamily() {
+	var st = tsReadFontState();
+	var mode = st.mode;
+	if (mode < 0) {
+		try { mode = Number(window.GetProperty('全局·字体样式', 0)); } catch (eFR0) { mode = 0; }
+	}
+	if (!isFinite(mode) || mode < 0 || mode > 2) mode = 0;
+	if (mode === 2) {
+		var nm = st.fam;
+		if (!nm) { try { nm = String(window.GetProperty('全局·字体名称', '') || ''); } catch (eFR1) { nm = ''; } }
+		return nm || 'Microsoft YaHei UI';
+	}
+	if (mode === 1) {
+		try {
+			var f = (typeof g_instancetype !== 'undefined' && g_instancetype == 0) ? window.GetFontCUI(FontTypeCUI.items) : window.GetFontDUI(FontTypeDUI.playlists);
+			if (f) { var dnm = String(f.Name || ''); if (dnm) return dnm; }
+		} catch (eFR2) {}
+	}
+	return 'Microsoft YaHei UI';
+}
+/* 全主题字号增减：标题栏主菜单「字体大小 → 增大/减小/重置」、设置页的三个按钮、
+   各面板 Ctrl+滚轮都调这一处，避免多处实现各自漂移。
+   dir = +1 增大 / -1 减小 / 0 重置；结果夹在 globalProperties 的 min/max 之间。 */
+function tsFontStepGlobal(dir) {
+	var v = Number(globalProperties.fontAdjustement);
+	if (!isFinite(v)) v = 0;
+	if (dir === 0) v = 0;
+	else v += (dir > 0 ? 1 : -1);
+	try { v = Math.min(globalProperties.fontAdjustement_max, Math.max(globalProperties.fontAdjustement_min, v)); } catch (eFS1) {}
+	if (!isFinite(v)) v = 0;
+	globalProperties.fontAdjustement = v;
+	try { window.SetProperty('全局·字体调整', v); } catch (eFS2) {}
+	try { window.NotifyOthers('set_font', v); } catch (eFS3) {}
+	try { if (typeof get_font === 'function') get_font(); } catch (eFS4) {}
+	try { if (typeof tsFont === 'function') tsFont._f = null; } catch (eFS5) {}
+	try { if (typeof g_ts !== 'undefined' && g_ts) g_ts.rows = null; } catch (eFS6) {}
+	try { window.Repaint(); } catch (eFS7) {}
+}
 function get_font() {
     var font_error = false;
     var default_font = null;
@@ -3204,13 +3281,23 @@ function get_font() {
 	};
     // tweaks to fix a problem with WSH Panel Mod on Font object Name property
     try {
-		g_fname = "Microsoft YaHei UI";
-		g_fname_light = "Microsoft YaHei UI Light";
-		g_fname_semibold = "Microsoft YaHei UI Bold";
 		g_fsize = default_font.Size;
 		g_fstyle = 0;
 		g_fstyle_light = 0;
 		g_fstyle_bold = 1;
+		/* 字体族：0=默认(Microsoft YaHei UI)、1=跟随DUI、2=自定义；只换族名，字号仍走下面的现有链路 */
+		var fam = tsResolveFontFamily();
+		var fam_ok = false;
+		try { fam_ok = utils.CheckFont(fam); } catch (eFC0) { fam_ok = false; }
+		if (!fam_ok) fam = "Microsoft YaHei UI";
+		g_fname = fam;
+		g_fname_light = fam;
+		g_fname_semibold = fam;
+		/* 有独立 Light/Bold 变体家族就用，没有就退回同族（粗体仍由 g_fstyle_bold 的样式位补） */
+		try {
+			if (utils.CheckFont(fam + " Light")) g_fname_light = fam + " Light";
+			if (utils.CheckFont(fam + " Bold")) g_fname_semibold = fam + " Bold";
+		} catch (eFC1) {}
     } catch(e) {
         console.log("SMP Panel Error: Unable to use the default font. Using Arial font instead. "+e);
         g_fname = "arial";
@@ -4113,6 +4200,38 @@ function fw_pickSource() {
 }
 
 /* ---------------------------------------------------------------------------
+   视频曲目的壁纸源：视频文件没有内嵌封面，封面链一路空到底，全屏壁纸就只剩
+   纯色。webview-ui\video 模板解出第一帧后会把 960px 宽的 jpg 写到下面这个
+   路径，这里优先拿它当壁纸（只在「壁纸来源 = 封面」时生效，用户手动指定的
+   图片 / 预置背景不许被覆盖）。
+--------------------------------------------------------------------------- */
+var FW_VIDEO_FRAME_PATH = String(fb.ProfilePath).replace(/[\\\/]+$/, '') + '\\webview-ui\\video-frame\\current.jpg';
+var fw_vframeMemo = { at: 0, im: null };
+
+function fw_isVideoTrack(metadb) {
+    var md = metadb;
+    if (!md) { try { md = fb.GetNowPlaying(); } catch (e0) { md = null; } }
+    var p = '';
+    try { p = md ? String(md.Path || '') : ''; } catch (e1) { p = ''; }
+    if (!p) return false;
+    return /\.(mp4|m4v|mov|webm|ogv)(\||$)/i.test(p);
+}
+
+function fw_videoFrame() {
+    var nowMs = (new Date()).getTime();
+    if (fw_vframeMemo.im && (nowMs - fw_vframeMemo.at) < 2000) return fw_vframeMemo.im;
+    var im = null;
+    try {
+        var ok = (typeof utils !== 'undefined' && utils.IsFile) ? !!utils.IsFile(FW_VIDEO_FRAME_PATH) : true;
+        if (ok) im = gdi.Image(FW_VIDEO_FRAME_PATH);
+    } catch (e2) { im = null; }
+    fw_vframeMemo.at = nowMs;
+    if (isImage(im) && im.Width > 1 && im.Height > 1) { fw_vframeMemo.im = im; return im; }
+    fw_vframeMemo.im = null;
+    return null;
+}
+
+/* ---------------------------------------------------------------------------
    选出「壁纸真正要用的那张图」（不含 default_wallpaper / nocover 兜底）。
    fw_buildWallpaper 和壁纸指纹共用这一套顺序，两边不会跑偏。
    返回 { img, fromCover }；没有真实封面时 img 为 null。
@@ -4120,6 +4239,19 @@ function fw_pickSource() {
 function fw_realArt(metadb) {
     var srcMode = fw_source();
     var img = null, fromCover = false;
+
+    /* 视频曲目：用页面截下来的首帧（视频文件本身没有封面图）。
+       只在「封面」模式下介入，自定义图片 / 预置背景照旧压过它。 */
+    if (srcMode === 0) {
+        try {
+            var vmd = metadb;
+            if (!vmd) { try { vmd = fb.GetNowPlaying(); } catch (eV0) { vmd = null; } }
+            if (vmd && fw_isVideoTrack(vmd)) {
+                var vim = fw_videoFrame();
+                if (isImage(vim)) { img = vim; fromCover = true; }
+            }
+        } catch (eV) {}
+    }
 
     /* 外部面板（Lxbox）推过来的流播封面优先。
        流播是 http 直链，fb2k 的 album art 对 stream handle 不一定会返回
@@ -4173,6 +4305,8 @@ function fw_artInvalidate() {
     fw_artMemo.id = "";
     fw_artMemo.sig = "";
     fw_artMemo.at = 0;
+    /* 首帧壁纸也一起作废：页面重截一张后必须重新读盘 */
+    try { fw_vframeMemo.im = null; fw_vframeMemo.at = 0; } catch (eV1) {}
 }
 function fw_artHash(str) {
     var hh = 5381;
@@ -4660,4 +4794,96 @@ setTimeout(function () { try { window.NotifyOthers('lx_now_request', true); } ca
 /* 同样问一次 Lxbox 的艺术家缓存目录（自定义外部目录时尤其需要） */
 setTimeout(function () { try { window.NotifyOthers('lx_cache_dir_request', true); } catch (e) { } }, 1800);
 setTimeout(function () { try { window.NotifyOthers('lx_cache_dir_request', true); } catch (e) { } }, 4500);
+
+/* ============================================================================
+   折叠侧边栏（第 4 种标题栏布局）—— 共用常量与状态
+   ----------------------------------------------------------------------------
+   只在「布局里存在 caption=Sidebar 的面板」时启用，原有三种标题栏布局完全
+   不受影响（Eole_layout 做双保险判断，标题栏靠 Eole_layout 的应答切形态）。
+
+   折叠偏好落成状态文件 eole-settings\SIDEBARCOLLAPSED_0 / _1，与其它
+   oPanelSetting 一个目录、一个命名习惯；这个键同时充当「本配置是侧边栏配置」
+   的标记。宽 128 是按「图标 + 四个汉字」实测算出来的：左内边距 14 + 图标盒
+   24 + 间距 10 + 4 汉字 @14px 共 56 + 右内边距 12 = 116，再加激活条内缩与
+   滚动条槽 12 = 128。折叠 48 = 10 + 24 + 10 + 滚动条槽 4。
+   ============================================================================ */
+var RAIL_W_EXPANDED = 128;    /* 展开态：图标 + 四个汉字 */
+var RAIL_W_COLLAPSED = 48;    /* 折叠态：只剩图标 */
+var RAIL_BREAK_W = 1030;      /* 窗口宽度低于此值自动折叠（128 侧栏 + 主区最小 900） */
+var RAIL_TITLEBAR_H_SMALL = 36; /* 折叠侧边栏的单行标题栏：与常规紧凑同高 */
+var RAIL_TITLEBAR_H_BIG = 50;   /* 4K 适配倍率下与加宽紧凑同高 */
+var RAIL_TITLEBAR_H = 36;       /* 兼容旧引用：取常规态，实际高度请用 railTitlebarH() */
+
+function railPrefPath() { return SettingsPath + 'SIDEBARCOLLAPSED_'; }
+
+/* 读折叠偏好：0=展开 1=折叠 -1=目录里没有这个键（说明这套布局不是侧边栏配置） */
+function railCollapsePref() {
+	var files = null;
+	try { files = utils.Glob(railPrefPath() + '*'); } catch (e) { files = null; }
+	if (!files || !files.length) return -1;
+	var best = -1;
+	for (var i = 0; i < files.length; ++i) {
+		var p = String(files[i]);
+		var us = p.lastIndexOf('_');
+		if (us <= 0) continue;
+		var v = Number(p.substring(us + 1));
+		if (!isFinite(v)) continue;
+		if ((v === 0 || v === 1) && v > best) best = v;
+	}
+	return best >= 0 ? best : -1;
+}
+function railIsConfig() { return railCollapsePref() >= 0; }
+
+/* 写折叠偏好：先删旧键（同一个键只保留一份文件），再建新键 */
+function railCollapsePrefSet(v) {
+	v = (v === 1 || v === true) ? 1 : 0;
+	try {
+		var files = utils.Glob(railPrefPath() + '*');
+		if (files) {
+			for (var i = 0; i < files.length; ++i) {
+				try { g_files.DeleteFile(files[i]); } catch (eD) {}
+			}
+		}
+	} catch (eG) {}
+	try { g_files.CreateTextFile(railPrefPath() + v, true).Close(); } catch (eC) {}
+}
+
+/* 某个窗口宽度下实际折叠不折叠：窗口太窄一律折叠，够宽才听用户偏好 */
+function railCollapsedAt(windowWidth) {
+	var pref = railCollapsePref();
+	if (pref < 0) return 0;
+	if (windowWidth < RAIL_BREAK_W) return 1;
+	return (pref === 1) ? 1 : 0;
+}
+
+/* 侧栏标题栏是否用「加宽」版：0 常规（36，同常规紧凑）/ 1 加宽（50，同加宽紧凑）。
+   不跟着 compacttitlebar 走——第 4 种形态的 compact 值是 3，加宽与否单独一个键，
+   由屏幕显示页的一键 4K 适配/还原来写，标题栏与布局读同一个值。 */
+function railWidePath() { return SettingsPath + 'SIDEBARWIDEBAR_'; }
+function railWidePref() {
+	var files = null;
+	try { files = utils.Glob(railWidePath() + '*'); } catch (e) { files = null; }
+	if (!files || !files.length) return 0;
+	for (var i = 0; i < files.length; ++i) {
+		var p = String(files[i]);
+		var us = p.lastIndexOf('_');
+		if (us <= 0) continue;
+		if (Number(p.substring(us + 1)) === 1) return 1;
+	}
+	return 0;
+}
+function railWidePrefSet(v) {
+	v = (v === 1 || v === true) ? 1 : 0;
+	try {
+		var files = utils.Glob(railWidePath() + '*');
+		if (files) {
+			for (var i = 0; i < files.length; ++i) {
+				try { g_files.DeleteFile(files[i]); } catch (eD) {}
+			}
+		}
+	} catch (eG) {}
+	try { g_files.CreateTextFile(railWidePath() + v, true).Close(); } catch (eC) {}
+}
+/* 本机现在的侧栏标题栏高度：36 / 50，与标题栏面板里的 properties 同一来源 */
+function railTitlebarH() { return railWidePref() === 1 ? RAIL_TITLEBAR_H_BIG : RAIL_TITLEBAR_H_SMALL; }
 

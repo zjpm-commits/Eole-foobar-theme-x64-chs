@@ -144,7 +144,7 @@ var properties = {
     smooth_expand_value: window.GetProperty("曲目列表·平滑展开强度(0=关闭)", 0.3),
 	smooth_expand_default_value:0.3,
     globalFontAdjustement: window.GetProperty("全局·字体调整", 0),
-	panelFontAdjustement: -1,
+	panelFontAdjustement: -1,     /* 各自 -1：0 → -1 */
     enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
 	deleteSpecificImageCache : window.GetProperty("封面·待删除缓存的键(下次启动)", ""),
 	darklayout: window.GetProperty("显示·深色布局", false),
@@ -3955,7 +3955,7 @@ oBrowser = function(name) {
 		}
 	}
 	this.on_font_changed = function(refreshDates) {
-		this.fontDate = gdi.Font("Segoe UI", g_fsize, 0);		
+		this.fontDate = gdi.Font((typeof g_fname === 'string' && g_fname) ? g_fname : "Segoe UI", g_fsize, 0);
 		if(refreshDates) {
 			this.refresh_thumbnails();
 			this.refreshDates();

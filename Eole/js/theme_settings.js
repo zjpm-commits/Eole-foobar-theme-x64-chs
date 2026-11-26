@@ -120,10 +120,10 @@ function tsClamp(v, lo, hi) {
     return v < lo ? lo : (v > hi ? hi : v);
 }
 
-/* ---------------------------------------------------------------- 本页私有排版
-   字号与行高只属于设置页：写 window.GetProperty（面板私有），不碰全主题的
-   全局·字体调整，所以在这里 Ctrl+滚轮只影响本页。
-   Ctrl+滚轮 = 字号（-5…+5），Shift+滚轮 = 行高（40…120），图标与控件跟着行高等比放大。
+/* ---------------------------------------------------------------- 本页排版
+   行高仍只属于设置页（面板私有属性）；字号已并入全主题：Ctrl+滚轮与标题栏主菜单
+   「字体大小」同源，改的是「全局·字体调整」，本页跟着一起变。
+   Shift+滚轮 = 本页行高（40…120），图标与控件跟着行高等比放大。
    行高上限 120 是留给「窗口外观 → 屏幕显示」的一键适配用的（200% 屏行高×2）。 */
 var TS_PROP_FONTD = '设置·字号调整';
 var TS_PROP_ROWH  = '设置·行高';
@@ -155,7 +155,8 @@ function tsPropInt(name, def, lo, hi) {
     try { n = tsInt(window.GetProperty(name, def), def); } catch (e) { n = def; }
     return tsClamp(n, lo, hi);
 }
-function tsFontDelta() { return tsPropInt(TS_PROP_FONTD, 0, -5, 5); }
+/* 本页字号微调已取消（并入全局字号），恒为 0；函数留着只为兼容旧调用点 */
+function tsFontDelta() { return 0; }
 function tsRowH() { return tsPropInt(TS_PROP_ROWH, TS_BASE_ROWH, 40, 120); }
 
 /* 行高统一到 48：早前的版本可能存下 52/60 这类零碎值，导致各行看着不齐。
@@ -642,6 +643,92 @@ function tsDpiSetFont(v) {
     tsMdl2Small._f = null;
 }
 
+/* ===== 字体样式（窗口外观页）：0=默认 1=跟随DUI 2=自定义 ===== */
+var TS_PROP_FONT_MODE = '全局·字体样式';
+var TS_PROP_FONT_NAME = '全局·字体名称';
+function tsFontModeGet() {
+	/* 先读跨面板共享文件（真正全局），没有再回落到本面板属性（兼容旧版） */
+	try {
+		var st = (typeof tsReadFontState === 'function') ? tsReadFontState() : null;
+		if (st && st.mode >= 0) return tsClamp(st.mode, 0, 2);
+	} catch (eFM1) {}
+	var v = 0;
+	try { v = tsInt(window.GetProperty(TS_PROP_FONT_MODE, 0), 0); } catch (eFM0) { v = 0; }
+	return tsClamp(v, 0, 2);
+}
+/* 按指定档位解析族名；与 theme_common 的 tsResolveFontFamily 同一顺序，供显示与落盘复用 */
+function tsFamilyOfMode(mode) {
+	mode = tsClamp(tsInt(mode, 0), 0, 2);
+	if (mode === 2) {
+		var st = null;
+		try { st = (typeof tsReadFontState === 'function') ? tsReadFontState() : null; } catch (eFN0) { st = null; }
+		if (st && st.fam) return st.fam;
+		var n = '';
+		try { n = String(window.GetProperty(TS_PROP_FONT_NAME, '') || ''); } catch (eFN1) { n = ''; }
+		return n || 'Microsoft YaHei UI';
+	}
+	if (mode === 1) {
+		try {
+			var f = (window.InstanceType == 0) ? window.GetFontCUI(FontTypeCUI.items) : window.GetFontDUI(FontTypeDUI.playlists);
+			if (f) { var nm = String(f.Name || ''); if (nm) return nm; }
+		} catch (eFN2) {}
+	}
+	return 'Microsoft YaHei UI';
+}
+function tsFontFamilyNow() {
+	return tsFamilyOfMode(tsFontModeGet());
+}
+function tsFontInfo() {
+	var fam = tsFontFamilyNow();
+	var ok = false;
+	try { ok = utils.CheckFont(fam); } catch (eFO) { ok = false; }
+	var mode = tsFontModeGet();
+	var src = (mode === 0) ? '默认' : (mode === 1 ? '跟随DUI' : '自定义');
+	var size = 13;
+	try { if (typeof g_fsize === 'number' && isFinite(g_fsize)) size = g_fsize; } catch (eFZ) {}
+	return fam + '　' + size + ' 号　来源：' + src + (ok ? '' : '（系统里没有该字体，已回退微软雅黑 UI）');
+}
+function tsSetFontMode(v) {
+	v = tsClamp(tsInt(v, 0), 0, 2);
+	var cand = '';                       /* v===2 时记下对话框选中的族名 */
+	if (v === 2) {
+		/* utils.FontPicker 收的是 Font 对象（不是族名字符串），返回同类型 Font；
+		   取消时原样返回传入的默认字体，传 null 时返回 null。这里只取返回的族名，字号仍归「字体调整」。 */
+		var fam = tsFontFamilyNow();
+		var fsz = 13, fst = 0;
+		try { if (typeof g_fsize === 'number' && isFinite(g_fsize)) fsz = Math.round(g_fsize); } catch (eFS0) {}
+		try { if (typeof g_fstyle === 'number' && isFinite(g_fstyle)) fst = g_fstyle; } catch (eFST0) {}
+		var def = null;
+		try { def = (window.DrawMode === 1) ? d2d.Font(fam, fsz, fst) : gdi.Font(fam, fsz, fst); } catch (eFD0) { def = null; }
+		var picked = null;
+		try { picked = utils.FontPicker(def); } catch (eFP0) {
+			try { fb.ShowPopupMessage('打开系统字体对话框失败：' + eFP0, '字体样式'); } catch (eFPX) {}
+			return;
+		}
+		if (!picked || picked === def) return;      /* 取消：保持原档不动 */
+		try { cand = String(picked.Name || ''); } catch (eFP1) { cand = ''; }
+		if (!cand) return;
+		var ok = false;
+		try { ok = utils.CheckFont(cand); } catch (eFP2) { ok = false; }
+		if (!ok) {
+			try { fb.ShowPopupMessage('系统里找不到字体「' + cand + '」，已放弃。', '字体样式'); } catch (eFP3) {}
+			return;
+		}
+		try { window.SetProperty(TS_PROP_FONT_NAME, cand); } catch (eFP4) {}
+	}
+	try { window.SetProperty(TS_PROP_FONT_MODE, v); } catch (eFP4) {}
+	/* 关键：写跨面板共享文件，否则别的面板读自己的属性，永远停在默认字体 */
+	var famSave = (v === 2) ? cand : tsFamilyOfMode(v);
+	try { utils.WriteTextFile(TS_FONT_STATE_PATH, String(v) + '|' + famSave, false); } catch (eFW0) {}
+	/* 本页先自更新，再广播；沿用现有 set_font 通知，不新增面板 handler */
+	try { if (typeof get_font === 'function') get_font(); } catch (eFP5) {}
+	tsFont._f = null;
+	tsMdl2Font._f = null;
+	tsMdl2Small._f = null;
+	g_ts.rows = null;
+	try { window.NotifyOthers('set_font', globalProperties.fontAdjustement); } catch (eFP6) {}
+	window.Repaint();
+}
 function tsDpiSetRowH(base, scale) {
     var want = Math.round(tsInt(base, TS_BASE_ROWH) * ((scale && scale > 0) ? scale : 1));
     try { window.SetProperty(TS_PROP_ROWH, tsClamp(want, 40, 120)); } catch (eRH) {}
@@ -666,6 +753,12 @@ function tsDpiSetMini(v) {
     if (tsInt(mini_controlbar.value, 1) === v) return;
     try { mini_controlbar.setValue(v); } catch (eM1) {}
 }
+/* 第 4 种形态（compact=3）的加宽不占 compact 值：单独写 SIDEBARWIDEBAR，
+   标题栏与 Eole_layout 都读这一个键，保证高度与按钮尺寸一起变。 */
+function tsDpiSetRailWide(on) {
+    try { if (typeof railWidePrefSet === 'function') railWidePrefSet(on ? 1 : 0); } catch (eRW) {}
+    try { window.NotifyOthers('eole_layout', true); } catch (eRW2) {}
+}
 
 function tsDpiApply() {
     var scale = tsScreenScale();
@@ -683,14 +776,19 @@ function tsDpiApply() {
     snap.scale = scale;
     tsDpiSaveSnap(snap);
 
+    /* 第 4 种形态单独处理：加宽 = 50px，与「加宽紧凑」同高，但不改 compact 的 3 */
+    var isRail = tsInt(compact_titlebar.value, 0) === 3;
     if (scale <= 1.001) {
         /* 100% 档：标题栏与控制栏都退出加宽型，回到适配前的形态 */
+        if (isRail) tsDpiSetRailWide(false);
         tsDpiSetCompact(tsInt(snap.compact, 0));
         tsDpiSetMini(tsInt(snap.mini, 1));
     } else {
         /* 1. 标题栏：两行标题栏不动，只有常规紧凑才升到加宽紧凑
-           （先 setValue 移状态文件，再发动作，和本页「标题栏形态」那一行同源） */
-        if (tsInt(compact_titlebar.value, 0) === 1) tsDpiSetCompact(2);
+           （先 setValue 移状态文件，再发动作，和本页「标题栏形态」那一行同源）；
+           第 4 种形态走 SIDEBARWIDEBAR，高度从 36 变 50 */
+        if (isRail) tsDpiSetRailWide(true);
+        else if (tsInt(compact_titlebar.value, 0) === 1) tsDpiSetCompact(2);
         /* 2. 控制栏：统一改成加宽控制栏 */
         tsDpiSetMini(0);
     }
@@ -712,6 +810,7 @@ function tsDpiRestore() {
         return;
     }
     tsDpiSetCompact(tsInt(snap.compact, 0));
+    if (tsInt(snap.compact, 0) === 3) tsDpiSetRailWide(false);
     tsDpiSetMini(tsInt(snap.mini, 1));
     tsDpiSetFont(tsInt(snap.font, 0));
     try { window.NotifyOthers('ts_dpi_preset', { mode: 'restore', scale: 1 }); } catch (eR3) {}
@@ -878,12 +977,12 @@ function tsRows() {
             id: 'titlebar', label: '标题栏形态',
             desc: '紧凑标题栏会把主区整体上移',
             kind: 'choice',
-            labels: ['标准两行', '常规紧凑', '加宽紧凑'],
+            labels: ['标准两行', '常规紧凑', '加宽紧凑', '折叠侧边栏'],
             get: function () { return tsInt(compact_titlebar.value, 0); },
             set: function (v) {
                 /* 先移状态文件（持久化 + 触发重排），再把新值连同“重建按钮/重算配色/
                    重排/重设伪标题栏”一起发给标题栏面板，效果与右键菜单同源 */
-                var vv = tsClamp(tsInt(v, 0), 0, 2);
+                var vv = tsClamp(tsInt(v, 0), 0, 3);
                 compact_titlebar.setValue(vv);
                 tsSetTitlebar('compacttitlebar', vv);
             }
@@ -1340,6 +1439,29 @@ function tsRows() {
         });
         /* 屏幕显示四项直接跟在上面，不另起分类标题（本页没有分项标题，
            也就不会被折叠隐藏）。与上面的窗口级开关之间拉一条蓝色分割线。 */
+        /* 字体样式：只换字体族；字号仍由「全局·字体调整」与屏幕适配决定 */
+        R.push({ id: 'font_div', kind: 'divider', h: Math.round(14 * tsK()) });
+        R.push({
+            id: 'fontmode', label: '字体样式',
+            desc: '默认＝微软雅黑 UI（主题内置）；跟随DUI＝用 foobar2000 播放列表字体；自定义＝系统字体对话框里选',
+            kind: 'choice',
+            labels: ['默认', '跟随DUI', '自定义'],
+            get: function () { return tsFontModeGet(); },
+            set: function (v) { tsSetFontMode(v); }
+        });
+        R.push({
+            id: 'fontnow', label: '当前字体', kind: 'info',
+            desc: '实际生效的字体族与字号；出现「已回退」说明系统里没装所选字体',
+            get: function () { return tsFontInfo(); }
+        });
+        R.push({
+            id: 'fontstep', label: '字体大小',
+            desc: '与标题栏主菜单「字体大小 → 增大/减小/重置」同源，也等价于 Ctrl+滚轮；作用的是全局·字体调整',
+            kind: 'btn3',
+            labels: ['减小', '重置', '增大'],
+            get: function () { return 0; },          /* 三个都是动作按钮，不显示选中态 */
+            set: function (i) { tsFontStepGlobal(i === 0 ? -1 : (i === 1 ? 0 : 1)); }
+        });
         R.push({ id: 'dpi_div', kind: 'divider', h: Math.round(16 * tsK()) });
         R.push({
             id: 'dpiinfo', label: '当前屏幕 DPI', kind: 'info',
@@ -1401,14 +1523,14 @@ function tsRows() {
             get: function () { return 'Eole ' + String(globalProperties.theme_version || '?'); }
         });
         R.push({ id: 'c1', label: 'foo_uie_jsplitter（窗口与脚本）', kind: 'info', get: function () { return tsComponent('foo_uie_jsplitter'); } });
-        R.push({ id: 'c2', label: 'foo_mpv（视频）', kind: 'info', get: function () { return tsComponent('foo_mpv'); } });
+        R.push({ id: 'c2', label: 'foo_ui_webview2（视频面板）', kind: 'info', get: function () { return tsComponent('foo_ui_webview2'); } });
         R.push({ id: 'c3', label: 'foo_uie_eslyric（歌词）', kind: 'info', get: function () { return tsComponent('foo_uie_eslyric'); } });
         R.push({ id: 'c4', label: 'foo_openhacks（窗口接管）', kind: 'info', get: function () { return tsComponent('foo_openhacks'); } });
         R.push({ id: 'c5', label: 'foo_playcount（播放统计）', kind: 'info', get: function () { return tsComponent('foo_playcount'); } });
         R.push({ id: 'prof', label: '配置目录', desc: 'profile 路径', kind: 'info', get: function () { return String(fb.ProfilePath); } });
         R.push({
             kind: 'note',
-            text: '提示：模式 5 需要 foo_mpv 才有视频；没有插件时它退化成 ESLyric 歌词页。'
+            text: '提示：模式 5 的画面由 caption 为 video 的 foo_ui_webview2 面板提供，布局里没有这个面板时模式 5 是一片空白。视频画面无声，声音由 foobar2000 播放。'
         });
 
     } else {
@@ -1445,10 +1567,10 @@ function tsRows() {
             action: function () { tsOpenFolder(fb.ProfilePath); }
         });
         R.push({
-            id: 'openmpv', label: 'mpv 目录', desc: 'mpv.conf 与 input.conf 都在这里',
+            id: 'openmpv', label: 'WebView2 模板目录', desc: 'webview-ui 下的模板，视频面板的 index.html 就放这里',
             kind: 'button', button: '打开',
             get: function () { return 0; }, set: function () {},
-            action: function () { tsOpenFolder(fb.ProfilePath + 'mpv'); }
+            action: function () { tsOpenFolder(fb.ProfilePath + 'webview-ui'); }
         });
 
         R.push(tsHeading('在线更新'));
@@ -1981,6 +2103,11 @@ function tsDrawControl(gr, c, row, cr, y) {
             type: 'menuTri', menu: mm.menu, items: tri.items
         };
 
+    } else if (row.kind === 'btn3') {
+        /* 一行三个动作按钮（字体大小：减小 / 重置 / 增大），复用 menu_tri 的三段绘制 */
+        var tri3 = tsDrawTriButtons(gr, c, row, right, y, tsK());
+        return { x: tri3.x, y: tri3.y, w: tri3.w, h: tri3.h, type: 'btn3', items: tri3.items };
+    
     } else if (row.kind === 'menu_toggle') {
         /* 左：比例下拉（带宽窄的前缀文字）；右：开关。两个子控件互不重叠 */
         var km = tsK();
@@ -2198,6 +2325,14 @@ function tsHitControl(hit, x, y) {
         }
         return false;
     }
+    if (c.type === 'btn3') {
+        var ib3h = c.items || [];
+        for (var i3h = 0; i3h < ib3h.length; ++i3h) {
+            var s3h = ib3h[i3h];
+            if (x >= s3h.x - 4 && x < s3h.x + s3h.w + 4 && y >= s3h.y - 4 && y < s3h.y + s3h.h + 4) return true;
+        }
+        return false;
+    }
     return (x >= c.x && x < c.x + c.w && y >= c.y && y < c.y + c.h);
 }
 
@@ -2374,6 +2509,20 @@ function tsApplyClick(hit, row, x, y) {
         return;
     }
 
+    if (row.kind === 'btn3') {
+        /* 三个动作按钮：点哪个执行哪个（减小 / 重置 / 增大） */
+        var ib3 = (hit.ctrl && hit.ctrl.items) ? hit.ctrl.items : [];
+        for (var k3 = 0; k3 < ib3.length; ++k3) {
+            var s3 = ib3[k3];
+            if (x >= s3.x - 4 && x < s3.x + s3.w + 4 && y >= s3.y - 4 && y < s3.y + s3.h + 4) {
+                try { row.set(s3.i); } catch (eB3) {}
+                window.Repaint();
+                return;
+            }
+        }
+        return;
+    }
+    
     if (row.kind === 'iconbar') {
         var ci = hit.ctrl || {};
         var listI = ci.items || [];
@@ -2721,9 +2870,9 @@ function on_mouse_wheel(step, stepstrait, delta) {
     var dir = d > 0 ? 1 : (d < 0 ? -1 : 0);
     if (!dir) return;
 
-    /* Ctrl+滚轮：本页字号（私有，不影响其他面板） */
+    /* Ctrl+滚轮：全主题字号（与主菜单「字体大小」同源） */
     if (utils.IsKeyPressed(VK_CONTROL)) {
-        tsSetFontDelta(tsFontDelta() + dir);
+        tsFontStepGlobal(dir);
         return;
     }
     /* Shift+滚轮：本页行高（图标与控件等比跟随） */

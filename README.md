@@ -25,6 +25,7 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 运行此主题的可选组件：
 - foo_openhacks v0.1.5_[汉化修复Snap版](https://github.com/zjpm-commits/foo_openhacks/releases)
+- foo_ui_webview2（作者 NereaFantasia，GPL-3.0）：第 6 模式的视频由它的 WebView2 面板承载，取代旧版 foo_mpv。
 - 说明：jsplitter的无边框模式暂时会导致模块加载露出底色的问题未修复，暂时亦不支持“贴靠窗口”自动分屏功能，推荐暂用openhacks体验更好；标题栏右键菜单可选择用jsplitter隐藏边框或是openhacks隐藏边框。未安装 foo_openhacks 插件时，自动回退采用foo_uie_jsplitter的去边框接口接管。
 - 无需再安装：foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
 - Lxbox（ [洛雪音源](https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter/releases)）脚本，附件中已包含。
@@ -33,16 +34,21 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 
 ### 方式一：安装包（推荐）
 
-- 现在你的电脑上安装好64位foobar200。
+- 现在你的电脑上安装好 64 位 foobar2000。
 - 运行 `release/Eole_x64_v1.2.3b25chs_setup.exe`。
 - 安装程序自动定位 foobar2000 x64目录，按需勾选组件及配置，一键写入 `profile/`，无需手动覆盖文件夹。
-- 未安装foo_MPV时，此界面将会以歌词界面替代。
+- 视频模式（第6模式）由 `foo_ui_webview2` 的 WebView2 面板承担：
+   首次使用到 `首选项 → Display → Webview2 UI` 里把模板选为 `video`，重启 foobar2000 生效。
+- 布局里没有 caption 为 `video` 的面板时，第6模式不显示画面（不再回退 ESLyric 歌词页）。
 
 ### 方式二：手动覆盖
 
 - 确保你已经安装了上述依赖组件。
-- 将仓库中的 `themes` 、 `Lxbox` 、`user-components-x64`文件夹完整覆盖到你的配置目录下（通常是 `profile/`文件夹）。
-- 在 foobar2000 中导入 `DUI_eole_x64_chs.fth` 配置文件（位于 `Eole/` 目录下）。
+- 将仓库中的 `Eole` 、 `Lxbox` 、 `user-components-x64` 文件夹完整覆盖到你的配置目录下（通常是 `profile/` 文件夹）。
+- 把仓库里的 `assets/webview-ui` 文件夹整个复制到 `profile/` 并改名成 `webview-ui`（最终是 `profile/webview-ui/video/index.html`）。
+- 把 `assets/payload/theme.fth` 复制到 `profile/`，`assets/payload/DUI_Eole_x64.fth` 复制到 `themes/`（前者就是当前布局）。
+- 覆盖 `profile/theme.fth` 前先备份原文件；布局文件是二进制格式，手动改坏会导致 foobar2000 打不开。
+- 模板页面在 `profile/webview-ui/video/index.html`，首次使用到 `首选项 → Display → Webview2 UI` 把模板选为 `video`，重启生效。
 - 如果默认字体偏小，按住 `Ctrl + 鼠标滚轮` 进行全局缩放（ `shift+ 鼠标滚轮` 实时调整文字行间距）。
 - eole-settings、configuration、yttm为我个人的设置配置文件，可以直接覆盖使用。
 
@@ -61,9 +67,10 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 将原来模块化壁纸替换为全屏壁纸伪透明的样式； 
 - 减少文件夹层级，配置文件同主题目录便于管理
 - 增加第5模式：MilkDrop，标题栏右键菜单启动。
-- 增加第6模式：MPV 视频，标题栏右键菜单启动。
+- 增加第6模式：视频（WebView2 面板），视频容器只认 Chromium 能解的 mp4 / m4v / mov / webm / ogv，其他格式（mkv、avi、ts 等）不进视频模式，仍用 foobar2000 正常播放。。
 - 增加第7模式：主题设置，标题栏增加设置入口图标。
 - 在线更新：设置面板「检查更新」将覆盖旧文件。
+- 标题栏模式增加第四种可折叠侧边栏模式。
 
 ## 🙏 致谢
 - 感谢 **Ottodix** 及所有贡献者开发了如此精美的Eole主题。

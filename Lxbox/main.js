@@ -661,6 +661,7 @@ function setCollKeywordOf(kind, kw) {
 }
 
 var overlay = '';          /* '' | 'comments' | 'bio' */
+var overlaySrc = '';       /* 源切换：''=默认链 | 'wy' | 'tx'(评论) | 'apple'(简介)，浮层打开后手动切换仅本次生效 */
 var overlayName = '';
 var overlaySubject = '';
 var overlayHot = '';
@@ -791,27 +792,36 @@ function fbFontName() {
   return (n && n.length >= 2 && n.length <= 64) ? n : 'Microsoft YaHei UI';
 }
 
-function fbFontLogical() {
-  var px = fbDlgFont().size;
-  if (!(px > 0)) return FONT_DEF;
-  return clamp(Math.round(px / UI_S), FONT_MIN, FONT_MAX);
+/* 字体样式：def = 微软雅黑 UI（主题内置）；dui = 跟随 foobar2000 界面字体；
+   custom = 用户填的字体族（无效时回退跟随 DUI）。默认 dui 与历史行为一致。 */
+function fontSrcMode() {
+  var v = '';
+  try { v = String(getP('lx.fontSrc', '') || '').trim().toLowerCase(); } catch (e) { v = ''; }
+  return (v === 'def' || v === 'dui' || v === 'custom') ? v : 'dui';
 }
 
-function fontSizeFollow() {
-  var v = '', old = '';
-  try { v = String(getP('lx.fontSize', '') || '').trim().toLowerCase(); } catch (e) { v = ''; }
-  if (v !== '' && v !== 'auto') return false;
-  try { old = String(getP('lx.fontScale', '') || '').trim(); } catch (e2) { old = ''; }
-  return old === '';
+function fontSrcName(m) {
+  return m === 'def' ? '默认' : m === 'custom' ? '自定义' : '跟随DUI';
+}
+
+function customFontName() {
+  var n = '';
+  try { n = String(getP('lx.fontCustom', '') || '').trim(); } catch (e) { n = ''; }
+  return (n.length >= 2 && n.length <= 64) ? n : '';
+}
+
+function uiFontName() {
+  var m = fontSrcMode();
+  if (m === 'def') return 'Microsoft YaHei UI';
+  if (m === 'custom') return customFontName() || fbFontName();
+  return fbFontName();
 }
 
 function fontSizeProp() {
-  if (fontSizeFollow()) return fbFontLogical();
+  /* 字号独立于字体样式三选：默认 12 号，滑杆 / Ctrl + 滚轮手动调整后记忆 */
   var n = parseInt(getP('lx.fontSize', -1), 10);
   if (n >= FONT_MIN && n <= FONT_MAX) return n;
-  var f = parseInt(getP('lx.fontScale', 100), 10);
-  if (!(f >= 85 && f <= 130)) f = 100;
-  return clamp(Math.round(FONT_DEF * f / 100), FONT_MIN, FONT_MAX);
+  return FONT_DEF;
 }
 
 function fpx(v) {
@@ -902,11 +912,18 @@ function scaledGraphics(g) {
   return p;
 }
 
+/* RemixIcon 码点（官方 glyph.json，字体已含全部字形）：
+   close-line EB99 / netease-cloud-music-line EF8B / qq-line F03B / apple-line EA40 */
+var RI_CLOSE = '\uEB99';
+var RI_SRC_WY = '\uEF8B';
+var RI_SRC_QQ = '\uF03B';
+var RI_SRC_AP = '\uEA40';
+
 function initTheme() {
-  var name = fbFontName();
+  var name = uiFontName();
   var px = fpx(FONT_BASE);
 
-  ['head', 'hdrB', 'normal', 'small', 'tiny', 'hdr', 'mdl2', 'rowSub'].forEach(function (k) {
+  ['head', 'hdrB', 'normal', 'small', 'tiny', 'hdr', 'mdl2', 'rowSub', 'rx'].forEach(function (k) {
     disposeObj(F[k]);
     F[k] = null;
   });
@@ -927,6 +944,10 @@ function initTheme() {
   /* 顶栏播放控制按钮用的符号字体（Win10/11 自带；字号比正文大一档才够看） */
   try { F.mdl2 = gdi.Font('Segoe MDL2 Assets', Math.max(10, Math.round((FONT_BASE || 12) * 1.25)), 0); }
   catch (eM) { F.mdl2 = F.hdr; }
+
+  /* RemixIcon 图标字体（用户级安装，家族名 remixicon）：浮层关闭 / 简介评论源切换按钮 */
+  try { F.rx = gdi.Font('remixicon', Math.max(11, Math.round((FONT_BASE || 12) * 1.5)), 0); }
+  catch (eRx) { F.rx = F.hdr; }
 
   /* 双行列表的第二行 / 时长比标题小一档即可。 */
   try { F.rowSub = gdi.Font(name, Math.max(9, px - 1), 0); }
@@ -1453,7 +1474,6 @@ function sameTitle(h) {
 var themeTimer = 0;
 
 function watchTheme() {
-  if (fontSizeFollow() && fbFontLogical() !== FONT_BASE) { applyUiScale(); return; }
   if (!applyTheme(false)) return;
   buildBackdrop();
   setStatus(bgArtEnabled()
@@ -7349,6 +7369,7 @@ function openOverlay(kind, name, subject) {
   if (kind !== 'comments') overlayCommentsKey = '';
   if (kind !== 'bio') overlayBioName = '';
   overlay = kind;
+  overlaySrc = '';
   overlayName = name || '';
   overlaySubject = subject || '';
   overlayItems = null;
@@ -7391,6 +7412,7 @@ function closeOverlay() {
   overlayCommentsKey = '';
   overlayBioName = '';
   overlay = '';
+  overlaySrc = '';
   overlayItems = null;
   overlayText = '';
   overlayCols = [];
@@ -8340,45 +8362,49 @@ function toggleComments() {
   showComments();
 }
 
-function showComments() {
+function showComments(src) {
   var track = targetTrack();
   if (!track || (!track.title && !track.artist)) {
     setStatus('没有正在播放的曲目，先播一首再点「评论」', true);
     return;
   }
+  if (src !== 'wy' && src !== 'tx') src = '';
   var cid = ++commentLoadId;
-  openOverlay('comments', '歌曲评论', docBase(track) + ' · 网易云');
+  openOverlay('comments', '歌曲评论', docBase(track) + ' · ' + commentSrcName(src));
+  overlaySrc = src;
   overlayCommentsKey = overlayTrackKeyOf(track);
-  setStatus('正在取网易云评论：' + docBase(track) + ' …');
+  setStatus('正在取' + commentSrcName(src) + '评论：' + docBase(track) + ' …');
 
   var file = '';
   var dir = cacheSubDir('review');
-  if (dir) file = dir + '\\' + docBase(track) + '.json';
+  if (dir) file = dir + '\\' + docBase(track) + (src ? '.' + src : '') + '.json';
 
   var cached = readCacheJson(file, COMMENT_TTL);
   if (cached && cached.items && cached.items.length) {
     overlayLoading = false;
     overlayItems = cached.items;
-    overlaySubject = docBase(track) + ' · 网易云 · 缓存 ' + commentTimeText(cached.at);
+    overlaySubject = docBase(track) + ' · ' + commentSrcName(src) + ' · 缓存 ' + commentTimeText(cached.at);
     rebuildOverlayLines(true);
     setStatus('评论（缓存）：' + cached.items.length + ' 条');
     repaint();
     return;
   }
 
-  withTimeout(NM.providers.comments(track), 25000, '取评论').then(function (items) {
+  withTimeout(NM.providers.comments(track, src || undefined), 25000, '取评论').then(function (items) {
     if (cid !== commentLoadId || overlay !== 'comments') return;
     overlayLoading = false;
     overlayItems = items || [];
     writeCacheJson(file, { at: Date.now(), items: overlayItems });
-    overlaySubject = docBase(track) + ' · 网易云';
+    overlaySubject = docBase(track) + ' · ' + commentSrcName(src);
     rebuildOverlayLines(true);
     setStatus('评论：' + overlayItems.length + ' 条');
     repaint();
   }, function (e) {
     if (cid !== commentLoadId || overlay !== 'comments') return;
     overlayLoading = false;
-    overlayError = '取网易云评论失败：' + ((e && e.message) || e);
+    /* 强制源拉取失败：按钮弹回默认链首选，正文提示原因 */
+    overlaySrc = '';
+    overlayError = '取' + commentSrcName(src || 'wy') + '评论失败：' + ((e && e.message) || e);
     rebuildOverlayLines(true);
     setStatus(overlayError, true);
     repaint();
@@ -8511,18 +8537,20 @@ function toggleBio() {
   showBio();
 }
 
-function showBio() {
+function showBio(src) {
   var track = targetTrack();
   var name = String((track && track.artist) || '').trim();
   if (!name) {
     setStatus('不知道歌手是谁，先播一首再按 F4（或点顶栏「简介」）看艺人介绍', true);
     return;
   }
+  if (src !== 'apple' && src !== 'wy') src = '';
   bioViewToken++;
   var bioView = bioViewToken;
   overlayBioName = name;
-  openOverlay('bio', '艺人介绍', name + ' · 网易云');
-  setStatus('正在取网易云艺人资料：' + name + ' …');
+  openOverlay('bio', '艺人介绍', name + ' · ' + bioSrcName(src));
+  overlaySrc = src;
+  setStatus('正在取' + bioSrcName(src) + '艺人资料：' + name + ' …');
 
   if (bioPic && bioPicFor !== name) {
     disposeObj(bioPic);
@@ -8533,16 +8561,16 @@ function showBio() {
   var safeArtist = cleanName(name, 40) || '未知歌手';
   var bioDir = cacheSubDir('bio');
   var artDir = cacheSubDir('artist');
-  var bioFile = bioDir ? bioDir + '\\' + safeArtist + '.txt' : '';
-  var picFile = artDir ? artDir + '\\' + safeArtist + '.jpg' : '';
-  var songsFile = artDir ? artDir + '\\' + safeArtist + '.songs.json' : '';
+  var bioFile = bioDir ? bioDir + '\\' + safeArtist + (src ? '.' + src : '') + '.txt' : '';
+  var picFile = artDir ? artDir + '\\' + safeArtist + (src ? '.' + src : '') + '.jpg' : '';
+  var songsFile = artDir ? artDir + '\\' + safeArtist + (src ? '.' + src : '') + '.songs.json' : '';
   bioSongsFile = songsFile;
 
   var cached = readCacheText(bioFile, BIO_TTL);
   if (cached && cached.trim()) {
     overlayLoading = false;
     overlayText = cached;
-    overlaySubject = name + ' · 网易云 · 缓存';
+    overlaySubject = name + ' · ' + bioSrcName(src) + ' · 缓存';
     loadBioPic(picFile, name);
     if (!loadBioSongs(name, 0, null, songsFile)) ensureBioRemote(name, picFile, songsFile);
     rebuildOverlayLines(true);
@@ -8551,13 +8579,13 @@ function showBio() {
     return;
   }
 
-  withTimeout(NM.providers.artistInfo(name), 25000, '取艺人资料').then(function (info) {
+  withTimeout(NM.providers.artistInfo(name, src || undefined), 25000, '取艺人资料').then(function (info) {
     if (bioView !== bioViewToken || overlay !== 'bio' || name !== overlayBioName) return;
     overlayLoading = false;
     var text = formatBio(info);
     overlayText = text;
     writeCacheText(bioFile, text);
-    overlaySubject = String((info && info.name) || name) + ' · 网易云';
+    overlaySubject = String((info && info.name) || name) + ' · ' + bioSrcName(src);
     setStatus('艺人介绍：' + overlaySubject);
 
     bioId = Number((info && info.id) || 0) || bioId;
@@ -8568,7 +8596,9 @@ function showBio() {
   }, function (e) {
     if (bioView !== bioViewToken || overlay !== 'bio' || name !== overlayBioName) return;
     overlayLoading = false;
-    overlayError = '取网易云艺人资料失败：' + ((e && e.message) || e);
+    /* 强制源拉取失败：按钮弹回默认链首选，正文提示原因 */
+    overlaySrc = '';
+    overlayError = '取' + bioSrcName(src || 'wy') + '艺人资料失败：' + ((e && e.message) || e);
     rebuildOverlayLines(true);
     setStatus(overlayError, true);
     repaint();
@@ -8578,7 +8608,7 @@ function showBio() {
 function formatBio(info) {
   if (!info) return '';
   var out = [];
-  out.push(String(info.name || overlaySubject || ''));
+  /* 歌手名 / 来源已由简介浮层顶栏（bioIconBar）承载，正文从统计行起 */
   var meta = [];
   if (info.songs) meta.push('单曲 ' + info.songs);
   if (info.albums) meta.push('专辑 ' + info.albums);
@@ -10003,11 +10033,59 @@ function buttonAt(x, y) {
   return '';
 }
 
+/* 简介浮层顶栏：分栏时占右栏首行，单列时占内容区首行；左侧歌手名/来源，右侧按钮图标 */
+function bioIconBar() {
+  if (overlay !== 'bio') return null;
+  var r = L.overlay;
+  if (!r) return null;
+  var g = bioLayout();
+  if (g.split) return { x: g.rightX, y: g.top, w: g.rightW, h: 26 };
+  return { x: g.x, y: g.top, w: g.w, h: 26 };
+}
+
 function overlayCloseRect() {
   var r = L.overlay;
   if (!r) return null;
+  if (overlay === 'bio') {
+    var bar = bioIconBar();
+    if (bar) return { x: bar.x + bar.w - 24, y: bar.y + 1, w: 24, h: 24 };
+  }
   if (overlayHeadH(r) > 0) return { x: r.x + r.w - 34, y: r.y + 4, w: 28, h: 26 };
   return { x: r.x + r.w - 34, y: r.y + 4, w: 24, h: 24 };
+}
+
+/* 源切换按钮（简介 / 评论浮层）：关闭按钮左侧，同规格同轴线，间隙 6px。
+   注意 bio / comments 没有全宽头部（overlayHeadH 恒 0），锚定 close 而不是 headH 条件 */
+function overlaySrcRect() {
+  var r = L.overlay;
+  if (!r) return null;
+  if (overlay !== 'bio' && overlay !== 'comments') return null;
+  var cb = overlayCloseRect();
+  if (!cb) return null;
+  var w = overlayHeadH(r) > 0 ? 28 : 24;
+  return { x: cb.x - 6 - w, y: cb.y, w: w, h: cb.h };
+}
+
+/* 按钮图标随当前源：评论 wy⇄tx，简介 wy⇄apple；默认链首选源显示在按钮上 */
+function overlaySrcIcon() {
+  var src = overlaySrc || 'wy';
+  if (overlay === 'comments') return src === 'tx' ? RI_SRC_QQ : RI_SRC_WY;
+  return src === 'apple' ? RI_SRC_AP : RI_SRC_WY;
+}
+
+function commentSrcName(src) { return src === 'tx' ? 'QQ音乐' : '网易云'; }
+function bioSrcName(src) { return src === 'apple' ? 'Apple Music' : '网易云'; }
+
+/* 评论源切换：网易云 ⇄ QQ 音乐，切完立即重拉；失败在回调里弹回默认链 */
+function toggleCommentsSrc() {
+  var next = (overlaySrc || 'wy') === 'tx' ? 'wy' : 'tx';
+  showComments(next);
+}
+
+/* 简介源切换：网易云 ⇄ Apple Music，切完立即重拉；失败在回调里弹回默认链 */
+function toggleBioSrc() {
+  var next = (overlaySrc || 'wy') === 'apple' ? 'wy' : 'apple';
+  showBio(next);
 }
 
 function ensureVisible() {
@@ -10797,7 +10875,8 @@ function drawHeader(gr) {
     var hot = hoverOn(r);
     /* 标签页背景透明：当前页靠文字强调色 + 底部 2px 条区分，不铺底 */
     if (!active && hot) gr.FillSolidRect(r.x, r.y, r.w, r.h, tint(C.hover, BG_A.tabHot));
-    gr.GdiDrawText(TAB_DEFS[i].label, F.hdrB, active ? C.accent : (hot ? C.text : C.dim),
+    /* 页签文字按钮不加粗（用户指定），Logo 兜底文字保持 F.hdrB */
+    gr.GdiDrawText(TAB_DEFS[i].label, F.hdr, active ? C.accent : (hot ? C.text : C.dim),
                    r.x, r.y, r.w, r.h, FLAG_CENTER);
     if (active) gr.FillSolidRect(r.x, r.y + r.h - 2, r.w, 2, C.accent);
   }
@@ -13521,7 +13600,7 @@ function drawProbeOverlay(gr, r) {
   var cb = overlayCloseRect();
   if (cb) {
     var chot = hoverOn(cb);
-    gr.GdiDrawText('×', F.head, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
+    gr.GdiDrawText(RI_CLOSE, F.rx, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
   }
 }
 
@@ -13551,10 +13630,19 @@ function drawOverlay(gr) {
   var top = overlayTopY();
   var bottom = overlayBottomY();
   var lineH = overlayLineH();
-  var vis = Math.max(1, Math.floor((bottom - top) / lineH));
 
   var g = overlayTextGeom();
   var bio = g.bio || null;
+
+  /* 简介浮层顶栏：首行左侧显示歌手名/来源，右侧为源切换与关闭按钮，正文从下一行起 */
+  var bar = overlay === 'bio' ? bioIconBar() : null;
+  if (bar) {
+    gr.GdiDrawText(overlaySubject || overlayBioName || '', F.small, C.text,
+                   bar.x, bar.y, Math.max(40, bar.w - 64), bar.h, FLAG_LEFT);
+    top = bar.y + bar.h + 6;
+  }
+
+  var vis = Math.max(1, Math.floor((bottom - top) / lineH));
 
   if (overlayHeadRows() > 0) {
     var hy = r.y + 6;
@@ -13568,7 +13656,7 @@ function drawOverlay(gr) {
 
   if (bio && bio.split) {
     drawBioLeft(gr, bio);
-    gr.DrawLine(bio.sepX, top - 4, bio.sepX, bottom, 1, A(C.line, 170));
+    gr.DrawLine(bio.sepX, bio.top - 4, bio.sepX, bottom, 1, A(C.line, 170));
   }
 
   if (g.n > 1) {
@@ -13599,7 +13687,12 @@ function drawOverlay(gr) {
   var cb = overlayCloseRect();
   if (cb) {
     var chot = hoverOn(cb);
-    gr.GdiDrawText('×', F.head, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
+    gr.GdiDrawText(RI_CLOSE, F.rx, chot ? C.err : C.dim, cb.x, cb.y, cb.w, cb.h, FLAG_CENTER);
+  }
+  var sb = overlaySrcRect();
+  if (sb) {
+    var shot = hoverOn(sb);
+    gr.GdiDrawText(overlaySrcIcon(), F.rx, shot ? C.accent : C.dim, sb.x, sb.y, sb.w, sb.h, FLAG_CENTER);
   }
 }
 
@@ -13788,8 +13881,45 @@ function lookSections() {
         onSet: function (v) {
           setProp('lx.fontSize', v);
           applyUiScale({ quiet: true });
-          setStatus('字体字号：' + v + ' px（手动，不再跟随 foobar2000 字体）');
+          setStatus('字体字号：' + v + ' px');
         } },
+      { kind: 'seg', id: 'fontsrc', label: '字体样式', value: fontSrcMode(),
+        options: [['def', '默认'], ['dui', '跟随DUI'], ['custom', '自定义']],
+        onPick: function (v) {
+          if (v === 'custom') {
+            /* 照搬 Eole theme_settings.tsSetFontMode：utils.FontPicker 弹系统字体对话框，
+               取消时原样返回传入的 Font（引用相等），不改动当前档 */
+            var fam = uiFontName();
+            var def = null;
+            try { def = gdi.Font(fam, fpx(FONT_BASE), 0); } catch (eFD) { def = null; }
+            var picked = null;
+            try { picked = utils.FontPicker(def); } catch (eFP) {
+              setStatus('打开系统字体对话框失败', true);
+              repaint();
+              return;
+            }
+            if (!picked || picked === def) return;   /* 取消：保持原档不动 */
+            var cand = '';
+            try { cand = String(picked.Name || ''); } catch (eFP2) { cand = ''; }
+            if (!cand) return;
+            var ok = false;
+            try { ok = utils.CheckFont(cand); } catch (eFP3) { ok = false; }
+            if (!ok) {
+              setStatus('系统里找不到字体「' + cand + '」，已放弃', true);
+              repaint();
+              return;
+            }
+            setProp('lx.fontCustom', cand);
+            setProp('lx.fontSrc', 'custom');
+            applyUiScale({ quiet: true });
+            setStatus('字体样式：自定义「' + cand + '」');
+          } else {
+            setProp('lx.fontSrc', v);
+            applyUiScale({ quiet: true });
+            setStatus('字体样式：' + fontSrcName(v));
+          }
+        } },
+      { kind: 'note', text: '默认 = 微软雅黑 UI（主题内置）；跟随 DUI = 用 foobar2000 界面字体；自定义 = 点了弹系统字体选择窗口。字号三态通用：默认 12 号，滑杆或 Ctrl + 滚轮可调。' },
       { kind: 'seg', id: 'theme', label: '配色', value: themeMode(),
         options: [['auto', '跟随系统'], ['dark', '深色'], ['light', '浅色']],
         onPick: function (v) {
@@ -13841,12 +13971,16 @@ function lookSections() {
                  '。全局音质在「音源」页。';
         } },
       { kind: 'note', text: function () {
-          var d = fbDlgFont();
-          return '字号 ' + FONT_BASE + 'px' +
-                 (fontSizeFollow() ? '（跟随 foobar2000 字体 ' + (d.size || '?') + 'px）' : '（手动）') +
+          var m = fontSrcMode();
+          var src = fontSrcName(m);
+          if (m === 'custom') src = customFontName() ? '自定义' : '回退跟随DUI';
+          var manual = false;
+          try { var nv = parseInt(getP('lx.fontSize', -1), 10); manual = nv >= FONT_MIN && nv <= FONT_MAX; } catch (eN) { manual = false; }
+          return '当前字体：' + uiFontName() + '  ' + (manual ? FONT_BASE + ' 号（手动）' : FONT_DEF + ' 号（默认）') +
+                 ' · 来源：' + src +
                  ' · 缩放 ' + Math.round(UI_S * 100) + '%（探测 ' + Math.round(UI_AUTO * 100) + '%）';
         } },
-      { kind: 'note', text: '字号只动字；整体放大调「界面缩放」。文字色跟 foobar2000 走。' },
+      { kind: 'note', text: '字号只动字（Ctrl + 滚轮可调）；整体放大调「界面缩放」。文字色跟 foobar2000 走。' },
       { kind: 'seg', id: 'mbtn', label: '鼠标中键', value: mbtnMode(),
         options: [['left', '弹左栏'], ['right', '弹右栏'], ['none', '都不弹'], ['off', '禁用']],
         onPick: function (v) {
@@ -15502,10 +15636,15 @@ function titleBarClick(x, y) {
   return true;
 }
 
-/* 浮层卡片单击（简介 / 评论）：关闭按钮 / 检测页按钮 / 简介交互 */
+/* 浮层卡片单击（简介 / 评论）：关闭按钮 / 源切换按钮 / 检测页按钮 / 简介交互 */
 function overlayCardClick(x, y) {
   var cbr = overlayCloseRect();
   if (cbr && inRect(cbr, x, y)) { closeOverlay(); return true; }
+  var sbr = overlaySrcRect();
+  if (sbr && inRect(sbr, x, y)) {
+    if (overlay === 'comments') toggleCommentsSrc(); else toggleBioSrc();
+    return true;
+  }
 
   if (overlay === 'probe') {
     var pkr = probePickRect();
@@ -15636,6 +15775,8 @@ function on_mouse_move(x, y, mask) {
   if (overlay) {
     var cb = overlayCloseRect();
     var hotClose = !!(cb && inRect(cb, x, y));
+    var sbHot = overlaySrcRect();
+    var hotSrc = !!(sbHot && inRect(sbHot, x, y));
     var hotSb = !!scrollbarHit(x, y);
     updateScrollbarHot(x, y);
 
@@ -15684,11 +15825,11 @@ function on_mouse_move(x, y, mask) {
       return;
     }
 
-    setCursorHand(hotClose || hotSb || bIdx >= 0 || bMore || barOnHere || qOnHere ||
+    setCursorHand(hotClose || hotSrc || hotSb || bIdx >= 0 || bMore || barOnHere || qOnHere ||
                   (overlay === 'bio' && !!bioPicAt(x, y)));
 
     if (drawHover) {
-      var okey = overlay + '|' + (hotClose ? 1 : 0) + (hotSb ? 1 : 0);
+      var okey = overlay + '|' + (hotClose ? 1 : 0) + (hotSrc ? 1 : 0) + (hotSb ? 1 : 0);
       if (okey !== overlayHot) { overlayHot = okey; repaint(); }
     }
     return;
@@ -16267,7 +16408,7 @@ function nudgeFontSize(delta) {
   }
   setProp('lx.fontSize', v);
   applyUiScale({ quiet: true });
-  setStatus('字号：' + v + ' px（Ctrl + 滚轮调节；设置 → 外观 →「恢复默认」可回到跟随 foobar2000）');
+  setStatus('字号：' + v + ' px（Ctrl + 滚轮调节）');
 }
 
 function nudgeRowGap(delta) {

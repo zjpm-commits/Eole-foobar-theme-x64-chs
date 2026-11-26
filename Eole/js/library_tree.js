@@ -13,7 +13,7 @@
     headerbar_height:33,
     TagSwitcherBarHeight: 40,
     TagSwitcherBarHeight_old: 30,		
-    panelFontAdjustement: 0,
+    panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
     showLibraryTreeSwitch:true,
     DropInplaylist: true
 };

@@ -4,7 +4,7 @@
 	displayToggleBtns: window.GetProperty("显示·切换按钮", true),
 	savedFilterState: window.GetProperty("属性·已保存的筛选状态", -1),
     filtred_playlist_idx: window.GetProperty("属性·筛选结果播放列表索引", -1),		
-	panelFontAdjustement: -1,
+	panelFontAdjustement: -2,     /* 各自 -1：-1 → -2（最小档） */
 	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),
 	showwallpaper: window.GetProperty("显示·显示壁纸", true),
 	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
@@ -962,7 +962,7 @@ function on_paint(gr) {
 
 
 	if(g_pinfo.items_width < 0) {
-		g_pinfo.items_width = gr.CalcTextWidth(`${g_pinfo.time_txt} ${g_pinfo.items_txt}`, g_font.normal);
+		g_pinfo.items_width = gr.CalcTextWidth(`${g_pinfo.time_txt} ${g_pinfo.items_txt}`, g_font.plus1);
 	}
 	if(g_pinfo.main_txt_width < 0) {
 		g_pinfo.main_txt_width = gr.CalcTextWidth(g_pinfo.main_txt, g_font.plus2);
@@ -977,7 +977,7 @@ function on_paint(gr) {
 	}
 
 	gr.GdiDrawText(g_pinfo.main_txt, g_font.plus2, colors.normal_txt, margin_left, 1, main_txt_space, wh - 2, DT_VCENTER | DT_END_ELLIPSIS | DT_CALCRECT | DT_NOPREFIX);
-	gr.GdiDrawText(g_pinfo.time_txt+((g_pinfo.time_txt !== "") ? ", " : "") + g_pinfo.items_txt, g_font.normal, colors.faded_txt, 53, 0, ww - time_txt_right_margin, wh, DT_VCENTER | DT_END_ELLIPSIS | DT_RIGHT | DT_CALCRECT | DT_NOPREFIX);
+	gr.GdiDrawText(g_pinfo.time_txt+((g_pinfo.time_txt !== "") ? ", " : "") + g_pinfo.items_txt, g_font.plus1, colors.faded_txt, 53, 0, ww - time_txt_right_margin, wh, DT_VCENTER | DT_END_ELLIPSIS | DT_RIGHT | DT_CALCRECT | DT_NOPREFIX);
 
 	showTitleTooltip = (g_pinfo.main_txt_width >  main_txt_space);
 
@@ -1177,6 +1177,11 @@ function on_notify_data(name, info) {
 			globalProperties.fontAdjustement = info;
 			window.SetProperty("全局·字体调整", globalProperties.fontAdjustement),
 			get_font();
+			/* 字体族变了，组头/分组切换按钮的文字宽度要重测，否则按钮错位 */
+			setGroupToggleBtn();
+			refreshGroupToggleBtn();
+			if (typeof setSettingsBtn !== 'undefined') setSettingsBtn();
+			if (typeof buttons !== 'undefined' && buttons && buttons.groupToggle) positionButtons();
 			window.Repaint();
 		break;
 		case "nowplayinglib_state":

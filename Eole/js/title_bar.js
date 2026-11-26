@@ -76,13 +76,111 @@ var properties = {
 	LightswitchBtnGlobal: window.GetProperty("显示·全局明暗切换按钮", true),
 	savedFilterState: window.GetProperty("属性·已保存的筛选状态", -1),
 	SuperCompact_titlebar: window.GetProperty("属性·精简面板按钮", false),
-	panelFontAdjustement: 0,
+	panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
 	toUpperCase: window.GetProperty("显示·面板按钮文字大写", false),
 	alwaysShowSearch: window.GetProperty("显示·始终显示搜索框", true),
 	mini_mainmenu_button: window.GetProperty("显示·迷你主菜单按钮", false),
 }
 if(globalProperties.deleteDiskCache) {
 	delete_full_cache();
+}
+
+/* ============================================================================
+   第 4 种标题栏形态：折叠侧边栏（左侧 Sidebar 面板 + 单行标题栏）
+   ----------------------------------------------------------------------------
+   四种形态由 compacttitlebar 一个值决定：0 标准两行(64) / 1 常规紧凑(36) /
+   2 加宽紧凑(50) / 3 折叠侧边栏。第 4 种的标题栏就是「紧凑标题栏减掉主区入口
+   按钮」：同一套按钮、同一套字体与内距、同样的 36 / 4K 适配 50 高度，左侧多一个
+   折叠侧栏的箭头，主菜单按钮随之后移。实现上不另画一套，而是把 compact 的读写
+   在 rail 态虚拟成 1 或 2（见下面的 isEqual 补丁），让 pss 原有那套紧凑绘制
+   原样跑起来，再藏掉 Library / Playlists / Artist_Bio / Visualization 四个入口。
+   ============================================================================ */
+var g_railMode = false;
+var g_railPanelState = -1;  /* 布局里有没有 Sidebar 面板：-1 未知 / 0 没有 / 1 有 */
+
+/* 第 4 种形态在视觉上等同于「常规紧凑」或「加宽紧凑」：
+   把 compact_titlebar 的比较函数在 rail 态虚拟成 1 / 2，pss 那套紧凑绘制就会
+   按同一套高度、字号、内距、窗口键尺寸跑，不需要另写一份。 */
+function railWideNow() {
+	try { return (typeof railWidePref === 'function') && railWidePref() === 1; } catch (eRW) { return false; }
+}
+(function () {
+	try {
+		var _railEq = compact_titlebar.isEqual, _railAct = compact_titlebar.isActive;
+		compact_titlebar.isEqual = function (v) {
+			if (g_railMode) return (Number(v) === (railWideNow() ? 2 : 1));
+			return _railEq.apply(this, arguments);
+		};
+		compact_titlebar.isActive = function () {
+			if (g_railMode) return true;
+			return _railAct.apply(this, arguments);
+		};
+	} catch (eRailPatch) {}
+})();
+
+function railAskState() {
+	try { window.NotifyOthers('rail_query', true); } catch (eRQ) {}
+}
+
+/* 同步问布局「有没有 Sidebar 面板」。NotifyOthers 是同步派发，发完就能读到答案；
+   布局脚本没应答（-1）时按"有"处理，让用户自己去试，别把能用的布局拦下来。 */
+function railPanelQuery() {
+	g_railPanelState = -1;
+	try { window.NotifyOthers('rail_panel_query', true); } catch (eRPQ) {}
+	return g_railPanelState;
+}
+
+/* 本机现在的侧栏标题栏高度：36（同常规紧凑）/ 50（4K 适配后同加宽紧凑） */
+function railBarH() {
+	try {
+		if (railWideNow()) return (properties.compact_titlebar_big_height || 50);
+		return (properties.compact_titlebar_height || 36);
+	} catch (eBH) { return railWideNow() ? 50 : 36; }
+}
+
+function railBreakW() {
+	return (typeof RAIL_BREAK_W === 'number') ? RAIL_BREAK_W : 1030;
+}
+
+/* 折叠按钮已经搬到侧栏面板顶部（见 sidebar_rail.js），标题栏只留曲目信息。
+   按钮、窗口键、右侧小开关图标全部由 pss 那套紧凑绘制负责，这里不再另画。 */
+function railPaintExtras(gr) {
+	var h = railBarH();
+	/* 搜索框展开时：曲目信息让位给输入框 */
+	var searchOpen = false;
+	try { searchOpen = !!(g_searchbox && !g_searchbox.hide); } catch (eSO0) { searchOpen = false; }
+	var txt = (colors && colors.normal_txt) ? colors.normal_txt : GetGrey(0);
+
+	/* 曲目信息：紧凑栏原来不画文字，这里补在左侧按钮组与右侧开关之间 */
+	var leftW = 0;
+	try { leftW = compact_btns.getWidth(); } catch (eLW) { leftW = 0; }
+	var rightW = 0;
+	try { rightW = window_btns.getWidth(); } catch (eRW2) { rightW = 0; }
+	var infoX = leftW + 12;
+	var infoW = Math.max(0, ww - rightW - infoX - 12);
+	var infoFont = null;
+	try { infoFont = railWideNow() ? g_font.plus1 : g_font.normal; } catch (eIF) { infoFont = null; }
+	/* 搜索框展开时整条让给输入框：曲目信息不画，就和紧凑栏「点搜索后藏入口」同一个口径；
+	   曲目信息开关（菜单 1800）在 rail 态可点，关掉就只剩按钮 */
+	if (infoFont && infoW > 30 && properties.tracktitle_ontop && !searchOpen) {
+		gr.GdiDrawText(caption_title, infoFont, txt, infoX, 0, infoW, h,
+			DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_NOPREFIX | DT_END_ELLIPSIS);
+	}
+}
+
+/* 第一次进第 4 种形态时补一次「显示曲目信息」：之前紧凑模式把这项置灰，
+   很多人的属性是关的，切过来就整条空白。只初始化一次，之后完全听用户开关。 */
+var RAIL_PROP_INIT = '显示·折叠侧边栏·标题信息已初始化';
+function railFirstInit() {
+	try {
+		if (Number(window.GetProperty(RAIL_PROP_INIT, 0)) === 1) return;
+		window.SetProperty(RAIL_PROP_INIT, 1);
+		if (!properties.tracktitle_ontop) {
+			properties.tracktitle_ontop = true;
+			window.SetProperty("显示·曲目标题", true);
+		}
+		window.Repaint();
+	} catch (eRFI) {}
 }
 
 var scheduler = {
@@ -457,7 +555,7 @@ function toggleNowPlayingState(switch_all,new_state, refresh_panel){
 				else nowplayingmdrop_state.toggleValue(refresh_panel);
 			break;
 			case 5:
-				/* 模式 5（MPV 视频 / ESL 歌词）：右栏开关走 MPV 键 */
+				/* 模式 5（视频）：右栏开关走 MPV 键 */
 				if(new_state!==false) nowplayingmpv_state.setValue(new_state,refresh_panel);
 				else nowplayingmpv_state.toggleValue(refresh_panel);
 			break;
@@ -518,7 +616,7 @@ function toggleTrackInfosState(switch_all,new_state, refresh_panel){
 				else trackinfosmdrop_state.cycleIncrement(1,refresh_panel);
 			break;
 			case 5:
-				/* 模式 5（MPV 视频 / ESL 歌词）：曲目信息三态走 MPV 键 */
+				/* 模式 5（视频）：曲目信息三态走 MPV 键 */
 				if(new_state!==false) trackinfosmpv_state.setValue(new_state,refresh_panel);
 				else trackinfosmpv_state.cycleIncrement(1,refresh_panel);
 			break;
@@ -739,18 +837,45 @@ function toggleSearch(new_search_state){
 	g_searchbox.toggleVisibility();
 	if(!g_searchbox.hide) g_searchbox.inputbox.activate(0,0);
 }
+
+/* JSplitter 的 on_char 只有在窗口 DlgCode 带 DLGC_WANTCHARS(0x0080) 时才会收到 WM_CHAR；
+   没有这个标志时只有 on_key_down 进来，表现就是「能粘贴（Ctrl+V 走 key_down）、打不了字」。
+   搜索框开着时补上这个标志，关掉再恢复原值，免得抢走空格=播放/暂停这类全局快捷键。 */
+var g_dlgCodeBase = null;
+function searchDlgCodeSync() {
+	try {
+		if (g_dlgCodeBase === null) g_dlgCodeBase = Number(window.DlgCode) || 0;
+		var open = false;
+		try { open = !!(g_searchbox && !g_searchbox.hide); } catch (eSD1) { open = false; }
+		window.DlgCode = open ? (g_dlgCodeBase | 0x0080) : g_dlgCodeBase;
+	} catch (eSD) {}
+}
 // ---------------------------------------------------------------------------
 var MINI_MODE_WIDTH = 300;
 
 function setFoobarWindowWidth(newWidth) {
 	newWidth = Math.round(newWidth);
 	if (!(newWidth > 0)) return false;
-	/* JSplitter v4.4.2 起移除了旧版 FoobarWindow* / MoveFoobarWindow API（BREAKING CHANGE），
-	   新版统一用 FbWindow；这里优先走 FbWindow，旧插件继续走原路径。 */
+	/* JSplitter 4.4.2：改窗口尺寸走 fb.Window（FbWindow 实例）——Width 是它的可写属性。
+	   旧版的 window.FbWindow / FoobarWindowWidth / MoveFoobarWindow 在这个版本里都不生效，
+	   但它们不会报错、只会静默无效，所以每个分支都要读回校验。 */
+	function widthApplied(target) {
+		var got = 0;
+		try { got = Number(target.Width); } catch (e) { got = 0; }
+		return (got > 0 && Math.abs(got - newWidth) <= 2);
+	}
+	try {
+		if (fb.Window) {
+			fb.Window.Width = newWidth;
+			if (widthApplied(fb.Window)) return true;
+			console.log("迷你模式：fb.Window.Width 写入未生效（目标 " + newWidth + "，实际 " + fb.Window.Width + "）");
+		}
+	} catch (eFbW) {}
 	try {
 		if (window.FbWindow) {
 			window.FbWindow.Width = newWidth;
-			return true;
+			if (widthApplied(window.FbWindow)) return true;
+			console.log("迷你模式：FbWindow.Width 写入未生效（目标 " + newWidth + "，实际 " + window.FbWindow.Width + "）");
 		}
 	} catch (eFb) {}
 	try {
@@ -781,6 +906,12 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 			g_uihacks.setMainWindowState(main_window_state);
 		}
 		layout_state.setValue(1);
+		/* 先在本地退出第 4 种形态：否则布局那边广播 rail_answer 会立刻触发一次重排，
+          正好落在下面 enableMaxSize 的 100ms 窗口里，把强制宽度顶掉。 */
+		if (g_railMode) {
+			g_railMode = false;
+			try { adapt_buttons_to_layout(); } catch (eRailMini) {}
+		}
 		g_uihacks.setMinWidth(globalProperties.miniMode_minwidth);
 		g_uihacks.setMinHeight(globalProperties.miniMode_minwidth);
 		g_uihacks.setMaxWidth(properties.miniMode_savedwidth);
@@ -800,6 +931,9 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 			g_uihacks.disableMaxSize();
 			setFoobarWindowWidth(miniWidth);
 		}, 100);
+		/* DUI 重排、标题栏重算都可能把刚设好的宽度顶回来：再补两拍 */
+		window.SetTimeout(function () { try { setFoobarWindowWidth(miniWidth); } catch (eMW2) {} }, 300);
+		window.SetTimeout(function () { try { setFoobarWindowWidth(miniWidth); } catch (eMW3) {} }, 600);
 		adapt_buttons_to_layout();
 	} else {
 		var restoreWidth = properties.fullMode_savedwidth;
@@ -832,6 +966,8 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 			setFoobarWindowWidth(restoreWidth);
 		}, 100);
 		setFoobarWindowWidth(restoreWidth);
+		window.SetTimeout(function () { try { setFoobarWindowWidth(restoreWidth); } catch (eRW2) {} }, 300);
+		window.SetTimeout(function () { try { setFoobarWindowWidth(restoreWidth); } catch (eRW3) {} }, 600);
 		adapt_buttons_to_layout();
 		set_main_btns_visibility();
 	}
@@ -943,8 +1079,18 @@ function adapt_buttons_to_layout(){
 				window_btns.setBtnsHeight(50);		
 				additional_btns.setBtnsWidth(btn.width_small_btns_compact_big);				
 			}
+			/* 第 4 种形态：紧凑栏减掉主区入口按钮（它们已经在侧栏里）。
+			   主菜单、右侧小开关、窗口键位置一律照旧（折叠按钮已挪到侧栏面板）。 */
+			compact_btns.x = 0;
+			if (g_railMode) {
+				buttons.Library.setVisibility(false);
+				buttons.Playlists.setVisibility(false);
+				buttons.Artist_Bio.setVisibility(false);
+				buttons.Visualization.setVisibility(false);
+			}
 			
 		} else {
+			compact_btns.x = 0;
 			topleft_btns.setBtnsHeight(btn.height-3);
 			topleft_btns.setPadding([0,7,0,2]);
 			main_panel_btns.x = 17;
@@ -962,6 +1108,8 @@ function adapt_buttons_to_layout(){
 		main_panel_btns.txtYAdjust(compact_titlebar.isEqual(2)?0:1);
 		if(properties.toUpperCase) main_panel_btns.toUpperCase(true);
 		if(!properties.showPanelBtnText) main_panel_btns.displayLabel(false);
+		/* 从第 4 种形态退回老三种：把为侧栏藏掉的入口按钮按宽度规则放回来 */
+		if (!g_railMode) { try { set_main_btns_visibility(); } catch (eSMV) {} }
 	}
 	g_searchbox.adapt_look_to_layout();
 	if(!properties.show_visualization) buttons.Visualization.setVisibility(false);
@@ -1003,6 +1151,14 @@ function drawAllButtons(gr) {
 }
 
 function set_main_btns_visibility(){
+	/* 第 4 种形态：主区入口按钮固定不画（7 个入口都在左侧侧栏里） */
+	if (g_railMode) {
+		buttons.Playlists.setVisibility(false);
+		buttons.Artist_Bio.setVisibility(false);
+		buttons.Library.setVisibility(false);
+		buttons.Visualization.setVisibility(false);
+		return;
+	}
 	if((compact_titlebar.isActive() && !g_searchbox.hide) || layout_state.isEqual(1)) {
 		buttons.Playlists.setVisibility(false);
 		buttons.Artist_Bio.setVisibility(false);
@@ -1028,6 +1184,10 @@ function set_main_btns_visibility(){
 function on_size(w, h) {
     ww = Math.max(w,globalProperties.miniMode_minwidth);
     wh = h;
+	/* 第 4 种形态走紧凑栏同一套尺寸规则（虚拟 compact=1/2），按钮组不再右移 */
+	if (g_railMode) {
+		try { compact_btns.x = 0; } catch (eRailShift) {}
+	}
 	var fullscreen =  g_uihacks.getFullscreenState();
 	var mainWindowState =  g_uihacks.getMainWindowState();
 	if(layout_state.isEqual(0)){
@@ -1110,6 +1270,22 @@ function pseudoCaptionFollow(x, y){
 
 function SetPseudoCaption(){
 	g_pc_key = "";
+	if (g_railMode) {
+		/* 第 4 种形态沿用紧凑栏那套拖动区算法，只把起点让出左侧箭头 */
+		g_pc_zone = PC_ZONE_NONE;
+		if (g_searchbox && g_searchbox.hide) {
+			var railLeftW = 0, railRightW = 0;
+			try { railLeftW = compact_btns.getWidth(); } catch (eRLW) { railLeftW = 0; }
+			try { railRightW = window_btns.getWidth(); } catch (eRRW) { railRightW = 0; }
+			try {
+				g_uihacks.SetPseudoCaption(railLeftW, 8,
+					Math.max(0, ww - railLeftW - railRightW), railBarH() - 8);
+			} catch (ePCrail) {}
+		} else {
+			try { g_uihacks.SetPseudoCaption(0, 8, 0, 28); } catch (ePCrail2) {}
+		}
+		return;
+	}
 	if(layout_state.isEqual(0)) {
 		if(!compact_titlebar.isActive()){
 			var gap = pseudoCaptionGapRect();
@@ -1142,7 +1318,7 @@ function on_paint(gr) {
 	} catch (ePT) {}
 	gr.SetTextRenderingHint(globalProperties.TextRendering);
 
-
+	/* 第 4 种形态：走紧凑栏同一套绘制（虚拟 compact=1/2），最后叠箭头与曲目信息 */
     drawAllButtons(gr);
 	g_panel.draw();
 
@@ -1151,32 +1327,35 @@ function on_paint(gr) {
 	}
 
 	if(layout_state.isEqual(0)){
+		/* 第 4 种形态：搜索框左边让出箭头位、右边界不动——宽度已在 on_size 里减掉，
+		   这里不能再额外加偏移，否则右边界会顶到窗口键 */
 		g_searchbox.draw(gr, ww - g_searchbox.w - cSearchBox.marginRight, cSearchBox.marginTop);
 	} else {
 		g_searchbox.draw(gr, cSearchBox.marginLeft, cSearchBox.marginTop);
 	}
 
+	if (g_railMode) { try { railPaintExtras(gr); } catch (eRPE) {} }
+
 }
-/* ===== 模式 5：MPV 视频自动切换 =====
-   装了 foo_mpv、布局里有 mpv 元素、且当前曲目是视频文件 → 自动进模式 5；
+/* ===== 模式 5：视频面板自动切换 =====
+   装了 foo_ui_webview2、布局里有 caption 为 "video" 的面板、且当前曲目是视频文件 → 自动进模式 5；
    换到音频曲目或停止 → 回到进之前的模式。
    用户手动把模式从 5 切走以后，本曲不再被拉回（见 onPanelSettingChanged）。
-   迷你布局、MilkDrop 全屏时不动作。没装插件时模式 5 是 ESL 歌词页，只手动进入。 */
-var MPV_VIDEO_EXT = ['mp4','mkv','webm','avi','mov','m4v','ts','m2ts','mpg','mpeg','wmv','flv','3gp','ogv','vob'];
+   迷你布局、MilkDrop 全屏时不动作。没有 video 面板时模式 5 只手动进入，不再退化成歌词页。
+   曲目扩展名只认 Chromium 能解的容器：mp4 / m4v / mov / webm / ogv。
+   mkv、avi、ts 这类 web 端解不了，自动切过去只会得到一块黑屏，所以不触发。 */
+var MPV_VIDEO_EXT = ['mp4','m4v','mov','webm','ogv'];
 var mpvAutoPrev = -1;           /* 自动进入前的模式号；-1 = 当前不是自动进入的 */
 var mpvAutoTimer = 0;
 var mdFullscreenHere = false;   /* 跟随 Eole_layout 的 MilkDrop 全屏广播 */
 
 function mpvPluginOn() {
-	try { return !!utils.CheckComponent('foo_mpv', true); } catch(e) { return false; }
+	try { return !!utils.CheckComponent('foo_ui_webview2', true); } catch(e) { return false; }
 }
-/* 布局里真的有一个 mpv 元素（GetPanel 按 caption 找）。没有就不自动切，
-   否则会把用户从正在看的界面上拉到一张歌词页去。 */
+/* 布局里有没有那个视频面板：caption 固定为 "video"，不做候选名也不遍历兜底。
+   没有就不自动切，否则会把用户从正在看的界面上拉到一块空白上。 */
 function mpvPanelPresent() {
-	try {
-		return !!(window.GetPanel('MPV') || window.GetPanel('mpv') ||
-			window.GetPanel('mpv Video') || window.GetPanel('Video player'));
-	} catch(e) { return false; }
+	try { return !!window.GetPanel('video'); } catch(e) { return false; }
 }
 /* 布局里是否已有主题设置面板。
    先按 caption 问一次；找不到就遍历子面板，用 PanelObject.Name / Text 兜底——
@@ -1273,7 +1452,7 @@ function mpvTrackIsVideo() {
 function mpvAutoApply() {
 	if(layout_state.isEqual(1)) return;          /* 迷你布局：没有主区 */
 	if(mdFullscreenHere) return;                 /* MilkDrop 全屏：先别动 */
-	/* 没装插件（模式 5 是 ESL 歌词页）、布局里没有 mpv 元素、或当前曲目不是视频
+	/* 没装 foo_ui_webview2、布局里没有 caption 为 video 的面板、或当前曲目不是视频
 	   → 退出自动进入的模式 5 */
 	if(!mpvPluginOn() || !mpvPanelPresent() || !mpvTrackIsVideo()) { mpvAutoLeave(); return; }
 	var mode = parseInt(main_panel_state.value);
@@ -1415,8 +1594,8 @@ function on_mouse_rbtn_up(x, y){
 			/* MilkDrop 主面板（模式 4）。单选标记分开处理：1~4 是连续的主区模式，
 			   8 在主菜单 id 里被 5/6/7（全屏、迷你、切回标准）隔开，塞不进同一个 radio 区间 */
 			_menu.AppendMenuItem(MF_STRING, 8, "MilkDrop");
-			/* 模式 5：装了 foo_mpv 显示「MPV 视频」，没装显示「ESL 歌词」；模式号同为 5 */
-			_menu.AppendMenuItem(MF_STRING, 9, mpvPluginOn() ? "MPV 视频" : "ESL 歌词");
+			/* 模式 5：固定显示「视频」，面板 caption 就是 video */
+			_menu.AppendMenuItem(MF_STRING, 9, "视频");
 			/* 模式 6：主题设置页。布局里还没加 ThemeSettings 元素时置灰，避免点进去只看到媒体库 */
 			_menu.AppendMenuItem(themeSettingsPanelOn() ? MF_STRING : MF_GRAYED, 10, "主题设置");
 			if(!themeSettingsPanelOn()) _menu.AppendMenuItem(MF_GRAYED, 0, "   （布局里还没有 ThemeSettings 面板）");
@@ -1426,7 +1605,8 @@ function on_mouse_rbtn_up(x, y){
 			else if(_mpIdx === 4) _menu.CheckMenuItem(8, true);
 			else if(_mpIdx === 5) _menu.CheckMenuItem(9, true);
 			else _menu.CheckMenuItem(10, true);
-			_menu.AppendMenuItem(MF_STRING, 6, "迷你播放器");
+			/* 折叠侧边栏布局没有「迷你播放器」形态（侧栏只属于完整布局），置灰 */
+			_menu.AppendMenuItem(g_railMode ? MF_GRAYED : MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
 				_menu.AppendMenuItem(MF_STRING, 5, "退出全屏");
 			else
@@ -1509,14 +1689,24 @@ function draw_settings_menu(x,y){
 		var _menu_button = window.CreatePopupMenu();
         var idx;
 
+		/* 四种标题栏形态：前三种是原来的 0/1/2，第四种「折叠侧边栏」= 3。
+           四种之间可以随便切，切到 3 时布局会把 Sidebar 面板摆到左侧、标题栏变 40px；
+           切回 0/1/2 时布局把 Sidebar 收起来，完全回到原来的样子。 */
 		_menu.AppendMenuItem(MF_STRING, 1811, "标准两行标题栏");
 		_menu.AppendMenuItem(MF_STRING, 1812, "常规紧凑标题栏");
-		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");		
-		_menu.CheckMenuRadioItem(1811, 1813, (parseInt(compact_titlebar.getValue())+1811));
+		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");
+		_menu.AppendMenuItem(MF_STRING, 1815, "折叠侧边栏标题栏");
+		var tbMode = parseInt(compact_titlebar.getValue());
+		if (isNaN(tbMode)) tbMode = 0;
+		if (tbMode === 3) _menu.CheckMenuItem(1815, true);
+		else _menu.CheckMenuRadioItem(1811, 1813, tbMode + 1811);
 		
-		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1800, "标题栏显示曲目信息");
+		/* 侧栏形态既有入口按钮没有、又有曲目信息，所以这两项在 rail 态要能点：
+		   真·紧凑 1/2 才置灰（那两种栏本来就不画曲目信息） */
+		var tbInfoGray = compact_titlebar.isActive() && layout_state.isEqual(0) && !g_railMode;
+		_menu.AppendMenuItem(tbInfoGray?MF_GRAYED:MF_STRING, 1800, "标题栏显示曲目信息");
 		_menu.CheckMenuItem(1800, properties.tracktitle_ontop)
-		_menu.AppendMenuItem((compact_titlebar.isActive() && layout_state.isEqual(0))?MF_GRAYED:MF_STRING, 1809, "标题栏曲目信息格式...");
+		_menu.AppendMenuItem(tbInfoGray?MF_GRAYED:MF_STRING, 1809, "标题栏曲目信息格式...");
 		_menu.AppendMenuItem(MF_STRING, 1805, "面板按钮文字大写");
 		_menu.CheckMenuItem(1805, properties.toUpperCase)
 		_menu.AppendMenuItem(MF_STRING, 1810, "迷你主菜单按钮");
@@ -1662,6 +1852,27 @@ function draw_settings_menu(x,y){
 				window.Repaint();
 				window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePC) {} }, 200);
 				break;
+			case (idx == 1815):
+				/* 第 4 种形态：先问布局有没有 Sidebar 面板。没有就别切，
+				   否则会切成一张标题栏 40px、左侧却空一块的布局。 */
+				if (railPanelQuery() === 0) {
+					try {
+						fb.ShowPopupMessage('这套布局里还没有 Sidebar 面板，暂时切不到「折叠侧边栏」形态。\n\n' +
+							'做法：在 DUI 里加一个 JSplitter，Name 填 Sidebar，脚本照 profile\\Eole\\面板列表.txt ' +
+							'里「左侧折叠侧边栏」那一段（theme_common.js → DefinePanel(\'Sidebar\') → pss_switch.js ' +
+							'→ sidebar_rail.js），保存布局后再切这一档。', '折叠侧边栏');
+					} catch (ePM) {}
+					break;
+				}
+				btn_initialized = false;
+				compact_titlebar.setValue(3);
+				get_colors();
+				adapt_buttons_to_layout();
+				window.Repaint();
+				railAskState();
+				window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePC) {} }, 200);
+				window.SetTimeout(function () { try { railAskState(); } catch (eRAS) {} }, 600);
+				break;
 			case (idx == 1820):
 				var _cs0 = chromeRead();
 				_cs0.frame = !_cs0.frame;
@@ -1714,6 +1925,8 @@ function draw_settings_menu(x,y){
 				properties.show_visualization = !properties.show_visualization;
 				window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
 				if(main_panel_state.isEqual(3)) main_panel_state.setValue(0);
+				/* 侧栏里的「洛雪音源」入口跟着这条属性走：广播一次，侧栏据此增删那一项 */
+				try { window.NotifyOthers('rail_lxbox_visible', properties.show_visualization ? 1 : 0); } catch (eLXN) {}
 				get_colors();
 				adapt_buttons_to_layout();
 				window.Repaint();
@@ -1830,8 +2043,8 @@ function draw_layout_menu(x,y){
 		basemenu.AppendMenuItem(MF_GRAYED, 0, "MilkDrop 布局");
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(5)){
-		/* 模式 5（MPV 视频 / ESL 歌词）：同上，标题随插件安装状态走 */
-		basemenu.AppendMenuItem(MF_GRAYED, 0, mpvPluginOn() ? "MPV 视频布局" : "ESL 歌词布局");
+		/* 模式 5（视频）：同上，面板 caption 是 video */
+		basemenu.AppendMenuItem(MF_GRAYED, 0, "视频布局");
 		nowplaying.AppendTo(basemenu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(6)){
 		/* 模式 6（主题设置）：右栏照常保留 */
@@ -1899,21 +2112,18 @@ function draw_layout_menu(x,y){
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
         break;
 	case (idx == 4012):
-		globalProperties.fontAdjustement++;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(+1);
 		on_font_changed();
 		break;
 	case (idx == 4013):
-		globalProperties.fontAdjustement--;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(-1);
 		on_font_changed();
 		break;
 	case (idx == 4014):
-		globalProperties.fontAdjustement = 0;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(0);
 		on_font_changed();
 		break;
 	case (idx == 4021):
@@ -2153,7 +2363,7 @@ function draw_main_menu(x,y){
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(5)){
-		/* 模式 5（MPV 视频 / ESL 歌词）：复用可视化面板布局与深色开关 */
+		/* 模式 5（视频）：复用可视化面板布局与深色开关 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(6)){
@@ -2360,21 +2570,18 @@ function draw_main_menu(x,y){
 		toggleLayoutMode(0);get_colors();g_searchbox.adapt_look_to_layout();
 		break;
 	case (idx == 4012):
-		globalProperties.fontAdjustement++;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(+1);
 		on_font_changed();
 		break;
 	case (idx == 4013):
-		globalProperties.fontAdjustement--;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(-1);
 		on_font_changed();
 		break;
 	case (idx == 4014):
-		globalProperties.fontAdjustement = 0;
-		window.SetProperty("全局·字体调整", globalProperties.fontAdjustement);
-		window.NotifyOthers('set_font',globalProperties.fontAdjustement);
+		/* 与设置页按钮/滚轮同源，统一走 theme_common 的实现 */
+		tsFontStepGlobal(0);
 		on_font_changed();
 		break;
 	case (idx == 4021):
@@ -2637,6 +2844,31 @@ function on_notify_data(name, info) {
 	}
 	/* 洛雪音源广播（流播项的歌手 / 歌名）由公共文件统一处理 */
 	if (lxNotify(name, info)) return;
+	/* 布局回答「有没有 Sidebar 面板」：切第 4 种形态前用得到 */
+	if (name === 'rail_panel_answer') {
+		g_railPanelState = (info === true || String(info) === '1' || Number(info) === 1) ? 1 : 0;
+		return;
+	}
+	/* 侧栏问「洛雪音源入口要不要摆」：答案就是标题栏这条 show_visualization 属性 */
+	if (name === 'rail_lxbox_query') {
+		try { window.NotifyOthers('rail_lxbox_visible', properties.show_visualization ? 1 : 0); } catch (eLXQ) {}
+		return;
+	}
+	/* Eole_layout 回答「这套布局是不是第 4 种（折叠侧边栏）」：
+	   是就整条自己画 40px 单行栏，不是就继续走原来的三形态，一行不动。 */
+	if (name === 'rail_answer') {
+		var railOn = (info === true || String(info) === '1' || Number(info) === 1);
+		if (railOn !== g_railMode) {
+			g_railMode = railOn;
+			btn_initialized = false;
+			if (railOn) { try { railFirstInit(); } catch (eRF) {} }
+			try { get_colors(); } catch (eRG) {}
+			try { adapt_buttons_to_layout(); } catch (eRAd) {}
+			try { SetPseudoCaption(); } catch (eRC) {}
+			window.Repaint();
+		}
+		return;
+	}
 	/* 主题设置面板点「退出设置」时来这里：模式记忆写在标题栏自己的面板属性里，
 	   设置面板用 window.GetProperty 读不到（属性是按面板隔离的），
 	   所以只能由标题栏按记忆值把主区模式切回去。 */
@@ -2797,17 +3029,31 @@ function on_notify_data(name, info) {
 						}
 					}
 				} else if (tbKey === "compacttitlebar") {
-					/* 标题栏形态（标准两行 / 常规紧凑 / 加宽紧凑）：与菜单 1811/1812/1813
-					   那一整套动作完全对齐 —— 状态文件已经由设置页的 setValue 移好，
-					   这里只写本地 .value（再 setValue 会二次移动文件、还会把旧文件搬错）；
-					   顺便补上菜单里那几步：重建按钮、重算配色、重排布局、重设伪标题栏拖动区。 */
+					/* 标题栏形态（标准两行 / 常规紧凑 / 加宽紧凑 / 折叠侧边栏）：与菜单
+					   1811/1812/1813/1815 那一整套动作对齐 —— 状态文件已经由设置页的
+					   setValue 移好，这里只写本地 .value（再 setValue 会二次移动文件、
+					   还会把旧文件搬错）；顺便补上菜单里那几步：重建按钮、重算配色、
+					   重排布局、重设伪标题栏拖动区。 */
 					var cm = parseInt(tbVal, 10);
-					if (isNaN(cm) || cm < 0 || cm > 2) cm = 0;
+					if (isNaN(cm) || cm < 0 || cm > 3) cm = 0;
+					if (cm === 3 && railPanelQuery() === 0) {
+						/* 选第 4 种但布局里没有 Sidebar：提示并把状态改回能用的形态，
+						   否则下次启动还停在 3、标题栏却是标准两行。 */
+						try {
+							fb.ShowPopupMessage('这套布局里还没有 Sidebar 面板，切不到「折叠侧边栏」形态。\n\n' +
+								'做法：在 DUI 里加一个 JSplitter，Name 填 Sidebar，脚本照 profile\\Eole\\面板列表.txt ' +
+								'里「左侧折叠侧边栏」那一段，保存布局后再切这一档。', '折叠侧边栏');
+						} catch (ePMc) {}
+						cm = parseInt(compact_titlebar.getValue(), 10);
+						if (isNaN(cm) || cm < 0 || cm > 2) cm = 0;
+						try { compact_titlebar.setValue(cm); } catch (eCMb) {}
+					}
 					btn_initialized = false;
 					try { compact_titlebar.value = cm; } catch (eCMv) {}
 					get_colors();
 					adapt_buttons_to_layout();
 					window.Repaint();
+					if (cm === 3) railAskState();
 					window.SetTimeout(function () { try { SetPseudoCaption(); } catch (ePCx) {} }, 200);
 				} else if (tbKey === "titleformat") {
 					/* 同菜单 1809：弹输入框改「标题栏曲目信息格式」 */
@@ -3104,6 +3350,7 @@ oSearch = function() {
 	this.on_size = function() {
 		if(layout_state.isEqual(0) && compact_titlebar.isActive()){
 			var btns_width = ((properties.showLightswitchBtn)?buttons.Lightswitch.w:0) + ((properties.showConfigLayoutBtn)?buttons.ConfigLayout.w:0) + ((properties.showThemeSettingsBtn)?buttons.ThemeSettings.w:0) + ((properties.showRightSidebarBtn)?buttons.RightSidebar.w:0) + ((properties.showFullscreenBtn)?buttons.Fullscreen.w:0) + ((properties.showNowPlayingBtn)?buttons.NowPlaying.w:0);
+			/* 第 4 种形态：搜索框与紧凑栏同一公式，不再让出箭头位 */
 			this.setSize(ww - window_btns.getWidth() - buttons.Settings.w - 10 - btns_width, wh-cSearchBox.marginTop-cSearchBox.marginBottom, g_fsize);
 		} else if(layout_state.isEqual(0)){
 			this.setSize(cSearchBox.width, wh-cSearchBox.marginTop-cSearchBox.marginBottom, g_fsize);
@@ -3127,6 +3374,7 @@ oSearch = function() {
 		}
 		if(compact_titlebar.isActive())	g_panel.on_size_changed();
 		set_main_btns_visibility();
+		try { searchDlgCodeSync(); } catch (eSDT) {}
 		g_searchbox.repaint();
 	}
     this.adapt_look_to_layout = function() {
@@ -3152,7 +3400,7 @@ oSearch = function() {
 				case (main_panel_state.isEqual(3) && properties.visualization_dark_theme):
 				/* 模式 4（MilkDrop）搜索框与模式 3 同开关，不再强制深色 */
 				case (main_panel_state.isEqual(4) && properties.visualization_dark_theme):
-				/* 模式 5（MPV 视频 / ESL 歌词）同上 */
+				/* 模式 5（视频）同上 */
 				case (main_panel_state.isEqual(5) && properties.visualization_dark_theme):
 				/* 模式 6（主题设置）同上 */
 				case (main_panel_state.isEqual(6) && properties.visualization_dark_theme):
@@ -3309,9 +3557,8 @@ oSearch = function() {
 		}
 	};
 	this.on_init = function() {
-		/* 占位文字“搜索...”用大一号的 normal（比原来的 min1 大 1 号），
-		   真正输入的搜索词仍用 min1，避免整条框被撑高 */
-		this.inputbox = new oInputbox(this.w, this.h, "", "点击输入搜索词...", colors.search_txt , 0, 0, colors.selected_bg, g_launchSearch, "g_searchbox", undefined, "g_font.normal", "g_font.min1");
+		/* 输入文字从 min1 上调一档到 normal（与占位字同号），占位文字仍用 normal */
+		this.inputbox = new oInputbox(this.w, this.h, "", "点击输入搜索词...", colors.search_txt , 0, 0, colors.selected_bg, g_launchSearch, "g_searchbox", undefined, "g_font.normal", "g_font.normal");
         this.inputbox.autovalidation = properties.autosearch;
 		this.adapt_look_to_layout();
     };
@@ -3664,6 +3911,7 @@ function on_init(){
 	g_cursor = new oCursor();
 	g_tooltip = new oTooltip();
     g_searchbox = new oSearch();
+	try { searchDlgCodeSync(); } catch (eSD0) {}
 	g_searchHistory = new searchHistory;
 	g_searchHistory.readSearchHistoryIni();
 	adapt_buttons_to_layout();
@@ -3695,6 +3943,12 @@ function on_init(){
 		}, 200);
 	}
 	setTimeout(on_colours_changed, 100);
+	/* 侧栏要按「显示可视化标签页」决定要不要摆「洛雪音源」入口：先答一次问，再主动广播一次 */
+	try { window.NotifyOthers('rail_lxbox_visible', properties.show_visualization ? 1 : 0); } catch (eLX0) {}
+	/* 问一次「是不是第 4 种布局」：多问几拍，等布局把 Sidebar 面板和状态键都摆好 */
+	railAskState();
+	setTimeout(function () { railAskState(); }, 400);
+	setTimeout(function () { railAskState(); }, 1500);
 	setTimeout(function () {
 		window.NotifyOthers("library_dark_theme", properties.library_dark_theme);
 		window.NotifyOthers("playlists_dark_theme", properties.playlists_dark_theme);

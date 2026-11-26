@@ -1504,14 +1504,64 @@
     });
   }
 
-  /* 评论一律取网易云：曲目本身是网易云的直接用 ID，其它平台 / 本地文件按「歌名+歌手」匹配 */
-  function getComments(track) {
+  /* 评论：默认链网易云优先失败回退 QQ；force='wy' / 'tx' 强制单源（浮层源切换用） */
+  function getComments(track, force) {
     if (!track) return Promise.reject(new Error('没有正在播放的曲目'));
 
     function txFallback() {
       if (track.source !== 'tx') throw new Error('没能在网易云匹配到这首歌的评论');
       return txComments(track.songmid || track.mediaMid, 25);
     }
+
+    /* 强制 QQ 源：QQ 曲目直接用 songmid，其它平台先按「歌名+歌手」在 QQ 搜到对应歌 */
+    function txOnly() {
+      var mid = track.source === 'tx' ? (track.songmid || track.mediaMid) : '';
+      if (mid) return txComments(mid, 25);
+      return searchCandidates('tx', track, 5).then(function (list) {
+        var hit = (list && list.length && list[0]) || null;
+        var m2 = hit && (hit.songmid || hit.mediaMid || hit.id);
+        if (!m2) throw new Error('没能在 QQ 音乐匹配到这首歌的评论');
+        return txComments(m2, 25);
+      }, function () {
+        throw new Error('没能在 QQ 音乐匹配到这首歌的评论');
+      });
+    }
+
+    /* 强制网易云源：失败直接抛，不回退 QQ（回退是默认链的事） */
+    function wyOnly() {
+      function tryCands(list) {
+        var i = 0;
+        function next() {
+          if (i >= list.length) throw new Error('网易云没有匹配到这首歌的评论');
+          var hit = list[i++];
+          if (!hit || !hit.id) return next();
+          return wyComments(hit.id, 30).then(function (c) {
+            return (c && c.length) ? c : next();
+          }, function () { return next(); });
+        }
+        if (!list.length) throw new Error('网易云没有匹配到这首歌的评论');
+        return next();
+      }
+      function others(cands) {
+        return cands.filter(function (c) { return String(c.id) !== String(track.id); });
+      }
+      if (track.source === 'wy' && track.id) {
+        return wyComments(track.id, 30).then(function (list) {
+          if (list && list.length) return list;
+          return searchCandidates('wy', track, 6).then(function (cands) {
+            return tryCands(others(cands));
+          });
+        }, function () {
+          return searchCandidates('wy', track, 6).then(function (cands) {
+            return tryCands(others(cands));
+          });
+        });
+      }
+      return searchCandidates('wy', track, 6).then(tryCands);
+    }
+
+    if (force === 'tx') return txOnly();
+    if (force === 'wy') return wyOnly();
 
     /* 同名翻唱 / 钢琴版经常一条评论都没有，按相似度依次试 */
     function tryCandidates(list) {
@@ -1571,8 +1621,79 @@
       .replace(/[\s·・.\-_'’"“”()（）\[\]【】]/g, '');
   }
 
-  /* 歌手信息（网易云：搜索歌手 → 详情/简介，多个接口依次尝试） */
-  function artistInfo(name) {
+  /* Apple Music 艺人简介：iTunes Search 免 key 搜 artistId → 艺人页 ld+json 里拿简介正文和图 */
+  function appleArtistInfo(name) {
+    name = String(name || '').trim();
+    if (!name) return Promise.reject(new Error('不知道歌手是谁'));
+    var H = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+      'Accept-Language': 'zh-CN,zh;q=0.9'
+    };
+    /* 候选名逐一在 iTunes 搜（免 key），名字完全相等优先，其次取第一个 */
+    function findId() {
+      var cands = artistNameCandidates(name);
+      var i = 0;
+      function next() {
+        if (i >= cands.length) return Promise.resolve(null);
+        var q = cands[i++];
+        return fetchJson({
+          url: 'https://itunes.apple.com/search?term=' + encodeURIComponent(q) +
+               '&entity=musicArtist&country=CN&limit=5',
+          headers: { 'User-Agent': UA },
+          timeout: 15000
+        }).then(function (j) {
+          var arr = (j && j.results) || [];
+          var want = normArtistName(q);
+          for (var k = 0; k < arr.length; k++) {
+            if (arr[k] && arr[k].artistId && normArtistName(arr[k].artistName) === want) return arr[k];
+          }
+          if (arr.length && arr[0] && arr[0].artistId) return arr[0];
+          return next();
+        }, function () { return next(); });
+      }
+      return next();
+    }
+
+    /* 页面 <script type="application/ld+json"> 里的 MusicGroup：description 是整段简介，image 是艺人图 */
+    function parseLd(html, fallbackId) {
+      var m = /<script[^>]*type="application\/ld\+json"[^>]*>\s*([\s\S]*?)<\/script>/.exec(html);
+      var ld = null;
+      if (m) { try { ld = JSON.parse(m[1]); } catch (eP) { ld = null; } }
+      var desc = String((ld && ld.description) || '').replace(/\r\n?/g, '\n').trim();
+      if (!desc) throw new Error('Apple Music 没有这位歌手的简介');
+      var urlM = (ld && ld.url) ? /\/(\d+)(?:\?|$)/.exec(String(ld.url)) : null;
+      return {
+        id: (urlM ? Number(urlM[1]) : 0) || Number(fallbackId) || 0,
+        name: String((ld && ld.name) || ''),
+        pic: String((ld && ld.image) || ''),
+        brief: desc,
+        sections: [],
+        albums: 0,
+        songs: 0,
+        tracks: [],
+        hotComplete: false,
+        source: 'apple'
+      };
+    }
+
+    return findId().then(function (hit) {
+      if (!hit || !hit.artistId) throw new Error('Apple Music 没有找到这位歌手');
+      return http.request({
+        url: 'https://music.apple.com/cn/artist/-/' + hit.artistId,
+        headers: H,
+        timeout: 20000
+      }).then(function (r) {
+        return parseLd(String((r && r.body) || ''), hit.artistId);
+      }, function () {
+        throw new Error('Apple Music 页面拉取失败');
+      });
+    });
+  }
+
+  /* 歌手信息（网易云：搜索歌手 → 详情/简介，多个接口依次尝试）；force='apple' 走 Apple Music */
+  function artistInfo(name, force) {
+    if (force === 'apple') return appleArtistInfo(name);
     name = String(name || '').trim();
     if (!name) return Promise.reject(new Error('不知道歌手是谁'));
     var h = { 'User-Agent': UA, 'Referer': 'https://music.163.com/', 'Cookie': 'appver=2.0.2' };
@@ -1665,6 +1786,7 @@
           sections: res[1] || [],
           albums: ar.albumSize || a.albumSize || 0,
           songs: ar.musicSize || a.musicSize || 0,
+          source: 'wy',
           /* 热门歌曲（v1.9.21）：艺人介绍页左下的「热门歌曲 15 首」直接用这份，
              已经有完整 track（source/id/title/artist/duration），拿到就能点播 */
           tracks: d0.hots || [],

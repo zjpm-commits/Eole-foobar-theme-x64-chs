@@ -1,15 +1,15 @@
 {
-  "version": "2026.11.25-1255",
-  "generated": "2026-11-25T04:55:07Z",
+  "version": "2026.11.26-1243",
+  "generated": "2026-11-26T04:43:34Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
   ],
   "files": [
     {
-      "path": "Eole/DUI_eole_x64_chs.fth",
-      "mtime": 1795341150,
-      "md5": "c133fe624e3cb9626caeebe0e0b2a63c"
+      "path": "Eole/DUI_Eole_x64.fth",
+      "mtime": 1795662486,
+      "md5": "90414adb8643e4c7837733af290fae0c"
     },
     {
       "path": "Eole/preview.png",
@@ -3773,13 +3773,13 @@
     },
     {
       "path": "Eole/js/button.js",
-      "mtime": 1795411099,
-      "md5": "96b089db0679d63620ce564fce84ddeb"
+      "mtime": 1795600895,
+      "md5": "8cb8faeb764d292a8eaae299ec8d96cc"
     },
     {
       "path": "Eole/js/controls.js",
-      "mtime": 1795411099,
-      "md5": "3199cee7b292509e4362b90e2c25f079"
+      "mtime": 1795611203,
+      "md5": "a1362c070816f094366e10407080d6b1"
     },
     {
       "path": "Eole/js/coverpanel.js",
@@ -3788,13 +3788,13 @@
     },
     {
       "path": "Eole/js/Eole_layout.js",
-      "mtime": 1795418750,
-      "md5": "8bafd460d17742856e53c98e27d08413"
+      "mtime": 1795668207,
+      "md5": "5d52057f2cd14e45d0d63555eb9eaffb"
     },
     {
       "path": "Eole/js/graphicbrowser.js",
-      "mtime": 1795411099,
-      "md5": "01e05c9c626a169528c01524cf82ca0f"
+      "mtime": 1795611203,
+      "md5": "76165561aaa23f2a234c5aaa5ae4ba55"
     },
     {
       "path": "Eole/js/inputbox.js",
@@ -3803,13 +3803,13 @@
     },
     {
       "path": "Eole/js/library_tree.js",
-      "mtime": 1795411099,
-      "md5": "449e3a9a58893b46a0dd39e0ed7e5570"
+      "mtime": 1795611203,
+      "md5": "dedfbe7b2740fc7d2959b4ad00545f49"
     },
     {
       "path": "Eole/js/lyrics_title.js",
-      "mtime": 1795411099,
-      "md5": "ad5168de16c53a8770f0175228950555"
+      "mtime": 1795611203,
+      "md5": "6cc017cdaf525fa96eaf9211ae5c193b"
     },
     {
       "path": "Eole/js/milkdrop_panel.js",
@@ -3818,48 +3818,53 @@
     },
     {
       "path": "Eole/js/playlistheader.js",
-      "mtime": 1795412644,
-      "md5": "3c47979714ac7bc91f8ba83648306fc1"
+      "mtime": 1795612361,
+      "md5": "6387652428d4f2054d195d9a889e5265"
     },
     {
       "path": "Eole/js/pss_switch.js",
-      "mtime": 1795411099,
-      "md5": "5d6152f640109f17ab7ae7dda8ac8039"
+      "mtime": 1795662077,
+      "md5": "86909813dc283aef2184ef958df6b591"
     },
     {
       "path": "Eole/js/refacets.js",
-      "mtime": 1795411099,
-      "md5": "efbf80f9eed92b6285f209ae36bbdbd7"
+      "mtime": 1795611203,
+      "md5": "c7297cd7acbfc2127d9d2a309cc37620"
+    },
+    {
+      "path": "Eole/js/sidebar_rail.js",
+      "mtime": 1795662080,
+      "md5": "3b6d34aed2c4e419caa8f94a09e1a429"
     },
     {
       "path": "Eole/js/smoothplaylist.js",
-      "mtime": 1795582455,
-      "md5": "2c89709aff1a9b0d0611b0a408611eac"
+      "mtime": 1795611203,
+      "md5": "2f3575f865eabf5284427d5c84c4c4ec"
     },
     {
       "path": "Eole/js/smoothplaylistmanager.js",
-      "mtime": 1795411099,
-      "md5": "d7c3d250b7f90e3696af81ef445b490d"
+      "mtime": 1795611203,
+      "md5": "4c9f61d114206f9cc8649512a6184055"
     },
     {
       "path": "Eole/js/theme_common.js",
-      "mtime": 1795582474,
-      "md5": "04e8f1297c9ab9a67781deb1839a6848"
+      "mtime": 1795668207,
+      "md5": "53d3b0189c64b44c46e01a8f34612f26"
     },
     {
       "path": "Eole/js/theme_settings.js",
-      "mtime": 1795505540,
-      "md5": "ee35ce7a6bf1bd15963ba9c323458e7f"
+      "mtime": 1795662074,
+      "md5": "d8cfced2deff9daaa90963c1ee66b06b"
     },
     {
       "path": "Eole/js/title_bar.js",
-      "mtime": 1795418644,
-      "md5": "b3beb33e0b7ff83f5181eac85c482ba4"
+      "mtime": 1795662059,
+      "md5": "3ae5fe99333a0c36518f48d63d193ec2"
     },
     {
       "path": "Eole/js/TrackInfo.js",
-      "mtime": 1795411099,
-      "md5": "aff49b318fb0c14785a0caa4cf6f0c73"
+      "mtime": 1795662060,
+      "md5": "511f716fa8bd705926d3cb498701b5c4"
     },
     {
       "path": "Lxbox/放到profile文件夹下然后用jsplitter面板加载.js",
@@ -3893,13 +3898,13 @@
     },
     {
       "path": "Lxbox/main.js",
-      "mtime": 1795533933,
-      "md5": "252a9645afdf2ec3224f3b9bd0802a47"
+      "mtime": 1795611586,
+      "md5": "09f35c0caa8c1f0fe2b87dd351abf6a2"
     },
     {
       "path": "Lxbox/providers.js",
-      "mtime": 1794649656,
-      "md5": "9a7cd719ad07d29c1bef07b78486fa55"
+      "mtime": 1795592040,
+      "md5": "0ef6d71fa33561759d92dd6c8daaf849"
     },
     {
       "path": "Lxbox/README.md",
@@ -3940,9 +3945,16 @@
       "path": "Lxbox/tools/lx_tag.ps1",
       "mtime": 1794648128,
       "md5": "8d2288344502f6aaa31fa836e5626996"
+    },
+    {
+      "path": "webview-ui/video/index.html",
+      "mtime": 1795668177,
+      "md5": "874f0d8f5c09204e1a30b23fba41377e"
     }
   ],
   "removed": [
-    "Eole/js/ts_update.ps1"
+    "Eole/js/ts_update.ps1",
+    "mpv/mpv.conf",
+    "mpv/input.conf"
   ]
 }

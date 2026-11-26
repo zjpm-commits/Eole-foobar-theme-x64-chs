@@ -132,7 +132,7 @@ var properties_common = {
     headerBarPaddingTop: 2,
     enableFullScrollEffectOnFocusChange: false,
 	margin_bottom:0,
-	panelFontAdjustement: 0,
+	panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
 	extraBottomRows: 1,
 	load_image_from_cache_direct:true,
 	TFsorting: window.GetProperty("主面板·播放列表排序格式",""),

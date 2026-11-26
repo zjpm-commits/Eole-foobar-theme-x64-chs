@@ -49,7 +49,7 @@ var WSH_LEGACY_TITLE_FORMATS = [
 ];
 var properties = {
 	panelName: 'lyrics_title',
-	panelFontAdjustement: window.GetProperty("主面板·面板字体调整", 0),
+	panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
     enableDiskCache: window.GetProperty("封面·磁盘缓存", true),
     wallpaperdisplay: window.GetProperty("壁纸(0=填充 1=适应 2=拉伸)", 2),
 	showwallpaper: window.GetProperty("显示·显示壁纸", false),
@@ -189,6 +189,9 @@ function on_paint(gr) {
 }
 function on_font_changed() {
 	build_header_font();
+	/* 字体族变了：清掉「已应用」标记，让 ESLyric 重新取字体 */
+	esl_font_applied = false;
+	applyESLyricStyle();
 	lyricsText_Width = -1;
     all_btns.calculateSize(true);
 	window.Repaint();

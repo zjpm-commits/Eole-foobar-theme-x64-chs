@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Eole · 视频</title>
+<style>
+  :root{
+    --accent:#b05b24;
+    --text:#d8d8d8;
+    --dim:#8a8a8a;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#000;color:var(--text);overflow:hidden;
+    font:12px/1.4 "Segoe UI","Microsoft YaHei UI",sans-serif;-webkit-user-select:none;user-select:none}
+  #stage{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#000}
+  #v{width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;background:#000;
+    outline:none;display:block}
+
+  /* 空状态：没有视频曲目 / 正在加载 / 出错 */
+  #empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:12px;color:var(--dim);pointer-events:none;transition:opacity .25s}
+  #empty.hide{opacity:0}
+  #spin{width:22px;height:22px;border:2px solid #333;border-top-color:var(--accent);
+    border-radius:50%;animation:sp 1s linear infinite;display:none}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  #empty b{font-weight:600;color:#e8e8e8;letter-spacing:1.5px;font-size:13px}
+  #msg{font-size:11.5px;text-align:center;padding:0 24px;line-height:1.6}
+
+  /* 底部信息条：鼠标动一下才出现，3 秒后自己淡出 */
+  #hud{position:absolute;left:0;right:0;bottom:0;padding:10px 16px 12px;
+    background:linear-gradient(to top,rgba(0,0,0,.78),rgba(0,0,0,0));
+    opacity:0;transition:opacity .2s;pointer-events:none}
+  #hud.show{opacity:1}
+  #title{font-size:11.5px;color:#cfcfcf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #meta{font-size:10.5px;color:var(--dim);margin-top:2px}
+  #bar{height:2px;background:rgba(255,255,255,.14);margin-top:7px;position:relative;overflow:hidden}
+  #fill{position:absolute;left:0;top:0;bottom:0;width:0;background:var(--accent)}
+</style>
+</head>
+<body>
+<div id="stage">
+  <video id="v" muted playsinline preload="auto"></video>
+  <div id="empty">
+    <div id="spin"></div>
+    <b>视频</b>
+    <span id="msg">等待视频曲目</span>
+  </div>
+  <div id="hud">
+    <div id="title">—</div>
+    <div id="meta"></div>
+    <div id="bar"><div id="fill"></div></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var bridge = window.fb2k || null;
+  var v = document.getElementById('v');
+  var empty = document.getElementById('empty');
+  var spin = document.getElementById('spin');
+  var msg = document.getElementById('msg');
+  var hud = document.getElementById('hud');
+  var titleEl = document.getElementById('title');
+  var metaEl = document.getElementById('meta');
+  var fillEl = document.getElementById('fill');
+
+  /* 只认 Chromium 能解的容器，其余交给 foobar2000 照常播放 */
+  var VIDEO_RE = /\.(mp4|m4v|mov|webm|ogv)$/i;
+  /* 时钟允许的误差：50ms 以内不动，50~250ms 微调播放速率，超过 250ms 直接 seek */
+  var TOL_FINE = 0.05;
+  var TOL_SEEK = 0.25;
+  var TICK_MS = 200;
+
+  var S = {
+    path: '', subsong: 0, duration: 0, ready: false, loading: false,
+    wantPlay: false, tick: 0, hudTimer: 0, seekLockUntil: 0, lastSrc: '',
+    frameDone: false, size: 0
+  };
+
+  /* ---------------------------------------------------------- 基础设施 */
+  function invoke(name, params) {
+    if (!bridge) { return Promise.reject(new Error('fb2k 桥未注入')); }
+    return Promise.resolve(bridge.invoke(name, params || {})).then(function (r) {
+      if (r && r.success === false) { throw new Error(name + ' 失败：' + (r.error || r.code || 'unknown')); }
+      return r;
+    });
+  }
+
+  /* FB 的 track.path 是 file://C:\... 形式，absolutePath 才是干净路径 */
+  function nativePath(t) {
+    var p = (t && (t.absolutePath || t.path)) || '';
+    if (/^file:\/{2,3}/i.test(p)) {
+      p = p.replace(/^file:\/{2,3}/i, '');
+      if (/^\/[A-Za-z]:/.test(p)) { p = p.slice(1); }
+      p = p.replace(/\//g, '\\');
+      try { p = decodeURIComponent(p); } catch (e) {}
+    }
+    return p;
+  }
+
+  /* 仅当 getStreamUrl 不可用时才用（虚拟主机以外的直读通道） */
+  function fileUrl(p) {
+    var s = String(p).replace(/\\/g, '/');
+    if (s.slice(0, 2) === '//') { return 'file:' + s; }
+    var parts = s.split('/');
+    var enc = parts.map(function (seg, i) {
+      if (i === 0 && /^[A-Za-z]:$/.test(seg)) { return seg; }
+      return encodeURIComponent(seg);
+    }).join('/');
+    if (enc.charAt(0) === '/') { enc = enc.slice(1); }
+    return 'file:///' + enc;
+  }
+
+  function setEmpty(text, spinning) {
+    if (text === null) {
+      empty.classList.add('hide');
+      return;
+    }
+    empty.classList.remove('hide');
+    msg.textContent = text;
+    spin.style.display = spinning ? 'block' : 'none';
+  }
+
+  function showHud(text, meta) {
+    if (text) { titleEl.textContent = text; }
+    if (meta !== undefined) { metaEl.textContent = meta; }
+    hud.classList.add('show');
+    if (S.hudTimer) { clearTimeout(S.hudTimer); }
+    S.hudTimer = setTimeout(function () { hud.classList.remove('show'); }, 3000);
+  }
+
+  function baseName(p) {
+    var s = String(p || '');
+    var i = s.lastIndexOf('\\');
+    if (i < 0) { i = s.lastIndexOf('/'); }
+    return i >= 0 ? s.slice(i + 1) : s;
+  }
+
+  function fmtTime(x) {
+    if (!isFinite(x) || x < 0) { return '00:00'; }
+    var m = Math.floor(x / 60), s = Math.floor(x % 60);
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ---------------------------------------------------------- 载入视频 */
+  function clearVideo(reason) {
+    S.path = ''; S.ready = false; S.wantPlay = false; S.lastSrc = '';
+    try { v.pause(); } catch (e) {}
+    v.removeAttribute('src');
+    try { v.load(); } catch (e) {}
+    setEmpty(reason || '等待视频曲目', false);
+  }
+
+  function loadTrack(track) {
+    var t = track;
+    if (t && !t.path && t.track) { t = t.track; }   /* 兼容包一层 track 的格式 */
+    if (!t || !(t.path || t.absolutePath)) { clearVideo('等待视频曲目'); return; }
+
+    var p = nativePath(t);
+    if (!p || !VIDEO_RE.test(p)) { clearVideo('当前不是视频曲目'); return; }
+
+    S.path = p;
+    S.subsong = t.subsong || 0;
+    S.duration = t.duration || 0;
+    S.loading = true;
+    S.frameDone = false;          /* 新曲目：壁纸要重新取图 */
+    setEmpty('正在载入视频', true);
+    showHud(baseName(p), '载入中');
+
+    /* 先把上一首的帧壁纸撤掉：新图没出来之前不许显示别人的画面。
+       删除失败（本来就没有）当正常情况，写完时间戳让主题重画一次。 */
+    invoke('file.delete', { path: '%profile%\\webview-ui\\video-frame\\current.jpg', moveToTrash: false })
+      .catch(function () {})
+      .then(function () {
+        return invoke('file.write', {
+          path: '%profile%\\webview-ui\\.video_frame',
+          content: 'c' + Date.now(),
+          atomic: true
+        });
+      })
+      .catch(function () {});
+
+    invoke('media.getStreamUrl', { path: p }).then(function (r) {
+      S.lastSrc = r.url;
+      S.size = r.size || 0;
+      v.crossOrigin = 'anonymous';
+      v.src = r.url;
+      if (r.size) {
+        showHud(baseName(p), Math.round(r.size / 1048576) + ' MB · ' + (r.mimeType || 'video'));
+      }
+      try { v.load(); } catch (e) {}
+    }).catch(function (err) {
+      /* 虚拟主机通道不通时退回 file:// 直读 */
+      var u = fileUrl(p);
+      S.lastSrc = u;
+      v.removeAttribute('crossorigin');
+      v.src = u;
+      try { v.load(); } catch (e) {}
+      showHud(baseName(p), 'file:// 直读（' + (err && err.message ? err.message : 'stream 不可用') + '）');
+    });
+  }
+
+  /* ---------------------------------------------------------- 首帧壁纸 */
+  /* 视频文件没有内嵌封面，全屏壁纸会空着。取图顺序：
+     ① 容器里嵌的海报图（mp4/mov 的 moov → udta → meta → ilst → covr）
+     ② 没有海报：用一只隐藏的探针 video 沿时间轴找「有画面」的帧，跳过黑场 / 纯色
+     ③ 都没有就什么都不写，主题照旧退回纯色壁纸
+     写出去的文件统一转成 960px 宽的 jpg，主题只认一个路径。 */
+  var FRAME_MAX_W = 960;
+  var PROBE_TIMES = [1.5, 3, 5, 8, 12, 20];
+  var PROBE_MIN_LUMA = 14;      /* 平均亮度低于这个基本就是黑场 */
+  var PROBE_MIN_SD = 6;         /* 亮度方差太小 → 纯色片头 / 黑底字幕 */
+
+  function fsLogFrame(text) {
+    try { console.log('[EoleVideo] ' + text); } catch (e) {}
+  }
+
+  /* 画成 jpg 并落盘，再写时间戳让主题重画壁纸 */
+  function writeFrame(dataUrl) {
+    var b64 = String(dataUrl || '').replace(/^data:image\/[a-z+]+;base64,/, '');
+    if (!b64) { return Promise.reject(new Error('空图')); }
+    return invoke('file.write', {
+      path: '%profile%\\webview-ui\\video-frame\\current.jpg',
+      content: 'base64:' + b64,
+      encoding: 'binary',
+      atomic: true
+    }).then(function () {
+      return invoke('file.write', {
+        path: '%profile%\\webview-ui\\.video_frame',
+        content: 'f' + Date.now(),
+        atomic: true
+      });
+    });
+  }
+
+  /* 任意来源的图（海报 bytes → data URL，或探针画面）统一缩到 960 宽再转 jpg */
+  function toJpeg(source, w, h) {
+    return new Promise(function (resolve, reject) {
+      var im = new Image();
+      im.onload = function () {
+        var nw = im.naturalWidth || w || 0, nh = im.naturalHeight || h || 0;
+        if (!nw || !nh) { reject(new Error('图尺寸为 0')); return; }
+        var cw = Math.min(FRAME_MAX_W, nw);
+        var ch = Math.max(1, Math.round(nh * cw / nw));
+        var cv = document.createElement('canvas');
+        cv.width = cw; cv.height = ch;
+        cv.getContext('2d').drawImage(im, 0, 0, cw, ch);
+        try { resolve({ url: cv.toDataURL('image/jpeg', 0.85), w: cw, h: ch }); }
+        catch (e) { reject(e); }
+      };
+      im.onerror = function () { reject(new Error('图片解码失败')); };
+      im.src = source;
+    });
+  }
+
+  /* ---------------------------------------------------------- ① 海报图 */
+  function rangeBytes(url, start, end) {
+    return fetch(url, { headers: { Range: 'bytes=' + start + '-' + end } })
+      .then(function (r) {
+        if (!r.ok && r.status !== 206) { throw new Error('HTTP ' + r.status); }
+        return r.arrayBuffer();
+      })
+      .then(function (ab) { return new Uint8Array(ab); });
+  }
+
+  function boxMeta(u8, off) {
+    if (!u8 || off + 8 > u8.length) { return null; }
+    var dv = new DataView(u8.buffer, u8.byteOffset);
+    var size = dv.getUint32(off);
+    var type = String.fromCharCode(u8[off + 4], u8[off + 5], u8[off + 6], u8[off + 7]);
+    var hdr = 8;
+    if (size === 1) {
+      if (off + 16 > u8.length) { return null; }
+      size = dv.getUint32(off + 8) * 4294967296 + dv.getUint32(off + 12);
+      hdr = 16;
+    } else if (size === 0) {
+      size = u8.length - off;
+    }
+    if (size < hdr) { return null; }
+    return { size: size, type: type, hdr: hdr };
+  }
+
+  function readBox(url, start, len) {
+    var CH = 2048 * 1024;
+    var got = 0, parts = [];
+    function more() {
+      if (got >= len) {
+        var all = new Uint8Array(len), pos = 0;
+        for (var i = 0; i < parts.length; ++i) { all.set(parts[i], pos); pos += parts[i].length; }
+        return Promise.resolve(all);
+      }
+      var n = Math.min(CH, len - got);
+      return rangeBytes(url, start + got, start + got + n - 1).then(function (u8) {
+        if (!u8.length) { throw new Error('读到空数据'); }
+        parts.push(u8); got += u8.length;
+        return more();
+      });
+    }
+    return more();
+  }
+
+  /* 顶层逐个盒子跳，只把 moov 整块拉下来（非 faststart 的片子在文件尾部） */
+  function readMoov(url, total) {
+    var off = 0, guard = 0;
+    function step() {
+      if (guard++ > 32 || off + 8 > total) { return Promise.resolve(null); }
+      return rangeBytes(url, off, Math.min(total - 1, off + 15)).then(function (u8) {
+        var b = boxMeta(u8, 0);
+        if (!b) { return null; }
+        if (b.type === 'moov') { return readBox(url, off, Math.min(b.size, total - off)); }
+        off += b.size;
+        return step();
+      });
+    }
+    return step();
+  }
+
+  var COVR_PARENTS = { moov: 1, udta: 1, meta: 1, ilst: 1 };
+
+  function findCovr(u8, start, end, depth) {
+    if (depth > 6) { return null; }
+    var off = start;
+    while (off + 8 <= end) {
+      var b = boxMeta(u8, off);
+      if (!b) { return null; }
+      var body = off + b.hdr, bodyEnd = Math.min(end, off + b.size);
+      if (b.type === 'covr') {
+        var d = body;
+        while (d + 16 <= bodyEnd) {
+          var db = boxMeta(u8, d);
+          if (!db) { break; }
+          if (db.type === 'data') {
+            var kind = u8[d + 11] | 0;                  /* 13=jpeg 14=png */
+            var mime = kind === 14 ? 'image/png' : 'image/jpeg';
+            return { mime: mime, bytes: u8.subarray(d + 16, Math.min(bodyEnd, d + db.size)) };
+          }
+          d += db.size;
+        }
+        return null;
+      }
+      if (COVR_PARENTS[b.type]) {
+        var skip = (b.type === 'meta') ? 4 : 0;         /* meta 自带 4 字节 version/flags */
+        var got = findCovr(u8, body + skip, bodyEnd, depth + 1);
+        if (got) { return got; }
+      }
+      off = bodyEnd;
+    }
+    return null;
+  }
+
+  function bytesToDataUrl(bytes, mime) {
+    var CH = 0x8000, out = [];
+    for (var i = 0; i < bytes.length; i += CH) {
+      out.push(String.fromCharCode.apply(null, bytes.subarray(i, i + CH)));
+    }
+    return 'data:' + mime + ';base64,' + btoa(out.join(''));
+  }
+
+  function posterSource() {
+    if (!S.lastSrc || /^file:/i.test(S.lastSrc)) { return Promise.reject(new Error('没有可读的 stream URL')); }
+    return invoke('media.getStreamUrl', { path: S.path }).then(function (r) {
+      var url = r.url, total = r.size || S.size || 0;
+      if (!total) { throw new Error('文件大小未知'); }
+      return readMoov(url, total).then(function (moov) {
+        if (!moov) { throw new Error('没有 moov 盒'); }
+        var covr = findCovr(moov, 0, moov.length, 0);
+        if (!covr || !covr.bytes.length) { throw new Error('没有 covr 海报图'); }
+        return bytesToDataUrl(covr.bytes, covr.mime);
+      });
+    });
+  }
+
+  /* ---------------------------------------------------------- ② 跳过黑场找画面 */
+  var probe = null, probeSrc = '';
+
+  function ensureProbe() {
+    if (probe) { return probe; }
+    probe = document.createElement('video');
+    probe.muted = true;
+    probe.preload = 'auto';
+    probe.setAttribute('playsinline', '');
+    probe.style.cssText = 'position:absolute;left:-10000px;top:0;width:2px;height:2px;opacity:0;pointer-events:none;';
+    document.body.appendChild(probe);
+    return probe;
+  }
+
+  function resetProbe(src) {
+    var p = ensureProbe();
+    if (probeSrc !== src) {
+      probeSrc = src;
+      p.crossOrigin = 'anonymous';
+      p.src = src;
+      try { p.load(); } catch (e) {}
+    }
+    return p;
+  }
+
+  /* 把探针画面缩到 64x36 统计亮度 / 方差，黑场和纯色片头会被判掉 */
+  function probeStats() {
+    var cv = document.createElement('canvas');
+    cv.width = 64; cv.height = 36;
+    var cx = cv.getContext('2d');
+    cx.drawImage(probe, 0, 0, 64, 36);
+    var d = cx.getImageData(0, 0, 64, 36).data;
+    var sum = 0, sum2 = 0, n = d.length / 4;
+    for (var i = 0; i < d.length; i += 4) {
+      var y = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+      sum += y; sum2 += y * y;
+    }
+    var m = sum / n, v = Math.max(0, sum2 / n - m * m);
+    return { luma: m, sd: Math.sqrt(v) };
+  }
+
+  function probeFrame(t) {
+    var p = resetProbe(S.lastSrc);
+    return new Promise(function (resolve, reject) {
+      var timer = setTimeout(function () { finish(); reject(new Error('探针超时')); }, 8000);
+      function finish() { clearTimeout(timer); p.removeEventListener('seeked', onSeek); p.removeEventListener('loadedmetadata', onMeta); }
+      function grab() {
+        finish();
+        setTimeout(function () {
+          try {
+            if (p.readyState < 2 || !p.videoWidth) { reject(new Error('画面未就绪')); return; }
+            var st = probeStats();
+            resolve({ time: t, luma: st.luma, sd: st.sd });
+          } catch (e) { reject(e); }
+        }, 120);
+      }
+      function onSeek() { grab(); }
+      function onMeta() { p.currentTime = t; p.addEventListener('seeked', onSeek); }
+      if (p.readyState >= 1) { onMeta(); }
+      else { p.addEventListener('loadedmetadata', onMeta); }
+    });
+  }
+
+  function grabProbe() {
+    var w = probe.videoWidth, h = probe.videoHeight;
+    if (!w || !h) { return Promise.reject(new Error('探针没有画面')); }
+    var cw = Math.min(FRAME_MAX_W, w), ch = Math.max(1, Math.round(h * cw / w));
+    var cv = document.createElement('canvas');
+    cv.width = cw; cv.height = ch;
+    var cx = cv.getContext('2d');
+    cx.drawImage(probe, 0, 0, cw, ch);
+    try { return Promise.resolve({ url: cv.toDataURL('image/jpeg', 0.85), w: cw, h: ch }); }
+    catch (e) { return Promise.reject(e); }
+  }
+
+  function scanLiveFrame() {
+    if (!S.lastSrc) { return Promise.resolve(null); }
+    var times = PROBE_TIMES.slice();
+    if (S.duration > 4) { times.push(S.duration * 0.3, S.duration * 0.6); }
+    times = times.filter(function (t) { return t > 0 && (!S.duration || t < S.duration - 0.2); });
+    var i = 0;
+    function next() {
+      if (i >= times.length) { return Promise.resolve(null); }
+      var t = times[i++];
+      return probeFrame(t).then(function (st) {
+        if (st.luma >= PROBE_MIN_LUMA && st.sd >= PROBE_MIN_SD) { return grabProbe(); }
+        return next();
+      }).catch(function () { return next(); });
+    }
+    return next();
+  }
+
+  /* ---------------------------------------------------------- 取图总流程 */
+  function startFrameJob() {
+    if (!bridge || S.frameDone) { return; }
+    S.frameDone = true;                 /* 一条曲目只跑一次，失败也不反复重来 */
+    posterSource()
+      .then(function (src) { return toJpeg(src); })
+      .then(function (r) {
+        return writeFrame(r.url).then(function () {
+          fsLogFrame('海报图 → 壁纸 ' + r.w + '×' + r.h);
+        });
+      })
+      .catch(function (e1) {
+        fsLogFrame('没有可用海报图（' + e1.message + '），改找有画面的帧');
+        return scanLiveFrame().then(function (r) {
+          if (!r) { fsLogFrame('没找到有画面的帧，壁纸保持纯色'); return; }
+          return writeFrame(r.url).then(function () {
+            fsLogFrame('取帧 t=' + r.time.toFixed(1) + 's → 壁纸 ' + r.w + '×' + r.h);
+          });
+        });
+      })
+      .catch(function (e) { fsLogFrame('壁纸取图失败：' + (e && e.message ? e.message : e)); });
+  }
+
+  /* ---------------------------------------------------------- 与 FB 对时 */
+  function fbNow(p) {
+    /* p.position 已补偿输出缓冲与 DSP 延迟，不要再减一次 */
+    return p.position + (Date.now() - p.hostTime) / 1000;
+  }
+
+  function align() {
+    return invoke('playback.getPosition').then(function (p) {
+      if (!p || p.position == null || !S.ready) { return; }
+      var target = fbNow(p);
+      if (target < 0) { target = 0; }
+      if (S.duration && target > S.duration) { return; }
+      S.seekLockUntil = Date.now() + 1200;   /* 刚 seek 完别立刻又被判成漂移 */
+      v.currentTime = target;
+    }).catch(function () {});
+  }
+
+  function playIfNeeded() {
+    if (!S.ready || v.paused === false) { return; }
+    if (!S.wantPlay) { return; }
+    var pr = v.play();
+    if (pr && pr.catch) { pr.catch(function () {}); }
+  }
+
+  function setPlaying(on) {
+    S.wantPlay = !!on;
+    if (on) { playIfNeeded(); }
+    else { try { v.pause(); } catch (e) {} }
+  }
+
+  function tick() {
+    if (!S.ready || !S.wantPlay || v.readyState < 2) { return; }
+    if (Date.now() < S.seekLockUntil) { return; }
+    invoke('playback.getPosition').then(function (p) {
+      if (!p || p.position == null) { return; }
+      var target = fbNow(p);
+      var d = v.currentTime - target;
+      if (Math.abs(d) > TOL_SEEK) {
+        S.seekLockUntil = Date.now() + 1200;
+        v.currentTime = Math.max(0, target);
+        v.playbackRate = 1;
+      } else if (Math.abs(d) > TOL_FINE) {
+        /* 视频快了就放慢，慢了就加快，最多 ±5% 听感无影响 */
+        v.playbackRate = d > 0 ? 0.97 : 1.03;
+      } else if (v.playbackRate !== 1) {
+        v.playbackRate = 1;
+      }
+      if (S.duration > 0) {
+        fillEl.style.width = Math.min(100, (target / S.duration) * 100).toFixed(2) + '%';
+      }
+    }).catch(function () {});
+  }
+
+  /* ---------------------------------------------------------- 事件 */
+  v.addEventListener('loadedmetadata', function () {
+    S.ready = true;
+    S.loading = false;
+    if (!S.duration && isFinite(v.duration)) { S.duration = v.duration; }
+    setEmpty(null);
+    var meta = v.videoWidth + '×' + v.videoHeight + ' · ' + fmtTime(v.duration);
+    showHud(titleEl.textContent, meta);
+    align().then(function () { playIfNeeded(); });
+  });
+
+  v.addEventListener('loadeddata', function () { startFrameJob(); });
+  v.addEventListener('canplay', function () { startFrameJob(); });
+
+  v.addEventListener('error', function () {
+    S.loading = false;
+    S.ready = false;
+    var code = v.error ? v.error.code : 0;
+    var text = ({ 1: '加载被中止', 2: '网络错误', 3: '解码失败', 4: '容器或编码不支持' })[code] || '播放失败';
+    setEmpty('这个文件播不了：' + text, false);
+    showHud(titleEl.textContent, text);
+  });
+
+  v.addEventListener('playing', function () { setEmpty(null); });
+  v.addEventListener('waiting', function () { /* 缓冲中，不动 UI，避免闪 */ });
+
+  /* 单击画面 = 切换 FB 的播放/暂停（声音在 FB 那边，必须一起动）。
+     双击 = 主区铺满显示器，所以要等 260ms 确认不是双击再执行单击。 */
+  var clickTimer = 0;
+  document.getElementById('stage').addEventListener('click', function () {
+    if (clickTimer) { clearTimeout(clickTimer); }
+    clickTimer = setTimeout(function () {
+      clickTimer = 0;
+      invoke('playback.playOrPause').catch(function () {});
+    }, 260);
+  });
+
+  document.getElementById('stage').addEventListener('mousemove', function () {
+    showHud();
+  });
+
+  /* ---------------------------------------------------------- 双击全屏 */
+  /* 页面自己在 WebView2 里最多只能让元素填满控件区域，扩不到显示器，
+     所以先让宿主把主窗口切全屏，三条通道按可靠性依次尝试。 */
+  var FS = { on: false, how: '', busy: false };
+
+  var fsLogTimer = 0;
+  function fsLog(text) {
+    try { console.log('[EoleVideo] ' + text); } catch (e) {}
+    var old = metaEl.textContent;          /* HUD 里临时报一句，3 秒后还原 */
+    metaEl.textContent = text;
+    showHud();
+    if (fsLogTimer) { clearTimeout(fsLogTimer); }
+    fsLogTimer = setTimeout(function () { metaEl.textContent = old; }, 3000);
+  }
+
+  /* 在主菜单树里找“全屏 / Fullscreen”命令，返回 { guid, path } */
+  function findFullscreenCmd(items, depth) {
+    if (!items || depth > 6) { return null; }
+    for (var i = 0; i < items.length; i++) {
+      var it = items[i];
+      if (!it) { continue; }
+      var label = String(it.displayLabel || it.label || '');
+      var path = String(it.displayPath || it.path || '');
+      if (it.type === 'command' && (/fullscreen|全屏/i.test(label) || /fullscreen|全屏/i.test(path))) {
+        return { guid: it.guid || '', path: path || label, label: label };
+      }
+      if (it.children) {
+        var got = findFullscreenCmd(it.children, depth + 1);
+        if (got) { return got; }
+      }
+    }
+    return null;
+  }
+
+  function runFullscreenCmd() {
+    return invoke('menu.getMainMenu', {}).then(function (m) {
+      var cmd = findFullscreenCmd(m && m.items, 0);
+      if (!cmd) { throw new Error('主菜单里没有全屏命令'); }
+      var arg = cmd.guid ? { command: cmd.guid } : { command: cmd.path };
+      return invoke('menu.runMainMenuCommand', arg).then(function () { return 'menu'; });
+    });
+  }
+
+  function hostFullscreen(on) {
+    return invoke('window.setFullscreen', { windowId: 'main', enabled: !!on })
+      .then(function () { return 'window'; });
+  }
+
+  /* 主题侧（Eole_layout.js）靠这个文件知道该不该藏标题栏/控制栏/侧栏：
+     WebView2 页面进不了 JSplitter 的 NotifyOthers 通道，只能落一个标记文件，
+     布局面板每 250ms 读一次，内容 "1" 进 / "0" 出。 */
+  function fsNotifyLayout(on) {
+    return invoke('file.write', {
+      path: '%profile%\\Eole\\.video_fs_request',
+      content: on ? '1' : '0',
+      atomic: true
+    }).catch(function (e) {
+      try { console.log('[EoleVideo] 布局通知失败：' + e.message); } catch (e2) {}
+    });
+  }
+
+  function enterFullscreen() {
+    if (FS.busy || FS.on) { return; }
+    FS.busy = true;
+    fsLog('切全屏…');
+    runFullscreenCmd().then(function (how) { return how; }).catch(function (e1) {
+      fsLog('主菜单全屏不可用（' + e1.message + '），改走窗口命令');
+      return hostFullscreen(true).catch(function (e2) {
+        fsLog('窗口全屏不可用（' + e2.message + '），退到元素全屏（只能铺满面板）');
+        var el = document.getElementById('stage');
+        if (el.requestFullscreen) { return el.requestFullscreen().then(function () { return 'element'; }); }
+        throw new Error('三条通道都不可用');
+      });
+    }).then(function (how) {
+      FS.on = true;
+      FS.how = how || '';
+      FS.busy = false;
+      fsNotifyLayout(true);                   /* 让主题把标题栏/控制栏/侧栏收起来 */
+      fsLog('已全屏（' + FS.how + '）');
+      setTimeout(function () { align(); }, 400);
+    }).catch(function (e) {
+      FS.busy = false;
+      fsLog('全屏失败：' + e.message);
+    });
+  }
+
+  function exitFullscreen() {
+    if (FS.busy || !FS.on) { return; }
+    FS.busy = true;
+    var p;
+    if (FS.how === 'element') {
+      p = (document.exitFullscreen && document.fullscreenElement)
+        ? document.exitFullscreen() : Promise.resolve();
+    } else if (FS.how === 'window') {
+      p = hostFullscreen(false);
+    } else {
+      p = runFullscreenCmd();   /* 主菜单的全屏命令本身是开关 */
+    }
+    Promise.resolve(p).catch(function (e) {
+      fsLog('退出全屏失败：' + e.message);
+    }).then(function () {
+      FS.on = false;
+      FS.how = '';
+      FS.busy = false;
+      fsNotifyLayout(false);                  /* 主题把标题栏/控制栏/侧栏摆回来 */
+      setTimeout(function () { align(); }, 400);
+    });
+  }
+
+  function toggleFullscreen() { if (FS.on) { exitFullscreen(); } else { enterFullscreen(); } }
+
+  document.getElementById('stage').addEventListener('dblclick', function () {
+    if (clickTimer) { clearTimeout(clickTimer); clickTimer = 0; }   /* 取消待执行的单击 */
+    toggleFullscreen();
+  });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && FS.on) { exitFullscreen(); }
+  });
+
+  /* 元素全屏被浏览器/组件自己结束（例如 Esc）时同步状态 */
+  document.addEventListener('fullscreenchange', function () {
+    if (!document.fullscreenElement && FS.how === 'element') {
+      FS.on = false; FS.how = ''; fsNotifyLayout(false); align();
+    }
+  });
+
+
+  /* ---------------------------------------------------------- 桥事件 */
+  function stateIsPlaying(r) {
+    if (!r) { return false; }
+    if (typeof r === 'string') { return r === 'playing'; }
+    if (typeof r.playing === 'boolean') { return r.playing; }
+    if (typeof r.state === 'string') { return r.state === 'playing'; }
+    if (r.state && typeof r.state.state === 'string') { return r.state.state === 'playing'; }
+    return false;
+  }
+
+  if (bridge) {
+    if (typeof bridge.on === 'function') {
+      bridge.on('playback:trackChanged', function (payload) {
+        loadTrack(payload);
+        invoke('playback.getState').then(function (r) { setPlaying(stateIsPlaying(r)); }).catch(function () {});
+      });
+      bridge.on('playback:seeked', function () { align(); });
+      bridge.on('playback:paused', function () { setPlaying(false); });
+      bridge.on('playback:stateChanged', function (payload) {
+        var r = payload;
+        if (payload && payload.state !== undefined) { r = payload.state; }
+        setPlaying(stateIsPlaying(r));
+      });
+    }
+  }
+
+  /* 面板被切回来时补一次对时（隐藏期间 WebView 可能被挂起） */
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden) { align().then(function () { playIfNeeded(); }); }
+  });
+
+  /* ---------------------------------------------------------- 启动 */
+  function boot() {
+    if (!bridge) { setEmpty('未注入 fb2k 桥：请确认这是 foo_ui_webview2 的模板页面', false); return; }
+    fsNotifyLayout(false);        /* 页面重载时把主题的「藏栏」状态清零，别留成僵局 */
+    invoke('playback.getCurrentTrack').then(function (cur) {
+      if (cur && cur.found && cur.track) { loadTrack(cur.track); }
+      else { clearVideo('等待视频曲目'); }
+      return invoke('playback.getState');
+    }).then(function (r) { setPlaying(stateIsPlaying(r)); }).catch(function () {});
+    S.tick = setInterval(tick, TICK_MS);
+  }
+
+  boot();
+})();
+</script>
+</body>
+</html>

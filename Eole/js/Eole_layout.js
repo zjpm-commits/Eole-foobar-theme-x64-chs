@@ -156,14 +156,28 @@ function getPanel(names) {
 
 var previousLayout = "";
 
+/* 视频面板就是 caption 固定为 "video" 的那一个 foo_ui_webview2 面板。
+   不做候选名、不遍历子面板兜底；找不到就什么也不摆。 */
+function videoPanelName() {
+    try { return window.GetPanel('video') ? 'video' : ''; } catch (e0) { return ''; }
+}
+
+
 /* MilkDrop 全屏态：milkdrop_panel.js 右键菜单开关。只在 'milkdrop_fullscreen'
    通知里置位并以 arrange('force') 生效；任何普通重排（'eole_layout'）自动退出，
    状态不持久化。 */
 var mdFullscreen = false;
 
+/* 视频全屏（WebView2 视频面板里双击触发）：视频铺满整窗，标题栏 / 控制栏 / 侧栏一起收起。
+   WebView2 页面进不了 NotifyOthers，所以页面落一个标记文件，这里低频读：
+   "1" = 进视频全屏，"0" = 退出。窗口本身切不切全屏由页面那边负责，这里只管摆位。 */
+var videoFullscreen = false;
+var VIDEO_FS_REQ = fb.ProfilePath + 'Eole\\.video_fs_request';
+
 var INFO_EXTRA_HEIGHT = 41;
 
-var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'LIBRARYFILTER', 'LIBRARYFILTERWIDTH',
+var FINGERPRINT_KEYS = ['MAINPANEL', 'LAYOUT', 'COMPACTTITLEBAR', 'SIDEBARCOLLAPSED', 'SIDEBARWIDEBAR',
+    'LIBRARYFILTER', 'LIBRARYFILTERWIDTH',
     'LIBRARYTREE', 'PLAYLISTPANELWIDTH', 'FILTERSPANEL', 'FILTER1', 'FILTER2', 'FILTER3', 'LYRICS',
     'NOWPLAYINGLIB', 'NOWPLAYINGPLAYLIST', 'NOWPLAYINGBIO', 'NOWPLAYINGLXBOX', 'RIGHTPLAYLISTWIDTH',
     'COVERPANELBIG', 'COVERPANELMINI', 'MINICONTROLBAR', 'SHOWTRACKINFOBIG', 'SHOWTRACKINFOSMALL',
@@ -199,7 +213,24 @@ function arrange(arg) {
 
     var mode = setting('MAINPANEL', 0), mini = setting('LAYOUT', 0);
     var compact = setting('COMPACTTITLEBAR', 0);
-    var top = compact === 0 || mini ? 64 : compact === 1 ? 36 : 50;
+    /* 第 4 种标题栏形态（折叠侧边栏）= compacttitlebar 选 3 且布局里真有 Sidebar 面板。
+       选 3 但没面板时按标准两行摆（64），不会留白、也不会把主区让出一块空位。
+       迷你布局没有主区，即便有面板也不启用。 */
+    var railPanel = getPanel('Sidebar');
+    var railOn = !mini && compact === 3 && !!railPanel;
+    var railW = 0;
+    if (railOn) {
+        var railCollapsed = w < (typeof RAIL_BREAK_W === 'number' ? RAIL_BREAK_W : 1030) ? 1 :
+            (setting('SIDEBARCOLLAPSED', 0) === 1 ? 1 : 0);
+        railW = railCollapsed ? (typeof RAIL_W_COLLAPSED === 'number' ? RAIL_W_COLLAPSED : 48)
+            : (typeof RAIL_W_EXPANDED === 'number' ? RAIL_W_EXPANDED : 128);
+    }
+    var top;
+    /* 侧栏标题栏高度跟紧凑标题栏同源：常规 36 / 4K 适配后 50 */
+    if (railOn) top = (typeof railTitlebarH === 'function') ? railTitlebarH() :
+        (typeof RAIL_TITLEBAR_H_SMALL === 'number' ? RAIL_TITLEBAR_H_SMALL : 36);
+    else if (compact === 3 || compact === 0 || mini) top = 64;
+    else top = compact === 1 ? 36 : 50;
     var bottom = mini ? (setting('SHOWTRACKINFOSMALL', 0) ? 51 : 43) :
         !setting('MINICONTROLBAR', 1) ? 72 : setting('SHOWTRACKINFOBIG', 1) ? 54 : 47;
     var bodyHeight = Math.max(1, h - top - bottom);
@@ -207,7 +238,7 @@ function arrange(arg) {
     var suffix = ['LIB', 'PLAYLIST', 'BIO', 'LXBOX', 'MDROP', 'MPV', 'THEME'][mode] || 'LIB';
     var right = mini ? w : setting('NOWPLAYING' + suffix, 1) ?
         Math.min(setting('RIGHTPLAYLISTWIDTH', 210), Math.floor(w * 0.4)) : 0;
-    var mainWidth = w - right;
+    var mainWidth = w - right - railW;
 
     var panelCount = 0;
     try { panelCount = window.GetPanelCount(); } catch (e) { panelCount = 0; }
@@ -222,10 +253,29 @@ function arrange(arg) {
         else return;
     }
 
+    /* 视频全屏：只留 video 面板，铺满整窗（连标题栏、控制栏、侧栏的位置一起吃掉）。
+       面板没建就清标志，退回普通布局，别留一块空白。 */
+    if (videoFullscreen) {
+        if (!getPanel('video')) videoFullscreen = false;
+        else {
+            for (var vi = 0; vi < panelCount; ++vi) {
+                try { window.GetPanelByIndex(vi).Show(false); } catch (eV) {}
+            }
+            if (panel('video', 0, 0, w, h, true)) return;
+            videoFullscreen = false;
+        }
+    }
+
     if (!live) {
         for (var i = 0; i < panelCount; ++i) {
             try { window.GetPanelByIndex(i).Show(false); } catch (e) {}
         }
+    }
+
+    /* 不是第 4 种形态时把侧栏收掉：它只是这套布局里的可选面板，
+       切回标准/常规紧凑/加宽紧凑时不该在原位露出来。 */
+    if (!railOn && railPanel) {
+        try { railPanel.Show(false); } catch (eSH) {}
     }
 
     function panel(names, x, y, width, height, opaque) {
@@ -242,6 +292,12 @@ function arrange(arg) {
             glass(p, false, !!opaque);
         } catch (e) { return null; }
         return p;
+    }
+
+    /* 主区内容一律走 mp：x 以主区左边界为基准，railW 自动让开侧栏。
+       railW 为 0 时与原来的 panel(...) 完全等价。 */
+    function mp(names, x, y, width, height, opaque) {
+        return panel(names, x + railW, y, width, height, opaque);
     }
 
     function glass(p, force, opaque) {
@@ -280,30 +336,30 @@ function arrange(arg) {
     if (!mini) {
         if (mode === 0) {
             var left = setting('LIBRARYFILTER', 1) ? Math.min(setting('LIBRARYFILTERWIDTH', 210), mainWidth * 0.4) : 0;
-            panel(setting('LIBRARYTREE', 0) ? ['LibraryTree', 'LibraryFilter'] : ['LibraryFilter', 'LibraryTree'],
+            mp(setting('LIBRARYTREE', 0) ? ['LibraryTree', 'LibraryFilter'] : ['LibraryFilter', 'LibraryTree'],
                 0, top, left, bodyHeight);
-            panel('GraphicBrowser', left, top, mainWidth - left, bodyHeight);
+            mp('GraphicBrowser', left, top, mainWidth - left, bodyHeight);
 
         } else if (mode === 1) {
             var manager = Math.min(setting('PLAYLISTPANELWIDTH', 180), mainWidth * 0.35);
-            panel('SmoothPlaylistManager', 0, top, manager, bodyHeight);
+            mp('SmoothPlaylistManager', 0, top, manager, bodyHeight);
             var area = mainWidth - manager, filterMode = setting('FILTERSPANEL', 1);
             var filterHeight = bodyHeight * ([0, .2, .3, .4, .6, 1][filterMode] || 0);
             var enabled = [1, 2, 3].filter(function(n) { return setting('FILTER' + n, 1); });
             if (enabled.length && filterHeight) enabled.forEach(function(n, i) {
-                panel('PlaylistFilter' + n, manager + area * i / enabled.length, top,
+                mp('PlaylistFilter' + n, manager + area * i / enabled.length, top,
                     area / enabled.length, filterHeight);
             });
             var headerHeight = filterMode === 5 ? 0 : 32;
-            panel('PlaylistHeader', manager, top + filterHeight, area, headerHeight);
-            panel(['BottomPlaylist', 'NowPlayingPlaylist'], manager, top + filterHeight + headerHeight, area,
+            mp('PlaylistHeader', manager, top + filterHeight, area, headerHeight);
+            mp(['BottomPlaylist', 'NowPlayingPlaylist'], manager, top + filterHeight + headerHeight, area,
                 bodyHeight - filterHeight - headerHeight);
 
         } else if (mode === 2) {
             var lyrics = setting('LYRICS', 5);   // 缺省 5 = 主区宽的 50%（11 = 铺满）
             var lyricsWidth = lyrics === 11 ? mainWidth : mainWidth * lyrics / 10;
             if (!getPanel('Lyrics')) lyricsWidth = 0;
-            panel('Biography', 0, top, mainWidth - lyricsWidth, bodyHeight);
+            mp('Biography', 0, top, mainWidth - lyricsWidth, bodyHeight);
             if (lyricsWidth > 0) {
                 var wantSpec = true;
                 try {
@@ -313,42 +369,38 @@ function arrange(arg) {
                 var wantHeight = wantSpec ? 202 : 124;
                 var ratio = wantSpec ? 0.34 : 0.24;
                 var lyricsTitleHeight = Math.round(Math.min(wantHeight, Math.max(28, bodyHeight * ratio)));
-                panel('LyricsTitle', mainWidth - lyricsWidth, top, lyricsWidth, lyricsTitleHeight);
-                panel('Lyrics', mainWidth - lyricsWidth, top + lyricsTitleHeight, lyricsWidth,
+                mp('LyricsTitle', mainWidth - lyricsWidth, top, lyricsWidth, lyricsTitleHeight);
+                mp('Lyrics', mainWidth - lyricsWidth, top + lyricsTitleHeight, lyricsWidth,
                     bodyHeight - lyricsTitleHeight);
             }
 
         } else if (mode === 4) {
             /* MilkDrop 是独立面板，自己用 Direct2D 画满这一块。
                摆不上（没在面板清单里建这个面板）就沿用模式 3 的兜底，别留一块空白。 */
-            panel('MilkDrop', 0, top, mainWidth, bodyHeight, true) ||
-                panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+            mp('MilkDrop', 0, top, mainWidth, bodyHeight, true) ||
+                mp(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
 
         } else if (mode === 5) {
-            /* 模式 5：装了 foo_mpv 就把 MPV 元素铺满主区（视频本身不透明，强制关伪透明）；
-               没装插件则用 ESLyric（caption = Lyrics）铺满主区，当作纯歌词页。
-               两者都取不到（面板没建）就沿用模式 3 的兜底，别留空白。 */
-            var mpvOn = false;
-            try { mpvOn = !!utils.CheckComponent('foo_mpv', true); } catch (eMpv) { mpvOn = false; }
-            (mpvOn ? panel(['MPV', 'mpv', 'mpv Video', 'Video player'], 0, top, mainWidth, bodyHeight, true) : null) ||
-                panel('Lyrics', 0, top, mainWidth, bodyHeight) ||
-                panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+            /* 模式 5：只认 caption 为 "video" 的 WebView2 面板，铺满主区
+               （视频本身不透明，强制关伪透明）。没有这个面板就什么也不摆，
+               不再退回 ESLyric 歌词页。 */
+            mp('video', 0, top, mainWidth, bodyHeight, true);
 
         } else if (mode === 6) {
-            /* 模式 6：主题设置页铺满主区，右栏照常保留。
+            /* 模式 6：主题设置页铺满主区，右栏照常保留，侧栏也照常保留（模式 6 不隐藏侧栏）。
                布局里还没建 ThemeSettings 面板时退回模式 0 的内容，别留一块空白。 */
-            panel('ThemeSettings', 0, top, mainWidth, bodyHeight) ||
+            mp('ThemeSettings', 0, top, mainWidth, bodyHeight) ||
                 /* 兜底照抄模式 0：左筛选栏 + 主图画廊，至少还能用 */
                 (function () {
                     var left = setting('LIBRARYFILTER', 1) ? Math.min(setting('LIBRARYFILTERWIDTH', 210), mainWidth * 0.4) : 0;
-                    panel(setting('LIBRARYTREE', 0) ? ['LibraryTree', 'LibraryFilter'] : ['LibraryFilter', 'LibraryTree'],
+                    mp(setting('LIBRARYTREE', 0) ? ['LibraryTree', 'LibraryFilter'] : ['LibraryFilter', 'LibraryTree'],
                         0, top, left, bodyHeight);
-                    panel('GraphicBrowser', left, top, mainWidth - left, bodyHeight);
+                    mp('GraphicBrowser', left, top, mainWidth - left, bodyHeight);
                 })();
 
         } else {
-            panel('Lxbox', 0, top, mainWidth, bodyHeight) ||
-                panel(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
+            mp('Lxbox', 0, top, mainWidth, bodyHeight) ||
+                mp(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
         }
     }
 
@@ -360,7 +412,7 @@ function arrange(arg) {
         var infoHeight = info ? Math.min(right + (infoText ? INFO_EXTRA_HEIGHT : 0), bodyHeight / 2) : 0;
         if (info && infoHeight < right * 0.5) infoHeight = Math.min(right * 0.5, bodyHeight / 2);
 
-        var rx = mini ? 0 : mainWidth;
+        var rx = mini ? 0 : mainWidth + railW;
         var tp = info ? panel('TrackInfo', rx, info === 2 ? top + bodyHeight - infoHeight : top, right, infoHeight) : null;
         panel(['NowPlayingPlaylist', 'BottomPlaylist'], rx, info === 1 ? top + infoHeight : top, right,
             bodyHeight - infoHeight);
@@ -368,6 +420,15 @@ function arrange(arg) {
     }
 
     panel('TitleBar', 0, 0, w, top);
+    /* 侧栏最后摆：它盖在标题栏之下的整条左边，宽度就是算出来的 128/48 */
+    if (railOn) panel('Sidebar', 0, top, railW, bodyHeight);
+    if (railOn) railReportPanels();
+    /* 布局形态变了就主动告诉标题栏一次：它不靠轮询也能立刻切成 40px 单行栏 */
+    var railStateNow = railOn ? '1' : '0';
+    if (railStateNow !== g_railStateSig) {
+        g_railStateSig = railStateNow;
+        try { window.NotifyOthers('rail_answer', railStateNow); } catch (eRAS) {}
+    }
 
     if (!fw_hostOn()) {
         for (var j = 0; j < panelCount; ++j) {
@@ -382,6 +443,24 @@ function arrange(arg) {
     }
 
     window.Repaint();
+}
+
+/* 侧边栏要知道「MilkDrop / 视频这两个入口在不在」：本面板是 Splitter，
+   GetPanel 一定能枚举，所以由这里算好再广播，别让侧栏自己猜。
+   格式 "md|mpv"，1=在 0=不在（视频那一位要求布局里真有 WebView2 面板）。 */
+var g_railPanelsSig = "";
+var g_railStateSig = "";
+function railPanelsSig() {
+    var md = false, mpv = false;
+    try { md = !!getPanel('MilkDrop'); } catch (eMd) { md = false; }
+    try { mpv = !!getPanel('video'); } catch (eMpv2) { mpv = false; }
+    return (md ? 1 : 0) + '|' + (mpv ? 1 : 0);
+}
+function railReportPanels() {
+    var sig = railPanelsSig();
+    if (sig === g_railPanelsSig) return;
+    g_railPanelsSig = sig;
+    try { window.NotifyOthers('rail_panels', sig); } catch (eN) {}
 }
 
 function fwScheduleResizeSettle() {
@@ -453,6 +532,24 @@ function on_notify_data(name, info) {
        补发的地方——普通重排同时退出 MilkDrop 全屏；'milkdrop_fullscreen'
        是 milkdrop_panel.js 右键菜单的全屏开关，force 绕过指纹去重。 */
     if (name === 'eole_layout') { mdFullscreen = false; relayoutSoon(); return; }
+    /* 标题栏 / 侧栏问「这套布局是不是第 4 种」：同步应答，问的此刻就能拿到真相。
+       应答只是「要不要走 40px 单行标题栏 / 要不要摆侧栏」，不改任何状态。 */
+    if (name === 'rail_query') {
+        if (g_settingIndex === null) refreshSettingIndex();
+        var rqOn = !setting('LAYOUT', 0) && setting('COMPACTTITLEBAR', 0) === 3 && !!getPanel('Sidebar');
+        g_railStateSig = rqOn ? '1' : '0';
+        try { window.NotifyOthers('rail_answer', g_railStateSig); } catch (eRA) {}
+        try { window.NotifyOthers('rail_panels', railPanelsSig()); } catch (eRP) {}
+        return;
+    }
+    /* 标题栏要切到第 4 种形态前，先同步问一句「布局里到底有没有 Sidebar 面板」：
+       没有就别切，弹提示，免得切成一张空布局。 */
+    if (name === 'rail_panel_query') {
+        var rqHas = false;
+        try { rqHas = !!getPanel('Sidebar'); } catch (eRQP) { rqHas = false; }
+        try { window.NotifyOthers('rail_panel_answer', rqHas ? '1' : '0'); } catch (eRQA) {}
+        return;
+    }
     if (name === 'milkdrop_fullscreen') {
         mdFullscreen = (info === true || Number(info) === 1);
         window.SetTimeout(function () {
@@ -738,3 +835,33 @@ window.SetInterval(function () {
     try { arrange(); } catch (e) {}
     try { if (!fwImg && !fwTimer && !fwTimer2 && fw_hostOn()) fwQueue(0); } catch (eF) {}
 }, 2500); // PATCH(perf): 600→2500ms —— 摆位以通知驱动为主，此间隔仅为兜底扫描
+
+/* 视频全屏请求：内容变了才重排（arrange('force') 绕过指纹去重）。
+   启动时先写回 "0"，别让上一次遗留的请求把布局卡在视频全屏。 */
+try { utils.WriteTextFile(VIDEO_FS_REQ, '0'); } catch (eVR0) {}
+
+function videoFsApply() {
+    var want = false;
+    try { want = String(utils.ReadTextFile(VIDEO_FS_REQ) || '').replace(/\s+/g, '') === '1'; } catch (eVR) { want = false; }
+    want = want && !!getPanel('video');
+    if (want === videoFullscreen) return;
+    videoFullscreen = want;
+    try { fwGlassAll(false); } catch (eVG) {}
+    try { arrange('force'); } catch (eVL) {}
+}
+window.SetInterval(videoFsApply, 250);
+
+/* 视频首帧壁纸：页面截好第一帧会写 VIDEO_FRAME_SIG，内容变了就作废封面指纹、
+   强制重建全屏壁纸。文件不存在/没变就什么也不做，开销只是一次小文件读。 */
+var VIDEO_FRAME_SIG = fb.ProfilePath + 'webview-ui\\.video_frame';
+var g_vframeSeen = '';
+
+function videoFrameApply() {
+    var raw = '';
+    try { raw = String(utils.ReadTextFile(VIDEO_FRAME_SIG) || '').replace(/\s+/g, ''); } catch (eVFA) { raw = ''; }
+    if (!raw || raw === g_vframeSeen) return;
+    g_vframeSeen = raw;
+    try { fw_artInvalidate(); } catch (eVF1) {}
+    try { fwQueue(0); } catch (eVF2) {}
+}
+window.SetInterval(videoFrameApply, 250);

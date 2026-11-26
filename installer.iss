@@ -9,16 +9,7 @@
 #define MyAppURL "https://github.com/Ottodix/Eole-foobar-theme"
 #define Src "C:\Users\Administrator\Documents\GitHub\Eole-foobar-theme-x64-chs"
 
-; 1 = 含 foo_mpv 插件与 MPV 配置；0 = 不含（编译时用 /DMyMpv=0 生成 nompv 版）
-#ifndef MyMpv
-  #define MyMpv "1"
-#endif
-
-#if MyMpv == "1"
-  #define NameSuffix ""
-#else
-  #define NameSuffix "(nompv)"
-#endif
+; 视频模式由 foo_ui_webview2 的 WebView2 面板承担，不再打包 foo_mpv
 
 [Setup]
 AppId={{8E1F4A52-6B0D-4E6E-9A3B-E01E00000001}
@@ -33,7 +24,7 @@ AppendDefaultDirName=no
 DirExistsWarning=no
 DisableProgramGroupPage=yes
 OutputDir=release
-OutputBaseFilename=Eole_x64_v{#MyAppVersion}{#NameSuffix}_setup
+OutputBaseFilename=Eole_x64_v{#MyAppVersion}_setup
 SetupIconFile={#Src}\assets\setup.ico
 UninstallIconFile={#Src}\assets\setup.ico
 Compression=lzma2/max
@@ -52,19 +43,14 @@ Name: "full"; Description: "完整安装（全部组件）"
 Name: "custom"; Description: "自定义安装（自行勾选组件）"; Flags: iscustom
 
 [Components]
-Name: "theme";        Description: "Eole 主题核心（必需，含 DUI_eole_x64_chs.fth）"; Types: full custom; Flags: fixed
+Name: "theme";        Description: "Eole 主题核心（必需，脚本 / 图片 / 样式）"; Types: full custom; Flags: fixed
 Name: "lxbox";        Description: "Lxbox 洛雪音源脚本（必需）"; Types: full custom; Flags: fixed
 Name: "eolesettings"; Description: "eole-settings 个人配置面板"; Types: full custom
 Name: "jsplitter";    Description: "foo_uie_jsplitter 组件（必装插件）"; Types: full custom
 Name: "eslyric";      Description: "foo_uie_eslyric 组件（歌词）"; Types: full custom
 Name: "openhacks";    Description: "foo_openhacks 组件（无边框模式）"; Types: full custom
-#if MyMpv == "1"
-Name: "mpvcomp";      Description: "foo_mpv 组件（视频模式）"; Types: full custom
-#endif
+Name: "webview2";     Description: "foo_ui_webview2 组件（视频模式，替代 foo_mpv）"; Types: full custom
 Name: "playcount";    Description: "foo_playcount 组件（播放统计）"; Types: full custom
-#if MyMpv == "1"
-Name: "mpvcfg";       Description: "MPV 播放器配置（mpv.conf / input.conf）"; Types: full custom
-#endif
 Name: "yttm";         Description: "yttm 个人面板配置"; Types: full custom
 Name: "cfg";          Description: "组件配置文件（configuration\*.cfg，会覆盖现有组件设置）"; Types: full custom
 
@@ -81,15 +67,16 @@ Source: "{#Src}\assets\yttm\*"; DestDir: "{app}\profile\yttm"; Components: yttm;
 Source: "{#Src}\user-components-x64\foo_uie_jsplitter\*"; DestDir: "{app}\profile\user-components-x64\foo_uie_jsplitter"; Components: jsplitter; Flags: recursesubdirs ignoreversion
 Source: "{#Src}\user-components-x64\foo_uie_eslyric\*"; DestDir: "{app}\profile\user-components-x64\foo_uie_eslyric"; Components: eslyric; Flags: recursesubdirs ignoreversion
 Source: "{#Src}\user-components-x64\foo_openhacks\*"; DestDir: "{app}\profile\user-components-x64\foo_openhacks"; Components: openhacks; Flags: recursesubdirs ignoreversion
-#if MyMpv == "1"
-Source: "{#Src}\user-components-x64\foo_mpv\*"; DestDir: "{app}\profile\user-components-x64\foo_mpv"; Components: mpvcomp; Flags: recursesubdirs ignoreversion
-#endif
+Source: "{#Src}\user-components-x64\foo_ui_webview2\*"; DestDir: "{app}\profile\user-components-x64\foo_ui_webview2"; Components: webview2; Flags: recursesubdirs ignoreversion
 Source: "{#Src}\user-components-x64\foo_playcount\*"; DestDir: "{app}\profile\user-components-x64\foo_playcount"; Components: playcount; Flags: recursesubdirs ignoreversion
 
+; ---- 视频模板 ----
+; assets\webview-ui\video\index.html 落到 profile\webview-ui\video。
+; 模板必须在 webview-ui 下，页面才走受信虚拟主机 https://foo-ui-webview2.local/，
+; media.getStreamUrl 才可用；面板按模板名 "video" 加载它。
+Source: "{#Src}\assets\webview-ui\*"; DestDir: "{app}\profile\webview-ui"; Components: webview2; Flags: recursesubdirs ignoreversion
+
 ; ---- 其他配置 ----
-#if MyMpv == "1"
-Source: "{#Src}\assets\mpv\*"; DestDir: "{app}\profile\mpv"; Components: mpvcfg; Flags: ignoreversion
-#endif
 Source: "{#Src}\assets\configuration\*"; DestDir: "{app}\profile\configuration"; Components: cfg; Flags: ignoreversion
 
 ; ---- 附带配置与主题文件（始终安装）----
@@ -140,7 +127,7 @@ begin
       + '请在 foobar2000 中按以下方式导入主题：' #13#10
       + '文件 → 参数选项 → 默认用户界面 → 导入主题' #13#10
       + '（或：参数选项 → 默认用户界面 → 快速设置 → 选择 DUI_Eole_x64.fth）' #13#10
-      + '主题文件位于 profile\Eole\DUI_eole_x64_chs.fth 与 themes\DUI_Eole_x64.fth。' #13#10 #13#10
+      + '主题文件位于 profile\Eole\DUI_Eole_x64.fth 与 themes\DUI_Eole_x64.fth。' #13#10 #13#10
       + '若默认字体偏小：Ctrl + 鼠标滚轮 全局缩放，Shift + 鼠标滚轮 调整行间距。',
       mbInformation, MB_OK);
 end;

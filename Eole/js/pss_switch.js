@@ -164,7 +164,7 @@ function syncStateFromNotify(name, info) {
 	return true;
 }
 
-/* 0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源 / 4 MilkDrop / 5 MPV 视频（无插件时为 ESL 歌词） / 6 主题设置 */
+/* 0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源 / 4 MilkDrop / 5 视频（caption 为 video 的 WebView2 面板） / 6 主题设置 */
 var main_panel_state = new oPanelSetting("main_panel_state", "MAINPANEL_", 0, 0, 6);
 var layout_state = new oPanelSetting("layout_state", "LAYOUT_", 0, 0, 1);
 
@@ -185,7 +185,8 @@ var libraryfilter_state = new oPanelSetting("libraryfilter_state", "LIBRARYFILTE
 var lyrics_state = new oPanelSetting("lyrics_state", "LYRICS_", 5, 0, 11);
 var librarytree = new oPanelSetting("librarytree", "LIBRARYTREE_", 0, 0, 1);
 var mini_controlbar = new oPanelSetting("mini_controlbar", "MINICONTROLBAR_", 1, 0, 1);
-var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 2);
+/* 0 标准两行 / 1 常规紧凑 / 2 加宽紧凑 / 3 折叠侧边栏（40px 单行栏 + 左侧侧栏） */
+var compact_titlebar = new oPanelSetting("compacttitlebar", "COMPACTTITLEBAR_", 0, 0, 3);
 
 /* 高分屏适配方案已废弃（用户明确否决），InitHiResDisplay 已删除 */
 
