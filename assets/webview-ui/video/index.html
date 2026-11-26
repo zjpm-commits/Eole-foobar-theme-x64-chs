@@ -635,7 +635,7 @@
      布局面板每 250ms 读一次，内容 "1" 进 / "0" 出。 */
   function fsNotifyLayout(on) {
     return invoke('file.write', {
-      path: '%profile%\\Eole\\.video_fs_request',
+      path: '%profile%\\Eole\\eole-settings\\.video_fs_request',
       content: on ? '1' : '0',
       atomic: true
     }).catch(function (e) {

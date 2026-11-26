@@ -106,6 +106,8 @@ function refreshSettingIndex() {
         //   ...\Eole\eole-settings\RIGHTPLAYLISTWIDTH_240
         var us = path.lastIndexOf('_'), sl = Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/'));
         if (us <= sl || us <= 0) continue;
+        /* 点开头的文件不是设置项（比如 .video_fs_request 这种标记文件），跳过 */
+        if (path.charAt(sl + 1) === '.') continue;
         var key = path.substring(sl + 1, us), val = path.substring(us + 1);
         // 同一个键正常只有一份文件（换值时先删旧的再写新的）。万一有残留，
         // 取数值最大的那个，避免依赖 utils.Glob 不保证稳定的返回顺序。
@@ -162,6 +164,29 @@ function videoPanelName() {
     try { return window.GetPanel('video') ? 'video' : ''; } catch (e0) { return ''; }
 }
 
+/* 模式 5 内部再分一层：正在播 Chromium 能解的视频 → video 面板；
+   音频 / 未播放 → ESLyric 的 Lyrics 面板（caption "Lyrics"），两者互为兜底。
+   mode5Video 记住上一次摆的是谁，换曲目时只有真的变了才强制重排。 */
+var mode5Video = false;
+
+function videoNow() {
+    var playing = false;
+    try { playing = !!fb.IsPlaying; } catch (e0) { playing = false; }
+    if (!playing) return false;
+    try { return (typeof fw_isVideoTrack === 'function') ? !!fw_isVideoTrack() : false; }
+    catch (e1) { return false; }
+}
+
+function mode5Refresh() {
+    var mode = 0;
+    try { mode = setting('MAINPANEL', 0); } catch (e0) { mode = 0; }
+    if (mode !== 5) return;
+    if (videoNow() === mode5Video) return;
+    window.SetTimeout(function () {
+        try { arrange('force'); } catch (e1) {}
+    }, 0);
+}
+
 
 /* MilkDrop 全屏态：milkdrop_panel.js 右键菜单开关。只在 'milkdrop_fullscreen'
    通知里置位并以 arrange('force') 生效；任何普通重排（'eole_layout'）自动退出，
@@ -172,7 +197,7 @@ var mdFullscreen = false;
    WebView2 页面进不了 NotifyOthers，所以页面落一个标记文件，这里低频读：
    "1" = 进视频全屏，"0" = 退出。窗口本身切不切全屏由页面那边负责，这里只管摆位。 */
 var videoFullscreen = false;
-var VIDEO_FS_REQ = fb.ProfilePath + 'Eole\\.video_fs_request';
+var VIDEO_FS_REQ = fb.ProfilePath + 'Eole\\eole-settings\\.video_fs_request';
 
 var INFO_EXTRA_HEIGHT = 41;
 
@@ -381,10 +406,27 @@ function arrange(arg) {
                 mp(['GraphicBrowser', 'BottomPlaylist', 'NowPlayingPlaylist'], 0, top, mainWidth, bodyHeight);
 
         } else if (mode === 5) {
-            /* 模式 5：只认 caption 为 "video" 的 WebView2 面板，铺满主区
-               （视频本身不透明，强制关伪透明）。没有这个面板就什么也不摆，
-               不再退回 ESLyric 歌词页。 */
-            mp('video', 0, top, mainWidth, bodyHeight, true);
+            /* 模式 5：视频 ↔ 歌词二选一，铺满主区（视频本身不透明，强制关伪透明）。
+               正在播 Chromium 能解的视频 → video 面板；音频 / 未播放 → ESLyric 的
+               Lyrics 面板；任一个没建就换另一个兜底，别留一块空白。 */
+            var vOn = videoNow();
+            mode5Video = vOn;
+            if (vOn) {
+                var pv = mp('video', 0, top, mainWidth, bodyHeight, true);
+                if (pv) {
+                    /* 明确把歌词面板收起来：普通重排（live）并不会隐藏未参与者 */
+                    try { var plHide = getPanel('Lyrics'); if (plHide) plHide.Show(false); } catch (eHL) {}
+                } else {
+                    mp('Lyrics', 0, top, mainWidth, bodyHeight);
+                }
+            } else {
+                var pl = mp('Lyrics', 0, top, mainWidth, bodyHeight);
+                if (pl) {
+                    try { var pvHide = getPanel('video'); if (pvHide) pvHide.Show(false); } catch (eHV) {}
+                } else {
+                    mp('video', 0, top, mainWidth, bodyHeight, true);
+                }
+            }
 
         } else if (mode === 6) {
             /* 模式 6：主题设置页铺满主区，右栏照常保留，侧栏也照常保留（模式 6 不隐藏侧栏）。
@@ -498,10 +540,13 @@ function on_playback_new_track() {
     /* 换曲目了：指纹缓存必须作废，否则同一路径换了封面会误判 */
     try { if (typeof fw_artInvalidate === 'function') fw_artInvalidate(); } catch (eI) {}
     try { if (fw_hostOn() && fw_source() !== 1) fwQueue(120, true); } catch (e) {}
+    /* 模式 5 里视频面板与歌词面板要跟着曲目类型换人 */
+    try { mode5Refresh(); } catch (eM5A) {}
 }
 function on_playback_stop() {
     try { if (typeof fw_artInvalidate === 'function') fw_artInvalidate(); } catch (eI) {}
     try { if (fw_hostOn() && fw_source() !== 1) fwQueue(120, true); } catch (e) {}
+    try { mode5Refresh(); } catch (eM5B) {}
 }
 function on_colours_changed() {
     try {

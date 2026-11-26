@@ -35,11 +35,12 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 ### 方式一：安装包（推荐）
 
 - 现在你的电脑上安装好 64 位 foobar2000。
-- 运行 `release/Eole_x64_v1.2.3b25chs_setup.exe`。
+- 运行 `Eole_x64_v1.2.3b25chs_setup.exe`。
 - 安装程序自动定位 foobar2000 x64目录，按需勾选组件及配置，一键写入 `profile/`，无需手动覆盖文件夹。
 - 视频模式（第6模式）由 `foo_ui_webview2` 的 WebView2 面板承担：
    首次使用到 `首选项 → Display → Webview2 UI` 里把模板选为 `video`，重启 foobar2000 生效。
-- 布局里没有 caption 为 `video` 的面板时，第6模式不显示画面（不再回退 ESLyric 歌词页）。
+- `profile/webview-ui/video/index.html`：视频播放本体；没在播视频时整页让位给上面的 `Lyrics` 面板，
+   面板自身不再画歌词页。首帧壁纸优先取 mp4 内嵌海报，取不到再跳黑场截帧。
 
 ### 方式二：手动覆盖
 
@@ -67,7 +68,7 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 将原来模块化壁纸替换为全屏壁纸伪透明的样式； 
 - 减少文件夹层级，配置文件同主题目录便于管理
 - 增加第5模式：MilkDrop，标题栏右键菜单启动。
-- 增加第6模式：视频（WebView2 面板），视频容器只认 Chromium 能解的 mp4 / m4v / mov / webm / ogv，其他格式（mkv、avi、ts 等）不进视频模式，仍用 foobar2000 正常播放。。
+- 增加第6模式：视频（WebView2 面板），只认mp4 / m4v / mov / webm / ogv。
 - 增加第7模式：主题设置，标题栏增加设置入口图标。
 - 在线更新：设置面板「检查更新」将覆盖旧文件。
 - 标题栏模式增加第四种可折叠侧边栏模式。
