@@ -5,7 +5,8 @@ param(
     [Parameter(Mandatory = $true)][string]$Profile,
     [string]$ManifestUrl = 'https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/update_manifest.json',
     [string]$ManifestUrl2 = 'https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/update_manifest.json',
-    [string]$Log = ''
+    [string]$Log = '',
+    [int]$AutoRestart = 0
 )
 
 $ErrorActionPreference = 'Stop'
@@ -21,6 +22,31 @@ function WriteLog([string]$msg) {
             if ($dir -and -not (Test-Path -LiteralPath $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
             Add-Content -LiteralPath $Log -Value $msg -Encoding UTF8
         } catch { }
+    }
+}
+
+# 替换成功后把 foobar2000 拉起来。只在 exe 存在、且更新期间没有别的实例
+# 被用户手动打开时才启动，避免出现第二个窗口。
+function Start-FoobarAfterUpdate {
+    try {
+        $root = Split-Path -Parent $Profile
+        $exe = Join-Path $root 'foobar2000.exe'
+        if (-not (Test-Path -LiteralPath $exe)) {
+            WriteLog ('RESTART 未找到 ' + $exe)
+            return 'nofile'
+        }
+        $alive = @(Get-Process -Name 'foobar2000' -ErrorAction SilentlyContinue)
+        if ($alive.Count -gt 0) {
+            $pids = (@($alive | ForEach-Object { $_.Id }) -join ',')
+            WriteLog ('RESTART 已有实例在运行（PID ' + $pids + '），跳过')
+            return 'running'
+        }
+        Start-Process -FilePath $exe -WorkingDirectory $root -WindowStyle Normal
+        WriteLog 'RESTART 已启动'
+        return 'ok'
+    } catch {
+        WriteLog ('RESTART 失败 ' + $_.Exception.Message)
+        return 'fail'
     }
 }
 
@@ -217,5 +243,19 @@ if ($fails.Count -gt 0) {
 }
 
 WriteLog ('OK 完成：更新 ' + $upd + ' / 新增 ' + $add + ' / 删除 ' + $del + ' 版本 ' + $version)
-Show-UpdPopup ('主题更新完成：更新 ' + $upd + ' / 新增 ' + $add + ' / 删除 ' + $del + [Environment]::NewLine + '版本 ' + $version + [Environment]::NewLine + [Environment]::NewLine + '可启动 foobar2000 体验新的版本。')
+
+# ---------- 8. 自动重启（可选，面板开关 AUTORESTART） ----------
+$tail = ''
+if ($AutoRestart -ne 0) {
+    switch (Start-FoobarAfterUpdate) {
+        'ok'      { $tail = [Environment]::NewLine + [Environment]::NewLine + 'foobar2000 已自动重启。' }
+        'running' { $tail = [Environment]::NewLine + [Environment]::NewLine + '检测到 foobar2000 已在运行，未重复启动。' }
+        'nofile'  { $tail = [Environment]::NewLine + [Environment]::NewLine + '未找到 foobar2000.exe，请手动启动。' }
+        default   { $tail = [Environment]::NewLine + [Environment]::NewLine + '自动重启失败，请手动启动 foobar2000。' }
+    }
+} else {
+    $tail = [Environment]::NewLine + [Environment]::NewLine + '可启动 foobar2000 体验新的版本。'
+}
+
+Show-UpdPopup ('主题更新完成：更新 ' + $upd + ' / 新增 ' + $add + ' / 删除 ' + $del + [Environment]::NewLine + '版本 ' + $version + $tail)
 exit 0

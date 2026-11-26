@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.26-1243",
-  "generated": "2026-11-26T04:43:34Z",
+  "version": "2026.11.26-2022",
+  "generated": "2026-11-26T12:22:09Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -8,8 +8,8 @@
   "files": [
     {
       "path": "Eole/DUI_Eole_x64.fth",
-      "mtime": 1795662486,
-      "md5": "90414adb8643e4c7837733af290fae0c"
+      "mtime": 1795694285,
+      "md5": "ddfa4b481f5f2b69f59d71f33b48f75c"
     },
     {
       "path": "Eole/preview.png",
@@ -18,8 +18,8 @@
     },
     {
       "path": "Eole/ts_update.ps1",
-      "mtime": 1795505560,
-      "md5": "af795a27e45d4d23c525efd66db408a5"
+      "mtime": 1795694700,
+      "md5": "b6acd23d1854167e3b0db15f6a5008a2"
     },
     {
       "path": "Eole/Biography/LICENSE.txt",
@@ -3788,8 +3788,8 @@
     },
     {
       "path": "Eole/js/Eole_layout.js",
-      "mtime": 1795668207,
-      "md5": "5d52057f2cd14e45d0d63555eb9eaffb"
+      "mtime": 1795693555,
+      "md5": "8e1925bc0a9fbf1bc1f13fbe81828a75"
     },
     {
       "path": "Eole/js/graphicbrowser.js",
@@ -3853,8 +3853,8 @@
     },
     {
       "path": "Eole/js/theme_settings.js",
-      "mtime": 1795662074,
-      "md5": "d8cfced2deff9daaa90963c1ee66b06b"
+      "mtime": 1795695675,
+      "md5": "6576c390bf951d4cbfd9c6e88c1e64df"
     },
     {
       "path": "Eole/js/title_bar.js",
@@ -3948,8 +3948,8 @@
     },
     {
       "path": "webview-ui/video/index.html",
-      "mtime": 1795668177,
-      "md5": "874f0d8f5c09204e1a30b23fba41377e"
+      "mtime": 1795693561,
+      "md5": "90d51f948d088d2f8b76152b3d830e55"
     }
   ],
   "removed": [

@@ -1590,6 +1590,13 @@ function tsRows() {
             action: function () { tsUpdateApply(); }
         });
         R.push({
+            id: 'upd_restart', label: '更新后自动重启',
+            desc: '替换完成后自动启动 foobar2000；替换失败或已有实例在跑时不拉起',
+            kind: 'toggle',
+            get: function () { return tsUpdAutoRestartGet(); },
+            set: function (v) { tsUpdAutoRestartSet(v); }
+        });
+        R.push({
             id: 'upd_log', label: '更新日志与备份',
             desc: '_update_backup\\last_update.log 与按时间戳存放的旧文件',
             kind: 'button', button: '打开',
@@ -3124,6 +3131,39 @@ var TS_UPD_MANIFEST_URLS = [
 var tsUpdState = { checked: false, version: '', upd: 0, add: 0, del: 0,
     msg: '尚未检查更新。检查只读取远端清单，不会改动任何文件。' };
 
+/* 更新后自动重启开关：状态文件 eole-settings\AUTORESTART_1 / _0，默认开启。
+   面板把值当参数传给 ts_update.ps1（-AutoRestart 1/0），脚本不自己去猜路径。 */
+function tsUpdAutoRestartRoot() {
+    return fb.ProfilePath + 'Eole\\eole-settings\\';
+}
+function tsUpdAutoRestartGet() {
+    try {
+        var files = utils.Glob(tsUpdAutoRestartRoot() + 'AUTORESTART_*');
+        if (files && files.length) {
+            var p = String(files[0]);
+            return parseInt(p.substr(p.lastIndexOf('_') + 1), 10) ? 1 : 0;
+        }
+    } catch (e) {}
+    return 1;
+}
+function tsUpdAutoRestartSet(v) {
+    var root = tsUpdAutoRestartRoot();
+    var target = root + 'AUTORESTART_' + (v ? '1' : '0');
+    try {
+        var files = utils.Glob(root + 'AUTORESTART_*');
+        if (files) {
+            for (var i = 0; i < files.length; i++) {
+                if (String(files[i]) === target) continue;
+                try {
+                    var fso = new ActiveXObject('Scripting.FileSystemObject');
+                    fso.DeleteFile(String(files[i]), true);
+                } catch (e1) {}
+            }
+        }
+        utils.WriteTextFile(target, '1');
+    } catch (e) {}
+}
+
 function tsHttpGet(url) {
     try {
         var x = new ActiveXObject('MSXML2.XMLHTTP');
@@ -3204,7 +3244,8 @@ function tsUpdateCheck() {
         msg = '已是最新（远端版本 ' + ver + '）。';
     } else {
         msg = '远端版本 ' + ver + '：更新 ' + upd + ' 个，新增 ' + add + ' 个，移除 ' + del +
-              ' 个。点“立即更新”退出 foobar2000 自动完成，重启后生效。';
+              ' 个。点“立即更新”退出 foobar2000 自动完成，' +
+              (tsUpdAutoRestartGet() ? '完成后自动重启。' : '重启后生效。');
     }
     tsUpdState = { checked: true, version: ver, upd: upd, add: add, del: del, msg: msg };
     tsUpdRebuild();
@@ -3247,8 +3288,9 @@ function tsUpdateApply() {
         var fso = new ActiveXObject('Scripting.FileSystemObject');
         if (fso.FileExists(log)) fso.DeleteFile(log);
     } catch (e2) {}
+    var autoRestart = tsUpdAutoRestartGet() ? 1 : 0;
     var cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + ps1 +
-              '" -Profile "' + fb.ProfilePath + '" -Log "' + log + '"';
+              '" -Profile "' + fb.ProfilePath + '" -Log "' + log + '" -AutoRestart ' + autoRestart;
     var ok = false;
     try {
         var sh = new ActiveXObject('WScript.Shell');
@@ -3260,7 +3302,8 @@ function tsUpdateApply() {
         tsUpdRebuild();
         return;
     }
-    tsUpdState.msg = '更新程序已启动（版本 ' + tsUpdState.version + '），foobar2000 即将退出，完成后弹窗报告，重启后生效。';
+    tsUpdState.msg = '更新程序已启动（版本 ' + tsUpdState.version + '），foobar2000 即将退出，完成后弹窗报告' +
+                     (autoRestart ? '并自动重启。' : '，重启后生效。');
     tsUpdRebuild();
     try { fb.Exit(); } catch (eExit) {
         tsUpdState.msg = '更新程序已启动，请手动关闭 foobar2000 以完成替换。';
