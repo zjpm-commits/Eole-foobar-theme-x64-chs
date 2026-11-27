@@ -97,6 +97,7 @@ if(globalProperties.deleteDiskCache) {
    ============================================================================ */
 var g_railMode = false;
 var g_railPanelState = -1;  /* 布局里有没有 Sidebar 面板：-1 未知 / 0 没有 / 1 有 */
+var g_railAnswer = -1;      /* 布局对「是不是第 4 种形态」的回答：-1 还没答 / 0 不是 / 1 是 */
 
 /* 第 4 种形态在视觉上等同于「常规紧凑」或「加宽紧凑」：
    把 compact_titlebar 的比较函数在 rail 态虚拟成 1 / 2，pss 那套紧凑绘制就会
@@ -104,15 +105,29 @@ var g_railPanelState = -1;  /* 布局里有没有 Sidebar 面板：-1 未知 / 0
 function railWideNow() {
 	try { return (typeof railWidePref === 'function') && railWidePref() === 1; } catch (eRW) { return false; }
 }
+/* 第 4 种形态的判定：设置里选 3、不在迷你布局、且布局没有明确答复「没有 Sidebar」。
+   以前这里靠 g_railMode，而它要等布局答复，首帧必然还是 false，紧凑栏就会先把四个
+   主区入口画出来再隐藏。现在直接看设置 + 三态答复（-1 未知也按第 4 形态画），
+   标题栏从第一帧起就是最终档位，不需要"先画后擦"。 */
+function railTitleMode() {
+	try {
+		if (Number(compact_titlebar.value) !== 3) return false;
+		if (layout_state.isEqual(1)) return false;
+		return g_railAnswer !== 0;
+	} catch (eRTM) { return false; }
+}
 (function () {
 	try {
 		var _railEq = compact_titlebar.isEqual, _railAct = compact_titlebar.isActive;
 		compact_titlebar.isEqual = function (v) {
-			if (g_railMode) return (Number(v) === (railWideNow() ? 2 : 1));
+			var n = Number(v);
+			/* 3 是真实档位，必须原样回答，否则 railTitleMode 自己会判不出来 */
+			if (n === 3) return (Number(this.value) === 3);
+			if (railTitleMode()) return (n === (railWideNow() ? 2 : 1));
 			return _railEq.apply(this, arguments);
 		};
 		compact_titlebar.isActive = function () {
-			if (g_railMode) return true;
+			if (railTitleMode()) return true;
 			return _railAct.apply(this, arguments);
 		};
 	} catch (eRailPatch) {}
@@ -153,7 +168,7 @@ function railPaintExtras(gr) {
 
 	/* 曲目信息：紧凑栏原来不画文字，这里补在左侧按钮组与右侧开关之间 */
 	var leftW = 0;
-	try { leftW = compact_btns.getWidth(); } catch (eLW) { leftW = 0; }
+	try { leftW = rail_btns.getWidth(); } catch (eLW) { leftW = 0; }
 	var rightW = 0;
 	try { rightW = window_btns.getWidth(); } catch (eRW2) { rightW = 0; }
 	var infoX = leftW + 12;
@@ -194,6 +209,7 @@ var g_fsize=12;
 var cSearchBox = {};
 var g_genre_cache = null;
 var main_panel_btns = null;
+var rail_btns = null;        /* 第 4 种形态自己的按钮组（不含四个主区入口） */
 /* 明暗切换按钮的连击闸门：双击事件已取消，但双击仍会产生第二次 lbtn_up。 */
 var g_lightswitchAt = 0;
 
@@ -831,6 +847,12 @@ function build_buttons(){
 		compact_btns.addButtons([buttons.Settings,buttons.NowPlaying,buttons.ConfigLayout,buttons.ThemeSettings,buttons.RightSidebar,buttons.Lightswitch,buttons.Fullscreen,buttons.ShowSearch], [0,0,0,0]);
 		compact_btns.addButtons([buttons.Library], [0,0,0,btn.margin+5]);
 		compact_btns.addButtons([buttons.Playlists,buttons.Artist_Bio,buttons.Visualization], [0,0,0,btn.margin]);
+
+		/* 第 4 种形态自己的按钮组：和紧凑栏同一批按钮对象（悬停/点击状态不用分家），
+		   但不登记 Library / Playlists / Artist_Bio / Visualization —— 四个主区入口
+		   从结构上就不存在，不需要"先加进组里、再按 g_railMode 隐藏"。 */
+		rail_btns = new JSButtonGroup("top-left", 0, -1, 'rail_btns', true);
+		rail_btns.addButtons([buttons.Settings,buttons.NowPlaying,buttons.ConfigLayout,buttons.ThemeSettings,buttons.RightSidebar,buttons.Lightswitch,buttons.Fullscreen,buttons.ShowSearch], [0,0,0,0]);
 	}
 }
 function toggleSearch(new_search_state){
@@ -973,7 +995,9 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 	}
 }
 function adapt_buttons_to_layout(){
-	if(compact_titlebar.isEqual(2) && layout_state.isEqual(0)){
+	if (railTitleMode()) {
+		btn.height = railWideNow() ? btn.height_big : btn.height_small;
+	} else if(compact_titlebar.isEqual(2) && layout_state.isEqual(0)){
 		btn.height = btn.height_big;
 	} else {
 		btn.height = btn.height_small;			
@@ -1061,7 +1085,33 @@ function adapt_buttons_to_layout(){
 			buttons.Settings.w = 43+buttons.Settings.N_img.Width+btn.padding[1]/2;
 			buttons.Settings.displayLabel(true);
 		}
-		if(compact_titlebar.isActive()) {
+		if (railTitleMode()) {
+			/* 第 4 种形态独立档位：按钮组 rail_btns 从结构上就没有四个主区入口，
+			   内距 / 窗口键高度按侧栏那两档（36 常规、50 4K）走。 */
+			if (rail_btns) rail_btns.setBtnsHeight(btn.height+4);
+			if (railWideNow()) {
+				topleft_btns.setPadding([0,18,0,14]);
+				if(properties.mini_mainmenu_button) {
+					topleft_btns.setPadding([0,18,0,14]);
+					topleft_btns.imgXAdjust(0);
+				} else {
+					topleft_btns.setPadding([0,18,0,18]);
+					topleft_btns.imgXAdjust(-4);
+				}
+				window_btns.setBtnsHeight(50);
+				additional_btns.setBtnsWidth(btn.width_small_btns_compact_big);
+			} else {
+				topleft_btns.setPadding([0,8,0,4]);
+				window_btns.setBtnsHeight(36);
+				additional_btns.setBtnsWidth(btn.width_small_btns_compact);
+			}
+			try { rail_btns.x = 0; } catch (eRailX) {}
+			/* 按钮实例是共用的：这四个入口在其它组里也不该亮着，统一关掉 */
+			buttons.Library.setVisibility(false);
+			buttons.Playlists.setVisibility(false);
+			buttons.Artist_Bio.setVisibility(false);
+			buttons.Visualization.setVisibility(false);
+		} else if(compact_titlebar.isActive()) {
 			compact_btns.setBtnsHeight(btn.height+4);
 			if(compact_titlebar.isEqual(1)){
 				topleft_btns.setPadding([0,8,0,4]);
@@ -1079,15 +1129,7 @@ function adapt_buttons_to_layout(){
 				window_btns.setBtnsHeight(50);		
 				additional_btns.setBtnsWidth(btn.width_small_btns_compact_big);				
 			}
-			/* 第 4 种形态：紧凑栏减掉主区入口按钮（它们已经在侧栏里）。
-			   主菜单、右侧小开关、窗口键位置一律照旧（折叠按钮已挪到侧栏面板）。 */
 			compact_btns.x = 0;
-			if (g_railMode) {
-				buttons.Library.setVisibility(false);
-				buttons.Playlists.setVisibility(false);
-				buttons.Artist_Bio.setVisibility(false);
-				buttons.Visualization.setVisibility(false);
-			}
 			
 		} else {
 			compact_btns.x = 0;
@@ -1109,7 +1151,7 @@ function adapt_buttons_to_layout(){
 		if(properties.toUpperCase) main_panel_btns.toUpperCase(true);
 		if(!properties.showPanelBtnText) main_panel_btns.displayLabel(false);
 		/* 从第 4 种形态退回老三种：把为侧栏藏掉的入口按钮按宽度规则放回来 */
-		if (!g_railMode) { try { set_main_btns_visibility(); } catch (eSMV) {} }
+		if (!railTitleMode()) { try { set_main_btns_visibility(); } catch (eSMV) {} }
 	}
 	g_searchbox.adapt_look_to_layout();
 	if(!properties.show_visualization) buttons.Visualization.setVisibility(false);
@@ -1139,6 +1181,14 @@ function oPanel(name, firstPaintCallback){
 	};
 }
 function drawAllButtons(gr) {
+	if (railTitleMode()) {
+		/* 第 4 形态独立绘制：窗口键 + rail_btns，四个主区入口不在这个组里 */
+		try {
+			window_btns.draw(gr);
+			if (rail_btns) rail_btns.draw(gr);
+		} catch (eRailDraw) {}
+		return;
+	}
 	if(compact_titlebar.isActive() && layout_state.isEqual(0)){
 		window_btns.draw(gr);
 		compact_btns.draw(gr);
@@ -1152,7 +1202,7 @@ function drawAllButtons(gr) {
 
 function set_main_btns_visibility(){
 	/* 第 4 种形态：主区入口按钮固定不画（7 个入口都在左侧侧栏里） */
-	if (g_railMode) {
+	if (railTitleMode()) {
 		buttons.Playlists.setVisibility(false);
 		buttons.Artist_Bio.setVisibility(false);
 		buttons.Library.setVisibility(false);
@@ -1184,9 +1234,9 @@ function set_main_btns_visibility(){
 function on_size(w, h) {
     ww = Math.max(w,globalProperties.miniMode_minwidth);
     wh = h;
-	/* 第 4 种形态走紧凑栏同一套尺寸规则（虚拟 compact=1/2），按钮组不再右移 */
-	if (g_railMode) {
-		try { compact_btns.x = 0; } catch (eRailShift) {}
+	/* 第 4 种形态是独立档位：按钮组换成 rail_btns，不再右移 */
+	if (railTitleMode()) {
+		try { rail_btns.x = 0; } catch (eRailShift) {}
 	}
 	var fullscreen =  g_uihacks.getFullscreenState();
 	var mainWindowState =  g_uihacks.getMainWindowState();
@@ -1270,12 +1320,12 @@ function pseudoCaptionFollow(x, y){
 
 function SetPseudoCaption(){
 	g_pc_key = "";
-	if (g_railMode) {
-		/* 第 4 种形态沿用紧凑栏那套拖动区算法，只把起点让出左侧箭头 */
+	if (railTitleMode()) {
+		/* 第 4 种形态：拖动区让出 rail_btns 的宽度 */
 		g_pc_zone = PC_ZONE_NONE;
 		if (g_searchbox && g_searchbox.hide) {
 			var railLeftW = 0, railRightW = 0;
-			try { railLeftW = compact_btns.getWidth(); } catch (eRLW) { railLeftW = 0; }
+			try { railLeftW = rail_btns.getWidth(); } catch (eRLW) { railLeftW = 0; }
 			try { railRightW = window_btns.getWidth(); } catch (eRRW) { railRightW = 0; }
 			try {
 				g_uihacks.SetPseudoCaption(railLeftW, 8,
@@ -1334,7 +1384,7 @@ function on_paint(gr) {
 		g_searchbox.draw(gr, cSearchBox.marginLeft, cSearchBox.marginTop);
 	}
 
-	if (g_railMode) { try { railPaintExtras(gr); } catch (eRPE) {} }
+	if (railTitleMode()) { try { railPaintExtras(gr); } catch (eRPE) {} }
 
 }
 /* ===== 模式 5：视频面板自动切换 =====
@@ -1606,7 +1656,7 @@ function on_mouse_rbtn_up(x, y){
 			else if(_mpIdx === 5) _menu.CheckMenuItem(9, true);
 			else _menu.CheckMenuItem(10, true);
 			/* 折叠侧边栏布局没有「迷你播放器」形态（侧栏只属于完整布局），置灰 */
-			_menu.AppendMenuItem(g_railMode ? MF_GRAYED : MF_STRING, 6, "迷你播放器");
+			_menu.AppendMenuItem(railTitleMode() ? MF_GRAYED : MF_STRING, 6, "迷你播放器");
 			if(g_uihacks.getFullscreenState())
 				_menu.AppendMenuItem(MF_STRING, 5, "退出全屏");
 			else
@@ -1695,7 +1745,7 @@ function draw_settings_menu(x,y){
 		_menu.AppendMenuItem(MF_STRING, 1811, "标准两行标题栏");
 		_menu.AppendMenuItem(MF_STRING, 1812, "常规紧凑标题栏");
 		_menu.AppendMenuItem(MF_STRING, 1813, "加宽紧凑标题栏");
-		_menu.AppendMenuItem(MF_STRING, 1815, "折叠侧边栏标题栏");
+		_menu.AppendMenuItem(MF_STRING, 1815, "折叠侧边栏模式");
 		var tbMode = parseInt(compact_titlebar.getValue());
 		if (isNaN(tbMode)) tbMode = 0;
 		if (tbMode === 3) _menu.CheckMenuItem(1815, true);
@@ -1703,7 +1753,7 @@ function draw_settings_menu(x,y){
 		
 		/* 侧栏形态既有入口按钮没有、又有曲目信息，所以这两项在 rail 态要能点：
 		   真·紧凑 1/2 才置灰（那两种栏本来就不画曲目信息） */
-		var tbInfoGray = compact_titlebar.isActive() && layout_state.isEqual(0) && !g_railMode;
+		var tbInfoGray = compact_titlebar.isActive() && layout_state.isEqual(0) && !railTitleMode();
 		_menu.AppendMenuItem(tbInfoGray?MF_GRAYED:MF_STRING, 1800, "标题栏显示曲目信息");
 		_menu.CheckMenuItem(1800, properties.tracktitle_ontop)
 		_menu.AppendMenuItem(tbInfoGray?MF_GRAYED:MF_STRING, 1809, "标题栏曲目信息格式...");
@@ -2858,7 +2908,11 @@ function on_notify_data(name, info) {
 	   是就整条自己画 40px 单行栏，不是就继续走原来的三形态，一行不动。 */
 	if (name === 'rail_answer') {
 		var railOn = (info === true || String(info) === '1' || Number(info) === 1);
-		if (railOn !== g_railMode) {
+		/* 三态记忆：首帧 -1 时按第 4 形态画；布局明确回答 0 才退回原来三形态 */
+		var railAnswerNow = railOn ? 1 : 0;
+		var railAnswerChanged = (railAnswerNow !== g_railAnswer);
+		g_railAnswer = railAnswerNow;
+		if (railOn !== g_railMode || railAnswerChanged) {
 			g_railMode = railOn;
 			btn_initialized = false;
 			if (railOn) { try { railFirstInit(); } catch (eRF) {} }
