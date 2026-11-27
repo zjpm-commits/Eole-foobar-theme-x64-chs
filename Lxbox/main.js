@@ -941,8 +941,8 @@ function initTheme() {
   F.tiny = mk(name, false);
   F.hdr = mk(name, false);
 
-  /* 顶栏播放控制按钮用的符号字体（Win10/11 自带；字号比正文大一档才够看） */
-  try { F.mdl2 = gdi.Font('Segoe MDL2 Assets', Math.max(10, Math.round((FONT_BASE || 12) * 1.25)), 0); }
+  /* 顶栏播放控制按钮用的符号字体（Win11 自带 Fluent Icons，码点与 MDL2 兼容） */
+  try { F.mdl2 = gdi.Font('Segoe Fluent Icons', Math.max(10, Math.round((FONT_BASE || 12) * 1.25)), 0); }
   catch (eM) { F.mdl2 = F.hdr; }
 
   /* RemixIcon 图标字体（用户级安装，家族名 remixicon）：浮层关闭 / 简介评论源切换按钮 */

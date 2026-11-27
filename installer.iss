@@ -84,12 +84,36 @@ Source: "{#Src}\assets\payload\config.sqlite"; DestDir: "{app}\profile"; Flags: 
 Source: "{#Src}\assets\payload\theme.fth"; DestDir: "{app}\profile"; Flags: ignoreversion
 Source: "{#Src}\assets\payload\DUI_Eole_x64.fth"; DestDir: "{app}\themes"; Flags: ignoreversion
 
+; ---- 字体（用户态安装，免管理员）----
+; Remix Icon 供图标字符使用；Segoe Fluent Icons 供 Win10 上缺字时补位。
+; FontInstall 让 Setup 在本次会话内注册字体，[Registry] 负责持久化。
+Source: "{#Src}\assets\fonts\Remix Icon v4.9.1.ttf"; DestDir: "{userfonts}"; DestName: "remixicon.ttf"; Flags: ignoreversion; FontInstall: "remixicon"
+Source: "{#Src}\assets\fonts\Segoe Fluent Icons.ttf"; DestDir: "{userfonts}"; Flags: ignoreversion; FontInstall: "Segoe Fluent Icons"
+
+[Registry]
+; 字体注册（HKCU，安装时不需要管理员）
+Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "remixicon (TrueType)"; ValueData: "{userfonts}\remixicon.ttf"; Flags: uninsdeletevalue
+Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "Segoe Fluent Icons (TrueType)"; ValueData: "{userfonts}\Segoe Fluent Icons.ttf"; Flags: uninsdeletevalue
+
 [Messages]
 SelectDirDesc=选择 foobar2000 根目录
 SelectDirLabel3=安装程序会把主题文件释放到所选 foobar2000 根目录下的 profile 文件夹。
 SelectDirBrowseLabel=请确认下面的目录是 foobar2000 的根目录（即 foobar2000.exe 所在目录），然后点击“下一步”。
 
 [Code]
+function AddFontResourceW(lpFilename: String): Integer;
+  external 'AddFontResourceW@gdi32.dll stdcall';
+
+procedure RegisterBundledFonts;
+var
+  F: String;
+begin
+  F := ExpandConstant('{userfonts}\remixicon.ttf');
+  if FileExists(F) then AddFontResourceW(F);
+  F := ExpandConstant('{userfonts}\Segoe Fluent Icons.ttf');
+  if FileExists(F) then AddFontResourceW(F);
+end;
+
 function GetDefaultFb2kRoot(Param: string): string;
 begin
   if DirExists(ExpandConstant('{pf}\foobar2000')) then
@@ -123,6 +147,8 @@ end;
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
+  begin
+    RegisterBundledFonts;
     MsgBox('安装完成！' #13#10 #13#10
       + '请在 foobar2000 中按以下方式导入主题：' #13#10
       + '文件 → 参数选项 → 默认用户界面 → 导入主题' #13#10
@@ -130,4 +156,5 @@ begin
       + '主题文件位于 profile\Eole\DUI_Eole_x64.fth 与 themes\DUI_Eole_x64.fth。' #13#10 #13#10
       + '若默认字体偏小：Ctrl + 鼠标滚轮 全局缩放，Shift + 鼠标滚轮 调整行间距。',
       mbInformation, MB_OK);
+  end;
 end;
