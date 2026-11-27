@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.27-1146",
-  "generated": "2026-11-27T03:46:28Z",
+  "version": "2026.11.27-1440",
+  "generated": "2026-11-27T06:40:49Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -3813,8 +3813,8 @@
     },
     {
       "path": "Eole/js/milkdrop_panel.js",
-      "mtime": 1795747764,
-      "md5": "9e73d3a302231865ba322eb8e300b557"
+      "mtime": 1795759284,
+      "md5": "40c13ee01ebb4b5390c3968e4d9f2fc1"
     },
     {
       "path": "Eole/js/playlistheader.js",
@@ -3833,8 +3833,8 @@
     },
     {
       "path": "Eole/js/sidebar_rail.js",
-      "mtime": 1795747764,
-      "md5": "8487c71b665f8426a64b9fd9206b2bc6"
+      "mtime": 1795760208,
+      "md5": "a26ad804205b3213231dce657fae3432"
     },
     {
       "path": "Eole/js/smoothplaylist.js",
