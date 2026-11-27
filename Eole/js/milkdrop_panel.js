@@ -132,11 +132,12 @@ function md_setRunning(on) {
 //   * drawSidebar() —— 整体置空。layout 归零后它仍会画边线和一批负宽文字，
 //     置空最干净。
 // 两个都是样例的普通函数声明（全局可写绑定），on_load 后重新赋值即可生效；
-// 恢复显示时把原函数换回去。开关状态存面板属性，重启记住。
+// 恢复显示时把原函数换回去。开关状态存面板属性，重启记住；
+// 属性还不存在时按「隐藏」处理，即首次加载就把左侧设置面板收起。
 // ---------------------------------------------------------------------------
 var md_sidebarHidden = false;
 var md_layoutOrig = null, md_drawSidebarOrig = null;
-try { md_sidebarHidden = !!window.GetProperty('Eole.MilkDrop.HideSidebar', false); } catch (eP0) { }
+try { md_sidebarHidden = !!window.GetProperty('Eole.MilkDrop.HideSidebar', true); } catch (eP0) { }
 
 function md_layoutNoSidebar() {
     var r = md_layoutOrig();
@@ -309,13 +310,20 @@ function on_mouse_rbtn_up(x, y) {
 // ---------------------------------------------------------------------------
 // 启动对齐：样例已按自己的属性完成首屏，这里把 Eole 设置键喂给它
 // ---------------------------------------------------------------------------
-function on_load() {
-    md_applyVis();
-    md_applyFps();
-    md_applySidebar();   /* 上次隐藏了左侧面板：启动即接管（状态存在面板属性里） */
-    md_applyPlaylistLock();   /* 浮层关闭态：拦住"单击画面自动重开" */
+/* 启动对齐。jsplitter 不会主动调用 on_load，所以真正的入口是下面 md_boot 里的
+   定时器：等样例 include 完成、layout() 已经存在，再把侧栏接管上。 */
+function md_startup() {
+    try { md_applyVis(); } catch (eSV) { }
+    try { md_applyFps(); } catch (eSF) { }
+    try { md_applySidebar(); } catch (eSS) { }   /* 上次隐藏了左侧面板：启动即接管 */
+    try { md_applyPlaylistLock(); } catch (eSP) { }   /* 浮层关闭态：拦住"单击画面自动重开" */
     /* 启动时就不是模式 4（记住的状态是别的模式）：把样例的定时器停掉 */
-    if (!md_active()) md_setRunning(false);
+    try { if (!md_active()) md_setRunning(false); } catch (eSR) { }
+}
+
+function on_load() {
+    /* 有些宿主会在脚本全部加载完后调这里；和定时器重复调用是幂等的 */
+    md_startup();
 }
 
 // ---------------------------------------------------------------------------
@@ -324,4 +332,9 @@ function on_load() {
 (function md_boot() {
     /* 这一块是 D2D 自绘，不能开伪透明——开了会去截宿主背景，截到的是别的东西 */
     try { window.SupportPseudoTransparency = false; } catch (eP) { }
+    /* on_load 在 jsplitter 里不触发：补几拍启动。第一拍等 include 链跑完，
+       后两拍兜住样例的异步初始化（预设列表读盘）。md_startup 可重复调用。 */
+    window.SetTimeout(function () { try { md_startup(); } catch (e0) { } }, 0);
+    window.SetTimeout(function () { try { md_startup(); } catch (e1) { } }, 250);
+    window.SetTimeout(function () { try { md_startup(); } catch (e2) { } }, 900);
 })();
