@@ -76,6 +76,11 @@ var g_rail = {
     items: []
 };
 
+/* 悬停提示：theme_common 的 oCursor 只记坐标，oTooltip 负责真正的原生 tooltip。
+   折叠态（48px）只有图标，提示就是那排图标唯一的文字说明。 */
+var g_cursor = new oCursor();
+var g_tooltip = new oTooltip('rail');
+
 /* 按属性过滤入口：洛雪音源被「设置... → 隐藏洛雪音源面板」关掉时，这一项直接不出现在侧栏 */
 function railVisibleItems() {
     var list = [];
@@ -289,18 +294,48 @@ function railSelect(i) {
     window.Repaint();
 }
 
+/* 悬停提示。展开态本来就有文字标签，不弹；折叠成 48px 图标条后才靠它补文字。
+   未安装的可视效果 / 视频面板顺带标一句，省得点了才发现切不过去。 */
+function railTooltipRefresh(hdr, idx) {
+    try {
+        if (!g_tooltip) return;
+        /* 展开态本来就有文字标签，不用再提示；只有折叠成 48px 图标条时才需要 */
+        if (railExpanded()) { g_tooltip.Deactivate(); return; }
+        var delay = 500;
+        try { if (globalProperties && globalProperties.tooltip_button_delay > 0) delay = globalProperties.tooltip_button_delay; } catch (eDelay) {}
+        if (hdr) {
+            g_tooltip.ActivateDelay('展开侧边栏',
+                g_cursor.x + 10, g_cursor.y + 20, delay, 0, false, 'rail_header');
+            return;
+        }
+        if (idx >= 0 && idx < g_rail.items.length) {
+            var it = g_rail.items[idx];
+            var txt = it.label;
+            if (it.mode === 4 && g_rail.mdOk === 0) txt += '（未安装）';
+            else if (it.mode === 5 && g_rail.mpvOk === 0) txt += '（未安装）';
+            g_tooltip.ActivateDelay(txt, g_cursor.x + 10, g_cursor.y + 20, delay, 0, false, 'rail_item_' + it.mode);
+            return;
+        }
+        g_tooltip.Deactivate();
+    } catch (eTip) {}
+}
+
 function on_mouse_move(x, y) {
+    try { g_cursor.onMouse('move', x, y); } catch (eCur0) {}
     var hdr = railHeaderHit(x, y);
     var h = hdr ? -1 : railItemAt(x, y);
     if (hdr !== g_rail.hoverHeader || h !== g_rail.hover) {
         g_rail.hoverHeader = hdr;
         g_rail.hover = h;
+        railTooltipRefresh(hdr, h);
         window.Repaint();
     }
     try { window.SetCursor((hdr || h >= 0) ? IDC_HAND : IDC_ARROW); } catch (eCur) {}
 }
 
 function on_mouse_leave() {
+    try { g_cursor.onMouse('leave', 0, 0); } catch (eCur1) {}
+    try { if (g_tooltip) g_tooltip.Deactivate(); } catch (eTip0) {}
     if (g_rail.hover !== -1 || g_rail.hoverHeader) {
         g_rail.hover = -1;
         g_rail.hoverHeader = false;
@@ -309,6 +344,8 @@ function on_mouse_leave() {
 }
 
 function on_mouse_lbtn_up(x, y) {
+    /* 点下去就收起提示，别让它在切换动静里挂着 */
+    try { if (g_tooltip) g_tooltip.Deactivate(); } catch (eTip1) {}
     if (railHeaderHit(x, y)) { railToggleCollapse(); return; }
     var i = railItemAt(x, y);
     if (i >= 0) railSelect(i);
