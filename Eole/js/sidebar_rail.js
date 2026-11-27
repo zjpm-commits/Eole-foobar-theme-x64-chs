@@ -50,14 +50,14 @@ var RAIL_HEADER_GLYPH = '\uF168';
 
 /* 7 个入口：mode 对应 pss_switch.js 的 main_panel_state 0…6。
    图标整套用 Segoe MDL2 Assets：E8F1 本地音乐 / E90B 播放列表 / E779 简介歌词 /
-   E8D6 洛雪音源 / E9D9 可视化 / E786 视频 / E713 主题设置。 */
+   E8D6 洛雪音源 / E9D9 可视效果 / E786 视频 / E713 主题设置。 */
 var RAIL_ITEMS = [
     { mode: 0, label: '本地音乐', glyph: '\uE8F1' },
     { mode: 1, label: '播放列表', glyph: '\uE90B' },
     { mode: 2, label: '简介歌词', glyph: '\uE779' },
     { mode: 3, label: '洛雪音源', glyph: '\uE8D6' },
-    { mode: 4, label: '可视化',   glyph: '\uE9D9' },
-    { mode: 5, label: '视频',     glyph: '\uE786' },
+    { mode: 4, label: '可视效果',   glyph: '\uE9D9' },
+    { mode: 5, label: '视频面板',     glyph: '\uE786' },
     { mode: 6, label: '主题设置', glyph: '\uE713' }
 ];
 
@@ -70,7 +70,7 @@ var g_rail = {
     /* MilkDrop / MPV 在不在：-1 未知（还没收到 Eole_layout 的答复）、0 不在、1 在 */
     mdOk: -1,
     mpvOk: -1,
-    /* 「显示可视化标签页」那条属性：0 = 洛雪音源入口不摆，1 = 摆 */
+    /* 「显示可视效果标签页」那条属性：0 = 洛雪音源入口不摆，1 = 摆 */
     lxOk: 1,
     /* 当前实际显示的入口（过滤后的列表，索引与绘制/命中一致） */
     items: []
@@ -230,7 +230,7 @@ function on_paint(gr) {
 function railWarn(kind) {
     var msg = (kind === 'milkdrop')
         ? 'MilkDrop 入口不可用：这套布局里没有 caption 为 MilkDrop 的 JS 面板。'
-        : '视频入口不可用：未安装 foo_ui_webview2 组件，或布局里没有 caption 为 video 的视频面板。';
+        : '视频面板入口不可用：未安装 foo_ui_webview2 组件，或布局里没有 caption 为 video 的视频面板。';
     try { fb.ShowPopupMessage(msg, '折叠侧边栏'); } catch (eWarn) { console.log('[sidebar] ' + msg); }
 }
 
@@ -420,7 +420,7 @@ function railEnsureMarker() {
     railEnsureMarker();
     /* 问 Eole_layout「MilkDrop / MPV 在不在」，答复随时会来 */
     try { window.NotifyOthers('rail_query', true); } catch (eQ) {}
-    /* 问标题栏一次「显示可视化标签页」：决定「洛雪音源」这一项摆不摆 */
+    /* 问标题栏一次「显示可视效果标签页」：决定「洛雪音源」这一项摆不摆 */
     try { window.NotifyOthers('rail_lxbox_query', true); } catch (eQ3) {}
     window.SetTimeout(function () { try { window.NotifyOthers('rail_query', true); } catch (eQ2) {} }, 900);
     window.SetTimeout(function () { try { window.NotifyOthers('rail_lxbox_query', true); } catch (eQ4) {} }, 900);

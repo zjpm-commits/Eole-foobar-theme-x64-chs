@@ -38,6 +38,7 @@ var brw = null;
 var g_scrollbar = null;
 var repaint_main = true,repaint_main1 = true,repaint_main2 = true;
 var scroll_ = 0, scroll = 0;
+var scroll_tick_last = 0;   /* 平滑滚动的上一帧时间戳，把系数按真实帧间隔折算 */
 var g_end = 0;
 var g_last = 0;
 var rowSelection = null;
@@ -5209,9 +5210,17 @@ oBrowser = function(name) {
             repaint_1 = true;
         }
 
-        if(Math.abs(scroll - scroll_) >= 5){
+        /* 按真实帧间隔折算平滑系数：基准取实际 tick 间隔（默认 40ms），
+           正常时等效于原来的每帧 0.5，掉帧时才自动多追一点，不会变成慢动作 */
+        var nowTick = new Date().getTime();
+        var baseTick = (globalProperties.refreshRate > 0) ? globalProperties.refreshRate : 16;
+        var dtTick = scroll_tick_last ? (nowTick - scroll_tick_last) : baseTick;
+        scroll_tick_last = nowTick;
+        if (dtTick < 1) dtTick = 1; else if (dtTick > baseTick * 4) dtTick = baseTick * 4;
+        if(Math.abs(scroll - scroll_) >= 1){
 			if(brw.finishLoading) scroll = g_scrollbar.check_scroll(scroll);
-			scroll_ += (scroll - scroll_) * (properties.smooth_scroll_value);
+			var kTick = 1 - Math.pow(1 - properties.smooth_scroll_value, dtTick / baseTick);
+			scroll_ += (scroll - scroll_) * kTick;
             isScrolling = true;
             repaint_1 = true;
         } else {

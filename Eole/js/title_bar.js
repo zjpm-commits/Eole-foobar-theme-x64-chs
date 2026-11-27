@@ -27,7 +27,7 @@ var colors = {};
 
 var properties = {
 	panelName: 'title_bar',
-	Remember_previous_state: window.GetProperty("启动时恢复面板状态(可视化页除外)", false),
+	Remember_previous_state: window.GetProperty("启动时恢复面板状态(可视效果页除外)", false),
 	background_color: window.GetProperty("背景颜色", "255-255-255"),
 	fullMode_savedwidth: window.GetProperty("完整模式·保存宽度", 1100),
 	fullMode_pmanagerheight: window.GetProperty("完整模式·播放列表管理器保存高度", 820),
@@ -54,9 +54,9 @@ var properties = {
 	playlists_dark_theme: window.GetProperty("播放列表·深色主题", false),
 	bio_dark_theme: window.GetProperty("艺术家简介·深色主题", false),
 	bio_stick2darklayout: window.GetProperty("艺术家简介·跟随深色布局",false),
-	visualization_dark_theme: window.GetProperty("可视化·深色主题", false),
+	visualization_dark_theme: window.GetProperty("可视效果·深色主题", false),
 	minimode_dark_theme: window.GetProperty("迷你模式·深色主题", false),
-	show_visualization: window.GetProperty("属性·显示可视化标签页", true),
+	show_visualization: window.GetProperty("属性·显示可视效果标签页", true),
 	showwallpaper: window.GetProperty("显示·显示壁纸", false),
 	wallpapermode: window.GetProperty("系统·壁纸模式", 0),
 	wallpaperblurred: window.GetProperty("显示·壁纸模糊", true),
@@ -380,7 +380,7 @@ function setDarkLayout(){
 		case (main_panel_state.isEqual(1) && properties.playlists_dark_theme && layout_state.isEqual(0)):
 		case (main_panel_state.isEqual(2) && properties.bio_dark_theme && layout_state.isEqual(0)):
 		case ((main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)) && properties.visualization_dark_theme && layout_state.isEqual(0)):
-		/* 模式 4（MilkDrop）/ 模式 5（MPV 视频）/ 模式 6（主题设置）标题栏与模式 3 共用「可视化·深色主题」，按钮可切换 */
+		/* 模式 4（MilkDrop）/ 模式 5（MPV 视频）/ 模式 6（主题设置）标题栏与模式 3 共用「可视效果·深色主题」，按钮可切换 */
 		case (properties.minimode_dark_theme && layout_state.isEqual(1)):
 			properties.darklayout = true;
 		break;
@@ -491,11 +491,11 @@ function Lightswitch(switch_all,new_state){
         if(!switch_all) window.Repaint();
 	}
 	if(((main_panel_state.isEqual(3) || main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)) && layout_state.isEqual(0)) || switch_all){
-		/* 模式 4/5/6 与模式 3 共用「可视化·深色主题」一个开关 */
+		/* 模式 4/5/6 与模式 3 共用「可视效果·深色主题」一个开关 */
 		if(switch_all) properties.visualization_dark_theme=new_state;
 		else properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
+		window.SetProperty("可视效果·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
 	}
 	if(switch_all){
@@ -1593,9 +1593,9 @@ function on_mouse_rbtn_up(x, y){
 			if(properties.show_visualization) _menu.AppendMenuItem(MF_STRING, 4, "洛雪音源");
 			/* MilkDrop 主面板（模式 4）。单选标记分开处理：1~4 是连续的主区模式，
 			   8 在主菜单 id 里被 5/6/7（全屏、迷你、切回标准）隔开，塞不进同一个 radio 区间 */
-			_menu.AppendMenuItem(MF_STRING, 8, "MilkDrop");
+			_menu.AppendMenuItem(MF_STRING, 8, "可视效果");
 			/* 模式 5：固定显示「视频」，面板 caption 就是 video */
-			_menu.AppendMenuItem(MF_STRING, 9, "视频");
+			_menu.AppendMenuItem(MF_STRING, 9, "视频面板");
 			/* 模式 6：主题设置页。布局里还没加 ThemeSettings 元素时置灰，避免点进去只看到媒体库 */
 			_menu.AppendMenuItem(themeSettingsPanelOn() ? MF_STRING : MF_GRAYED, 10, "主题设置");
 			if(!themeSettingsPanelOn()) _menu.AppendMenuItem(MF_GRAYED, 0, "   （布局里还没有 ThemeSettings 面板）");
@@ -1918,12 +1918,12 @@ function draw_settings_menu(x,y){
 			case (idx == 1809):
 			case (idx == 1900):
 				properties.Remember_previous_state = !properties.Remember_previous_state;
-				window.SetProperty("启动时恢复面板状态(可视化页除外)", properties.Remember_previous_state);
+				window.SetProperty("启动时恢复面板状态(可视效果页除外)", properties.Remember_previous_state);
 				window.Repaint();
 				break;
 			case (idx == 1901):
 				properties.show_visualization = !properties.show_visualization;
-				window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
+				window.SetProperty("属性·显示可视效果标签页", properties.show_visualization);
 				if(main_panel_state.isEqual(3)) main_panel_state.setValue(0);
 				/* 侧栏里的「洛雪音源」入口跟着这条属性走：广播一次，侧栏据此增删那一项 */
 				try { window.NotifyOthers('rail_lxbox_visible', properties.show_visualization ? 1 : 0); } catch (eLXN) {}
@@ -2108,7 +2108,7 @@ function draw_layout_menu(x,y){
    case (idx == 4003):
 		properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
+		window.SetProperty("可视效果·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
         break;
 	case (idx == 4012):
@@ -2359,15 +2359,15 @@ function draw_main_menu(x,y){
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(4)){
-		/* 模式 4（MilkDrop）：复用可视化面板布局，右栏开关与深色开关同模式 3 */
+		/* 模式 4（MilkDrop）：复用可视效果面板布局，右栏开关与深色开关同模式 3 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(5)){
-		/* 模式 5（视频）：复用可视化面板布局与深色开关 */
+		/* 模式 5（视频）：复用可视效果面板布局与深色开关 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	} else if(main_panel_state.isEqual(6)){
-		/* 模式 6（主题设置）：复用可视化面板布局与深色开关 */
+		/* 模式 6（主题设置）：复用可视效果面板布局与深色开关 */
 		visu_menu.AppendTo(skin_settings_menu,MF_STRING, "面板布局");
 		nowplaying.AppendTo(visu_menu,MF_STRING, "右侧播放列表");
 	}
@@ -2549,7 +2549,7 @@ function draw_main_menu(x,y){
    case (idx == 4003):
 		properties.visualization_dark_theme=!properties.visualization_dark_theme;
         window.NotifyOthers("visualization_dark_theme",properties.visualization_dark_theme);
-		window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
+		window.SetProperty("可视效果·深色主题", properties.visualization_dark_theme);
 		on_notify_data("visualization_dark_theme",properties.visualization_dark_theme);
         break;
    case (idx == 4007):
@@ -2973,14 +2973,14 @@ function on_notify_data(name, info) {
 					tbFlush();
 				} else if (tbKey === "remember") {
 					properties.Remember_previous_state = !!tbVal;
-					window.SetProperty("启动时恢复面板状态(可视化页除外)", properties.Remember_previous_state);
+					window.SetProperty("启动时恢复面板状态(可视效果页除外)", properties.Remember_previous_state);
 					window.Repaint();
 				} else if (tbKey === "hide_lxbox") {
 					/* 与菜单 1901「洛雪音源」完全一致：
-					   关掉可视化标签页时，若当前正停在洛雪音源模式（main_panel_state=3），
+					   关掉可视效果标签页时，若当前正停在洛雪音源模式（main_panel_state=3），
 					   必须立刻切走，否则要重启才会生效 */
 					properties.show_visualization = !tbVal;
-					window.SetProperty("属性·显示可视化标签页", properties.show_visualization);
+					window.SetProperty("属性·显示可视效果标签页", properties.show_visualization);
 					if (main_panel_state.isEqual(3)) main_panel_state.setValue(0);
 					get_colors();
 					adapt_buttons_to_layout();
@@ -3186,7 +3186,7 @@ function on_notify_data(name, info) {
 		break;	
 		case "visualization_dark_theme":
 			properties.visualization_dark_theme=info;
-			window.SetProperty("可视化·深色主题", properties.visualization_dark_theme);
+			window.SetProperty("可视效果·深色主题", properties.visualization_dark_theme);
 			darklxbox_state.setValue((properties.visualization_dark_theme)?1:0);
 			get_colors();
 			g_searchbox.adapt_look_to_layout();
@@ -3891,8 +3891,8 @@ function fw_handle_menu(idx) {
 }
 function on_init(){
 	/* 启动时恢复上次的主区模式：0 媒体库 / 1 播放列表 / 2 简介歌词 / 3 洛雪音源可恢复；
-	   4 MilkDrop / 5 MPV / 6 主题设置属于可视化或临时页，一律回落到 0。
-	   洛雪音源在「隐藏可视化标签页」时也回落，否则会停在一个看不见的标签上。 */
+	   4 MilkDrop / 5 MPV / 6 主题设置属于可视效果或临时页，一律回落到 0。
+	   洛雪音源在「隐藏可视效果标签页」时也回落，否则会停在一个看不见的标签上。 */
 	if(properties.Remember_previous_state) {
 		if(main_panel_state.isEqual(4) || main_panel_state.isEqual(5) || main_panel_state.isEqual(6)
 			|| (main_panel_state.isEqual(3) && !properties.show_visualization)) {
@@ -3943,7 +3943,7 @@ function on_init(){
 		}, 200);
 	}
 	setTimeout(on_colours_changed, 100);
-	/* 侧栏要按「显示可视化标签页」决定要不要摆「洛雪音源」入口：先答一次问，再主动广播一次 */
+	/* 侧栏要按「显示可视效果标签页」决定要不要摆「洛雪音源」入口：先答一次问，再主动广播一次 */
 	try { window.NotifyOthers('rail_lxbox_visible', properties.show_visualization ? 1 : 0); } catch (eLX0) {}
 	/* 问一次「是不是第 4 种布局」：多问几拍，等布局把 Sidebar 面板和状态键都摆好 */
 	railAskState();

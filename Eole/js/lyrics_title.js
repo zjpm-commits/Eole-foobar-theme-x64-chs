@@ -198,6 +198,59 @@ function on_font_changed() {
 };
 
 var esl_px = 0, esl_ls = 0, esl_fname = "";
+/* 主歌词与高亮行的颜色都取自封面配色（spec_cover.scheme 是原生 K-means 的结果）。
+   同色相分两档：高亮行更亮更饱和，普通行压暗降饱和、alpha 180；
+   深色布局整体提亮，浅色布局整体压暗，保证两种底色上都读得清。 */
+function appleCoverColours() {
+	var dark = true;
+	try { if (typeof fw_isDark === 'function') dark = !!fw_isDark(); } catch (eD) {}
+	var normal = 0xB4D79B00;                       /* 取不到封面时的回退色 */
+	var highlight = 0xffffc100;
+	try {
+		if (typeof colors.highlight_txt !== 'undefined')
+			highlight = ((colors.highlight_txt >>> 0) & 0xffffff) | 0xff000000;
+	} catch (eH) {}
+	var sc = (typeof spec_cover !== 'undefined' && spec_cover) ? spec_cover.scheme : null;
+	if (!sc) { try { sc = applePeekCoverScheme(); } catch (eP) { sc = null; } }
+	if (sc && sc.hl && typeof specRGB2HSL === 'function' && typeof specHSL2RGB === 'function') {
+		try {
+			var base = specRGB2HSL(sc.hl);
+			var hue = base[0], sat = base[1];
+			/* 只有封面确实带色彩才用它：黑白/灰封面的色相是脏的（hue≈0 会算成红色），
+			   这种情况保留上面的回退色，不硬拽出一个假色相。 */
+			if (sat > 0.08) {
+				highlight = specHSL2RGB(hue, Math.min(1, Math.max(0.5, sat)), dark ? 0.74 : 0.30);
+				var nRGB = specHSL2RGB(hue, Math.min(0.42, sat * 0.6), dark ? 0.56 : 0.38);
+				normal = (((nRGB >>> 0) & 0xffffff) | 0xb4000000) >>> 0;
+			}
+		} catch (eC) {}
+	}
+	return { normal: normal >>> 0, highlight: highlight >>> 0 };
+}
+function appleApplyESLColours() {
+	if (!eslPanel) return;
+	var c = appleCoverColours();
+	try { eslPanel.SetTextColor(c.normal); } catch (e1) {}
+	try { eslPanel.SetTextHighlightColor(c.highlight); } catch (e2) {}
+}
+/* 频谱取色关掉时 spec_cover.scheme 一直是空，歌词颜色会永远回退固定色。
+   这里按曲目缓存单独取一次，保证「柱色跟随封面=关」也不影响歌词取色。 */
+var apple_cover_cache = { key: null, scheme: null };
+function applePeekCoverScheme() {
+	var key = specCoverItemKey();
+	if (!key) return null;
+	if (key === apple_cover_cache.key) return apple_cover_cache.scheme;
+	apple_cover_cache.key = key;
+	apple_cover_cache.scheme = null;
+	try {
+		if (typeof utils.GetAlbumArtV2 === 'function' && typeof specCoverScheme === 'function') {
+			var md = fb.GetNowPlaying();
+			var img = md ? utils.GetAlbumArtV2(md, 0, false) : null;
+			if (img) apple_cover_cache.scheme = specCoverScheme(img);
+		}
+	} catch (ePeek) {}
+	return apple_cover_cache.scheme;
+}
 function applyESLyricStyle(verbose) {
 	esl_report = [];
 	if (!eslCreate()) { if (verbose) eslReportPopup(); return false; }
@@ -216,8 +269,10 @@ function applyESLyricStyle(verbose) {
 		eslCall("SetBackgroundType(" + properties.esl_bg_type + ")",
 			function () { eslPanel.SetBackgroundType(properties.esl_bg_type); });
 	}
-	eslCall("SetTextColor", function () { eslPanel.SetTextColor(colors.normal_txt); });
-	eslCall("SetTextHighlightColor", function () { eslPanel.SetTextHighlightColor(colors.highlight_txt); });
+	/* 主歌词与高亮行都取封面色：有封面就在同一色相里分两档，没封面回退固定橙 + 主题高亮 */
+	appleApplyESLColours();
+	esl_report.push("· 文字色："
+		+ ((spec_cover && spec_cover.scheme) ? ("封面配色（" + (spec_cover.route || "原生配色") + "）") : "无封面，回退固定色"));
 	eslCall("SetBackgroundColor", function () { eslPanel.SetBackgroundColor(colors.normal_bg); });
 	eslCall("SetUseCustomTextColor(1)", function () { eslPanel.SetUseCustomTextColor(1); });
 	eslCall("SetUseCustomHighlightColor(1)", function () { eslPanel.SetUseCustomHighlightColor(1); });
@@ -242,6 +297,39 @@ function applyESLyricStyle(verbose) {
 	} else if (esl_font_applied) {
 		esl_report.push("· 字体已应用过，本次跳过（改属性后点「重新应用」可强制重设）");
 	}
+	/* ---- Apple Music 风格歌词 ----
+	   弹性滚动（行切换带过冲回弹）+ 参照行（翻译/罗马音）同屏 +
+	   高亮行渐大 + 上下渐隐 + 句间距。以上都是 ESLyric 1.0.7.0 起提供的接口，
+	   旧版本没有这些方法，eslCall 只记一行 ✘，不影响字体与颜色。 */
+	var appleGrow = 6;   /* 高亮行放大像素，约 +20% */
+	var appleSs = Math.max(12, Math.round((esl_px || 30) * 0.5));
+	eslCall("SetScrollStyle(2) 弹性滚动", function () { eslPanel.SetScrollStyle(2); });
+	eslCall("SetShowAlterLyric(1) 显示参照行", function () { eslPanel.SetShowAlterLyric(1); });
+	eslCall("SetVariesFontDeltaHeight(" + appleGrow + ") 高亮行渐大",
+		function () { eslPanel.SetVariesFontDeltaHeight(appleGrow); });
+	eslCall("SetTextFadeHeight(100) 渐隐 100px", function () { eslPanel.SetTextFadeHeight(100); });
+	eslCall("SetSentenceSpace(" + appleSs + ") 句间距",
+		function () { eslPanel.SetSentenceSpace(appleSs); });
+	/* 文字阴影：默认关闭（ESLyric 用负偏移表示禁用），代码保留。
+	   需要时把 APPLE_SHADOW 改成 true：会按 Eole 的深浅色自动取 1px / 5px
+	   （浅底 1px 免得糊成一团，深底 5px 撑出层次）。 */
+	var APPLE_SHADOW = false;
+	var shadowOff = -1;
+	if (APPLE_SHADOW) {
+		var isDarkBg = !!(properties.darklayout || properties.stick2darklayout);
+		try {
+			if (typeof colors.normal_bg !== 'undefined') {
+				var bgc = colors.normal_bg;
+				var lum = 0.299 * ((bgc >> 16) & 0xff) + 0.587 * ((bgc >> 8) & 0xff) + 0.114 * (bgc & 0xff);
+				isDarkBg = (lum < 128);
+			}
+		} catch (eShadow) {}
+		shadowOff = isDarkBg ? 5 : 1;
+		eslCall("SetTextShadowColor(0xFF000000) 阴影黑",
+			function () { eslPanel.SetTextShadowColor(0xFF000000); });
+	}
+	eslCall("SetTextShadowOffset(" + shadowOff + ") 阴影" + (APPLE_SHADOW ? "偏移 " + shadowOff + "px" : "关闭"),
+		function () { eslPanel.SetTextShadowOffset(shadowOff); });
 	if (verbose) eslReportPopup();
 	return true;
 }
@@ -297,7 +385,7 @@ function on_mouse_rbtn_up(x, y){
 	var _menu = window.CreatePopupMenu();
 	var idx;
 
-	_menu.AppendMenuItem(MF_STRING, 99, "固定为深色布局");
+	_menu.AppendMenuItem(MF_STRING, 99, "强制深色模式");
 	_menu.CheckMenuItem(99,properties.stick2darklayout);
 
 	if(utils.IsKeyPressed(VK_SHIFT)) {
@@ -816,6 +904,8 @@ function specCoverRequest(force) {
 		if (!sc) spec_cover.lastErr = (spec_cover.lastErr || "算不出配色") + "，改用主题进度条色";
 		// 主图不主动 Dispose：可能是 foobar 缓存里的共用对象，交给 GC 回收
 		specBuildPalette();
+		/* 取色完成，立刻把封面色推给 ESLyric（此前可能还是回退色） */
+		try { appleApplyESLColours(); } catch (eAC) {}
 		try { window.Repaint(); } catch (eR) {}
 		return;
 	}
