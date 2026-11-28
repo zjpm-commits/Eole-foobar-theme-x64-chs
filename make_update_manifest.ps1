@@ -19,15 +19,43 @@ $targets = @(
 
 # 不参与同步：本地缓存 / 设置 / 备份 / 编辑器备份 / 用户数据
 $excludeDirNames = @('eole-img-cache', 'eole-settings', '_update_backup', '_update_tmp', '.git',
-                     'playlists', 'nowplaying', 'data')
+                     '.probe', 'playlists', 'nowplaying', 'data')
+# 文档与废弃文件不进 profile：README.md、*.notused
+$excludeExt = @('.md', '.notused')
 function Test-Excluded([string]$rel) {
     $parts = $rel -split '/'
     foreach ($p in $parts) {
         if ($excludeDirNames -contains $p) { return $true }
     }
+    $leaf = $parts[-1]
     if ($rel -match '\.bak') { return $true }
-    if ($parts[-1] -eq 'update_manifest.json') { return $true }
+    if ($leaf -eq 'update_manifest.json') { return $true }
+    if ($excludeExt -contains [System.IO.Path]::GetExtension($leaf).ToLower()) { return $true }
     return $false
+}
+
+# ---------- 文本文件与换行归一 ----------
+# .gitattributes 是 * text=auto：仓库里存 LF，Windows 工作区是 CRLF，
+# 于是 GitHub raw / jsDelivr 下发的是 LF 版，而本地磁盘是 CRLF 版。
+# 清单的 md5 继续记录“本地磁盘字节”（面板与 need 判断直接比它），
+# 另加 md5lf = CRLF→LF 归一后的 MD5，等于远端 blob 的 MD5，供更新器下载后校验。
+$textExt = @('.js', '.css', '.html', '.htm', '.json', '.md', '.txt', '.ps1', '.xml', '.svg',
+             '.fth', '.ini', '.cfg', '.vbs')
+
+# 读文件 → 按字节做 CRLF→LF（保留 BOM 与编码）→ MD5，一步完成，避免数组在管道里被展开
+function Get-LfMd5OfPath([string]$path) {
+    $bytes = [System.IO.File]::ReadAllBytes($path)
+    $buf = New-Object System.Collections.Generic.List[byte]
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        if ($bytes[$i] -eq 13 -and ($i + 1) -lt $bytes.Length -and $bytes[$i + 1] -eq 10) { continue }
+        $buf.Add($bytes[$i])
+    }
+    $arr = [byte[]]$buf.ToArray()
+    $md5 = [System.Security.Cryptography.MD5]::Create()
+    try {
+        $h = $md5.ComputeHash($arr)
+        return ([BitConverter]::ToString([byte[]]$h) -replace '-', '').ToLower()
+    } finally { $md5.Dispose() }
 }
 
 $files = @()
@@ -40,11 +68,16 @@ foreach ($t in $targets) {
         $relInSrc = $_.FullName.Substring($srcDir.Length).TrimStart('\', '/').Replace('\', '/')
         $rel = ($t.out.Replace('\', '/') + '/' + $relInSrc)
         if (Test-Excluded $relInSrc) { return }
+        if ($t.out -eq 'Eole' -and $relInSrc -eq 'preview.png') { return }   # README 预览图，不进 profile
         $mtime = [int][Math]::Floor(($_.LastWriteTimeUtc - $epoch).TotalSeconds)
+        $md5 = (Get-FileHash -LiteralPath $_.FullName -Algorithm MD5).Hash.ToLower()
+        $ext = $_.Extension.ToLower()
+        $md5lf = if ($textExt -contains $ext) { Get-LfMd5OfPath $_.FullName } else { $md5 }
         $files += [ordered]@{
             path  = $rel
             mtime = $mtime
-            md5   = (Get-FileHash -LiteralPath $_.FullName -Algorithm MD5).Hash.ToLower()
+            md5   = $md5
+            md5lf = $md5lf
         }
     }
 }

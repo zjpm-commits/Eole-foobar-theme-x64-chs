@@ -25,6 +25,57 @@ function WriteLog([string]$msg) {
     }
 }
 
+# ---------- 换行归一 ----------
+# 清单 md5 = 本地磁盘字节（Windows 下 CRLF）；md5lf = CRLF→LF 归一后的 MD5，
+# 与 GitHub raw / jsDelivr 下发的 LF 版内容一致。校验用 md5lf，写盘时按需补回 CR。
+$textExt = @('.js', '.css', '.html', '.htm', '.json', '.md', '.txt', '.ps1', '.xml', '.svg',
+             '.fth', '.ini', '.cfg', '.vbs')
+
+function Get-LfMd5([string]$path) {
+    $bytes = [System.IO.File]::ReadAllBytes($path)
+    $buf = New-Object System.Collections.Generic.List[byte]
+    for ($i = 0; $i -lt $bytes.Length; $i++) {
+        if ($bytes[$i] -eq 13 -and ($i + 1) -lt $bytes.Length -and $bytes[$i + 1] -eq 10) { continue }
+        $buf.Add($bytes[$i])
+    }
+    $md5 = [System.Security.Cryptography.MD5]::Create()
+    try {
+        $h = $md5.ComputeHash([byte[]]$buf.ToArray())
+        return ([BitConverter]::ToString([byte[]]$h) -replace '-', '').ToLower()
+    } finally { $md5.Dispose() }
+}
+
+# 把裸 LF 补成 CRLF（已是 CRLF 的位置不动），返回字节数组
+function Add-CrlfBytes([string]$path) {
+    $src = [System.IO.File]::ReadAllBytes($path)
+    $buf = New-Object System.Collections.Generic.List[byte]
+    $prev = -1
+    foreach ($b in $src) {
+        if ($b -eq 10 -and $prev -ne 13) { $buf.Add([byte]13) }
+        $buf.Add($b)
+        $prev = $b
+    }
+    return $buf.ToArray()
+}
+
+# 兜底：GitHub contents API 不走 CDN，返回的是 LF 版 blob(base64)，与 md5lf 同源。
+# 只在 raw / jsDelivr 都校验不过时用（未认证限流 60 次/小时，正常更新触发不到）。
+function Get-BlobFromApi([string]$rel, [string]$want, [string]$outFile) {
+    try {
+        $segs = $rel.Split('/')
+        $enc = ($segs | ForEach-Object { [uri]::EscapeDataString($_) }) -join '/'
+        $uri = 'https://api.github.com/repos/zjpm-commits/Eole-foobar-theme-x64-chs/contents/' + $enc + '?ref=main'
+        $resp = Invoke-RestMethod -Uri $uri -TimeoutSec 60 -Headers @{ 'User-Agent' = 'Eole-Theme-Updater'; 'Accept' = 'application/vnd.github+json' }
+        if (-not $resp -or -not $resp.content) { return $false }
+        $b64 = ($resp.content -replace '\s', '')
+        [System.IO.File]::WriteAllBytes($outFile, [Convert]::FromBase64String($b64))
+        $h = Get-LfMd5 $outFile
+        if ($h -eq $want.ToLower()) { WriteLog ('GET(api) ' + $rel); return $true }
+        WriteLog ('WARN api md5 mismatch: ' + $rel)
+        return $false
+    } catch { WriteLog ('WARN api failed: ' + $rel + ' / ' + $_.Exception.Message); return $false }
+}
+
 # 替换成功后把 foobar2000 拉起来。只在 exe 存在、且更新期间没有别的实例
 # 被用户手动打开时才启动，避免出现第二个窗口。
 function Start-FoobarAfterUpdate {
@@ -97,6 +148,12 @@ foreach ($f in $manifest.files) {
     if (-not $same) { $need += $f }
 }
 WriteLog ('PLAN 版本 ' + $version + ' 需处理 ' + $need.Count + ' 个文件')
+$iNeed = 0
+foreach ($f in $need) {
+    WriteLog ('  NEED ' + [string]$f.path)
+    $iNeed++
+    if ($iNeed -ge 60) { WriteLog ('  … 等共 ' + $need.Count + ' 个'); break }
+}
 
 $removed = @()
 if ($manifest.removed) { $removed = @($manifest.removed) }
@@ -124,18 +181,31 @@ foreach ($f in $need) {
     $tmpParent = Split-Path -Parent $tmpFile
     if (-not (Test-Path -LiteralPath $tmpParent)) { New-Item -ItemType Directory -Path $tmpParent -Force | Out-Null }
     $ok = $false
+    $lastErr = ''
+    $want = if ($f.md5lf) { [string]$f.md5lf } else { [string]$f.md5 }
     foreach ($b in $base) {
         if (-not $b) { continue }
-        $url = ([string]$b).TrimEnd('/') + '/' + $rel
-        try {
-            Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 60 -OutFile $tmpFile -Headers @{ 'User-Agent' = 'Eole-Theme-Updater' } | Out-Null
-            $ok = $true
-            break
-        } catch { WriteLog ('WARN download failed: ' + $url + ' / ' + $_.Exception.Message) }
+        for ($try = 0; $try -lt 2 -and -not $ok; $try++) {
+            # 加时间戳 query 绕开 raw.githubusercontent / jsDelivr 的 CDN 缓存：
+            # 两者都按路径缓存，push 完立刻更新会拿到旧文件，校验不过就换源/重试。
+            $stamp = [int][Math]::Floor(([datetime]::UtcNow - $epochUtc).TotalSeconds) + $try
+            $url = ([string]$b).TrimEnd('/') + '/' + $rel + '?t=' + $stamp
+            try {
+                Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 60 -OutFile $tmpFile -Headers @{ 'User-Agent' = 'Eole-Theme-Updater' } | Out-Null
+                $h = Get-LfMd5 $tmpFile
+                if ($h -eq $want.ToLower()) { $ok = $true; break }
+                $lastErr = 'md5 不符（' + $h.Substring(0, 8) + ' != ' + $want.Substring(0, 8) + '）来源 ' + $url
+                WriteLog ('WARN ' + $lastErr)
+            } catch {
+                $lastErr = '下载失败：' + $url + ' / ' + $_.Exception.Message
+                WriteLog ('WARN ' + $lastErr)
+            }
+            Start-Sleep -Milliseconds 600
+        }
+        if ($ok) { break }
     }
-    if (-not $ok) { ExitFail ('下载失败：' + $rel) }
-    $h = (Get-FileHash -LiteralPath $tmpFile -Algorithm MD5).Hash.ToLower()
-    if ($h -ne ([string]$f.md5).ToLower()) { ExitFail ('校验失败（文件可能不完整或源不一致）：' + $rel) }
+    if (-not $ok) { $ok = Get-BlobFromApi $rel $want $tmpFile }
+    if (-not $ok) { ExitFail ('下载或校验失败：' + $rel + ' / ' + $lastErr) }
     $downloaded += $f
     WriteLog ('GET ' + $rel)
 }
@@ -190,7 +260,12 @@ while ($true) {
         $tParent = Split-Path -Parent $target
         if (-not (Test-Path -LiteralPath $tParent)) { New-Item -ItemType Directory -Path $tParent -Force | Out-Null }
         try {
-            Copy-Item -LiteralPath $tmpFile -Destination $target -Force -ErrorAction Stop
+            if ($f.md5lf -and ([string]$f.md5 -ne [string]$f.md5lf)) {
+                # 文本文件：本地是 CRLF，下载来的是 LF，写回时补 CR，保持字节与清单 md5 一致
+                [System.IO.File]::WriteAllBytes($target, (Add-CrlfBytes $tmpFile))
+            } else {
+                Copy-Item -LiteralPath $tmpFile -Destination $target -Force -ErrorAction Stop
+            }
             try { (Get-Item -LiteralPath $target).LastWriteTimeUtc = $epochUtc.AddSeconds([double]$f.mtime) } catch { }
         } catch { $fails += ($rel + ' :: ' + $_.Exception.Message) }
     }

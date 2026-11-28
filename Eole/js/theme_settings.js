@@ -3206,7 +3206,12 @@ function tsUpdateCheck() {
         var same = false;
         if (hasMd5) {
             try {
-                same = String(utils.MD5FromFile(fb.ProfilePath + rel.replace(/\//g, '\\'))).toLowerCase() === String(m.files[k].md5 || '').toLowerCase();
+                var h = String(utils.MD5FromFile(fb.ProfilePath + rel.replace(/\//g, '\\'))).toLowerCase();
+                var m1 = String(m.files[k].md5 || '').toLowerCase();
+                var m2 = String(m.files[k].md5lf || '').toLowerCase();
+                /* 本地还是 CRLF 时命中 md5；更新器写回的是 LF 版本，命中 md5lf。
+                   两个都不中才算落后，避免更新完永远显示“有更新”。 */
+                same = (h === m1) || (!!m2 && h === m2);
             } catch (e5) { same = false; }
         }
         if (!same && !hasMd5) {
@@ -3244,13 +3249,18 @@ function tsUpdateApply() {
         tsUpdRebuild();
         return;
     }
-    var ps1 = skin_global_path + '\\ts_update.ps1';
+    /* fb.ProfilePath 自带尾部反斜杠，直接拼进带引号的命令行会变成
+       "...profile\" —— 反斜杠转义掉右引号，PowerShell 参数全错位、
+       Resolve-Path 立刻抛错，隐藏窗口里静默退出（旧版就是这样“没反应”）。
+       所以先去掉尾部反斜杠再拼。 */
+    var profDir = String(fb.ProfilePath).replace(/[\\\/]+$/, '');
+    var ps1 = profDir + '\\Eole\\ts_update.ps1';
     if (tsUpdLocalMtime('Eole\\ts_update.ps1') < 0) {
         tsUpdState.msg = '缺少更新执行器 ts_update.ps1，无法更新。';
         tsUpdRebuild();
         return;
     }
-    var log = fb.ProfilePath + '_update_backup\\last_update.log';
+    var log = profDir + '\\_update_backup\\last_update.log';
     /* 退出后应用：先弹窗确认 → 启动更新程序 → foobar2000 自行退出。
        更新程序会等进程退出（最多 20 秒）并对替换重试（最多 60 次×250ms），
        文件句柄全部释放后才动线上文件，完成后弹窗报告结果。 */
@@ -3275,7 +3285,7 @@ function tsUpdateApply() {
     } catch (e2) {}
     var autoRestart = tsUpdAutoRestartGet() ? 1 : 0;
     var cmd = 'powershell.exe -NoProfile -ExecutionPolicy Bypass -File "' + ps1 +
-              '" -Profile "' + fb.ProfilePath + '" -Log "' + log + '" -AutoRestart ' + autoRestart;
+              '" -Profile "' + profDir + '" -Log "' + log + '" -AutoRestart ' + autoRestart;
     var ok = false;
     try {
         var sh = new ActiveXObject('WScript.Shell');
