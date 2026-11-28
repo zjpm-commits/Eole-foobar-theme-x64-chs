@@ -12537,15 +12537,141 @@ var BRIDGE_CHECKED_AT = 0;
 var BRIDGE_ALIVE = false;
 var BRIDGE_START_PROMISE = null;
 
+/* ---- 桥的安装信息：一律按「当前 profile」推导，install.json 只存本 profile 的分号 ---- */
+var BRIDGE_PORT_BASE = 38518;      /* 基址，原有安装继续用这个 */
+var BRIDGE_PORT_SPAN = 100;        /* 派生范围 38518..38617，按 profile 路径哈希取一个 */
+
+function bridgeProfilePath() {
+  var p = '';
+  try { p = String(fb.ProfilePath || ''); } catch (e) { p = ''; }
+  if (!p) { try { p = String(fb.ProfilePath); } catch (e2) { p = ''; } }
+  if (p && p.charAt(p.length - 1) !== '\\' && p.charAt(p.length - 1) !== '/') p += '\\';
+  return p;
+}
+
+function bridgePaths(prof) {
+  var lx = prof + 'Lxbox\\';
+  var on = lx + 'online\\';
+  return { app: on + 'bridge.js', data: on + 'data',
+           sources: lx + 'resources',
+           install: on + 'install.json', online: on };
+}
+
+/* 路径比较：斜杠归一、忽略大小写、忽略结尾反斜杠 */
+function bridgeSamePath(a, b) {
+  function n(v) {
+    var s = String(v == null ? '' : v).replace(/\//g, '\\');
+    s = s.replace(/\\+/g, '\\');
+    while (s.length > 1 && s.charAt(s.length - 1) === '\\') s = s.slice(0, -1);
+    return s.toLowerCase();
+  }
+  return n(a) === n(b);
+}
+
+function bridgeHash32(s) {
+  var h = 2166136261;
+  for (var i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/* 每个 profile 固定一个端口（同机器多套安装不再抢 38518） */
+function bridgePortFor(prof) {
+  return BRIDGE_PORT_BASE + (bridgeHash32(String(prof).toLowerCase()) % BRIDGE_PORT_SPAN);
+}
+
+function bridgeNewKey() {
+  var hex = '0123456789abcdef', s = '';
+  for (var i = 0; i < 32; i++) s += hex.charAt(Math.floor(Math.random() * 16));
+  return s;
+}
+
+function bridgeKeyOk(k) {
+  return typeof k === 'string' && /^[0-9a-f]{32}$/.test(k);
+}
+
+/* 不经过 bridgeInfo（避免递归）：install.json 记的路径 → 两个固定目录 */
+function bridgeNodeProbe(hint) {
+  if (hint) { try { if (utils.FileExists(hint)) return hint; } catch (e0) { } }
+  var cands = ['C:\\Program Files\\nodejs\\node.exe', 'C:\\Program Files (x86)\\nodejs\\node.exe'];
+  for (var i = 0; i < cands.length; i++) {
+    try { if (utils.FileExists(cands[i])) return cands[i]; } catch (e1) { }
+  }
+  return '';
+}
+
+function bridgeWriteInstall(pth, prof, info) {
+  try { if (!utils.IsDirectory(pth.online)) utils.CreateFolder(pth.online); } catch (e0) { }
+  try { if (!utils.IsDirectory(pth.data)) utils.CreateFolder(pth.data); } catch (e1) { }
+  var j = {
+    owner: prof, state: 'ready', node: info.node,
+    app: info.app, data: info.data, sources: info.sources,
+    port: info.port, key: info.key,
+    at: (new Date()).toISOString().replace('T', ' ').slice(0, 19)
+  };
+  try { utils.WriteTextFile(pth.install, JSON.stringify(j, null, 2) + '\r\n'); } catch (e2) { }
+  try { utils.WriteTextFile(pth.data + '\\bridge.key', info.key); } catch (e3) { }
+}
+
 function bridgeInfo() {
   if (BRIDGE_INFO) return BRIDGE_INFO;
+  var prof = bridgeProfilePath();
+  if (!prof) return null;
+  var pth = bridgePaths(prof);
+
+  var appOk = false;
+  try { appOk = !!utils.FileExists(pth.app); } catch (e0) { appOk = false; }
+  if (!appOk) return null;                       /* 本 profile 没装桥，别拿别人的凑 */
+
+  var old = null;
   try {
     /* install-node.ps1 用 utf8BOM 写这个文件，直接 JSON.parse 会因为 BOM 失败 */
-    var txt = String(utils.ReadTextFile(fb.ProfilePath + 'Lxbox\\online\\install.json', 65001) || '')
-      .replace(/^\uFEFF/, '');
-    var j = JSON.parse(txt);
-    if (j && j.state === 'ready' && j.port && j.key && j.node && j.app) BRIDGE_INFO = j;
-  } catch (e) { /* 未安装 */ }
+    var txt = String(utils.ReadTextFile(pth.install, 65001) || '').replace(/^\uFEFF/, '');
+    old = JSON.parse(txt);
+  } catch (e1) { old = null; }
+
+  /* 「own」判定：install.json 里的 app 指向本 profile 才是自己的。
+     旧包整目录拷过来的那份 app 指向别的安装 → 作废，本 profile 重新编号。
+     升级上来的老文件（app 指向自己）→ 端口 / key 原样保留，不打断在跑的桥。 */
+  var own = !!(old && old.app && bridgeSamePath(old.app, pth.app));
+
+  /* 便携版整目录拷出来时往往没有 data\，桥写 songs.json 会失败，先补上 */
+  try { if (!utils.IsDirectory(pth.online)) utils.CreateFolder(pth.online); } catch (eD0) { }
+  try { if (!utils.IsDirectory(pth.data)) utils.CreateFolder(pth.data); } catch (eD1) { }
+
+  var node = bridgeNodeProbe(old && old.node);
+  if (!node) {
+    try { NM.lx.pushLog('warn', '桥：找不到 node.exe，本 profile 桥起不来'); } catch (eN) { }
+    return null;
+  }
+
+  var port = 0, key = '';
+  if (own) {
+    port = parseInt(old.port, 10);
+    if (!(port >= 1024 && port <= 65535)) port = bridgePortFor(prof);
+    key = bridgeKeyOk(old.key) ? old.key : bridgeNewKey();
+  } else {
+    port = bridgePortFor(prof);          /* 按 profile 派生，不再跟别人共用一个端口 */
+    key = bridgeNewKey();                /* key 也独立，不沿用别人的 */
+  }
+
+  BRIDGE_INFO = { state: 'ready', owner: prof, app: pth.app, data: pth.data,
+                  sources: pth.sources, node: node, port: port, key: key };
+
+  var need = !own || !old.owner || !bridgeSamePath(old.owner, prof) ||
+             old.port !== port || old.key !== key ||
+             !bridgeSamePath(old.node, node) || !bridgeSamePath(old.data, pth.data) ||
+             !bridgeSamePath(old.sources, pth.sources);
+  if (need) {
+    bridgeWriteInstall(pth, prof, BRIDGE_INFO);
+    try {
+      NM.lx.pushLog('info', '桥：已为当前 profile 生成独立配置（port ' + port +
+                            (own ? '，沿用原端口' : '，按 profile 派生') + '；key ' +
+                            (own ? '沿用' : '新建') + '）');
+    } catch (eL) { }
+  }
   return BRIDGE_INFO;
 }
 
@@ -12752,6 +12878,7 @@ function pushViaBridge(list, opts) {
       }
     });
     try { nowInfoWrite(dbN); } catch (eNW) { }
+    ensureM3uDir();
     var m3u = M3U_DIR + '\\' + name.replace(/[\\/:*?"<>|]/g, '') + '.m3u8';
     try {
       if (utils.WriteTextFile(m3u, lines.join('\r\n') + '\r\n') === false) throw new Error('写入失败');
@@ -12795,6 +12922,13 @@ function bridgeReadyThenPush(list, opts, onFallback) {
 var M3U_DIR = (function () {
   try { return fb.ProfilePath + 'Lxbox\\playlists'; } catch (e) { return ''; }
 })();
+
+/* 便携版整目录拷出来时 Lxbox\playlists 往往不存在，m3u8 写不进去就白推 */
+function ensureM3uDir() {
+  if (!M3U_DIR) return false;
+  try { if (!utils.IsDirectory(M3U_DIR)) utils.CreateFolder(M3U_DIR); } catch (e) { }
+  try { return !!utils.IsDirectory(M3U_DIR); } catch (e2) { return false; }
+}
 
 function mapLimit(list, limit, fn) {
   return new Promise(function (done) {
@@ -12857,6 +12991,7 @@ function pushViaM3u(list, opts) {
     });
     try { nowInfoWrite(dbN); } catch (eNW2) { }
     if (!n) { setStatus('没有一首取链成功', true); return false; }
+    if (!ensureM3uDir()) { setStatus('播放列表目录不可写：' + M3U_DIR, true); return false; }
     var m3u = M3U_DIR + '\\' + name.replace(/[\\/:*?"<>|]/g, '') + '.m3u8';
     try {
       if (utils.WriteTextFile(m3u, lines.join('\r\n') + '\r\n') === false) throw new Error('写入失败');
