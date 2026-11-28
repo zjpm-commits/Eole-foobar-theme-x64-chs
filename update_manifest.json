@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.28-1727",
-  "generated": "2026-11-28T09:27:37Z",
+  "version": "2026.11.28-1825",
+  "generated": "2026-11-28T10:25:50Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -4664,9 +4664,9 @@
     },
     {
       "path": "Lxbox/main.js",
-      "mtime": 1795851143,
-      "md5": "0737aac6cd1b4984b0ba2fa34f40e8c7",
-      "md5lf": "0737aac6cd1b4984b0ba2fa34f40e8c7"
+      "mtime": 1795860367,
+      "md5": "99e0dad542392d5d528b862a65aaa396",
+      "md5lf": "99e0dad542392d5d528b862a65aaa396"
     },
     {
       "path": "Lxbox/providers.js",
