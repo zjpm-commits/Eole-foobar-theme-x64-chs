@@ -12642,24 +12642,33 @@ function bridgePing(force) {
     return BRIDGE_ALIVE;
   }, function () { BRIDGE_ALIVE = false; return false; });
 }
-/* 桥没在跑就拉起来：cmd start 脱离面板调用链，桥常驻（端口占用时新实例自动退出） */
+/* 桥没在跑就拉起来：WScript.Shell.Run fire-and-forget 脱离面板调用链，桥常驻
+   （端口占用时新实例自动退出） */
 function bridgeEnsureStarted() {
   var info = bridgeInfo();
   if (!info) return Promise.resolve(false);
   if (BRIDGE_START_PROMISE) return BRIDGE_START_PROMISE;
 
-  /* 经静态 ANSI VBS 隐藏启动（Run(...,0,False)），不弹 Node 控制台黑窗；
-     vbs 由外部生成（运行时写文件会带 BOM，WSH 报“无效字符”），这里只传参 */
-  var vbsPath = info.app.replace(/[\\\/][^\\\/]+$/, '') + '\\bridge-launch.vbs';
+  /* 直接 WScript.Shell.Run 隐藏启动（0=隐藏窗口，False=不等退出）：不杀进程树。
+     之前走 utils.RunCmdAsync(exe, args, '', 1, 8000)——8 秒超时会把启动的进程树
+     整个收掉，Node 预热（加载音源脚本）没跑完就被杀，桥永远起不来，
+     播放全部只能掉到逐首取链兜底 */
   var nodeExe = nodeEffectivePath() || info.node;   /* 面板里指定的路径优先 */
-  var ok = runShellOpen('wscript.exe', '"' + vbsPath + '" "' + nodeExe + '" "' + info.app + '"' +
-                        ' "' + info.data + '" ' + info.key +
-                        ' "' + info.sources + '" ' + String(info.port));
+  var cmdline = '"' + nodeExe + '" "' + info.app + '" --data "' + info.data + '" --key ' +
+                info.key + ' --sources "' + info.sources + '" --port ' + info.port;
+  var ok = false;
+  try {
+    var sh = new ActiveXObject('WScript.Shell');
+    sh.Run(cmdline, 0, false);
+    ok = true;
+  } catch (eSH) {
+    try { console.log('[LX-UI] WScript.Shell 拉桥失败：' + ((eSH && eSH.message) || eSH)); } catch (eC) {}
+  }
   if (!ok) return Promise.resolve(false);
 
   /* 启动后不能只等一次 ping：Node 加载音源脚本可能超过 2.5s，
      而且失败结果有 30s 缓存，必须 force 重探，否则会误判成没桥。 */
-  var deadline = Date.now() + 8000;
+  var deadline = Date.now() + 20000;
   var p = new Promise(function (done) {
     function check() {
       bridgePing(true).then(function (alive) {
