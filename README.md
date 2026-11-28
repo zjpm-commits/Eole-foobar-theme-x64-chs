@@ -25,6 +25,20 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 无需再安装：foo_ui_columns、foo_ui_hacks、foo_uie_panel_splitter、foo_spider_monkey_panel、foo_Shpeck。
 - Lxbox（ [洛雪音源](https://github.com/zjpm-commits/foobar-Lxbox-for-jsplitter/releases)）脚本，附件中已包含。
 
+## 🔤 字体
+
+主题与 Lxbox 的部分图标靠字形字体绘制，安装包已内置，释放到 `C:\Windows\Fonts`，因此安装程序需要管理员权限（会弹一次 UAC）：
+
+| 字体 | 用在哪里 | 组件名 | 默认状态 |
+|---|---|---|---|
+| Remix Icon | Lxbox 的浮层关闭按钮、简介评论源切换图标（网易云 / QQ / Apple Music） | `fontsremix` | **默认勾选** |
+
+- 勾选后安装程序会先查系统里是否已装（注册表值或 `C:\Windows\Fonts` 里的常见文件名），**已装就跳过**：不复制、不覆盖、不重复登记。
+- 安装时同时写 `HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts` 并调用 `AddFontResource`，装完立即生效，不用重启。
+- **卸载不删除字体**：字体文件和注册值都会保留，重装或继续用主题都不受影响。要彻底清掉请手动删除。
+- Win10 没有 Segoe Fluent Icons，建议勾选 `fontsfluent`；Win11 自带，勾选也会被自动跳过。
+- 跳过勾选后图标显示成方块的话，手动补装：右键 `assets/fonts` 下的 ttf →“安装”，或复制到 `C:\Windows\Fonts`。
+
 ## 🚀 安装说明
 
 ### 方式一：安装包（推荐）
@@ -47,6 +61,7 @@ Eole 是一款极其优雅、高度可定制的 foobar2000 主题。原版主要
 - 模板页面在 `profile/webview-ui/video/index.html`，首次使用到 `首选项 → Display → Webview2 UI` 把模板选为 `video`，重启生效。
 - 如果默认字体偏小，按住 `Ctrl + 鼠标滚轮` 进行全局缩放（ `shift+ 鼠标滚轮` 实时调整文字行间距）。
 - eole-settings、configuration、yttm为我个人的设置配置文件，可以直接覆盖使用。
+- 手动方式不经过安装包组件，字体得自己装，缺字时图标会显示成方块。
 
 ## 🔧 修改说明
 

@@ -31,7 +31,7 @@ Compression=lzma2/max
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64compatible
 WizardStyle=modern
-PrivilegesRequired=lowest
+PrivilegesRequired=admin
 Uninstallable=yes
 CreateUninstallRegKey=no
 
@@ -44,6 +44,8 @@ Name: "custom"; Description: "自定义安装（自行勾选组件）"; Flags: i
 
 [Components]
 Name: "theme";        Description: "Eole 主题核心（必需，脚本 / 图片 / 样式）"; Types: full custom; Flags: fixed
+Name: "fontsremix";   Description: "图标字体 Remix Icon（图标字符主用，建议勾选；用户级安装，免管理员）"; Types: full custom
+Name: "fontsfluent";  Description: "补位字体 Segoe Fluent Icons（Win11 一般已自带，仅在缺字时勾选）"; Types: custom
 Name: "lxbox";        Description: "Lxbox 洛雪音源脚本（必需）"; Types: full custom; Flags: fixed
 Name: "eolesettings"; Description: "eole-settings 个人配置面板"; Types: full custom
 Name: "jsplitter";    Description: "foo_uie_jsplitter 组件（必装插件）"; Types: full custom
@@ -84,16 +86,21 @@ Source: "{#Src}\assets\payload\config.sqlite"; DestDir: "{app}\profile"; Flags: 
 Source: "{#Src}\assets\payload\theme.fth"; DestDir: "{app}\profile"; Flags: ignoreversion
 Source: "{#Src}\assets\payload\DUI_Eole_x64.fth"; DestDir: "{app}\themes"; Flags: ignoreversion
 
-; ---- 字体（用户态安装，免管理员）----
-; Remix Icon 供图标字符使用；Segoe Fluent Icons 供 Win10 上缺字时补位。
+; ---- 字体（可选组件，系统级安装，需要管理员）----
+; Remix Icon 供图标字符主用，默认勾选；Segoe Fluent Icons 供 Win10 缺字时补位，默认不勾。
+; 释放到 C:\Windows\Fonts（{commonfonts}）。Check 先查是否已装（注册值或任一常见路径），
+; 已装则整条跳过——不复制、不覆盖、不注册，避免同一族名出现两份。
+; uninsneveruninstall：卸载时保留字体文件和注册值，字体继续可用。
 ; FontInstall 让 Setup 在本次会话内注册字体，[Registry] 负责持久化。
-Source: "{#Src}\assets\fonts\Remix Icon v4.9.1.ttf"; DestDir: "{userfonts}"; DestName: "remixicon.ttf"; Flags: ignoreversion; FontInstall: "remixicon"
-Source: "{#Src}\assets\fonts\Segoe Fluent Icons.ttf"; DestDir: "{userfonts}"; Flags: ignoreversion; FontInstall: "Segoe Fluent Icons"
+Source: "{#Src}\assets\fonts\RemixIcon.ttf"; DestDir: "{commonfonts}"; DestName: "remixicon.ttf"; Components: fontsremix; Check: NeedFontRemix; Flags: ignoreversion uninsneveruninstall; FontInstall: "remixicon"
+Source: "{#Src}\assets\fonts\Segoe Fluent Icons.ttf"; DestDir: "{commonfonts}"; Components: fontsfluent; Check: NeedFontFluent; Flags: ignoreversion uninsneveruninstall; FontInstall: "Segoe Fluent Icons"
 
 [Registry]
-; 字体注册（HKCU，安装时不需要管理员）
-Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "remixicon (TrueType)"; ValueData: "{userfonts}\remixicon.ttf"; Flags: uninsdeletevalue
-Root: HKCU; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "Segoe Fluent Icons (TrueType)"; ValueData: "{userfonts}\Segoe Fluent Icons.ttf"; Flags: uninsdeletevalue
+; 字体注册（HKLM；[Registry] 默认卸载不删除安装创建的值，故不写任何 uninsdelete* 标志）
+; 已设 ArchitecturesInstallIn64BitMode=x64compatible，64 位安装模式下默认写入注册表 64 位视图
+; Check 与 [Files] 同源，已装则跳过，避免写入指向不存在文件的路径
+Root: HKLM; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "remixicon (TrueType)"; ValueData: "{commonfonts}\remixicon.ttf"; Components: fontsremix; Check: NeedFontRemix
+Root: HKLM; Subkey: "Software\Microsoft\Windows NT\CurrentVersion\Fonts"; ValueType: string; ValueName: "Segoe Fluent Icons (TrueType)"; ValueData: "{commonfonts}\Segoe Fluent Icons.ttf"; Components: fontsfluent; Check: NeedFontFluent
 
 [Messages]
 SelectDirDesc=选择 foobar2000 根目录
@@ -104,14 +111,47 @@ SelectDirBrowseLabel=请确认下面的目录是 foobar2000 的根目录（即 f
 function AddFontResourceW(lpFilename: String): Integer;
   external 'AddFontResourceW@gdi32.dll stdcall';
 
+function FontValueExists(ValueName: String): Boolean;
+var
+  S: String;
+begin
+  Result := RegQueryStringValue(HKLM, 'SOFTWARE\Microsoft\Windows NT\CurrentVersion\Fonts', ValueName, S)
+         or RegQueryStringValue(HKCU, 'Software\Microsoft\Windows NT\CurrentVersion\Fonts', ValueName, S);
+end;
+
+function NeedFontRemix: Boolean;
+begin
+  Result := not (
+    FontValueExists('remixicon (TrueType)') or
+    FileExists(ExpandConstant('{commonfonts}\remixicon.ttf')) or
+    FileExists(ExpandConstant('{userfonts}\remixicon.ttf'))
+  );
+end;
+
+function NeedFontFluent: Boolean;
+begin
+  Result := not (
+    FontValueExists('Segoe Fluent Icons (TrueType)') or
+    FileExists(ExpandConstant('{commonfonts}\SegoeIcons.ttf')) or
+    FileExists(ExpandConstant('{commonfonts}\Segoe Fluent Icons.ttf'))
+  );
+end;
+
 procedure RegisterBundledFonts;
 var
   F: String;
 begin
-  F := ExpandConstant('{userfonts}\remixicon.ttf');
-  if FileExists(F) then AddFontResourceW(F);
-  F := ExpandConstant('{userfonts}\Segoe Fluent Icons.ttf');
-  if FileExists(F) then AddFontResourceW(F);
+  if IsComponentSelected('fontsremix') then
+  begin
+    F := ExpandConstant('{commonfonts}\remixicon.ttf');
+    if not FileExists(F) then F := ExpandConstant('{userfonts}\remixicon.ttf');
+    if FileExists(F) then AddFontResourceW(F);
+  end;
+  if IsComponentSelected('fontsfluent') then
+  begin
+    F := ExpandConstant('{commonfonts}\Segoe Fluent Icons.ttf');
+    if FileExists(F) then AddFontResourceW(F);
+  end;
 end;
 
 function GetDefaultFb2kRoot(Param: string): string;

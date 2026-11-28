@@ -7,7 +7,7 @@
    老三种标题栏布局里没有这张面板，本脚本根本不会跑，零影响。
 
    设计口径（与用户逐条拍板过的最终版一致）：
-     * 展开态固定 128px、折叠态固定 48px，不做鼠标拖宽；
+     * 展开态固定 110px、折叠态固定 48px，不做鼠标拖宽；
      * 窗口宽度不足（< RAIL_BREAK_W）时由 Eole_layout 自动折到 48，
        本面板只按「自己被摆成多宽」决定画不画文字，不自己判断阈值；
      * 没有悬停展开、没有搜索框；展开/收起只在标题栏点 ☰；
@@ -15,7 +15,7 @@
        只把「主题设置」这一项点亮；
      * MilkDrop / MPV 不可用时点一下弹「未安装」，不切模式。
 
-   图标整套改用 Segoe MDL2 Assets 字形（E700/E8F1/E8FD/E8A5/E8D6/E9D9/E714/E713），
+   图标整套改用 Segoe Fluent Icons 字形（E700/E8F1/E8FD/E8A5/E8D6/E9D9/E714/E713），
    不再往 img\icons\dark|white 里补 png：一套码位同时吃深浅两套配色和折叠态，
    还能随 DPI 清晰缩放。字体缺失时自动退回「只画文字」。
    ============================================================================ */
@@ -49,7 +49,7 @@ var RAIL_HEADER_H = 44;
 var RAIL_HEADER_GLYPH = '\uF168';
 
 /* 7 个入口：mode 对应 pss_switch.js 的 main_panel_state 0…6。
-   图标整套用 Segoe MDL2 Assets：E8F1 本地音乐 / E90B 播放列表 / E779 简介歌词 /
+   图标整套用 Segoe Fluent Icons：E8F1 本地音乐 / E90B 播放列表 / E779 简介歌词 /
    E8D6 洛雪音源 / E9D9 可视效果 / E786 视频 / E713 主题设置。 */
 var RAIL_ITEMS = [
     { mode: 0, label: '本地音乐', glyph: '\uE8F1' },
@@ -93,7 +93,7 @@ function railVisibleItems() {
 }
 
 var g_rail_glyphOk = true;
-try { g_rail_glyphOk = !!utils.CheckFont('Segoe MDL2 Assets'); } catch (eGlyph) { g_rail_glyphOk = true; }
+try { g_rail_glyphOk = !!utils.CheckFont('Segoe Fluent Icons'); } catch (eGlyph) { g_rail_glyphOk = true; }
 
 function get_colors() {
     get_colors_global();
@@ -138,17 +138,20 @@ function railRecalc() {
 function railItemRect(i) {
     var gap = railItemGap();
     var y = RAIL_HEADER_H + railTopPad() + i * (g_rail.itemH + gap) - g_rail.scroll;
-    return { x: 8, y: y, w: Math.max(1, ww - 16), h: g_rail.itemH };
+    /* 折叠（48）时圆角底与顶部折叠按钮同款：x=8、宽 32，正好把 12…36 的图标框居中（左右各留 4）；
+       展开（110）时底块要托住“图标+文字”整条，所以铺满 ww-8。两种宽度下图标中心都落在 x=24。 */
+    if (!railExpanded()) return { x: 8, y: y, w: Math.max(1, Math.min(32, ww - 8)), h: g_rail.itemH };
+    return { x: 8, y: y, w: Math.max(1, ww - 8), h: g_rail.itemH };
 }
 
 /* 顶部折叠按钮的命中区：折叠（48 宽）只算图标那一列，展开时图标 + 文字整条都算按钮 */
 function railHeaderHit(x, y) {
     if (y < 0 || y >= RAIL_HEADER_H) return false;
-    if (railExpanded()) return (x >= 8 && x < ww - 8);
+    if (railExpanded()) return (x >= 8 && x < ww);
     return (x >= 0 && x < Math.min(ww, 48));
 }
 
-/* 展开 / 折叠只看自己被摆成多宽：布局给 128 就带文字，给 48 就只留图标 */
+/* 展开 / 折叠只看自己被摆成多宽：布局给 110 就带文字，给 48 就只留图标 */
 function railExpanded() { return ww >= 100; }
 
 function railItemAt(x, y) {
@@ -181,7 +184,7 @@ function railDrawItem(gr, i, iconFont, labelFont) {
     }
 
     var txt = active ? colors.normal_txt : colors.rail_txt;
-    /* 图标盒 24 的横坐标固定为 12：折叠（48）与展开（128）两种宽度下都不动，
+    /* 图标盒 24 的横坐标固定为 12：折叠（48）与展开（110）两种宽度下都不动，
        图标中心正好落在左侧 48px 那一列的中线上，切换时不产生横向跳动 */
     var iconX = 12;
     if (iconFont) {
@@ -223,7 +226,7 @@ function on_paint(gr) {
     var labelFont = (typeof g_font !== 'undefined' && g_font.plus1) ? g_font.plus1 : null;
     var iconFont = null;
     if (g_rail_glyphOk && labelFont) {
-        try { iconFont = gdi.Font('Segoe MDL2 Assets', labelFont.Size + 5); } catch (eIF) { iconFont = null; }
+        try { iconFont = gdi.Font('Segoe Fluent Icons', labelFont.Size + 5); } catch (eIF) { iconFont = null; }
     }
     for (var i = 0; i < g_rail.items.length; ++i) railDrawItem(gr, i, iconFont, labelFont);
     railDrawHeader(gr, iconFont, labelFont);
@@ -244,7 +247,7 @@ function railWarn(kind) {
 function railDrawHeader(gr, iconFont, labelFont) {
     /* 展开态：图标 + 文字是一个整体按钮，悬停底色铺满整条；折叠态只剩图标那一小块 */
     var chipX = 8;
-    var chipW = railExpanded() ? Math.max(32, ww - 16) : 32;
+    var chipW = railExpanded() ? Math.max(32, ww - 8) : 32;
     if (g_rail.hoverHeader) {
         gr.FillRoundRect(chipX, 4, chipW, RAIL_HEADER_H - 8, 6, 6, colors.rail_hover);
     }
@@ -271,7 +274,7 @@ function railToggleCollapse() {
         var brk = (typeof RAIL_BREAK_W === 'number') ? RAIL_BREAK_W : 1030;
         if (winW > 0 && winW < brk) {
             try {
-                fb.ShowPopupMessage('窗口太窄：展开 128px 侧栏会把主区压到 900px 以下。\n请把窗口拉宽到 ' +
+                fb.ShowPopupMessage('窗口太窄：展开 110px 侧栏会把主区压到 900px 以下。\n请把窗口拉宽到 ' +
                     brk + 'px 以上再展开。', '折叠侧边栏');
             } catch (ePM) {}
             return;

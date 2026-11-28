@@ -125,7 +125,6 @@ function tsClamp(v, lo, hi) {
    「字体大小」同源，改的是「全局·字体调整」，本页跟着一起变。
    Shift+滚轮 = 本页行高（40…120），图标与控件跟着行高等比放大。
    行高上限 120 是留给「窗口外观 → 屏幕显示」的一键适配用的（200% 屏行高×2）。 */
-var TS_PROP_FONTD = '设置·字号调整';
 var TS_PROP_ROWH  = '设置·行高';
 var TS_PROP_LYRICW = '设置·歌词面板宽度记忆';   /* 歌词面板关闭前记住的宽度，供重新打开时恢复 */
 /* 歌词面板宽度比例：lyrics_state 是 0…11 的档位（0 隐藏、11 铺满），
@@ -187,7 +186,7 @@ function tsK() { return tsRowH() / TS_BASE_ROWH; }
 /* 字体统一：整页只用一种字体一个字号（按用户要求）。原来按 kind 区分的
    boldplus1 / min2 / plus1 等全部并到同一份，kind 参数保留仅为兼容调用点。
    字号 = g_fsize + 本页私有偏移，缓存住，on_font_changed 里置空重建。 */
-var TS_MDL2 = 'Segoe MDL2 Assets';
+var TS_MDL2 = 'Segoe Fluent Icons';
 function tsFont(kind) {
     var d = tsFontDelta();
     /* 缓存键要带上基准字号：全局「字体调整」被一键适配改过之后 g_fsize 会变，
@@ -207,7 +206,7 @@ function tsFont(kind) {
     return tsFont._f;
 }
 
-/* 开关专用 MDL2 字体（向量字形，圆滑无锯齿）：打开 U+F19F / 关闭 U+F19E
+/* 开关专用图标字体（Segoe Fluent Icons，向量字形，圆滑无锯齿）：打开 U+F19F / 关闭 U+F19E
    字号跟行高走：48 行高时 36 号，与旧版一致 */
 function tsMdl2Font() {
     var gs = Math.round(36 * tsK());
@@ -556,7 +555,8 @@ function tsSetControl(key, value) {
 var g_tb = {
     titleinfo: 0, uppercase: 0, minimenu: 0, search: 0, remember: 0, hide_lxbox: 0,
     btn_nowplaying: 0, btn_configlayout: 0, btn_rightsidebar: 0,
-    btn_lightswitch: 0, btn_fullscreen: 0, btn_themesettings: 0, duifollow: 0, valid: false
+    btn_lightswitch: 0, btn_fullscreen: 0, btn_themesettings: 0, btn_search: 0,
+    duifollow: 0, valid: false
 };
 
 function tsQueryTitlebar() {
@@ -1030,7 +1030,7 @@ function tsRows() {
             set: function (v) { tsSetTitlebar('hide_lxbox', v ? 1 : 0); }
         });
 
-        /* 5 个标题栏按钮：整排图标，选中＝显示、未选中＝隐藏（与「设置…」菜单同源） */
+        /* 7 个标题栏按钮：整排图标，选中＝显示、未选中＝隐藏（与「设置…」菜单同源） */
         R.push({
             id: 'tbbtns', label: '标题栏按钮', desc: '点亮的显示、变暗的隐藏；选中的图标下方有下划线',
             kind: 'iconbar',
@@ -1040,7 +1040,8 @@ function tsRows() {
                 { key: 'btn_themesettings', name: '主题设置按钮',     file: 'theme_settings.png',  dir: 'tb' },
                 { key: 'btn_rightsidebar',  name: '右侧栏功能按钮',   file: 'trackinfos_on.png',   dir: 'tb' },
                 { key: 'btn_lightswitch',   name: '明暗切换按钮',     file: 'lightswitch_icon3.png', dir: 'tb' },
-                { key: 'btn_fullscreen',    name: '全屏按钮',         file: 'fullscreen_icon.png', dir: 'tb' }
+                { key: 'btn_fullscreen',    name: '全屏按钮',         file: 'fullscreen_icon.png', dir: 'tb' },
+                { key: 'btn_search',        name: '搜索按钮',         file: 'search_icon.png',     dir: 'tb' }
             ],
             get: function (k) { return g_tb.valid ? tsInt(g_tb[k], 0) : 0; },
             set: function (k, v) { tsSetTitlebar(k, v ? 1 : 0); }
@@ -1735,7 +1736,7 @@ function tsDrawHeader(gr, c) {
     var w = Math.max(1, ww - x - TS_PAD);
     var lh = tsNavLineH();
 
-    /* 右上角「退出设置」：MDL2 EB96 图标 + 四字文案，热区包住两者，
+    /* 右上角「退出设置」：Fluent EB96 图标 + 四字文案，热区包住两者，
        点文字和点图标都能退出；文案在图标左侧，避免顶到窗口右边 */
     var bs = Math.max(18, Math.round(24 * k));
     var by = Math.round(16 * k) + Math.round((lh * 2 - bs) / 2);
@@ -2202,7 +2203,7 @@ function tsDrawControl(gr, c, row, cr, y) {
         return { x: sxI, y: syI, w: totI, h: cell, type: 'icons', items: items };
 
     } else if (row.kind === 'toggle') {
-        /* 开关改用 Segoe MDL2 Assets 字形绘制（打开 U+F19F / 关闭 U+F19E）。
+        /* 开关改用 Segoe Fluent Icons 字形绘制（打开 U+F19F / 关闭 U+F19E）。
            字形是字体渲染的矢量路径，圆滑无锯齿，替代原来的
            FillRoundRect + FillEllipse 组合。 */
         /* 字形 36 号配 48 行高：盒 100x42，可见图形约 25px，上下各留 3px */
@@ -2219,7 +2220,7 @@ function tsDrawControl(gr, c, row, cr, y) {
         if (mf) {
             tsText(gr, glyph, mf, gcol, tx, ty, tw, th, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
         } else {
-            /* MDL2 字体不可用时的退路：老画法 */
+            /* 图标字体不可用时的退路：老画法 */
             var bgc = on ? c.on : c.pillBg;
             try { gr.FillRoundRect(tx, ty, tw, th, th, th, bgc); }
             catch (eR) { gr.FillSolidRect(tx, ty, tw, th, bgc); }
@@ -2692,12 +2693,6 @@ function tsPseudoOn() {
     } catch (ePT) {}
 }
 
-/* 半透明叠色：ARGB 高位是 alpha，FillSolidRect 会做混合 */
-function tsA(col, a) {
-    a = tsClamp(tsInt(a, 255), 0, 255);
-    return (a << 24) | (Number(col) & 0x00FFFFFF);
-}
-
 function on_paint(gr) {
     if (!ww || !wh) return;
     tsPseudoOn();
@@ -2846,16 +2841,6 @@ function on_mouse_lbtn_up(x, y, m) {
 
 function on_mouse_lbtn_dblclk(x, y) {
     on_mouse_lbtn_up(x, y, 0);
-}
-
-/* 本页私有的字号 / 行高写入（Ctrl、Shift+滚轮调用） */
-function tsSetFontDelta(d) {
-    d = tsClamp(tsInt(d, 0), -5, 5);
-    try { window.SetProperty(TS_PROP_FONTD, d); } catch (eA) {}
-    tsFont._f = null;          /* 字号变了：统一字体缓存重建 */
-    tsMdl2Font._f = null;
-    tsMdl2Small._f = null;
-    window.Repaint();
 }
 
 function tsSetRowH(v) {

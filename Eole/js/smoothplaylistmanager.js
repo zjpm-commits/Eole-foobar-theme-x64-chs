@@ -138,7 +138,7 @@ var pmGroupsLoaded = false;
 var g_pm_mdl2_font = null;
 function get_pm_mdl2_font() {
 	if(!g_pm_mdl2_font) {
-		try { g_pm_mdl2_font = gdi.Font("Segoe MDL2 Assets", Math.max(10, g_fsize)); } catch(eMF) { g_pm_mdl2_font = null; }
+		try { g_pm_mdl2_font = gdi.Font("Segoe Fluent Icons", Math.max(10, g_fsize)); } catch(eMF) { g_pm_mdl2_font = null; }
 	}
 	return g_pm_mdl2_font;
 }
@@ -192,12 +192,6 @@ function pmGroupMembers(gid) {
 		if(pmGroupMap[plman.GetGUID(i)] === gid) arr.push(i);
 	}
 	return arr;
-}
-function pmGroupHasMembers(gid) {
-	for(var guid in pmGroupMap) {
-		if(pmGroupMap[guid] === gid) return true;
-	}
-	return false;
 }
 /* MovePlaylist 会改变索引，用 GUID 重新定位（不依赖 plman.GetPlaylistIndex） */
 function pmFindPlaylistIndexByGuid(guid) {

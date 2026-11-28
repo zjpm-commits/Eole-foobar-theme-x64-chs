@@ -1792,25 +1792,25 @@ function on_notify_data(name, info) {
 					window.SetProperty("显示·循环按钮", properties.displayRepeat);
 				} else if (tcKey === "btn_shuffle") {
 					properties.displayShuffle = !!tcVal;
-					window.SetProperty("显示·乱序按钮", properties.displayShuffle);
+					window.SetProperty("显示·随机切换按钮", properties.displayShuffle);
 				} else if (tcKey === "btn_random") {
 					properties.displayPlayRandom = !!tcVal;
-					window.SetProperty("显示·随机按钮", properties.displayPlayRandom);
+					window.SetProperty("显示·随机播放按钮", properties.displayPlayRandom);
 				} else if (tcKey === "btn_open") {
 					properties.displayOpen = !!tcVal;
 					window.SetProperty("显示·打开按钮", properties.displayOpen);
 				} else if (tcKey === "btn_device") {
 					properties.displayDevice = !!tcVal;
-					window.SetProperty("显示·输出设备按钮", properties.displayDevice);
+					window.SetProperty("显示·输出设备", properties.displayDevice);
 				} else if (tcKey === "btn_equalizer") {
 					properties.displayEqualizer = !!tcVal;
-					window.SetProperty("显示·均衡器按钮", properties.displayEqualizer);
+					window.SetProperty("显示·均衡器", properties.displayEqualizer);
 				} else if (tcKey === "btn_rating") {
 					properties.displayRating = !!tcVal;
-					window.SetProperty("显示·评级按钮", properties.displayRating);
+					window.SetProperty("显示·评级", properties.displayRating);
 				} else if (tcKey === "btn_scheduler") {
 					properties.displayScheduler = !!tcVal;
-					window.SetProperty("显示·电源计划按钮", properties.displayScheduler);
+					window.SetProperty("显示·定时关机", properties.displayScheduler);
 				} else return;
 				build_buttons();
 				get_text();

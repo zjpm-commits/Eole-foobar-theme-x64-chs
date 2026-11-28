@@ -1673,19 +1673,6 @@ function sgHeaderRowsOf(groupId) {
     if (gp && gp.headerTotalRows) return gp.headerTotalRows;
     return properties.groupHeaderRowsNumber;
 }
-/* 古典模板里作品名行的缩进：与曲目标题文字同一条左边界 */
-function sgClassicalSubIndent(gr) {
-    var off = 0;
-    try {
-        if (properties.doubleRowShowCover) {
-            off = properties.groupHeaderRowsNumber * properties.rowHeight + 10;
-        } else {
-            off = gr.CalcTextWidth("000", g_font.normal) + 24;
-        }
-    } catch (eSSI) { off = 0; }
-    if (!(off > 0)) off = 100;
-    return off;
-}
 /* 阿拉伯数字转中文序号（1→一），用于作品名行的“一、二、三、…”前缀 */
 function sgCnNumeral(n) {
     var d = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九"];

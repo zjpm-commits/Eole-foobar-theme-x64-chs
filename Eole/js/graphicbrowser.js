@@ -5777,16 +5777,7 @@ function createCoverShadowStack(cover_width, cover_height, color, radius, circle
 	shadow.StackBlur(radius);
 	return shadow;
 };
-function createCoverShadow(cover_width, cover_height, color, circleMode){
-	var shadow = gdi.CreateImage(cover_width, cover_height);
-    var gb = shadow.GetGraphics();
-    gb.FillSolidRect(10, 10, cover_width-20, cover_height-20, color);
-	shadow.ReleaseGraphics(gb);
-
-	shadow = shadow.Resize(cover_width*1/10,cover_height*1/10,2);
-	shadow = shadow.Resize(cover_width, cover_height, 2);
-	return shadow;
-};
+;
 
 // ===================================================== // Wallpaper =====================================================
 function toggleWallpaper(wallpaper_state){

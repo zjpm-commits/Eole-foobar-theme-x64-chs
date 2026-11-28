@@ -79,6 +79,10 @@ var properties = {
 	panelFontAdjustement: 0,      /* 各自 -1：1 → 0 */
 	toUpperCase: window.GetProperty("显示·面板按钮文字大写", false),
 	alwaysShowSearch: window.GetProperty("显示·始终显示搜索框", true),
+	/* 框外那颗“显示/隐藏搜索框”按钮：勾选＝显示，不勾＝不显示。默认不显示——
+	   标题栏搜索使用率低、各子面板自带搜索栏；需要时到“设置... → 按钮...”
+	   或主题设置页「标题栏按钮」里点亮。与 alwaysShowSearch 是两件事，互不控制。 */
+	showSearchBtn: window.GetProperty("显示·搜索按钮", false),
 	mini_mainmenu_button: window.GetProperty("显示·迷你主菜单按钮", false),
 }
 if(globalProperties.deleteDiskCache) {
@@ -151,10 +155,6 @@ function railBarH() {
 		if (railWideNow()) return (properties.compact_titlebar_big_height || 50);
 		return (properties.compact_titlebar_height || 36);
 	} catch (eBH) { return railWideNow() ? 50 : 36; }
-}
-
-function railBreakW() {
-	return (typeof RAIL_BREAK_W === 'number') ? RAIL_BREAK_W : 1030;
 }
 
 /* 折叠按钮已经搬到侧栏面板顶部（见 sidebar_rail.js），标题栏只留曲目信息。
@@ -994,6 +994,12 @@ function toggleLayoutMode(new_layout_state, main_window_state){
 		set_main_btns_visibility();
 	}
 }
+/* 框外“显示/隐藏搜索框”那颗按钮的显隐判定，收在这一处：
+   搜索框展开时让位（原有行为），再叠加“搜索按钮”开关（勾选＝允许显示）。
+   两行栏常显搜索框时按钮本来就不出现，所以开关和 1801 互不影响。 */
+function syncSearchBtn(){
+	try { buttons.ShowSearch.setVisibility(!!properties.showSearchBtn && g_searchbox.hide); } catch (eSSB) {}
+}
 function adapt_buttons_to_layout(){
 	if (railTitleMode()) {
 		btn.height = railWideNow() ? btn.height_big : btn.height_small;
@@ -1013,6 +1019,7 @@ function adapt_buttons_to_layout(){
 		buttons.Settings.calculate_size = true;
 
 		g_searchbox.toggleVisibility(true);
+		syncSearchBtn();
 
 		if(!properties.showLightswitchBtn)
 			buttons.Lightswitch.setVisibility(false);
@@ -1042,6 +1049,7 @@ function adapt_buttons_to_layout(){
 		if((!(properties.alwaysShowSearch && !compact_titlebar.isActive())) && g_searchbox.inputbox.text.length == 0) {
 			g_searchbox.toggleVisibility(false);
 		} else g_searchbox.toggleVisibility(true);
+		syncSearchBtn();
 
 		buttons.Mini.setVisibility(true);
 
@@ -1141,7 +1149,12 @@ function adapt_buttons_to_layout(){
 			window_btns.setBtnsHeight(29);
 			additional_btns.setBtnsWidth(btn.width_small_btns);
 		}
-		cSearchBoxMainDark.marginRight = cSearchBoxMainLight.marginRight = 18 + additional_btns.getWidth(true) - (!properties.alwaysShowSearch?buttons.ShowSearch.w+5:0);
+		/* 右边界按按钮的实际可见性算：不显示搜索按钮时不能还按“框收起”的旧口径留位，
+		   否则框右边会空出约 30px；getWidth(true) 本身已排除不可见按钮。
+		   初始化早期 buttons 可能还没建，用 try 兜一下，取不到就按 0 算 */
+		var _showSearchW = 0;
+		try { if (buttons.ShowSearch.isVisible()) _showSearchW = buttons.ShowSearch.w + 5; } catch (eSSW) {}
+		cSearchBoxMainDark.marginRight = cSearchBoxMainLight.marginRight = 18 + additional_btns.getWidth(true) - _showSearchW;
 
 		if(!properties.showRightSidebarBtn && !properties.showLightswitchBtn && !properties.showFullscreenBtn && !properties.showNowPlayingBtn && !properties.showConfigLayoutBtn && !properties.showThemeSettingsBtn){
 			cSearchBoxMainLight.marginRight -= 10;
@@ -1782,6 +1795,9 @@ function draw_settings_menu(x,y){
 		_menu_button.CheckMenuItem(1804, properties.showFullscreenBtn);
 		_menu_button.AppendMenuItem(MF_STRING, 1814, "主题设置");
 		_menu_button.CheckMenuItem(1814, properties.showThemeSettingsBtn);
+		/* 框外搜索按钮：与“始终显示搜索框”分开，勾选＝显示那颗放大镜按钮 */
+		_menu_button.AppendMenuItem(MF_STRING, 1816, "搜索按钮");
+		_menu_button.CheckMenuItem(1816, properties.showSearchBtn);
 		_menu_button.AppendTo(_menu,MF_STRING, "按钮...");
 
 
@@ -1840,6 +1856,16 @@ function draw_settings_menu(x,y){
 				adapt_buttons_to_layout();
 				window.Repaint();
 				try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eNRT2) {}
+				break;
+			case (idx == 1816):
+				/* 只压框外那颗按钮，不动“始终显示搜索框”；框的显隐照旧由 1801 管 */
+				properties.showSearchBtn = !properties.showSearchBtn;
+				window.SetProperty("显示·搜索按钮", properties.showSearchBtn);
+				adapt_buttons_to_layout();
+				syncSearchBtn();
+				g_searchbox.on_size();
+				window.Repaint();
+				try { window.NotifyOthers("ts_titlebar_refresh", 1); } catch(eHSB) {}
 				break;
 			case (idx == 1807):
 				properties.showRightSidebarBtn = !properties.showRightSidebarBtn;
@@ -2991,6 +3017,7 @@ function on_notify_data(name, info) {
 					btn_lightswitch: properties.showLightswitchBtn ? 1 : 0,
 					btn_fullscreen: properties.showFullscreenBtn ? 1 : 0,
 					btn_themesettings: properties.showThemeSettingsBtn ? 1 : 0,
+					btn_search: properties.showSearchBtn ? 1 : 0,
 					duifollow: properties.darklayout_follow_cui ? 1 : 0
 				});
 			} catch(eTBG) {}
@@ -3062,6 +3089,13 @@ function on_notify_data(name, info) {
 				} else if (tbKey === "btn_themesettings") {
 					properties.showThemeSettingsBtn = !!tbVal;
 					window.SetProperty("显示·显示主题设置按钮", properties.showThemeSettingsBtn);
+					tbFlush();
+				} else if (tbKey === "btn_search") {
+					/* 主题设置页「标题栏按钮」里的搜索按钮：勾选＝显示，正语义，
+					   与菜单 1816 同源；框展开时仍自动让位 */
+					properties.showSearchBtn = !!tbVal;
+					window.SetProperty("显示·搜索按钮", properties.showSearchBtn);
+					syncSearchBtn();
 					tbFlush();
 				} else if (tbKey === "duifollow") {
 					/* 等价于全屏壁纸菜单 5301「监视DUI深浅色」 */
@@ -3419,13 +3453,13 @@ oSearch = function() {
 	this.toggleVisibility = function(new_state) {
 		if(typeof new_state !== 'undefined') this.hide = !new_state;
 		else this.hide = !this.hide;
-		if(!this.hide) {
-			buttons.ShowSearch.setVisibility(false);
-		} else {
-			if(this.hide && !properties.alwaysShowSearch) g_cursor.setCursor(IDC_ARROW,1);
-			buttons.ShowSearch.setVisibility(true);
+		if(this.hide) {
+			if(!properties.alwaysShowSearch) g_cursor.setCursor(IDC_ARROW,1);
 			this.clearInputbox(true);
 		}
+		/* 框展开时按钮本就该让位，再叠加“搜索按钮”开关（勾选＝显示）：
+		   显隐只在这里统一判一次，免得两处各写一份互相打架 */
+		syncSearchBtn();
 		if(compact_titlebar.isActive())	g_panel.on_size_changed();
 		set_main_btns_visibility();
 		try { searchDlgCodeSync(); } catch (eSDT) {}

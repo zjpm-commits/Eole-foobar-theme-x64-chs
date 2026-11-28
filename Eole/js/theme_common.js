@@ -4520,10 +4520,6 @@ function fw_drawWallpaper(gr, w, h, wallImg) {
 }
 
 var g_fw_on = null;
-function fw_on() {
-    if (g_fw_on === null) g_fw_on = fw_enabled();
-    return g_fw_on;
-}
 function fw_setOn(v) {
     g_fw_on = !!v;
     /* 各面板收到 fullscreenWallpaper / …Repaint 时都会走这里 */
@@ -4803,13 +4799,13 @@ setTimeout(function () { try { window.NotifyOthers('lx_cache_dir_request', true)
 
    折叠偏好落成状态文件 eole-settings\SIDEBARCOLLAPSED_0 / _1，与其它
    oPanelSetting 一个目录、一个命名习惯；这个键同时充当「本配置是侧边栏配置」
-   的标记。宽 128 是按「图标 + 四个汉字」实测算出来的：左内边距 14 + 图标盒
-   24 + 间距 10 + 4 汉字 @14px 共 56 + 右内边距 12 = 116，再加激活条内缩与
-   滚动条槽 12 = 128。折叠 48 = 10 + 24 + 10 + 滚动条槽 4。
+   的标记。宽 110 是压掉右侧滚动条槽后的取值：左内边距 8 + 图标盒 24 + 间距
+   10 + 4 汉字 @14px 共 56 = 98，右侧不再单独留槽，余下 12 给激活条内缩，
+   滚动条直接叠在右缘绘制。折叠 48 = 10 + 24 + 10 + 滚动条槽 4。
    ============================================================================ */
-var RAIL_W_EXPANDED = 128;    /* 展开态：图标 + 四个汉字 */
+var RAIL_W_EXPANDED = 110;    /* 展开态：图标 + 四个汉字，不预留滚动条槽 */
 var RAIL_W_COLLAPSED = 48;    /* 折叠态：只剩图标 */
-var RAIL_BREAK_W = 1030;      /* 窗口宽度低于此值自动折叠（128 侧栏 + 主区最小 900） */
+var RAIL_BREAK_W = 1030;      /* 窗口宽度低于此值自动折叠（110 侧栏 + 主区最小 900，阈值沿用旧值） */
 var RAIL_TITLEBAR_H_SMALL = 36; /* 折叠侧边栏的单行标题栏：与常规紧凑同高 */
 var RAIL_TITLEBAR_H_BIG = 50;   /* 4K 适配倍率下与加宽紧凑同高 */
 var RAIL_TITLEBAR_H = 36;       /* 兼容旧引用：取常规态，实际高度请用 railTitlebarH() */
@@ -4832,7 +4828,6 @@ function railCollapsePref() {
 	}
 	return best >= 0 ? best : -1;
 }
-function railIsConfig() { return railCollapsePref() >= 0; }
 
 /* 写折叠偏好：先删旧键（同一个键只保留一份文件），再建新键 */
 function railCollapsePrefSet(v) {
@@ -4846,14 +4841,6 @@ function railCollapsePrefSet(v) {
 		}
 	} catch (eG) {}
 	try { g_files.CreateTextFile(railPrefPath() + v, true).Close(); } catch (eC) {}
-}
-
-/* 某个窗口宽度下实际折叠不折叠：窗口太窄一律折叠，够宽才听用户偏好 */
-function railCollapsedAt(windowWidth) {
-	var pref = railCollapsePref();
-	if (pref < 0) return 0;
-	if (windowWidth < RAIL_BREAK_W) return 1;
-	return (pref === 1) ? 1 : 0;
 }
 
 /* 侧栏标题栏是否用「加宽」版：0 常规（36，同常规紧凑）/ 1 加宽（50，同加宽紧凑）。
