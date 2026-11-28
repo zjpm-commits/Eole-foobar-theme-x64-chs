@@ -1,6 +1,6 @@
 {
-  "version": "2026.11.28-1142",
-  "generated": "2026-11-28T03:42:38Z",
+  "version": "2026.11.28-1549",
+  "generated": "2026-11-28T07:49:25Z",
   "base": [
     "https://raw.githubusercontent.com/zjpm-commits/Eole-foobar-theme-x64-chs/main/",
     "https://cdn.jsdelivr.net/gh/zjpm-commits/Eole-foobar-theme-x64-chs@main/"
@@ -3898,8 +3898,8 @@
     },
     {
       "path": "Lxbox/main.js",
-      "mtime": 1795765426,
-      "md5": "df92b6739f1e3481645645c619e9a51b"
+      "mtime": 1795851143,
+      "md5": "0737aac6cd1b4984b0ba2fa34f40e8c7"
     },
     {
       "path": "Lxbox/providers.js",
@@ -3915,11 +3915,6 @@
       "path": "Lxbox/tagwriter.js",
       "mtime": 1794648128,
       "md5": "1930670eab5744674c3dbf523ff2f5f2"
-    },
-    {
-      "path": "Lxbox/online/bridge-launch.vbs",
-      "mtime": 1795138666,
-      "md5": "9aa4b98d163f310f6cc338fa711f0c4c"
     },
     {
       "path": "Lxbox/online/bridge.js",
@@ -3955,6 +3950,7 @@
   "removed": [
     "Eole/js/ts_update.ps1",
     "mpv/mpv.conf",
-    "mpv/input.conf"
+    "mpv/input.conf",
+    "Lxbox/online/bridge-launch.vbs"
   ]
 }

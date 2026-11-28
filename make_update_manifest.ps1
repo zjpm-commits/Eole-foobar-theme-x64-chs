@@ -56,7 +56,8 @@ $manifestPath = Join-Path $RepoDir 'update_manifest.json'
 $removedExtra = @(
     'Eole/js/ts_update.ps1',   # 更新执行器已移到 Eole 根目录，旧位置要让客户端删掉
     'mpv/mpv.conf',           # 视频改由 WebView2 承担，旧的 mpv 配置让客户端清掉
-    'mpv/input.conf'
+    'mpv/input.conf',
+    'Lxbox/online/bridge-launch.vbs'  # 桥接改由 WScript.Shell.Run 直接启动，旧脚本让客户端删掉
 )
 $removed = @()
 if (Test-Path -LiteralPath $manifestPath) {
